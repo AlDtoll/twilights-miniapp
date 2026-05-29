@@ -209,10 +209,16 @@ const tg = window.Telegram.WebApp;
 tg.ready();
 tg.expand();
 
-// Parse data passed from bot: ?data=base64
+// Parse data passed from bot: ?data=base64(utf-8 json)
 const params = new URLSearchParams(window.location.search);
 let gameData = {};
-try { gameData = JSON.parse(atob(params.get('data') || btoa('{}'))); } catch(e) {}
+try {
+  const raw = params.get('data');
+  if (raw) {
+    const bytes = Uint8Array.from(atob(raw), c => c.charCodeAt(0));
+    gameData = JSON.parse(new TextDecoder('utf-8').decode(bytes));
+  }
+} catch(e) {}
 
 // game: 'choice' | 'blackjack', prompt, options[]
 const game = gameData.game || 'choice';
