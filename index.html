@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Twilights Mini App</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--tg-theme-bg-color, #1a1a2e);
+    color: var(--tg-theme-text-color, #eee);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  h1 {
+    font-size: 1.4rem;
+    margin-bottom: 8px;
+    text-align: center;
+    color: var(--tg-theme-text-color, #fff);
+  }
+  .subtitle {
+    font-size: 0.9rem;
+    color: var(--tg-theme-hint-color, #aaa);
+    margin-bottom: 24px;
+    text-align: center;
+  }
+  .game-select {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .tab {
+    padding: 10px 20px;
+    border-radius: 20px;
+    border: 2px solid var(--tg-theme-button-color, #6c5ce7);
+    background: transparent;
+    color: var(--tg-theme-button-color, #6c5ce7);
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  .tab.active {
+    background: var(--tg-theme-button-color, #6c5ce7);
+    color: var(--tg-theme-button-text-color, #fff);
+  }
+
+  /* === CHOICE GAME === */
+  #choice-game { width: 100%; max-width: 360px; }
+  .choice-prompt {
+    text-align: center;
+    font-size: 1rem;
+    margin-bottom: 20px;
+    padding: 12px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    line-height: 1.5;
+  }
+  .choice-buttons { display: flex; flex-direction: column; gap: 10px; }
+  .choice-btn {
+    padding: 14px 18px;
+    border-radius: 12px;
+    border: 2px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.05);
+    color: var(--tg-theme-text-color, #fff);
+    font-size: 1rem;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+  }
+  .choice-btn:hover { border-color: var(--tg-theme-button-color, #6c5ce7); background: rgba(108,92,231,0.15); }
+  .choice-btn.selected { border-color: #00b894; background: rgba(0,184,148,0.2); }
+
+  /* === BLACKJACK GAME === */
+  #bj-game { width: 100%; max-width: 360px; }
+  .bj-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+  }
+  .bj-info-item { text-align: center; }
+  .bj-info-label { font-size: 0.7rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 2px; }
+  .bj-info-val { font-size: 1.3rem; font-weight: bold; }
+  .bj-cards {
+    min-height: 60px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .card {
+    width: 44px;
+    height: 60px;
+    border-radius: 8px;
+    background: #fff;
+    color: #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-weight: bold;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    line-height: 1.1;
+  }
+  .card.red { color: #e74c3c; }
+  .card.back {
+    background: #6c5ce7;
+    color: transparent;
+    background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.1) 0px, rgba(255,255,255,0.1) 2px, transparent 2px, transparent 8px);
+  }
+  .bj-section-label { font-size: 0.75rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 6px; }
+  .bj-actions { display: flex; gap: 10px; margin-top: 16px; }
+  .btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 12px;
+    border: none;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .btn:disabled { opacity: 0.4; cursor: default; }
+  .btn-primary { background: var(--tg-theme-button-color, #6c5ce7); color: var(--tg-theme-button-text-color, #fff); }
+  .btn-secondary { background: rgba(255,255,255,0.1); color: var(--tg-theme-text-color, #fff); }
+  .btn-danger { background: #e74c3c; color: #fff; }
+
+  .result-banner {
+    padding: 12px;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-top: 12px;
+    display: none;
+  }
+  .result-win { background: rgba(0,184,148,0.2); border: 2px solid #00b894; color: #00b894; }
+  .result-lose { background: rgba(231,76,60,0.2); border: 2px solid #e74c3c; color: #e74c3c; }
+  .result-draw { background: rgba(255,255,255,0.1); border: 2px solid #aaa; color: #aaa; }
+
+  .confirm-btn {
+    width: 100%;
+    margin-top: 20px;
+    padding: 14px;
+    border-radius: 14px;
+    border: none;
+    background: var(--tg-theme-button-color, #6c5ce7);
+    color: var(--tg-theme-button-text-color, #fff);
+    font-size: 1.05rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: none;
+  }
+</style>
+</head>
+<body>
+<h1>⚔️ Twilights</h1>
+<p class="subtitle" id="subtitle">Мини-игры</p>
+
+<div class="game-select">
+  <button class="tab active" onclick="showGame('choice')">Выбор</button>
+  <button class="tab" onclick="showGame('blackjack')">21</button>
+</div>
+
+<!-- CHOICE GAME -->
+<div id="choice-game">
+  <div class="choice-prompt" id="choice-prompt">Загрузка...</div>
+  <div class="choice-buttons" id="choice-buttons"></div>
+  <button class="confirm-btn" id="choice-confirm" onclick="confirmChoice()">Подтвердить выбор</button>
+</div>
+
+<!-- BLACKJACK GAME -->
+<div id="bj-game" style="display:none">
+  <div class="bj-info">
+    <div class="bj-info-item">
+      <div class="bj-info-label">Ваши очки</div>
+      <div class="bj-info-val" id="bj-player-score">0</div>
+    </div>
+    <div class="bj-info-item">
+      <div class="bj-info-label">Дилер</div>
+      <div class="bj-info-val" id="bj-dealer-score">?</div>
+    </div>
+  </div>
+  <div class="bj-section-label">Карты дилера</div>
+  <div class="bj-cards" id="bj-dealer-cards"></div>
+  <div class="bj-section-label">Ваши карты</div>
+  <div class="bj-cards" id="bj-player-cards"></div>
+  <div class="result-banner" id="bj-result"></div>
+  <div class="bj-actions">
+    <button class="btn btn-primary" id="bj-hit" onclick="bjHit()">Ещё</button>
+    <button class="btn btn-secondary" id="bj-stand" onclick="bjStand()">Хватит</button>
+    <button class="btn btn-danger" id="bj-new" onclick="bjNewGame()" style="display:none">Заново</button>
+  </div>
+  <button class="confirm-btn" id="bj-confirm" onclick="confirmBJ()">Отправить результат</button>
+</div>
+
+<script>
+const tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();
+
+// Parse data passed from bot: ?data=base64
+const params = new URLSearchParams(window.location.search);
+let gameData = {};
+try { gameData = JSON.parse(atob(params.get('data') || btoa('{}'))); } catch(e) {}
+
+// game: 'choice' | 'blackjack', prompt, options[]
+const game = gameData.game || 'choice';
+const subtitle = document.getElementById('subtitle');
+
+// ---- TABS ----
+function showGame(name) {
+  document.getElementById('choice-game').style.display = name === 'choice' ? '' : 'none';
+  document.getElementById('bj-game').style.display = name === 'blackjack' ? '' : 'none';
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (i===0) === (name==='choice')));
+  if (name === 'blackjack' && !bjStarted) bjNewGame();
+}
+
+// ---- CHOICE GAME ----
+let selectedChoice = null;
+
+function initChoice() {
+  const prompt = gameData.prompt || 'Сделайте выбор:';
+  const options = gameData.options || ['Вариант А', 'Вариант Б', 'Вариант В'];
+  document.getElementById('choice-prompt').textContent = prompt;
+  const container = document.getElementById('choice-buttons');
+  container.innerHTML = '';
+  options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = opt;
+    btn.onclick = () => selectChoice(i, btn, opt);
+    container.appendChild(btn);
+  });
+}
+
+function selectChoice(idx, btn, text) {
+  document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedChoice = { index: idx, text };
+  document.getElementById('choice-confirm').style.display = '';
+}
+
+function confirmChoice() {
+  if (!selectedChoice) return;
+  const result = JSON.stringify({ game: 'choice', choice: selectedChoice.index, text: selectedChoice.text });
+  tg.sendData(result);
+}
+
+// ---- BLACKJACK ----
+const SUITS = ['♠','♥','♦','♣'];
+const VALUES = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+let deck = [], playerCards = [], dealerCards = [], bjStarted = false, bjDone = false;
+
+function cardValue(card) {
+  if (['J','Q','K'].includes(card.v)) return 10;
+  if (card.v === 'A') return 11;
+  return parseInt(card.v);
+}
+
+function handScore(cards) {
+  let score = cards.reduce((s,c) => s + cardValue(c), 0);
+  let aces = cards.filter(c => c.v === 'A').length;
+  while (score > 21 && aces > 0) { score -= 10; aces--; }
+  return score;
+}
+
+function shuffle(arr) { for (let i=arr.length-1;i>0;i--){const j=Math.random()*i|0;[arr[i],arr[j]]=[arr[j],arr[i]];} return arr; }
+
+function newDeck() {
+  return shuffle(SUITS.flatMap(s => VALUES.map(v => ({s, v}))));
+}
+
+function bjNewGame() {
+  bjStarted = true; bjDone = false;
+  deck = newDeck();
+  playerCards = [deck.pop(), deck.pop()];
+  dealerCards = [deck.pop(), deck.pop()];
+  document.getElementById('bj-result').style.display = 'none';
+  document.getElementById('bj-hit').disabled = false;
+  document.getElementById('bj-stand').disabled = false;
+  document.getElementById('bj-new').style.display = 'none';
+  document.getElementById('bj-confirm').style.display = 'none';
+  renderBJ(true);
+  if (handScore(playerCards) === 21) bjEndGame();
+}
+
+function renderBJ(hideDealer) {
+  const playerScore = handScore(playerCards);
+  document.getElementById('bj-player-score').textContent = playerScore;
+  document.getElementById('bj-dealer-score').textContent = hideDealer ? '?' : handScore(dealerCards);
+  renderCards('bj-dealer-cards', dealerCards, hideDealer);
+  renderCards('bj-player-cards', playerCards, false);
+}
+
+function renderCards(id, cards, hideFirst) {
+  const el = document.getElementById(id);
+  el.innerHTML = '';
+  cards.forEach((c, i) => {
+    const div = document.createElement('div');
+    if (i === 0 && hideFirst) { div.className = 'card back'; div.innerHTML = ''; }
+    else {
+      const red = ['♥','♦'].includes(c.s);
+      div.className = 'card' + (red ? ' red' : '');
+      div.innerHTML = `<span>${c.v}</span><span>${c.s}</span>`;
+    }
+    el.appendChild(div);
+  });
+}
+
+function bjHit() {
+  playerCards.push(deck.pop());
+  renderBJ(true);
+  if (handScore(playerCards) >= 21) bjEndGame();
+}
+
+function bjStand() { bjEndGame(); }
+
+function bjEndGame() {
+  bjDone = true;
+  // Dealer draws to 17
+  while (handScore(dealerCards) < 17) dealerCards.push(deck.pop());
+  renderBJ(false);
+  document.getElementById('bj-hit').disabled = true;
+  document.getElementById('bj-stand').disabled = true;
+  document.getElementById('bj-new').style.display = '';
+
+  const ps = handScore(playerCards), ds = handScore(dealerCards);
+  const banner = document.getElementById('bj-result');
+  banner.style.display = '';
+
+  let outcome, msg;
+  if (ps > 21) { outcome = 'lose'; msg = `Перебор (${ps}) — вы проиграли`; }
+  else if (ds > 21 || ps > ds) { outcome = 'win'; msg = `Вы выиграли! (${ps} vs ${ds})`; }
+  else if (ps === ds) { outcome = 'draw'; msg = `Ничья (${ps})`; }
+  else { outcome = 'lose'; msg = `Вы проиграли (${ps} vs ${ds})`; }
+
+  banner.className = 'result-banner result-' + outcome;
+  banner.textContent = msg;
+  document.getElementById('bj-confirm').style.display = '';
+}
+
+function confirmBJ() {
+  if (!bjDone) return;
+  const ps = handScore(playerCards), ds = handScore(dealerCards);
+  let outcome;
+  if (ps > 21) outcome = 'lose';
+  else if (ds > 21 || ps > ds) outcome = 'win';
+  else if (ps === ds) outcome = 'draw';
+  else outcome = 'lose';
+  const result = JSON.stringify({ game: 'blackjack', playerScore: ps, dealerScore: ds > 21 ? 'bust' : ds, outcome });
+  tg.sendData(result);
+}
+
+// Init
+initChoice();
+if (game === 'blackjack') showGame('blackjack');
+</script>
+</body>
+</html>
