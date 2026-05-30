@@ -259,8 +259,8 @@ function selectChoice(idx, btn, text) {
 
 function confirmChoice() {
   if (!selectedChoice) return;
-  const result = JSON.stringify({ game: 'choice', choice: selectedChoice.index, text: selectedChoice.text });
-  tg.sendData(result);
+  const result = { game: 'choice', choice: selectedChoice.index, text: selectedChoice.text };
+  sendResultToBot(result);
 }
 
 // ---- BLACKJACK ----
@@ -364,8 +364,32 @@ function confirmBJ() {
   else if (ds > 21 || ps > ds) outcome = 'win';
   else if (ps === ds) outcome = 'draw';
   else outcome = 'lose';
-  const result = JSON.stringify({ game: 'blackjack', playerScore: ps, dealerScore: ds > 21 ? 'bust' : ds, outcome });
-  tg.sendData(result);
+  sendResultToBot({ game: 'blackjack', playerScore: ps, dealerScore: ds > 21 ? 'bust' : ds, outcome });
+}
+
+async function sendResultToBot(result) {
+  const token = gameData.token;
+  const chatId = gameData.chat_id;
+  if (!token || !chatId) { tg.close(); return; }
+  tg.MainButton.setText('Отправка...');
+  tg.MainButton.showProgress(false);
+  try {
+    const user = tg.initDataUnsafe?.user;
+    const userName = user ? (user.first_name + (user.last_name ? ' ' + user.last_name : '')) : 'Игрок';
+    const lines = [`🎮 ${userName} сделал выбор:`];
+    if (result.game === 'choice') lines.push(`→ ${result.text}`);
+    else lines.push(`21: счёт ${result.playerScore} vs ${result.dealerScore} — ${result.outcome === 'win' ? 'победа' : result.outcome === 'lose' ? 'поражение' : 'ничья'}`);
+    lines.push(`\`\`\`json\n${JSON.stringify(result)}\n\`\`\``);
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text: lines.join('\n'), parse_mode: 'Markdown' })
+    });
+    tg.close();
+  } catch(e) {
+    tg.MainButton.hideProgress();
+    tg.MainButton.setText('Подтвердить');
+  }
 }
 
 // MainButton handlers
