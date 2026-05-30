@@ -254,8 +254,8 @@ function selectChoice(idx, btn, text) {
   document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
   selectedChoice = { index: idx, text };
-  tg.MainButton.setText('✓ ' + text);
-  tg.MainButton.show();
+  tg.MainButton.hide();
+  tg.MainButton.setParams({ text: '✓ ' + text, is_visible: true });
 }
 
 function confirmChoice() {
@@ -371,7 +371,7 @@ function confirmBJ() {
 }
 
 // MainButton handlers
-tg.MainButton.hide();
+tg.MainButton.setParams({ text: 'Подтвердить', is_visible: false });
 tg.onEvent('mainButtonClicked', () => {
   if (document.getElementById('bj-game').style.display !== 'none') {
     confirmBJ();
