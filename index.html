@@ -254,7 +254,7 @@ function selectChoice(idx, btn, text) {
   document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
   selectedChoice = { index: idx, text };
-  document.getElementById('choice-confirm').style.display = '';
+  document.getElementById('choice-confirm').style.display = 'block';
 }
 
 function confirmChoice() {
@@ -353,7 +353,7 @@ function bjEndGame() {
 
   banner.className = 'result-banner result-' + outcome;
   banner.textContent = msg;
-  document.getElementById('bj-confirm').style.display = '';
+  document.getElementById('bj-confirm').style.display = 'block';
 }
 
 function confirmBJ() {
