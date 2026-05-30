@@ -254,7 +254,8 @@ function selectChoice(idx, btn, text) {
   document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
   selectedChoice = { index: idx, text };
-  document.getElementById('choice-confirm').style.display = 'block';
+  tg.MainButton.setText('✓ ' + text);
+  tg.MainButton.show();
 }
 
 function confirmChoice() {
@@ -353,7 +354,8 @@ function bjEndGame() {
 
   banner.className = 'result-banner result-' + outcome;
   banner.textContent = msg;
-  document.getElementById('bj-confirm').style.display = 'block';
+  tg.MainButton.setText('Отправить результат');
+  tg.MainButton.show();
 }
 
 function confirmBJ() {
@@ -367,6 +369,16 @@ function confirmBJ() {
   const result = JSON.stringify({ game: 'blackjack', playerScore: ps, dealerScore: ds > 21 ? 'bust' : ds, outcome });
   tg.sendData(result);
 }
+
+// MainButton handlers
+tg.MainButton.hide();
+tg.onEvent('mainButtonClicked', () => {
+  if (document.getElementById('bj-game').style.display !== 'none') {
+    confirmBJ();
+  } else {
+    confirmChoice();
+  }
+});
 
 // Init
 initChoice();
