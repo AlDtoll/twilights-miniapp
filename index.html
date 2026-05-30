@@ -254,8 +254,7 @@ function selectChoice(idx, btn, text) {
   document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
   selectedChoice = { index: idx, text };
-  tg.MainButton.hide();
-  tg.MainButton.setParams({ text: '✓ ' + text, is_visible: true });
+  tg.MainButton.show();
 }
 
 function confirmChoice() {
@@ -354,7 +353,6 @@ function bjEndGame() {
 
   banner.className = 'result-banner result-' + outcome;
   banner.textContent = msg;
-  tg.MainButton.setText('Отправить результат');
   tg.MainButton.show();
 }
 
@@ -371,7 +369,8 @@ function confirmBJ() {
 }
 
 // MainButton handlers
-tg.MainButton.setParams({ text: 'Подтвердить', is_visible: false });
+tg.MainButton.setText('Подтвердить');
+tg.MainButton.hide();
 tg.onEvent('mainButtonClicked', () => {
   if (document.getElementById('bj-game').style.display !== 'none') {
     confirmBJ();
