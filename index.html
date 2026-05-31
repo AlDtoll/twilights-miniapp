@@ -181,7 +181,10 @@
     font-size: 1.05rem;
     font-weight: 700;
     cursor: pointer;
-    display: none;
+  }
+  .confirm-btn:disabled {
+    opacity: 0.25;
+    cursor: default;
   }
 </style>
 </head>
@@ -193,7 +196,7 @@
 <div id="choice-game" style="display:none">
   <div class="choice-prompt" id="choice-prompt">Загрузка...</div>
   <div class="choice-buttons" id="choice-buttons"></div>
-  <button class="confirm-btn" id="choice-confirm" onclick="confirmChoice()">Подтвердить выбор</button>
+  <button class="confirm-btn" id="choice-confirm" onclick="confirmChoice()" disabled>Подтвердить выбор</button>
 </div>
 
 <!-- BLACKJACK GAME -->
@@ -228,7 +231,7 @@
     <button class="btn btn-secondary" id="bj-stand" onclick="bjStand()">Хватит</button>
     <button class="btn btn-danger" id="bj-new" onclick="bjNewGame()" style="display:none">Заново</button>
   </div>
-  <button class="confirm-btn" id="bj-confirm" onclick="confirmBJ()">Отправить результат</button>
+  <button class="confirm-btn" id="bj-confirm" onclick="confirmBJ()" disabled>Отправить результат</button>
 </div>
 
 <script>
@@ -273,7 +276,7 @@ function selectChoice(idx, btn, text) {
   document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
   selectedChoice = { index: idx, text };
-  document.getElementById('choice-confirm').style.display = '';
+  document.getElementById('choice-confirm').disabled = false;
 }
 
 function confirmChoice() {
@@ -368,7 +371,7 @@ function bjNewGame() {
   document.getElementById('bj-hit').disabled = false;
   document.getElementById('bj-stand').disabled = false;
   document.getElementById('bj-new').style.display = 'none';
-  document.getElementById('bj-confirm').style.display = 'none';
+  document.getElementById('bj-confirm').disabled = true;
   renderModifiers();
   renderBJ(true);
   if (handScore(playerCards) === 21) bjEndGame();
@@ -414,7 +417,9 @@ function bjEndGame() {
   document.getElementById('bj-hit').disabled = true;
   document.getElementById('bj-stand').disabled = true;
   document.getElementById('bj-new').style.display = '';
-  document.getElementById('bj-confirm').style.display = '';
+  const confirmBtn = document.getElementById('bj-confirm');
+  confirmBtn.disabled = false;
+  setTimeout(() => confirmBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
 
   const ps = handScore(playerCards), ds = handScore(dealerCards);
   const banner = document.getElementById('bj-result');
