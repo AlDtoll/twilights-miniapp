@@ -30,26 +30,6 @@
     margin-bottom: 24px;
     text-align: center;
   }
-  .game-select {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 32px;
-  }
-  .tab {
-    padding: 10px 20px;
-    border-radius: 20px;
-    border: 2px solid var(--tg-theme-button-color, #6c5ce7);
-    background: transparent;
-    color: var(--tg-theme-button-color, #6c5ce7);
-    cursor: pointer;
-    font-size: 0.95rem;
-    font-weight: 600;
-    transition: all 0.2s;
-  }
-  .tab.active {
-    background: var(--tg-theme-button-color, #6c5ce7);
-    color: var(--tg-theme-button-text-color, #fff);
-  }
 
   /* === CHOICE GAME === */
   #choice-game { width: 100%; max-width: 360px; }
@@ -148,6 +128,48 @@
   .result-lose { background: rgba(231,76,60,0.2); border: 2px solid #e74c3c; color: #e74c3c; }
   .result-draw { background: rgba(255,255,255,0.1); border: 2px solid #aaa; color: #aaa; }
 
+  /* === MODIFIERS === */
+  .modifiers-panel {
+    width: 100%;
+    margin-bottom: 14px;
+  }
+  .modifiers-label {
+    font-size: 0.75rem;
+    color: var(--tg-theme-hint-color, #aaa);
+    margin-bottom: 6px;
+  }
+  .modifier-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 2px solid var(--tg-theme-button-color, #6c5ce7);
+    background: transparent;
+    color: var(--tg-theme-button-color, #6c5ce7);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin: 0 6px 6px 0;
+    transition: all 0.2s;
+  }
+  .modifier-btn.used {
+    border-color: #00b894;
+    background: rgba(0,184,148,0.15);
+    color: #00b894;
+    cursor: default;
+  }
+  .modifier-btn.inactive {
+    opacity: 0.45;
+    cursor: default;
+  }
+  .modifier-bonus-badge {
+    background: rgba(255,255,255,0.15);
+    border-radius: 10px;
+    padding: 1px 6px;
+    font-size: 0.8rem;
+  }
+
   .confirm-btn {
     width: 100%;
     margin-top: 20px;
@@ -165,15 +187,10 @@
 </head>
 <body>
 <h1>⚔️ Twilights</h1>
-<p class="subtitle" id="subtitle">Мини-игры</p>
-
-<div class="game-select">
-  <button class="tab active" onclick="showGame('choice')">Выбор</button>
-  <button class="tab" onclick="showGame('blackjack')">21</button>
-</div>
+<p class="subtitle" id="subtitle">Загрузка...</p>
 
 <!-- CHOICE GAME -->
-<div id="choice-game">
+<div id="choice-game" style="display:none">
   <div class="choice-prompt" id="choice-prompt">Загрузка...</div>
   <div class="choice-buttons" id="choice-buttons"></div>
   <button class="confirm-btn" id="choice-confirm" onclick="confirmChoice()">Подтвердить выбор</button>
@@ -181,10 +198,20 @@
 
 <!-- BLACKJACK GAME -->
 <div id="bj-game" style="display:none">
+  <!-- Modifiers panel — shown only when modifiers passed -->
+  <div class="modifiers-panel" id="modifiers-panel" style="display:none">
+    <div class="modifiers-label">Бонусы (активировать после игры):</div>
+    <div id="modifiers-list"></div>
+  </div>
+
   <div class="bj-info">
     <div class="bj-info-item">
       <div class="bj-info-label">Ваши очки</div>
       <div class="bj-info-val" id="bj-player-score">0</div>
+    </div>
+    <div class="bj-info-item">
+      <div class="bj-info-label">С бонусом</div>
+      <div class="bj-info-val" id="bj-adjusted-score-val">—</div>
     </div>
     <div class="bj-info-item">
       <div class="bj-info-label">Дилер</div>
@@ -209,7 +236,7 @@ const tg = window.Telegram.WebApp;
 tg.ready();
 tg.expand();
 
-// Parse data passed from bot: ?data=base64(utf-8 json)
+// Parse data: ?data=base64(utf-8 json)
 const params = new URLSearchParams(window.location.search);
 let gameData = {};
 try {
@@ -220,22 +247,14 @@ try {
   }
 } catch(e) {}
 
-// game: 'choice' | 'blackjack', prompt, options[]
 const game = gameData.game || 'choice';
-const subtitle = document.getElementById('subtitle');
-
-// ---- TABS ----
-function showGame(name) {
-  document.getElementById('choice-game').style.display = name === 'choice' ? '' : 'none';
-  document.getElementById('bj-game').style.display = name === 'blackjack' ? '' : 'none';
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (i===0) === (name==='choice')));
-  if (name === 'blackjack' && !bjStarted) bjNewGame();
-}
+document.getElementById('subtitle').textContent = game === 'blackjack' ? 'Игра в 21' : 'Выбор';
 
 // ---- CHOICE GAME ----
 let selectedChoice = null;
 
 function initChoice() {
+  document.getElementById('choice-game').style.display = '';
   const prompt = gameData.prompt || 'Сделайте выбор:';
   const options = gameData.options || ['Вариант А', 'Вариант Б', 'Вариант В'];
   document.getElementById('choice-prompt').textContent = prompt;
@@ -254,19 +273,63 @@ function selectChoice(idx, btn, text) {
   document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
   selectedChoice = { index: idx, text };
-  tg.MainButton.show();
+  document.getElementById('choice-confirm').style.display = '';
 }
 
 function confirmChoice() {
   if (!selectedChoice) return;
-  const result = { game: 'choice', choice: selectedChoice.index, text: selectedChoice.text };
-  sendResultToBot(result);
+  sendResultToBot({ game: 'choice', choice: selectedChoice.index, text: selectedChoice.text });
+}
+
+// ---- MODIFIERS ----
+// gameData.modifiers: [{id, name, desc, bonus}]
+// bonus: integer, can be negative. Applied after game ends.
+let modifiers = [];
+let appliedBonus = 0;
+let bjDone = false;
+
+function initModifiers() {
+  const mods = gameData.modifiers;
+  if (!mods || !mods.length) return;
+  modifiers = mods.map(m => ({ ...m, used: false }));
+  document.getElementById('modifiers-panel').style.display = '';
+  renderModifiers();
+}
+
+function renderModifiers() {
+  const list = document.getElementById('modifiers-list');
+  list.innerHTML = '';
+  modifiers.forEach((mod, i) => {
+    const canUse = bjDone && !mod.used;
+    const btn = document.createElement('button');
+    btn.className = 'modifier-btn' + (mod.used ? ' used' : !bjDone ? ' inactive' : '');
+    const bonusText = mod.bonus > 0 ? `+${mod.bonus}` : `${mod.bonus}`;
+    btn.innerHTML = `${mod.name} <span class="modifier-bonus-badge">${bonusText}</span>`;
+    if (mod.desc) btn.title = mod.desc;
+    if (canUse) btn.onclick = () => applyModifier(i);
+    list.appendChild(btn);
+  });
+  updateAdjustedDisplay();
+}
+
+function applyModifier(i) {
+  if (modifiers[i].used || !bjDone) return;
+  modifiers[i].used = true;
+  appliedBonus += modifiers[i].bonus;
+  renderModifiers();
+}
+
+function updateAdjustedDisplay() {
+  const base = handScore(playerCards);
+  const adj = base + appliedBonus;
+  const adjEl = document.getElementById('bj-adjusted-score-val');
+  adjEl.textContent = appliedBonus !== 0 ? (adj > 21 ? `${adj}!` : String(adj)) : '—';
 }
 
 // ---- BLACKJACK ----
 const SUITS = ['♠','♥','♦','♣'];
 const VALUES = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-let deck = [], playerCards = [], dealerCards = [], bjStarted = false, bjDone = false;
+let deck = [], playerCards = [], dealerCards = [], bjStarted = false;
 
 function cardValue(card) {
   if (['J','Q','K'].includes(card.v)) return 10;
@@ -275,13 +338,20 @@ function cardValue(card) {
 }
 
 function handScore(cards) {
+  if (!cards || !cards.length) return 0;
   let score = cards.reduce((s,c) => s + cardValue(c), 0);
   let aces = cards.filter(c => c.v === 'A').length;
   while (score > 21 && aces > 0) { score -= 10; aces--; }
   return score;
 }
 
-function shuffle(arr) { for (let i=arr.length-1;i>0;i--){const j=Math.random()*i|0;[arr[i],arr[j]]=[arr[j],arr[i]];} return arr; }
+function shuffle(arr) {
+  for (let i=arr.length-1;i>0;i--){
+    const j=Math.random()*i|0;
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+  return arr;
+}
 
 function newDeck() {
   return shuffle(SUITS.flatMap(s => VALUES.map(v => ({s, v}))));
@@ -289,6 +359,8 @@ function newDeck() {
 
 function bjNewGame() {
   bjStarted = true; bjDone = false;
+  appliedBonus = 0;
+  modifiers = (gameData.modifiers || []).map(m => ({ ...m, used: false }));
   deck = newDeck();
   playerCards = [deck.pop(), deck.pop()];
   dealerCards = [deck.pop(), deck.pop()];
@@ -297,6 +369,7 @@ function bjNewGame() {
   document.getElementById('bj-stand').disabled = false;
   document.getElementById('bj-new').style.display = 'none';
   document.getElementById('bj-confirm').style.display = 'none';
+  renderModifiers();
   renderBJ(true);
   if (handScore(playerCards) === 21) bjEndGame();
 }
@@ -307,6 +380,7 @@ function renderBJ(hideDealer) {
   document.getElementById('bj-dealer-score').textContent = hideDealer ? '?' : handScore(dealerCards);
   renderCards('bj-dealer-cards', dealerCards, hideDealer);
   renderCards('bj-player-cards', playerCards, false);
+  updateAdjustedDisplay();
 }
 
 function renderCards(id, cards, hideFirst) {
@@ -314,8 +388,9 @@ function renderCards(id, cards, hideFirst) {
   el.innerHTML = '';
   cards.forEach((c, i) => {
     const div = document.createElement('div');
-    if (i === 0 && hideFirst) { div.className = 'card back'; div.innerHTML = ''; }
-    else {
+    if (i === 0 && hideFirst) {
+      div.className = 'card back';
+    } else {
       const red = ['♥','♦'].includes(c.s);
       div.className = 'card' + (red ? ' red' : '');
       div.innerHTML = `<span>${c.v}</span><span>${c.s}</span>`;
@@ -334,52 +409,74 @@ function bjStand() { bjEndGame(); }
 
 function bjEndGame() {
   bjDone = true;
-  // Dealer draws to 17
   while (handScore(dealerCards) < 17) dealerCards.push(deck.pop());
   renderBJ(false);
   document.getElementById('bj-hit').disabled = true;
   document.getElementById('bj-stand').disabled = true;
   document.getElementById('bj-new').style.display = '';
+  document.getElementById('bj-confirm').style.display = '';
 
   const ps = handScore(playerCards), ds = handScore(dealerCards);
   const banner = document.getElementById('bj-result');
   banner.style.display = '';
 
   let outcome, msg;
-  if (ps > 21) { outcome = 'lose'; msg = `Перебор (${ps}) — вы проиграли`; }
-  else if (ds > 21 || ps > ds) { outcome = 'win'; msg = `Вы выиграли! (${ps} vs ${ds})`; }
+  if (ps > 21) { outcome = 'lose'; msg = `Перебор (${ps})`; }
+  else if (ds > 21 || ps > ds) { outcome = 'win'; msg = `Победа! (${ps} vs ${ds})`; }
   else if (ps === ds) { outcome = 'draw'; msg = `Ничья (${ps})`; }
-  else { outcome = 'lose'; msg = `Вы проиграли (${ps} vs ${ds})`; }
+  else { outcome = 'lose'; msg = `Поражение (${ps} vs ${ds})`; }
 
   banner.className = 'result-banner result-' + outcome;
   banner.textContent = msg;
-  tg.MainButton.show();
+
+  renderModifiers();
+}
+
+function computeOutcome(score, dealerScore) {
+  if (score > 21) return 'lose';
+  if (dealerScore > 21 || score > dealerScore) return 'win';
+  if (score === dealerScore) return 'draw';
+  return 'lose';
 }
 
 function confirmBJ() {
   if (!bjDone) return;
   const ps = handScore(playerCards), ds = handScore(dealerCards);
-  let outcome;
-  if (ps > 21) outcome = 'lose';
-  else if (ds > 21 || ps > ds) outcome = 'win';
-  else if (ps === ds) outcome = 'draw';
-  else outcome = 'lose';
-  sendResultToBot({ game: 'blackjack', playerScore: ps, dealerScore: ds > 21 ? 'bust' : ds, outcome });
+  const adjustedScore = ps + appliedBonus;
+  const usedMods = modifiers.filter(m => m.used).map(m => m.id);
+  const outcome = computeOutcome(adjustedScore, ds);
+
+  const result = {
+    game: 'blackjack',
+    playerScore: ps,
+    dealerScore: ds > 21 ? 'bust' : ds,
+    outcome,
+  };
+  if (appliedBonus !== 0) result.adjustedScore = adjustedScore;
+  if (usedMods.length) result.usedModifiers = usedMods;
+
+  sendResultToBot(result);
 }
 
 async function sendResultToBot(result) {
   const token = gameData.token;
   const chatId = gameData.chat_id;
   if (!token || !chatId) { tg.close(); return; }
-  tg.MainButton.setText('Отправка...');
-  tg.MainButton.showProgress(false);
   try {
     const user = tg.initDataUnsafe?.user;
     const userName = user ? (user.first_name + (user.last_name ? ' ' + user.last_name : '')) : 'Игрок';
-    const lines = [`🎮 ${userName} сделал выбор:`];
-    if (result.game === 'choice') lines.push(`→ ${result.text}`);
-    else lines.push(`21: счёт ${result.playerScore} vs ${result.dealerScore} — ${result.outcome === 'win' ? 'победа' : result.outcome === 'lose' ? 'поражение' : 'ничья'}`);
-    lines.push(`\`\`\`json\n${JSON.stringify(result)}\n\`\`\``);
+    const lines = [`🎮 ${userName}:`];
+    if (result.game === 'choice') {
+      lines.push(`→ ${result.text}`);
+    } else {
+      const adj = result.adjustedScore !== undefined ? ` (с бонусом: ${result.adjustedScore})` : '';
+      const outcomeStr = result.outcome === 'win' ? 'победа' : result.outcome === 'lose' ? 'поражение' : 'ничья';
+      lines.push(`21: ${result.playerScore}${adj} vs ${result.dealerScore} — ${outcomeStr}`);
+      if (result.usedModifiers && result.usedModifiers.length) {
+        lines.push(`Бонусы: ${result.usedModifiers.join(', ')}`);
+      }
+    }
+    lines.push('```json\n' + JSON.stringify(result) + '\n```');
     await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -387,25 +484,25 @@ async function sendResultToBot(result) {
     });
     tg.close();
   } catch(e) {
-    tg.MainButton.hideProgress();
-    tg.MainButton.setText('Подтвердить');
+    console.error(e);
   }
 }
 
-// MainButton handlers
 tg.MainButton.setText('Подтвердить');
 tg.MainButton.hide();
 tg.onEvent('mainButtonClicked', () => {
-  if (document.getElementById('bj-game').style.display !== 'none') {
-    confirmBJ();
-  } else {
-    confirmChoice();
-  }
+  if (game === 'blackjack') confirmBJ();
+  else confirmChoice();
 });
 
 // Init
-initChoice();
-if (game === 'blackjack') showGame('blackjack');
+if (game === 'blackjack') {
+  document.getElementById('bj-game').style.display = '';
+  initModifiers();
+  bjNewGame();
+} else {
+  initChoice();
+}
 </script>
 </body>
 </html>
