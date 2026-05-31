@@ -465,34 +465,44 @@ function confirmBJ() {
 
 async function sendResultToBot(result) {
   const token = gameData.token;
-  // notify_chat_id — личный чат игрока с ботом (бот видит через getUpdates)
-  // chat_id — групповой/исходный чат (для контекста мастера)
-  const notifyChatId = gameData.notify_chat_id || gameData.chat_id;
-  if (!token || !notifyChatId) { tg.close(); return; }
+  const chatId = gameData.chat_id;
+  const webhookUrl = gameData.webhook_url;
+  if (!token || !chatId) { tg.close(); return; }
+
+  result.chat_id = chatId;
+  result.token = token;
+
   try {
-    const user = tg.initDataUnsafe?.user;
-    const userName = user ? (user.first_name + (user.last_name ? ' ' + user.last_name : '')) : 'Игрок';
-    const lines = [`🎮 ${userName}:`];
-    if (result.game === 'choice') {
-      lines.push(`→ ${result.text}`);
+    const endpoint = webhookUrl || `https://api.telegram.org/bot${token}/sendMessage`;
+
+    if (webhookUrl) {
+      // Отправляем на VPS webhook — он сохраняет результат, бот подхватывает
+      await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(result),
+      });
     } else {
-      const adj = result.adjustedScore !== undefined ? ` (с бонусом: ${result.adjustedScore})` : '';
-      const outcomeStr = result.outcome === 'win' ? 'победа' : result.outcome === 'lose' ? 'поражение' : 'ничья';
-      lines.push(`21: ${result.playerScore}${adj} vs ${result.dealerScore} — ${outcomeStr}`);
-      if (result.usedModifiers && result.usedModifiers.length) {
-        lines.push(`Бонусы: ${result.usedModifiers.join(', ')}`);
+      // Fallback: прямо в Telegram (личный чат)
+      const user = tg.initDataUnsafe?.user;
+      const userName = user ? (user.first_name + (user.last_name ? ' '+user.last_name : '')) : 'Игрок';
+      const lines = [`🎮 ${userName}:`];
+      if (result.game === 'choice') {
+        lines.push(`→ ${result.text}`);
+      } else {
+        const adj = result.adjustedScore !== undefined ? ` (с бонусом: ${result.adjustedScore})` : '';
+        const outcomeStr = result.outcome === 'win' ? 'победа' : result.outcome === 'lose' ? 'поражение' : 'ничья';
+        lines.push(`21: ${result.playerScore}${adj} vs ${result.dealerScore} — ${outcomeStr}`);
+        if (result.usedModifiers && result.usedModifiers.length) lines.push(`Бонусы: ${result.usedModifiers.join(', ')}`);
       }
+      lines.push('```json\n' + JSON.stringify(result) + '\n```');
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, text: lines.join('\n'), parse_mode: 'Markdown' }),
+      });
     }
-    // Добавляем source_chat_id чтобы мастер знал в каком чате отвечать
-    if (gameData.chat_id && gameData.chat_id !== notifyChatId) {
-      result.source_chat_id = gameData.chat_id;
-    }
-    lines.push('```json\n' + JSON.stringify(result) + '\n```');
-    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: notifyChatId, text: lines.join('\n'), parse_mode: 'Markdown' })
-    });
+
     tg.close();
     document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:16px;padding:20px;background:var(--tg-theme-bg-color,#1a1a2e);color:var(--tg-theme-text-color,#eee);font-family:sans-serif;text-align:center"><div style="font-size:3rem">✅</div><div style="font-size:1.3rem;font-weight:700">Результат отправлен</div><div style="font-size:0.9rem;opacity:0.6">Можно закрыть вкладку</div></div>';
   } catch(e) {
