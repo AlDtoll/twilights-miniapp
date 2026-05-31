@@ -488,6 +488,8 @@ async function sendResultToBot(result) {
       body: JSON.stringify({ chat_id: chatId, text: lines.join('\n'), parse_mode: 'Markdown' })
     });
     tg.close();
+    // Fallback для браузера: показать экран «готово» вместо tg.close()
+    document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:16px;padding:20px;background:var(--tg-theme-bg-color,#1a1a2e);color:var(--tg-theme-text-color,#eee);font-family:sans-serif;text-align:center"><div style="font-size:3rem">✅</div><div style="font-size:1.3rem;font-weight:700">Результат отправлен</div><div style="font-size:0.9rem;opacity:0.6">Можно закрыть вкладку</div></div>';
   } catch(e) {
     console.error(e);
   }
