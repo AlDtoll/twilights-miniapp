@@ -18,41 +18,44 @@
     justify-content: center;
     padding: 20px;
   }
-  h1 {
-    font-size: 1.4rem;
-    margin-bottom: 8px;
-    text-align: center;
-    color: var(--tg-theme-text-color, #fff);
+  h1 { font-size: 1.4rem; margin-bottom: 8px; text-align: center; }
+  .subtitle { font-size: 0.9rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 16px; text-align: center; }
+
+  /* === THRESHOLDS === */
+  .thresholds-panel {
+    width: 100%;
+    max-width: 360px;
+    margin-bottom: 14px;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
   }
-  .subtitle {
-    font-size: 0.9rem;
-    color: var(--tg-theme-hint-color, #aaa);
-    margin-bottom: 24px;
+  .threshold-chip {
+    flex: 1;
+    min-width: 60px;
+    padding: 6px 8px;
+    border-radius: 10px;
     text-align: center;
+    font-size: 0.75rem;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
   }
+  .threshold-chip .t-range { font-weight: 700; font-size: 0.85rem; display: block; }
+  .threshold-chip .t-label { color: var(--tg-theme-hint-color, #aaa); font-size: 0.7rem; }
+  .threshold-chip.active { border-color: #00b894; background: rgba(0,184,148,0.18); }
+  .threshold-chip.active .t-label { color: #00b894; }
 
   /* === CHOICE GAME === */
   #choice-game { width: 100%; max-width: 360px; }
   .choice-prompt {
-    text-align: center;
-    font-size: 1rem;
-    margin-bottom: 20px;
-    padding: 12px;
-    background: rgba(255,255,255,0.05);
-    border-radius: 12px;
-    line-height: 1.5;
+    text-align: center; font-size: 1rem; margin-bottom: 20px;
+    padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; line-height: 1.5;
   }
   .choice-buttons { display: flex; flex-direction: column; gap: 10px; }
   .choice-btn {
-    padding: 14px 18px;
-    border-radius: 12px;
-    border: 2px solid rgba(255,255,255,0.15);
-    background: rgba(255,255,255,0.05);
-    color: var(--tg-theme-text-color, #fff);
-    font-size: 1rem;
-    cursor: pointer;
-    text-align: left;
-    transition: all 0.2s;
+    padding: 14px 18px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.05); color: var(--tg-theme-text-color, #fff);
+    font-size: 1rem; cursor: pointer; text-align: left; transition: all 0.2s;
   }
   .choice-btn:hover { border-color: var(--tg-theme-button-color, #6c5ce7); background: rgba(108,92,231,0.15); }
   .choice-btn.selected { border-color: #00b894; background: rgba(0,184,148,0.2); }
@@ -60,137 +63,54 @@
   /* === BLACKJACK GAME === */
   #bj-game { width: 100%; max-width: 360px; }
   .bj-info {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 16px;
-    padding: 10px 14px;
-    background: rgba(255,255,255,0.05);
-    border-radius: 12px;
+    display: flex; justify-content: space-between; margin-bottom: 16px;
+    padding: 10px 14px; background: rgba(255,255,255,0.05); border-radius: 12px;
   }
   .bj-info-item { text-align: center; }
   .bj-info-label { font-size: 0.7rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 2px; }
   .bj-info-val { font-size: 1.3rem; font-weight: bold; }
-  .bj-cards {
-    min-height: 60px;
-    margin-bottom: 12px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
+  .bj-cards { min-height: 60px; margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
   .card {
-    width: 44px;
-    height: 60px;
-    border-radius: 8px;
-    background: #fff;
-    color: #000;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: 1rem;
-    font-weight: bold;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-    line-height: 1.1;
+    width: 44px; height: 60px; border-radius: 8px; background: #fff; color: #000;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 1rem; font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,0.4); line-height: 1.1;
   }
   .card.red { color: #e74c3c; }
-  .card.back {
-    background: #6c5ce7;
-    color: transparent;
-    background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.1) 0px, rgba(255,255,255,0.1) 2px, transparent 2px, transparent 8px);
-  }
   .bj-section-label { font-size: 0.75rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 6px; }
   .bj-actions { display: flex; gap: 10px; margin-top: 16px; }
-  .btn {
-    flex: 1;
-    padding: 12px;
-    border-radius: 12px;
-    border: none;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.2s;
-  }
+  .btn { flex: 1; padding: 12px; border-radius: 12px; border: none; font-size: 1rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
   .btn:disabled { opacity: 0.4; cursor: default; }
   .btn-primary { background: var(--tg-theme-button-color, #6c5ce7); color: var(--tg-theme-button-text-color, #fff); }
   .btn-secondary { background: rgba(255,255,255,0.1); color: var(--tg-theme-text-color, #fff); }
 
   .result-banner {
-    padding: 12px;
-    border-radius: 12px;
-    text-align: center;
-    font-size: 1.1rem;
-    font-weight: bold;
-    margin-top: 12px;
-    display: none;
+    padding: 12px; border-radius: 12px; text-align: center; font-size: 1.1rem;
+    font-weight: bold; margin-top: 12px; display: none;
   }
-  .result-win { background: rgba(0,184,148,0.2); border: 2px solid #00b894; color: #00b894; }
-  .result-lose { background: rgba(231,76,60,0.2); border: 2px solid #e74c3c; color: #e74c3c; }
-  .result-draw { background: rgba(255,255,255,0.1); border: 2px solid #aaa; color: #aaa; }
+  .result-good { background: rgba(0,184,148,0.2); border: 2px solid #00b894; color: #00b894; }
+  .result-mid  { background: rgba(255,193,7,0.15); border: 2px solid #ffc107; color: #ffc107; }
+  .result-bad  { background: rgba(231,76,60,0.2); border: 2px solid #e74c3c; color: #e74c3c; }
 
   /* === MODIFIERS === */
-  .modifiers-panel {
-    width: 100%;
-    margin-bottom: 14px;
-  }
-  .modifiers-label {
-    font-size: 0.75rem;
-    color: var(--tg-theme-hint-color, #aaa);
-    margin-bottom: 8px;
-  }
-  .modifier-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 8px;
-    flex-wrap: wrap;
-  }
-  .modifier-name {
-    font-size: 0.85rem;
-    color: var(--tg-theme-text-color, #eee);
-    flex: 1;
-    min-width: 80px;
-  }
+  .modifiers-panel { width: 100%; margin-bottom: 14px; }
+  .modifiers-label { font-size: 0.75rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 8px; }
+  .modifier-row { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+  .modifier-name { font-size: 0.85rem; color: var(--tg-theme-text-color, #eee); flex: 1; min-width: 80px; }
   .mod-btn {
-    padding: 6px 14px;
-    border-radius: 20px;
-    border: 2px solid rgba(255,255,255,0.2);
-    background: transparent;
-    color: var(--tg-theme-hint-color, #aaa);
-    font-size: 0.9rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.15s;
-    min-width: 48px;
-    text-align: center;
+    padding: 6px 14px; border-radius: 20px; border: 2px solid rgba(255,255,255,0.2);
+    background: transparent; color: var(--tg-theme-hint-color, #aaa);
+    font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.15s; min-width: 48px; text-align: center;
   }
   .mod-btn:disabled { opacity: 0.35; cursor: default; }
-  .mod-btn.active-plus {
-    border-color: #00b894;
-    background: rgba(0,184,148,0.2);
-    color: #00b894;
-  }
-  .mod-btn.active-minus {
-    border-color: #e74c3c;
-    background: rgba(231,76,60,0.2);
-    color: #e74c3c;
-  }
+  .mod-btn.active-plus { border-color: #00b894; background: rgba(0,184,148,0.2); color: #00b894; }
+  .mod-btn.active-minus { border-color: #e74c3c; background: rgba(231,76,60,0.2); color: #e74c3c; }
 
   .confirm-btn {
-    width: 100%;
-    margin-top: 20px;
-    padding: 14px;
-    border-radius: 14px;
-    border: none;
-    background: var(--tg-theme-button-color, #6c5ce7);
-    color: var(--tg-theme-button-text-color, #fff);
-    font-size: 1.05rem;
-    font-weight: 700;
-    cursor: pointer;
+    width: 100%; margin-top: 20px; padding: 14px; border-radius: 14px; border: none;
+    background: var(--tg-theme-button-color, #6c5ce7); color: var(--tg-theme-button-text-color, #fff);
+    font-size: 1.05rem; font-weight: 700; cursor: pointer;
   }
-  .confirm-btn:disabled {
-    opacity: 0.25;
-    cursor: default;
-  }
+  .confirm-btn:disabled { opacity: 0.25; cursor: default; }
 </style>
 </head>
 <body>
@@ -206,7 +126,10 @@
 
 <!-- BLACKJACK GAME -->
 <div id="bj-game" style="display:none">
-  <!-- Modifiers panel -->
+  <!-- Thresholds -->
+  <div class="thresholds-panel" id="thresholds-panel" style="display:none"></div>
+
+  <!-- Modifiers -->
   <div class="modifiers-panel" id="modifiers-panel" style="display:none">
     <div class="modifiers-label">Навыки:</div>
     <div id="modifiers-list"></div>
@@ -214,20 +137,14 @@
 
   <div class="bj-info">
     <div class="bj-info-item">
-      <div class="bj-info-label">Ваши очки</div>
+      <div class="bj-info-label">Очки</div>
       <div class="bj-info-val" id="bj-player-score">0</div>
     </div>
     <div class="bj-info-item">
       <div class="bj-info-label">С навыками</div>
       <div class="bj-info-val" id="bj-adjusted-score-val">—</div>
     </div>
-    <div class="bj-info-item">
-      <div class="bj-info-label">Дилер</div>
-      <div class="bj-info-val" id="bj-dealer-score">?</div>
-    </div>
   </div>
-  <div class="bj-section-label">Карты дилера</div>
-  <div class="bj-cards" id="bj-dealer-cards"></div>
   <div class="bj-section-label">Ваши карты</div>
   <div class="bj-cards" id="bj-player-cards"></div>
   <div class="result-banner" id="bj-result"></div>
@@ -287,22 +204,69 @@ function confirmChoice() {
   sendResultToBot({ game: 'choice', choice: selectedChoice.index, text: selectedChoice.text });
 }
 
-// ---- MODIFIERS ----
-// Типы модификаторов:
-//   plus:   {type:'plus',  value:N}  — toggle, добавляет +N
-//   minus:  {type:'minus', value:N}  — toggle, вычитает N
-//   choice: {type:'choice', minus:N, plus:M} — радио-пара, либо -N либо +M
-// Backward compat: {bonus: N} → plus/minus по знаку
+// ---- THRESHOLDS ----
+// gameData.thresholds: [{min, max, label, level}]
+// level: 0=провал, 1=норм, 2=хорошо, 3=идеально (для цвета)
+// Если перебор (>21) — ниже нижнего порога
 
+function initThresholds() {
+  const th = gameData.thresholds;
+  if (!th || !th.length) return;
+  const panel = document.getElementById('thresholds-panel');
+  panel.style.display = '';
+  th.forEach(t => {
+    const chip = document.createElement('div');
+    chip.className = 'threshold-chip';
+    chip.dataset.min = t.min;
+    chip.dataset.max = t.max;
+    const rangeStr = t.min === t.max ? String(t.min) : `${t.min}–${t.max}`;
+    chip.innerHTML = `<span class="t-range">${rangeStr}</span><span class="t-label">${t.label}</span>`;
+    panel.appendChild(chip);
+  });
+}
+
+function highlightThreshold(score) {
+  document.querySelectorAll('.threshold-chip').forEach(chip => {
+    chip.classList.remove('active');
+    const min = parseInt(chip.dataset.min), max = parseInt(chip.dataset.max);
+    if (score >= min && score <= max) chip.classList.add('active');
+  });
+}
+
+function getOutcomeLabel(score) {
+  const th = gameData.thresholds;
+  if (!th || !th.length) return score === 21 ? 'идеально' : score >= 17 ? 'хорошо' : score >= 10 ? 'норм' : 'провал';
+  // Перебор — всегда последний (худший) порог
+  if (score > 21) return th[th.length - 1].label;
+  for (const t of th) {
+    if (score >= t.min && score <= t.max) return t.label;
+  }
+  return th[th.length - 1].label;
+}
+
+function getOutcomeLevel(score) {
+  const th = gameData.thresholds;
+  if (!th || !th.length) {
+    if (score === 21) return 3;
+    if (score >= 17) return 2;
+    if (score >= 10) return 1;
+    return 0;
+  }
+  if (score > 21) return th[th.length - 1].level ?? 0;
+  for (const t of th) {
+    if (score >= t.min && score <= t.max) return t.level ?? 0;
+  }
+  return 0;
+}
+
+// ---- MODIFIERS ----
 let modifiers = [];
 let bjDone = false;
 let bjStarted = false;
 
 function normalizeMod(m) {
   if (m.type === 'choice') return { ...m, state: 'none' };
-  if (m.type === 'plus')   return { ...m, active: false };
-  if (m.type === 'minus')  return { ...m, active: false };
-  // legacy: bonus field
+  if (m.type === 'plus' || m.type === 'minus') return { ...m, active: false };
   const bonus = m.bonus !== undefined ? m.bonus : 1;
   return { ...m, type: bonus >= 0 ? 'plus' : 'minus', value: Math.abs(bonus), active: false };
 }
@@ -347,7 +311,6 @@ function renderModifiers() {
   modifiers.forEach((mod, i) => {
     const row = document.createElement('div');
     row.className = 'modifier-row';
-
     const nameEl = document.createElement('span');
     nameEl.className = 'modifier-name';
     nameEl.textContent = mod.name || mod.id || '';
@@ -359,13 +322,11 @@ function renderModifiers() {
       btnM.textContent = `-${mod.minus}`;
       btnM.disabled = !bjStarted;
       btnM.onclick = () => toggleChoice(i, 'minus');
-
       const btnP = document.createElement('button');
       btnP.className = 'mod-btn' + (mod.state === 'plus' ? ' active-plus' : '');
       btnP.textContent = `+${mod.plus}`;
       btnP.disabled = !bjStarted;
       btnP.onclick = () => toggleChoice(i, 'plus');
-
       row.appendChild(btnM);
       row.appendChild(btnP);
     } else {
@@ -377,7 +338,6 @@ function renderModifiers() {
       btn.onclick = () => toggleSimple(i);
       row.appendChild(btn);
     }
-
     list.appendChild(row);
   });
   updateAdjustedDisplay();
@@ -390,12 +350,13 @@ function updateAdjustedDisplay() {
   const el = document.getElementById('bj-adjusted-score-val');
   if (!bjStarted || bonus === 0) { el.textContent = '—'; return; }
   el.textContent = adj > 21 ? `${adj}!` : String(adj);
+  if (bjStarted) highlightThreshold(adj !== base ? adj : base);
 }
 
 // ---- BLACKJACK ----
 const SUITS = ['♠','♥','♦','♣'];
 const VALUES = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-let deck = [], playerCards = [], dealerCards = [];
+let deck = [], playerCards = [];
 
 function cardValue(card) {
   if (['J','Q','K'].includes(card.v)) return 10;
@@ -419,53 +380,43 @@ function shuffle(arr) {
   return arr;
 }
 
-function newDeck() {
-  return shuffle(SUITS.flatMap(s => VALUES.map(v => ({s, v}))));
-}
-
 function bjNewGame() {
   bjStarted = true; bjDone = false;
   modifiers = modifiers.map(m => m.type === 'choice' ? {...m, state:'none'} : {...m, active:false});
-  deck = newDeck();
+  deck = shuffle(SUITS.flatMap(s => VALUES.map(v => ({s, v}))));
   playerCards = [deck.pop(), deck.pop()];
-  dealerCards = [deck.pop(), deck.pop()];
   document.getElementById('bj-result').style.display = 'none';
   document.getElementById('bj-hit').disabled = false;
   document.getElementById('bj-stand').disabled = false;
   document.getElementById('bj-confirm').disabled = true;
   renderModifiers();
-  renderBJ(true);
+  renderBJ();
   if (handScore(playerCards) === 21) bjEndGame();
 }
 
-function renderBJ(hideDealer) {
-  const playerScore = handScore(playerCards);
-  document.getElementById('bj-player-score').textContent = playerScore;
-  document.getElementById('bj-dealer-score').textContent = hideDealer ? '?' : handScore(dealerCards);
-  renderCards('bj-dealer-cards', dealerCards, hideDealer);
-  renderCards('bj-player-cards', playerCards, false);
+function renderBJ() {
+  const score = handScore(playerCards);
+  document.getElementById('bj-player-score').textContent = score;
+  renderCards('bj-player-cards', playerCards);
   updateAdjustedDisplay();
+  highlightThreshold(score + getTotalBonus());
 }
 
-function renderCards(id, cards, hideFirst) {
+function renderCards(id, cards) {
   const el = document.getElementById(id);
   el.innerHTML = '';
-  cards.forEach((c, i) => {
+  cards.forEach(c => {
     const div = document.createElement('div');
-    if (i === 0 && hideFirst) {
-      div.className = 'card back';
-    } else {
-      const red = ['♥','♦'].includes(c.s);
-      div.className = 'card' + (red ? ' red' : '');
-      div.innerHTML = `<span>${c.v}</span><span>${c.s}</span>`;
-    }
+    const red = ['♥','♦'].includes(c.s);
+    div.className = 'card' + (red ? ' red' : '');
+    div.innerHTML = `<span>${c.v}</span><span>${c.s}</span>`;
     el.appendChild(div);
   });
 }
 
 function bjHit() {
   playerCards.push(deck.pop());
-  renderBJ(true);
+  renderBJ();
   if (handScore(playerCards) >= 21) bjEndGame();
 }
 
@@ -473,47 +424,41 @@ function bjStand() { bjEndGame(); }
 
 function bjEndGame() {
   bjDone = true;
-  while (handScore(dealerCards) < 17) dealerCards.push(deck.pop());
-  renderBJ(false);
   document.getElementById('bj-hit').disabled = true;
   document.getElementById('bj-stand').disabled = true;
-  const confirmBtn = document.getElementById('bj-confirm');
-  confirmBtn.disabled = false;
-  setTimeout(() => confirmBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+  document.getElementById('bj-confirm').disabled = false;
+  setTimeout(() => document.getElementById('bj-confirm').scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
 
-  const ps = handScore(playerCards), ds = handScore(dealerCards);
+  const ps = handScore(playerCards);
+  const bonus = getTotalBonus();
+  const adjScore = ps + bonus;
+  const effectiveScore = bonus !== 0 ? adjScore : ps;
+  const level = getOutcomeLevel(effectiveScore);
+  const label = getOutcomeLabel(effectiveScore);
+
   const banner = document.getElementById('bj-result');
   banner.style.display = '';
+  const cls = level >= 2 ? 'result-good' : level === 1 ? 'result-mid' : 'result-bad';
+  banner.className = 'result-banner ' + cls;
+  const scoreStr = bonus !== 0 ? `${ps}→${adjScore}` : String(ps);
+  banner.textContent = `${scoreStr} — ${label}`;
 
-  let outcome, msg;
-  if (ps > 21) { outcome = 'lose'; msg = `Перебор (${ps})`; }
-  else if (ds > 21 || ps > ds) { outcome = 'win'; msg = `Победа! (${ps} vs ${ds})`; }
-  else if (ps === ds) { outcome = 'draw'; msg = `Ничья (${ps})`; }
-  else { outcome = 'lose'; msg = `Поражение (${ps} vs ${ds})`; }
-
-  banner.className = 'result-banner result-' + outcome;
-  banner.textContent = msg;
   renderModifiers();
-}
-
-function computeOutcome(score, dealerScore) {
-  if (score > 21) return 'lose';
-  if (dealerScore > 21 || score > dealerScore) return 'win';
-  if (score === dealerScore) return 'draw';
-  return 'lose';
+  highlightThreshold(effectiveScore);
 }
 
 function confirmBJ() {
   if (!bjDone) return;
-  const ps = handScore(playerCards), ds = handScore(dealerCards);
+  const ps = handScore(playerCards);
   const totalBonus = getTotalBonus();
   const adjustedScore = ps + totalBonus;
+  const effectiveScore = totalBonus !== 0 ? adjustedScore : ps;
   const usedMods = modifiers
     .filter(m => m.type === 'choice' ? m.state !== 'none' : m.active)
     .map(m => m.type === 'choice' ? `${m.id}:${m.state}` : m.id);
-  const outcome = computeOutcome(adjustedScore, ds);
+  const outcome = getOutcomeLabel(effectiveScore);
 
-  const result = { game: 'blackjack', playerScore: ps, dealerScore: ds > 21 ? 'bust' : ds, outcome };
+  const result = { game: 'blackjack', playerScore: ps, outcome };
   if (totalBonus !== 0) result.adjustedScore = adjustedScore;
   if (usedMods.length) result.usedModifiers = usedMods;
 
@@ -531,8 +476,6 @@ function sendResultToBot(result) {
   }
 }
 
-tg.MainButton.setText('Отправить результат');
-tg.MainButton.hide();
 tg.onEvent('mainButtonClicked', () => {
   if (game === 'blackjack') confirmBJ();
   else confirmChoice();
@@ -540,6 +483,7 @@ tg.onEvent('mainButtonClicked', () => {
 
 if (game === 'blackjack') {
   document.getElementById('bj-game').style.display = '';
+  initThresholds();
   initModifiers();
   bjNewGame();
 } else {
