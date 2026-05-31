@@ -12,69 +12,39 @@
     background: var(--tg-theme-bg-color, #1a1a2e);
     color: var(--tg-theme-text-color, #eee);
     min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
     padding: 20px;
   }
   h1 { font-size: 1.4rem; margin-bottom: 8px; text-align: center; }
   .subtitle { font-size: 0.9rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 16px; text-align: center; }
 
-  /* === THRESHOLDS === */
-  .thresholds-panel {
-    width: 100%;
-    max-width: 360px;
-    margin-bottom: 14px;
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
+  /* THRESHOLDS */
+  .thresholds-panel { width: 100%; max-width: 360px; margin-bottom: 14px; display: flex; gap: 6px; flex-wrap: wrap; }
   .threshold-chip {
-    flex: 1;
-    min-width: 60px;
-    padding: 6px 8px;
-    border-radius: 10px;
-    text-align: center;
-    font-size: 0.75rem;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.12);
+    flex: 1; min-width: 60px; padding: 6px 8px; border-radius: 10px; text-align: center;
+    font-size: 0.75rem; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
   }
   .threshold-chip .t-range { font-weight: 700; font-size: 0.85rem; display: block; }
   .threshold-chip .t-label { color: var(--tg-theme-hint-color, #aaa); font-size: 0.7rem; }
   .threshold-chip.active { border-color: #00b894; background: rgba(0,184,148,0.18); }
   .threshold-chip.active .t-label { color: #00b894; }
 
-  /* === CHOICE GAME === */
+  /* CHOICE */
   #choice-game { width: 100%; max-width: 360px; }
-  .choice-prompt {
-    text-align: center; font-size: 1rem; margin-bottom: 20px;
-    padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; line-height: 1.5;
-  }
+  .choice-prompt { text-align: center; font-size: 1rem; margin-bottom: 20px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; line-height: 1.5; }
   .choice-buttons { display: flex; flex-direction: column; gap: 10px; }
-  .choice-btn {
-    padding: 14px 18px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.15);
-    background: rgba(255,255,255,0.05); color: var(--tg-theme-text-color, #fff);
-    font-size: 1rem; cursor: pointer; text-align: left; transition: all 0.2s;
-  }
-  .choice-btn:hover { border-color: var(--tg-theme-button-color, #6c5ce7); background: rgba(108,92,231,0.15); }
+  .choice-btn { padding: 14px 18px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: var(--tg-theme-text-color, #fff); font-size: 1rem; cursor: pointer; text-align: left; transition: all 0.2s; }
+  .choice-btn:hover { border-color: var(--tg-theme-button-color, #6c5ce7); }
   .choice-btn.selected { border-color: #00b894; background: rgba(0,184,148,0.2); }
 
-  /* === BLACKJACK GAME === */
+  /* BLACKJACK */
   #bj-game { width: 100%; max-width: 360px; }
-  .bj-info {
-    display: flex; justify-content: space-between; margin-bottom: 16px;
-    padding: 10px 14px; background: rgba(255,255,255,0.05); border-radius: 12px;
-  }
+  .bj-info { display: flex; justify-content: space-between; margin-bottom: 16px; padding: 10px 14px; background: rgba(255,255,255,0.05); border-radius: 12px; }
   .bj-info-item { text-align: center; }
   .bj-info-label { font-size: 0.7rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 2px; }
   .bj-info-val { font-size: 1.3rem; font-weight: bold; }
   .bj-cards { min-height: 60px; margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
-  .card {
-    width: 44px; height: 60px; border-radius: 8px; background: #fff; color: #000;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    font-size: 1rem; font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,0.4); line-height: 1.1;
-  }
+  .card { width: 44px; height: 60px; border-radius: 8px; background: #fff; color: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 1rem; font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,0.4); line-height: 1.1; }
   .card.red { color: #e74c3c; }
   .bj-section-label { font-size: 0.75rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 6px; }
   .bj-actions { display: flex; gap: 10px; margin-top: 16px; }
@@ -83,33 +53,38 @@
   .btn-primary { background: var(--tg-theme-button-color, #6c5ce7); color: var(--tg-theme-button-text-color, #fff); }
   .btn-secondary { background: rgba(255,255,255,0.1); color: var(--tg-theme-text-color, #fff); }
 
-  .result-banner {
-    padding: 12px; border-radius: 12px; text-align: center; font-size: 1.1rem;
-    font-weight: bold; margin-top: 12px; display: none;
-  }
+  .result-banner { padding: 12px; border-radius: 12px; text-align: center; font-size: 1.1rem; font-weight: bold; margin-top: 12px; display: none; }
   .result-good { background: rgba(0,184,148,0.2); border: 2px solid #00b894; color: #00b894; }
   .result-mid  { background: rgba(255,193,7,0.15); border: 2px solid #ffc107; color: #ffc107; }
   .result-bad  { background: rgba(231,76,60,0.2); border: 2px solid #e74c3c; color: #e74c3c; }
 
-  /* === MODIFIERS === */
+  /* MODIFIERS (toggle/choice) */
   .modifiers-panel { width: 100%; margin-bottom: 14px; }
   .modifiers-label { font-size: 0.75rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 8px; }
   .modifier-row { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
   .modifier-name { font-size: 0.85rem; color: var(--tg-theme-text-color, #eee); flex: 1; min-width: 80px; }
-  .mod-btn {
-    padding: 6px 14px; border-radius: 20px; border: 2px solid rgba(255,255,255,0.2);
-    background: transparent; color: var(--tg-theme-hint-color, #aaa);
-    font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.15s; min-width: 48px; text-align: center;
-  }
+  .mod-btn { padding: 6px 14px; border-radius: 20px; border: 2px solid rgba(255,255,255,0.2); background: transparent; color: var(--tg-theme-hint-color, #aaa); font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.15s; min-width: 48px; text-align: center; }
   .mod-btn:disabled { opacity: 0.35; cursor: default; }
   .mod-btn.active-plus { border-color: #00b894; background: rgba(0,184,148,0.2); color: #00b894; }
   .mod-btn.active-minus { border-color: #e74c3c; background: rgba(231,76,60,0.2); color: #e74c3c; }
 
-  .confirm-btn {
-    width: 100%; margin-top: 20px; padding: 14px; border-radius: 14px; border: none;
-    background: var(--tg-theme-button-color, #6c5ce7); color: var(--tg-theme-button-text-color, #fff);
-    font-size: 1.05rem; font-weight: 700; cursor: pointer;
+  /* FORESIGHT */
+  .foresight-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .foresight-name { font-size: 0.85rem; color: var(--tg-theme-text-color, #eee); flex: 1; min-width: 80px; }
+  .foresight-btn {
+    padding: 6px 14px; border-radius: 20px; border: 2px solid #a29bfe;
+    background: transparent; color: #a29bfe; font-size: 0.85rem; font-weight: 700;
+    cursor: pointer; transition: all 0.15s;
   }
+  .foresight-btn:disabled { opacity: 0.35; cursor: default; }
+  .foresight-btn.used { border-color: rgba(255,255,255,0.2); color: var(--tg-theme-hint-color, #aaa); background: transparent; cursor: default; }
+  .foresight-hint {
+    width: 100%; margin-top: 4px; padding: 8px 12px; border-radius: 10px;
+    background: rgba(162,155,254,0.12); border: 1px solid rgba(162,155,254,0.3);
+    font-size: 0.9rem; color: #a29bfe; font-weight: 600; text-align: center;
+  }
+
+  .confirm-btn { width: 100%; margin-top: 20px; padding: 14px; border-radius: 14px; border: none; background: var(--tg-theme-button-color, #6c5ce7); color: var(--tg-theme-button-text-color, #fff); font-size: 1.05rem; font-weight: 700; cursor: pointer; }
   .confirm-btn:disabled { opacity: 0.25; cursor: default; }
 </style>
 </head>
@@ -117,19 +92,14 @@
 <h1>⚔️ Twilights</h1>
 <p class="subtitle" id="subtitle">Загрузка...</p>
 
-<!-- CHOICE GAME -->
 <div id="choice-game" style="display:none">
-  <div class="choice-prompt" id="choice-prompt">Загрузка...</div>
+  <div class="choice-prompt" id="choice-prompt"></div>
   <div class="choice-buttons" id="choice-buttons"></div>
   <button class="confirm-btn" id="choice-confirm" onclick="confirmChoice()" disabled>Подтвердить выбор</button>
 </div>
 
-<!-- BLACKJACK GAME -->
 <div id="bj-game" style="display:none">
-  <!-- Thresholds -->
   <div class="thresholds-panel" id="thresholds-panel" style="display:none"></div>
-
-  <!-- Modifiers -->
   <div class="modifiers-panel" id="modifiers-panel" style="display:none">
     <div class="modifiers-label">Навыки:</div>
     <div id="modifiers-list"></div>
@@ -157,13 +127,11 @@
 
 <script>
 const tg = window.Telegram.WebApp;
-tg.ready();
-tg.expand();
+tg.ready(); tg.expand();
 
-const params = new URLSearchParams(window.location.search);
 let gameData = {};
 try {
-  const raw = params.get('data');
+  const raw = new URLSearchParams(window.location.search).get('data');
   if (raw) {
     const bytes = Uint8Array.from(atob(raw), c => c.charCodeAt(0));
     gameData = JSON.parse(new TextDecoder('utf-8').decode(bytes));
@@ -173,42 +141,29 @@ try {
 const game = gameData.game || 'choice';
 document.getElementById('subtitle').textContent = game === 'blackjack' ? 'Игра в 21' : 'Выбор';
 
-// ---- CHOICE GAME ----
+// ---- CHOICE ----
 let selectedChoice = null;
-
 function initChoice() {
   document.getElementById('choice-game').style.display = '';
-  const prompt = gameData.prompt || 'Сделайте выбор:';
-  const options = gameData.options || ['Вариант А', 'Вариант Б', 'Вариант В'];
-  document.getElementById('choice-prompt').textContent = prompt;
+  document.getElementById('choice-prompt').textContent = gameData.prompt || 'Сделайте выбор:';
   const container = document.getElementById('choice-buttons');
-  container.innerHTML = '';
-  options.forEach((opt, i) => {
+  (gameData.options || ['А','Б','В']).forEach((opt, i) => {
     const btn = document.createElement('button');
-    btn.className = 'choice-btn';
-    btn.textContent = opt;
-    btn.onclick = () => selectChoice(i, btn, opt);
+    btn.className = 'choice-btn'; btn.textContent = opt;
+    btn.onclick = () => {
+      document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedChoice = {index: i, text: opt};
+      document.getElementById('choice-confirm').disabled = false;
+    };
     container.appendChild(btn);
   });
 }
-
-function selectChoice(idx, btn, text) {
-  document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
-  btn.classList.add('selected');
-  selectedChoice = { index: idx, text };
-  document.getElementById('choice-confirm').disabled = false;
-}
-
 function confirmChoice() {
-  if (!selectedChoice) return;
-  sendResultToBot({ game: 'choice', choice: selectedChoice.index, text: selectedChoice.text });
+  if (selectedChoice) sendResultToBot({game:'choice', choice:selectedChoice.index, text:selectedChoice.text});
 }
 
 // ---- THRESHOLDS ----
-// gameData.thresholds: [{min, max, label, level}]
-// level: 0=провал, 1=норм, 2=хорошо, 3=идеально (для цвета)
-// Если перебор (>21) — ниже нижнего порога
-
 function initThresholds() {
   const th = gameData.thresholds;
   if (!th || !th.length) return;
@@ -217,58 +172,42 @@ function initThresholds() {
   th.forEach(t => {
     const chip = document.createElement('div');
     chip.className = 'threshold-chip';
-    chip.dataset.min = t.min;
-    chip.dataset.max = t.max;
-    const rangeStr = t.min === t.max ? String(t.min) : `${t.min}–${t.max}`;
-    chip.innerHTML = `<span class="t-range">${rangeStr}</span><span class="t-label">${t.label}</span>`;
+    chip.dataset.min = t.min; chip.dataset.max = t.max;
+    chip.innerHTML = `<span class="t-range">${t.min === t.max ? t.min : t.min+'–'+t.max}</span><span class="t-label">${t.label}</span>`;
     panel.appendChild(chip);
   });
 }
-
 function highlightThreshold(score) {
   document.querySelectorAll('.threshold-chip').forEach(chip => {
-    chip.classList.remove('active');
-    const min = parseInt(chip.dataset.min), max = parseInt(chip.dataset.max);
-    if (score >= min && score <= max) chip.classList.add('active');
+    const ok = score >= +chip.dataset.min && score <= +chip.dataset.max;
+    chip.classList.toggle('active', ok);
   });
 }
-
 function getOutcomeLabel(score) {
   const th = gameData.thresholds;
-  if (!th || !th.length) return score === 21 ? 'идеально' : score >= 17 ? 'хорошо' : score >= 10 ? 'норм' : 'провал';
-  // Перебор — всегда последний (худший) порог
-  if (score > 21) return th[th.length - 1].label;
-  for (const t of th) {
-    if (score >= t.min && score <= t.max) return t.label;
-  }
-  return th[th.length - 1].label;
+  if (!th || !th.length) return score===21?'идеально':score>=17?'хорошо':score>=10?'норм':'провал';
+  if (score > 21) return th[th.length-1].label;
+  for (const t of th) if (score >= t.min && score <= t.max) return t.label;
+  return th[th.length-1].label;
 }
-
 function getOutcomeLevel(score) {
   const th = gameData.thresholds;
-  if (!th || !th.length) {
-    if (score === 21) return 3;
-    if (score >= 17) return 2;
-    if (score >= 10) return 1;
-    return 0;
-  }
-  if (score > 21) return th[th.length - 1].level ?? 0;
-  for (const t of th) {
-    if (score >= t.min && score <= t.max) return t.level ?? 0;
-  }
+  if (!th || !th.length) return score===21?3:score>=17?2:score>=10?1:0;
+  if (score > 21) return th[th.length-1].level ?? 0;
+  for (const t of th) if (score >= t.min && score <= t.max) return t.level ?? 0;
   return 0;
 }
 
 // ---- MODIFIERS ----
 let modifiers = [];
-let bjDone = false;
-let bjStarted = false;
+let bjDone = false, bjStarted = false;
 
 function normalizeMod(m) {
-  if (m.type === 'choice') return { ...m, state: 'none' };
-  if (m.type === 'plus' || m.type === 'minus') return { ...m, active: false };
+  if (m.type === 'foresight') return {...m, used: false, hint: null};
+  if (m.type === 'choice') return {...m, state: 'none'};
+  if (m.type === 'plus' || m.type === 'minus') return {...m, active: false};
   const bonus = m.bonus !== undefined ? m.bonus : 1;
-  return { ...m, type: bonus >= 0 ? 'plus' : 'minus', value: Math.abs(bonus), active: false };
+  return {...m, type: bonus>=0?'plus':'minus', value: Math.abs(bonus), active: false};
 }
 
 function initModifiers() {
@@ -280,28 +219,38 @@ function initModifiers() {
 }
 
 function getModValue(mod) {
-  if (mod.type === 'choice') {
-    if (mod.state === 'minus') return -mod.minus;
-    if (mod.state === 'plus')  return +mod.plus;
-    return 0;
-  }
+  if (mod.type === 'choice') return mod.state==='minus'?-mod.minus:mod.state==='plus'?+mod.plus:0;
+  if (mod.type === 'foresight') return 0;
   if (!mod.active) return 0;
-  return mod.type === 'plus' ? +mod.value : -mod.value;
+  return mod.type==='plus'?+mod.value:-mod.value;
 }
+function getTotalBonus() { return modifiers.reduce((s,m) => s+getModValue(m), 0); }
 
-function getTotalBonus() {
-  return modifiers.reduce((s, m) => s + getModValue(m), 0);
-}
+function toggleSimple(i) { if (!bjStarted) return; modifiers[i].active = !modifiers[i].active; renderModifiers(); }
+function toggleChoice(i, side) { if (!bjStarted) return; modifiers[i].state = modifiers[i].state===side?'none':side; renderModifiers(); }
 
-function toggleSimple(i) {
-  if (!bjStarted) return;
-  modifiers[i].active = !modifiers[i].active;
-  renderModifiers();
-}
-
-function toggleChoice(i, side) {
-  if (!bjStarted) return;
-  modifiers[i].state = (modifiers[i].state === side) ? 'none' : side;
+// Foresight: смотрим следующую карту (top of deck) и показываем подсказку
+function activateForesight(i) {
+  if (!bjStarted || bjDone || modifiers[i].used) return;
+  const nextCard = deck[deck.length - 1];
+  const sub = modifiers[i].subtype || 'suit';
+  let hint = '';
+  if (sub === 'suit') {
+    hint = `Масть следующей: ${nextCard.s}`;
+  } else if (sub === 'value') {
+    hint = `Номинал следующей: ${nextCard.v}`;
+  } else if (sub === 'both') {
+    hint = `Следующая карта: ${nextCard.v}${nextCard.s}`;
+  } else if (sub === 'not') {
+    // Показываем одну ложную характеристику — расширяет знание от противного
+    const fakeSuit = SUITS.filter(s => s !== nextCard.s)[Math.floor(Math.random()*3)];
+    const fakeVal  = VALUES.filter(v => v !== nextCard.v)[Math.floor(Math.random()*12)];
+    hint = Math.random() < 0.5
+      ? `Следующая карта — не ${fakeSuit}`
+      : `Следующая карта — не ${fakeVal}`;
+  }
+  modifiers[i].used = true;
+  modifiers[i].hint = hint;
   renderModifiers();
 }
 
@@ -309,32 +258,51 @@ function renderModifiers() {
   const list = document.getElementById('modifiers-list');
   list.innerHTML = '';
   modifiers.forEach((mod, i) => {
+    if (mod.type === 'foresight') {
+      const row = document.createElement('div');
+      row.className = 'foresight-row';
+      const name = document.createElement('span');
+      name.className = 'foresight-name';
+      name.textContent = mod.name || mod.id || 'Предвидение';
+      const btn = document.createElement('button');
+      btn.className = 'foresight-btn' + (mod.used ? ' used' : '');
+      btn.textContent = mod.used ? '✓ Использовано' : '👁 Предсказать';
+      btn.disabled = !bjStarted || bjDone || mod.used;
+      btn.onclick = () => activateForesight(i);
+      row.appendChild(name);
+      row.appendChild(btn);
+      list.appendChild(row);
+      if (mod.hint) {
+        const hint = document.createElement('div');
+        hint.className = 'foresight-hint';
+        hint.textContent = mod.hint;
+        list.appendChild(hint);
+      }
+      return;
+    }
+
     const row = document.createElement('div');
     row.className = 'modifier-row';
-    const nameEl = document.createElement('span');
-    nameEl.className = 'modifier-name';
-    nameEl.textContent = mod.name || mod.id || '';
-    row.appendChild(nameEl);
+    const name = document.createElement('span');
+    name.className = 'modifier-name';
+    name.textContent = mod.name || mod.id || '';
+    row.appendChild(name);
 
     if (mod.type === 'choice') {
       const btnM = document.createElement('button');
-      btnM.className = 'mod-btn' + (mod.state === 'minus' ? ' active-minus' : '');
-      btnM.textContent = `-${mod.minus}`;
-      btnM.disabled = !bjStarted;
-      btnM.onclick = () => toggleChoice(i, 'minus');
+      btnM.className = 'mod-btn'+(mod.state==='minus'?' active-minus':'');
+      btnM.textContent = `-${mod.minus}`; btnM.disabled = !bjStarted;
+      btnM.onclick = () => toggleChoice(i,'minus');
       const btnP = document.createElement('button');
-      btnP.className = 'mod-btn' + (mod.state === 'plus' ? ' active-plus' : '');
-      btnP.textContent = `+${mod.plus}`;
-      btnP.disabled = !bjStarted;
-      btnP.onclick = () => toggleChoice(i, 'plus');
-      row.appendChild(btnM);
-      row.appendChild(btnP);
+      btnP.className = 'mod-btn'+(mod.state==='plus'?' active-plus':'');
+      btnP.textContent = `+${mod.plus}`; btnP.disabled = !bjStarted;
+      btnP.onclick = () => toggleChoice(i,'plus');
+      row.appendChild(btnM); row.appendChild(btnP);
     } else {
-      const val = mod.type === 'plus' ? `+${mod.value}` : `-${mod.value}`;
+      const val = mod.type==='plus'?`+${mod.value}`:`-${mod.value}`;
       const btn = document.createElement('button');
-      btn.className = 'mod-btn' + (mod.active ? (mod.type === 'plus' ? ' active-plus' : ' active-minus') : '');
-      btn.textContent = val;
-      btn.disabled = !bjStarted;
+      btn.className = 'mod-btn'+(mod.active?(mod.type==='plus'?' active-plus':' active-minus'):'');
+      btn.textContent = val; btn.disabled = !bjStarted;
       btn.onclick = () => toggleSimple(i);
       row.appendChild(btn);
     }
@@ -348,9 +316,9 @@ function updateAdjustedDisplay() {
   const bonus = getTotalBonus();
   const adj = base + bonus;
   const el = document.getElementById('bj-adjusted-score-val');
-  if (!bjStarted || bonus === 0) { el.textContent = '—'; return; }
-  el.textContent = adj > 21 ? `${adj}!` : String(adj);
-  if (bjStarted) highlightThreshold(adj !== base ? adj : base);
+  if (!bjStarted || bonus === 0) { el.textContent = '—'; }
+  else { el.textContent = adj > 21 ? `${adj}!` : String(adj); }
+  if (bjStarted) highlightThreshold(bonus !== 0 ? adj : base);
 }
 
 // ---- BLACKJACK ----
@@ -358,32 +326,27 @@ const SUITS = ['♠','♥','♦','♣'];
 const VALUES = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
 let deck = [], playerCards = [];
 
-function cardValue(card) {
-  if (['J','Q','K'].includes(card.v)) return 10;
-  if (card.v === 'A') return 11;
-  return parseInt(card.v);
+function cardValue(c) {
+  if (['J','Q','K'].includes(c.v)) return 10;
+  if (c.v === 'A') return 11;
+  return parseInt(c.v);
 }
-
 function handScore(cards) {
-  if (!cards || !cards.length) return 0;
-  let score = cards.reduce((s,c) => s + cardValue(c), 0);
-  let aces = cards.filter(c => c.v === 'A').length;
-  while (score > 21 && aces > 0) { score -= 10; aces--; }
-  return score;
+  if (!cards.length) return 0;
+  let s = cards.reduce((acc,c) => acc+cardValue(c), 0);
+  let a = cards.filter(c => c.v==='A').length;
+  while (s > 21 && a-- > 0) s -= 10;
+  return s;
 }
-
 function shuffle(arr) {
-  for (let i=arr.length-1;i>0;i--){
-    const j=Math.random()*i|0;
-    [arr[i],arr[j]]=[arr[j],arr[i]];
-  }
+  for (let i=arr.length-1;i>0;i--){const j=Math.random()*i|0;[arr[i],arr[j]]=[arr[j],arr[i]];}
   return arr;
 }
 
 function bjNewGame() {
   bjStarted = true; bjDone = false;
-  modifiers = modifiers.map(m => m.type === 'choice' ? {...m, state:'none'} : {...m, active:false});
-  deck = shuffle(SUITS.flatMap(s => VALUES.map(v => ({s, v}))));
+  modifiers = modifiers.map(m => m.type==='choice'?{...m,state:'none'}:m.type==='foresight'?{...m,used:false,hint:null}:{...m,active:false});
+  deck = shuffle(SUITS.flatMap(s => VALUES.map(v => ({s,v}))));
   playerCards = [deck.pop(), deck.pop()];
   document.getElementById('bj-result').style.display = 'none';
   document.getElementById('bj-hit').disabled = false;
@@ -397,21 +360,15 @@ function bjNewGame() {
 function renderBJ() {
   const score = handScore(playerCards);
   document.getElementById('bj-player-score').textContent = score;
-  renderCards('bj-player-cards', playerCards);
-  updateAdjustedDisplay();
-  highlightThreshold(score + getTotalBonus());
-}
-
-function renderCards(id, cards) {
-  const el = document.getElementById(id);
+  const el = document.getElementById('bj-player-cards');
   el.innerHTML = '';
-  cards.forEach(c => {
+  playerCards.forEach(c => {
     const div = document.createElement('div');
-    const red = ['♥','♦'].includes(c.s);
-    div.className = 'card' + (red ? ' red' : '');
+    div.className = 'card'+((['♥','♦'].includes(c.s))?' red':'');
     div.innerHTML = `<span>${c.v}</span><span>${c.s}</span>`;
     el.appendChild(div);
   });
+  updateAdjustedDisplay();
 }
 
 function bjHit() {
@@ -419,7 +376,6 @@ function bjHit() {
   renderBJ();
   if (handScore(playerCards) >= 21) bjEndGame();
 }
-
 function bjStand() { bjEndGame(); }
 
 function bjEndGame() {
@@ -427,68 +383,51 @@ function bjEndGame() {
   document.getElementById('bj-hit').disabled = true;
   document.getElementById('bj-stand').disabled = true;
   document.getElementById('bj-confirm').disabled = false;
-  setTimeout(() => document.getElementById('bj-confirm').scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+  setTimeout(() => document.getElementById('bj-confirm').scrollIntoView({behavior:'smooth',block:'nearest'}), 100);
 
   const ps = handScore(playerCards);
   const bonus = getTotalBonus();
-  const adjScore = ps + bonus;
-  const effectiveScore = bonus !== 0 ? adjScore : ps;
-  const level = getOutcomeLevel(effectiveScore);
-  const label = getOutcomeLabel(effectiveScore);
+  const eff = ps + bonus;
+  const level = getOutcomeLevel(eff);
+  const label = getOutcomeLabel(eff);
 
   const banner = document.getElementById('bj-result');
   banner.style.display = '';
-  const cls = level >= 2 ? 'result-good' : level === 1 ? 'result-mid' : 'result-bad';
-  banner.className = 'result-banner ' + cls;
-  const scoreStr = bonus !== 0 ? `${ps}→${adjScore}` : String(ps);
-  banner.textContent = `${scoreStr} — ${label}`;
+  banner.className = 'result-banner ' + (level>=2?'result-good':level===1?'result-mid':'result-bad');
+  banner.textContent = (bonus!==0 ? `${ps}→${eff}` : String(ps)) + ` — ${label}`;
 
+  highlightThreshold(eff);
   renderModifiers();
-  highlightThreshold(effectiveScore);
 }
 
 function confirmBJ() {
   if (!bjDone) return;
   const ps = handScore(playerCards);
-  const totalBonus = getTotalBonus();
-  const adjustedScore = ps + totalBonus;
-  const effectiveScore = totalBonus !== 0 ? adjustedScore : ps;
+  const bonus = getTotalBonus();
+  const adj = ps + bonus;
   const usedMods = modifiers
-    .filter(m => m.type === 'choice' ? m.state !== 'none' : m.active)
-    .map(m => m.type === 'choice' ? `${m.id}:${m.state}` : m.id);
-  const outcome = getOutcomeLabel(effectiveScore);
-
-  const result = { game: 'blackjack', playerScore: ps, outcome };
-  if (totalBonus !== 0) result.adjustedScore = adjustedScore;
+    .filter(m => m.type==='foresight'?m.used:m.type==='choice'?m.state!=='none':m.active)
+    .map(m => m.type==='foresight'?`${m.id}:${m.subtype}`:m.type==='choice'?`${m.id}:${m.state}`:m.id);
+  const result = {game:'blackjack', playerScore:ps, outcome:getOutcomeLabel(bonus!==0?adj:ps)};
+  if (bonus !== 0) result.adjustedScore = adj;
   if (usedMods.length) result.usedModifiers = usedMods;
-
   sendResultToBot(result);
 }
 
 function sendResultToBot(result) {
-  const chatId = gameData.chat_id;
-  if (chatId) result.source_chat_id = chatId;
-  try {
-    tg.sendData(JSON.stringify(result));
-    tg.close();
-  } catch(e) {
-    document.body.innerHTML = `<div style="padding:20px;font-family:sans-serif;background:#1a1a2e;color:#eee;min-height:100vh"><h2>Результат</h2><pre style="background:rgba(255,255,255,0.1);padding:12px;border-radius:8px;overflow-x:auto;font-size:0.8rem">${JSON.stringify(result, null, 2)}</pre></div>`;
+  if (gameData.chat_id) result.source_chat_id = gameData.chat_id;
+  try { tg.sendData(JSON.stringify(result)); tg.close(); }
+  catch(e) {
+    document.body.innerHTML = `<div style="padding:20px;font-family:sans-serif;background:#1a1a2e;color:#eee;min-height:100vh"><h2>Результат</h2><pre style="background:rgba(255,255,255,0.1);padding:12px;border-radius:8px;overflow-x:auto;font-size:0.8rem">${JSON.stringify(result,null,2)}</pre></div>`;
   }
 }
 
-tg.onEvent('mainButtonClicked', () => {
-  if (game === 'blackjack') confirmBJ();
-  else confirmChoice();
-});
+tg.onEvent('mainButtonClicked', () => { if (game==='blackjack') confirmBJ(); else confirmChoice(); });
 
 if (game === 'blackjack') {
   document.getElementById('bj-game').style.display = '';
-  initThresholds();
-  initModifiers();
-  bjNewGame();
-} else {
-  initChoice();
-}
+  initThresholds(); initModifiers(); bjNewGame();
+} else { initChoice(); }
 </script>
 </body>
 </html>
