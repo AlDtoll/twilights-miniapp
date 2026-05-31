@@ -463,50 +463,18 @@ function confirmBJ() {
   sendResultToBot(result);
 }
 
-async function sendResultToBot(result) {
-  const token = gameData.token;
+function sendResultToBot(result) {
   const chatId = gameData.chat_id;
-  const webhookUrl = gameData.webhook_url;
-  if (!token || !chatId) { tg.close(); return; }
+  if (chatId) result.source_chat_id = chatId;
 
-  result.chat_id = chatId;
-  result.token = token;
-
+  // Используем нативный Telegram sendData — работает только в ReplyKeyboard/WebApp контексте.
+  // Если недоступен (браузер без Telegram) — показываем JSON для ручной отправки.
   try {
-    const endpoint = webhookUrl || `https://api.telegram.org/bot${token}/sendMessage`;
-
-    if (webhookUrl) {
-      // Отправляем на VPS webhook — он сохраняет результат, бот подхватывает
-      await fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(result),
-      });
-    } else {
-      // Fallback: прямо в Telegram (личный чат)
-      const user = tg.initDataUnsafe?.user;
-      const userName = user ? (user.first_name + (user.last_name ? ' '+user.last_name : '')) : 'Игрок';
-      const lines = [`🎮 ${userName}:`];
-      if (result.game === 'choice') {
-        lines.push(`→ ${result.text}`);
-      } else {
-        const adj = result.adjustedScore !== undefined ? ` (с бонусом: ${result.adjustedScore})` : '';
-        const outcomeStr = result.outcome === 'win' ? 'победа' : result.outcome === 'lose' ? 'поражение' : 'ничья';
-        lines.push(`21: ${result.playerScore}${adj} vs ${result.dealerScore} — ${outcomeStr}`);
-        if (result.usedModifiers && result.usedModifiers.length) lines.push(`Бонусы: ${result.usedModifiers.join(', ')}`);
-      }
-      lines.push('```json\n' + JSON.stringify(result) + '\n```');
-      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: chatId, text: lines.join('\n'), parse_mode: 'Markdown' }),
-      });
-    }
-
-    tg.close();
-    document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:16px;padding:20px;background:var(--tg-theme-bg-color,#1a1a2e);color:var(--tg-theme-text-color,#eee);font-family:sans-serif;text-align:center"><div style="font-size:3rem">✅</div><div style="font-size:1.3rem;font-weight:700">Результат отправлен</div><div style="font-size:0.9rem;opacity:0.6">Можно закрыть вкладку</div></div>';
+    tg.sendData(JSON.stringify(result));
+    document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:16px;padding:20px;background:var(--tg-theme-bg-color,#1a1a2e);color:var(--tg-theme-text-color,#eee);font-family:sans-serif;text-align:center"><div style="font-size:3rem">✅</div><div style="font-size:1.3rem;font-weight:700">Результат отправлен</div></div>';
   } catch(e) {
-    console.error(e);
+    // Fallback: показать результат для копирования
+    document.body.innerHTML = `<div style="padding:20px;font-family:sans-serif;background:#1a1a2e;color:#eee;min-height:100vh"><h2>Результат</h2><p style="margin:12px 0;font-size:0.9rem;opacity:0.7">Скопируй и отправь мастеру:</p><pre style="background:rgba(255,255,255,0.1);padding:12px;border-radius:8px;overflow-x:auto;font-size:0.8rem">${JSON.stringify(result, null, 2)}</pre></div>`;
   }
 }
 
