@@ -229,7 +229,6 @@
   <div class="bj-actions">
     <button class="btn btn-primary" id="bj-hit" onclick="bjHit()">Ещё</button>
     <button class="btn btn-secondary" id="bj-stand" onclick="bjStand()">Хватит</button>
-    <button class="btn btn-danger" id="bj-new" onclick="bjNewGame()" style="display:none">Заново</button>
   </div>
   <button class="confirm-btn" id="bj-confirm" onclick="confirmBJ()" disabled>Отправить результат</button>
 </div>
@@ -416,7 +415,6 @@ function bjEndGame() {
   renderBJ(false);
   document.getElementById('bj-hit').disabled = true;
   document.getElementById('bj-stand').disabled = true;
-  document.getElementById('bj-new').style.display = '';
   const confirmBtn = document.getElementById('bj-confirm');
   confirmBtn.disabled = false;
   setTimeout(() => confirmBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
@@ -471,7 +469,7 @@ function sendResultToBot(result) {
   // Если недоступен (браузер без Telegram) — показываем JSON для ручной отправки.
   try {
     tg.sendData(JSON.stringify(result));
-    document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:16px;padding:20px;background:var(--tg-theme-bg-color,#1a1a2e);color:var(--tg-theme-text-color,#eee);font-family:sans-serif;text-align:center"><div style="font-size:3rem">✅</div><div style="font-size:1.3rem;font-weight:700">Результат отправлен</div></div>';
+    tg.close();
   } catch(e) {
     // Fallback: показать результат для копирования
     document.body.innerHTML = `<div style="padding:20px;font-family:sans-serif;background:#1a1a2e;color:#eee;min-height:100vh"><h2>Результат</h2><p style="margin:12px 0;font-size:0.9rem;opacity:0.7">Скопируй и отправь мастеру:</p><pre style="background:rgba(255,255,255,0.1);padding:12px;border-radius:8px;overflow-x:auto;font-size:0.8rem">${JSON.stringify(result, null, 2)}</pre></div>`;
