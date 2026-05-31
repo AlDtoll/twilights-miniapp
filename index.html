@@ -113,7 +113,6 @@
   .btn:disabled { opacity: 0.4; cursor: default; }
   .btn-primary { background: var(--tg-theme-button-color, #6c5ce7); color: var(--tg-theme-button-text-color, #fff); }
   .btn-secondary { background: rgba(255,255,255,0.1); color: var(--tg-theme-text-color, #fff); }
-  .btn-danger { background: #e74c3c; color: #fff; }
 
   .result-banner {
     padding: 12px;
@@ -136,38 +135,44 @@
   .modifiers-label {
     font-size: 0.75rem;
     color: var(--tg-theme-hint-color, #aaa);
-    margin-bottom: 6px;
+    margin-bottom: 8px;
   }
-  .modifier-btn {
-    display: inline-flex;
+  .modifier-row {
+    display: flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 12px;
-    border-radius: 20px;
-    border: 2px solid var(--tg-theme-button-color, #6c5ce7);
-    background: transparent;
-    color: var(--tg-theme-button-color, #6c5ce7);
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .modifier-name {
     font-size: 0.85rem;
-    font-weight: 600;
+    color: var(--tg-theme-text-color, #eee);
+    flex: 1;
+    min-width: 80px;
+  }
+  .mod-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 2px solid rgba(255,255,255,0.2);
+    background: transparent;
+    color: var(--tg-theme-hint-color, #aaa);
+    font-size: 0.9rem;
+    font-weight: 700;
     cursor: pointer;
-    margin: 0 6px 6px 0;
-    transition: all 0.2s;
+    transition: all 0.15s;
+    min-width: 48px;
+    text-align: center;
   }
-  .modifier-btn.used {
+  .mod-btn:disabled { opacity: 0.35; cursor: default; }
+  .mod-btn.active-plus {
     border-color: #00b894;
-    background: rgba(0,184,148,0.15);
+    background: rgba(0,184,148,0.2);
     color: #00b894;
-    cursor: default;
   }
-  .modifier-btn.inactive {
-    opacity: 0.45;
-    cursor: default;
-  }
-  .modifier-bonus-badge {
-    background: rgba(255,255,255,0.15);
-    border-radius: 10px;
-    padding: 1px 6px;
-    font-size: 0.8rem;
+  .mod-btn.active-minus {
+    border-color: #e74c3c;
+    background: rgba(231,76,60,0.2);
+    color: #e74c3c;
   }
 
   .confirm-btn {
@@ -201,9 +206,9 @@
 
 <!-- BLACKJACK GAME -->
 <div id="bj-game" style="display:none">
-  <!-- Modifiers panel — shown only when modifiers passed -->
+  <!-- Modifiers panel -->
   <div class="modifiers-panel" id="modifiers-panel" style="display:none">
-    <div class="modifiers-label">Бонусы (активировать после игры):</div>
+    <div class="modifiers-label">Навыки:</div>
     <div id="modifiers-list"></div>
   </div>
 
@@ -213,7 +218,7 @@
       <div class="bj-info-val" id="bj-player-score">0</div>
     </div>
     <div class="bj-info-item">
-      <div class="bj-info-label">С бонусом</div>
+      <div class="bj-info-label">С навыками</div>
       <div class="bj-info-val" id="bj-adjusted-score-val">—</div>
     </div>
     <div class="bj-info-item">
@@ -238,7 +243,6 @@ const tg = window.Telegram.WebApp;
 tg.ready();
 tg.expand();
 
-// Parse data: ?data=base64(utf-8 json)
 const params = new URLSearchParams(window.location.search);
 let gameData = {};
 try {
@@ -284,17 +288,56 @@ function confirmChoice() {
 }
 
 // ---- MODIFIERS ----
-// gameData.modifiers: [{id, name, desc, bonus}]
-// bonus: integer, can be negative. Applied after game ends.
+// Типы модификаторов:
+//   plus:   {type:'plus',  value:N}  — toggle, добавляет +N
+//   minus:  {type:'minus', value:N}  — toggle, вычитает N
+//   choice: {type:'choice', minus:N, plus:M} — радио-пара, либо -N либо +M
+// Backward compat: {bonus: N} → plus/minus по знаку
+
 let modifiers = [];
-let appliedBonus = 0;
 let bjDone = false;
+let bjStarted = false;
+
+function normalizeMod(m) {
+  if (m.type === 'choice') return { ...m, state: 'none' };
+  if (m.type === 'plus')   return { ...m, active: false };
+  if (m.type === 'minus')  return { ...m, active: false };
+  // legacy: bonus field
+  const bonus = m.bonus !== undefined ? m.bonus : 1;
+  return { ...m, type: bonus >= 0 ? 'plus' : 'minus', value: Math.abs(bonus), active: false };
+}
 
 function initModifiers() {
   const mods = gameData.modifiers;
   if (!mods || !mods.length) return;
-  modifiers = mods.map(m => ({ ...m, used: false }));
+  modifiers = mods.map(normalizeMod);
   document.getElementById('modifiers-panel').style.display = '';
+  renderModifiers();
+}
+
+function getModValue(mod) {
+  if (mod.type === 'choice') {
+    if (mod.state === 'minus') return -mod.minus;
+    if (mod.state === 'plus')  return +mod.plus;
+    return 0;
+  }
+  if (!mod.active) return 0;
+  return mod.type === 'plus' ? +mod.value : -mod.value;
+}
+
+function getTotalBonus() {
+  return modifiers.reduce((s, m) => s + getModValue(m), 0);
+}
+
+function toggleSimple(i) {
+  if (!bjStarted) return;
+  modifiers[i].active = !modifiers[i].active;
+  renderModifiers();
+}
+
+function toggleChoice(i, side) {
+  if (!bjStarted) return;
+  modifiers[i].state = (modifiers[i].state === side) ? 'none' : side;
   renderModifiers();
 }
 
@@ -302,36 +345,57 @@ function renderModifiers() {
   const list = document.getElementById('modifiers-list');
   list.innerHTML = '';
   modifiers.forEach((mod, i) => {
-    const canUse = bjDone && !mod.used;
-    const btn = document.createElement('button');
-    btn.className = 'modifier-btn' + (mod.used ? ' used' : !bjDone ? ' inactive' : '');
-    const bonusText = mod.bonus > 0 ? `+${mod.bonus}` : `${mod.bonus}`;
-    btn.innerHTML = `${mod.name} <span class="modifier-bonus-badge">${bonusText}</span>`;
-    if (mod.desc) btn.title = mod.desc;
-    if (canUse) btn.onclick = () => applyModifier(i);
-    list.appendChild(btn);
+    const row = document.createElement('div');
+    row.className = 'modifier-row';
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'modifier-name';
+    nameEl.textContent = mod.name || mod.id || '';
+    row.appendChild(nameEl);
+
+    if (mod.type === 'choice') {
+      const btnM = document.createElement('button');
+      btnM.className = 'mod-btn' + (mod.state === 'minus' ? ' active-minus' : '');
+      btnM.textContent = `-${mod.minus}`;
+      btnM.disabled = !bjStarted;
+      btnM.onclick = () => toggleChoice(i, 'minus');
+
+      const btnP = document.createElement('button');
+      btnP.className = 'mod-btn' + (mod.state === 'plus' ? ' active-plus' : '');
+      btnP.textContent = `+${mod.plus}`;
+      btnP.disabled = !bjStarted;
+      btnP.onclick = () => toggleChoice(i, 'plus');
+
+      row.appendChild(btnM);
+      row.appendChild(btnP);
+    } else {
+      const val = mod.type === 'plus' ? `+${mod.value}` : `-${mod.value}`;
+      const btn = document.createElement('button');
+      btn.className = 'mod-btn' + (mod.active ? (mod.type === 'plus' ? ' active-plus' : ' active-minus') : '');
+      btn.textContent = val;
+      btn.disabled = !bjStarted;
+      btn.onclick = () => toggleSimple(i);
+      row.appendChild(btn);
+    }
+
+    list.appendChild(row);
   });
   updateAdjustedDisplay();
 }
 
-function applyModifier(i) {
-  if (modifiers[i].used || !bjDone) return;
-  modifiers[i].used = true;
-  appliedBonus += modifiers[i].bonus;
-  renderModifiers();
-}
-
 function updateAdjustedDisplay() {
   const base = handScore(playerCards);
-  const adj = base + appliedBonus;
-  const adjEl = document.getElementById('bj-adjusted-score-val');
-  adjEl.textContent = appliedBonus !== 0 ? (adj > 21 ? `${adj}!` : String(adj)) : '—';
+  const bonus = getTotalBonus();
+  const adj = base + bonus;
+  const el = document.getElementById('bj-adjusted-score-val');
+  if (!bjStarted || bonus === 0) { el.textContent = '—'; return; }
+  el.textContent = adj > 21 ? `${adj}!` : String(adj);
 }
 
 // ---- BLACKJACK ----
 const SUITS = ['♠','♥','♦','♣'];
 const VALUES = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-let deck = [], playerCards = [], dealerCards = [], bjStarted = false;
+let deck = [], playerCards = [], dealerCards = [];
 
 function cardValue(card) {
   if (['J','Q','K'].includes(card.v)) return 10;
@@ -361,15 +425,13 @@ function newDeck() {
 
 function bjNewGame() {
   bjStarted = true; bjDone = false;
-  appliedBonus = 0;
-  modifiers = (gameData.modifiers || []).map(m => ({ ...m, used: false }));
+  modifiers = modifiers.map(m => m.type === 'choice' ? {...m, state:'none'} : {...m, active:false});
   deck = newDeck();
   playerCards = [deck.pop(), deck.pop()];
   dealerCards = [deck.pop(), deck.pop()];
   document.getElementById('bj-result').style.display = 'none';
   document.getElementById('bj-hit').disabled = false;
   document.getElementById('bj-stand').disabled = false;
-  document.getElementById('bj-new').style.display = 'none';
   document.getElementById('bj-confirm').disabled = true;
   renderModifiers();
   renderBJ(true);
@@ -431,7 +493,6 @@ function bjEndGame() {
 
   banner.className = 'result-banner result-' + outcome;
   banner.textContent = msg;
-
   renderModifiers();
 }
 
@@ -445,17 +506,15 @@ function computeOutcome(score, dealerScore) {
 function confirmBJ() {
   if (!bjDone) return;
   const ps = handScore(playerCards), ds = handScore(dealerCards);
-  const adjustedScore = ps + appliedBonus;
-  const usedMods = modifiers.filter(m => m.used).map(m => m.id);
+  const totalBonus = getTotalBonus();
+  const adjustedScore = ps + totalBonus;
+  const usedMods = modifiers
+    .filter(m => m.type === 'choice' ? m.state !== 'none' : m.active)
+    .map(m => m.type === 'choice' ? `${m.id}:${m.state}` : m.id);
   const outcome = computeOutcome(adjustedScore, ds);
 
-  const result = {
-    game: 'blackjack',
-    playerScore: ps,
-    dealerScore: ds > 21 ? 'bust' : ds,
-    outcome,
-  };
-  if (appliedBonus !== 0) result.adjustedScore = adjustedScore;
+  const result = { game: 'blackjack', playerScore: ps, dealerScore: ds > 21 ? 'bust' : ds, outcome };
+  if (totalBonus !== 0) result.adjustedScore = adjustedScore;
   if (usedMods.length) result.usedModifiers = usedMods;
 
   sendResultToBot(result);
@@ -464,26 +523,21 @@ function confirmBJ() {
 function sendResultToBot(result) {
   const chatId = gameData.chat_id;
   if (chatId) result.source_chat_id = chatId;
-
-  // Используем нативный Telegram sendData — работает только в ReplyKeyboard/WebApp контексте.
-  // Если недоступен (браузер без Telegram) — показываем JSON для ручной отправки.
   try {
     tg.sendData(JSON.stringify(result));
     tg.close();
   } catch(e) {
-    // Fallback: показать результат для копирования
-    document.body.innerHTML = `<div style="padding:20px;font-family:sans-serif;background:#1a1a2e;color:#eee;min-height:100vh"><h2>Результат</h2><p style="margin:12px 0;font-size:0.9rem;opacity:0.7">Скопируй и отправь мастеру:</p><pre style="background:rgba(255,255,255,0.1);padding:12px;border-radius:8px;overflow-x:auto;font-size:0.8rem">${JSON.stringify(result, null, 2)}</pre></div>`;
+    document.body.innerHTML = `<div style="padding:20px;font-family:sans-serif;background:#1a1a2e;color:#eee;min-height:100vh"><h2>Результат</h2><pre style="background:rgba(255,255,255,0.1);padding:12px;border-radius:8px;overflow-x:auto;font-size:0.8rem">${JSON.stringify(result, null, 2)}</pre></div>`;
   }
 }
 
-tg.MainButton.setText('Подтвердить');
+tg.MainButton.setText('Отправить результат');
 tg.MainButton.hide();
 tg.onEvent('mainButtonClicked', () => {
   if (game === 'blackjack') confirmBJ();
   else confirmChoice();
 });
 
-// Init
 if (game === 'blackjack') {
   document.getElementById('bj-game').style.display = '';
   initModifiers();
