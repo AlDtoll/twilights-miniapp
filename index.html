@@ -240,7 +240,7 @@ function toggleChoice(i, side) { if (!bjStarted) return; modifiers[i].state = mo
 // Discard: убирает последнюю взятую карту из руки (минимум 2 карты)
 // Работает и после автоматического завершения — откатывает игру если счёт упал ниже 21
 function activateDiscard(i) {
-  if (!bjStarted || modifiers[i].used || playerCards.length <= 2) return;
+  if (!bjStarted || modifiers[i].used || playerCards.length <= 1) return;
   playerCards.pop();
   modifiers[i].used = true;
   // Если игра была автоматически закрыта — переоткрыть
@@ -293,7 +293,7 @@ function renderModifiers() {
       const btn = document.createElement('button');
       btn.className = 'discard-btn' + (mod.used ? ' used' : '');
       btn.textContent = mod.used ? '✓ Использовано' : '🗑 Сбросить карту';
-      btn.disabled = !bjStarted || mod.used || playerCards.length <= 2;
+      btn.disabled = !bjStarted || mod.used || playerCards.length <= 1;
       btn.onclick = () => activateDiscard(i);
       row.appendChild(name); row.appendChild(btn);
       list.appendChild(row);
