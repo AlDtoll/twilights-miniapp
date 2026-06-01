@@ -93,6 +93,16 @@
 
   .confirm-btn { width: 100%; margin-top: 20px; padding: 14px; border-radius: 14px; border: none; background: var(--tg-theme-button-color, #6c5ce7); color: var(--tg-theme-button-text-color, #fff); font-size: 1.05rem; font-weight: 700; cursor: pointer; }
   .confirm-btn:disabled { opacity: 0.25; cursor: default; }
+
+  /* TIMING */
+  #timing-game { width: 100%; max-width: 360px; text-align: center; }
+  .timing-prompt { font-size: 0.95rem; margin-bottom: 20px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; line-height: 1.5; }
+  .timing-wrap { position: relative; height: 72px; border-radius: 14px; overflow: hidden; margin-bottom: 10px; background: #e74c3c; }
+  .timing-zone { position: absolute; top: 0; bottom: 0; }
+  .timing-marker { position: absolute; top: 0; bottom: 0; width: 5px; background: #fff; border-radius: 3px; transform: translateX(-50%); box-shadow: 0 0 10px rgba(255,255,255,0.9); pointer-events: none; transition: none; }
+  .timing-result-label { font-size: 1.2rem; font-weight: 700; min-height: 1.8rem; margin-bottom: 16px; }
+  .timing-stop-btn { width: 100%; padding: 18px; border-radius: 14px; border: none; background: var(--tg-theme-button-color, #6c5ce7); color: #fff; font-size: 1.2rem; font-weight: 700; cursor: pointer; letter-spacing: 0.5px; }
+  .timing-stop-btn:disabled { opacity: 0.4; cursor: default; }
 </style>
 </head>
 <body>
@@ -103,6 +113,15 @@
   <div class="choice-prompt" id="choice-prompt"></div>
   <div class="choice-buttons" id="choice-buttons"></div>
   <button class="confirm-btn" id="choice-confirm" onclick="confirmChoice()" disabled>Подтвердить выбор</button>
+</div>
+
+<div id="timing-game" style="display:none">
+  <div class="timing-prompt" id="timing-prompt"></div>
+  <div class="timing-result-label" id="timing-result-label"></div>
+  <div class="timing-wrap" id="timing-wrap">
+    <div class="timing-marker" id="timing-marker" style="left:0%"></div>
+  </div>
+  <button class="timing-stop-btn" id="timing-stop-btn" onclick="timingStop()">⚡ Стоп!</button>
 </div>
 
 <div id="bj-game" style="display:none">
@@ -470,6 +489,50 @@ function confirmBJ() {
   sendResultToBot(result);
 }
 
+// ---- TIMING ----
+let timingPos = 0, timingDir = 1, timingStopped = false, timingRAF = null;
+const ZONE_COLORS = ['#00b894','#f1c40f','#f39c12','#e74c3c'];
+
+function initTiming() {
+  document.getElementById('timing-game').style.display = '';
+  document.getElementById('timing-prompt').textContent = gameData.prompt || 'Нажми в нужный момент!';
+  const zones = (gameData.thresholds || []).slice().sort((a,b) => (a.max-a.min)-(b.max-b.min)); // narrowest first
+  const wrap = document.getElementById('timing-wrap');
+  // Draw zones widest→narrowest so narrowest renders on top
+  [...zones].reverse().forEach((z, i) => {
+    const div = document.createElement('div');
+    div.className = 'timing-zone';
+    div.style.left = z.min + '%';
+    div.style.width = Math.max(0, z.max - z.min) + '%';
+    div.style.background = ZONE_COLORS[Math.min(i, ZONE_COLORS.length-1)];
+    wrap.insertBefore(div, wrap.firstChild);
+  });
+  const speed = gameData.speed || 1.5;
+  function tick() {
+    if (timingStopped) return;
+    timingPos += timingDir * speed;
+    if (timingPos >= 100) { timingPos = 100; timingDir = -1; }
+    if (timingPos <= 0) { timingPos = 0; timingDir = 1; }
+    document.getElementById('timing-marker').style.left = timingPos + '%';
+    timingRAF = requestAnimationFrame(tick);
+  }
+  timingRAF = requestAnimationFrame(tick);
+}
+
+function timingStop() {
+  if (timingStopped) return;
+  timingStopped = true;
+  cancelAnimationFrame(timingRAF);
+  const pos = Math.round(timingPos);
+  const zones = (gameData.thresholds || []).slice().sort((a,b) => (a.max-a.min)-(b.max-b.min));
+  let outcome = zones.length ? zones[zones.length-1] : {label:'промах', level:0};
+  for (const z of zones) { if (pos >= z.min && pos <= z.max) { outcome = z; break; } }
+  const level = outcome.level ?? 0;
+  document.getElementById('timing-result-label').textContent = `${pos}% — ${outcome.label}`;
+  document.getElementById('timing-stop-btn').disabled = true;
+  setTimeout(() => sendResultToBot({game:'timing', position:pos, outcome:outcome.label, level}), 600);
+}
+
 function sendResultToBot(result) {
   if (gameData.chat_id) result.source_chat_id = gameData.chat_id;
   try { tg.sendData(JSON.stringify(result)); tg.close(); }
@@ -483,6 +546,8 @@ tg.onEvent('mainButtonClicked', () => { if (game==='blackjack') confirmBJ(); els
 if (game === 'blackjack') {
   document.getElementById('bj-game').style.display = '';
   initThresholds(); initModifiers(); bjNewGame();
+} else if (game === 'timing') {
+  initTiming();
 } else { initChoice(); }
 </script>
 </body>
