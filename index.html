@@ -499,14 +499,15 @@ function initTiming() {
   document.getElementById('timing-prompt').textContent = gameData.prompt || 'Нажми в нужный момент!';
   const zones = (gameData.thresholds || []).slice().sort((a,b) => (a.max-a.min)-(b.max-b.min)); // narrowest first
   const wrap = document.getElementById('timing-wrap');
-  // Draw zones widest→narrowest so narrowest renders on top
-  [...zones].reverse().forEach((z) => {
+  const marker = document.getElementById('timing-marker');
+  // Рисовать widest первым (снизу), narrowest последним (сверху)
+  zones.slice().sort((a,b) => (b.max-b.min)-(a.max-a.min)).forEach((z) => {
     const div = document.createElement('div');
     div.className = 'timing-zone';
     div.style.left = z.min + '%';
     div.style.width = Math.max(0, z.max - z.min) + '%';
     div.style.background = ZONE_COLORS[Math.min(z.level ?? 0, ZONE_COLORS.length-1)];
-    wrap.insertBefore(div, wrap.firstChild);
+    wrap.insertBefore(div, marker);
   });
   const speed = gameData.speed || 1.5;
   function tick() {
