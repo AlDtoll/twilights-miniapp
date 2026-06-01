@@ -100,6 +100,7 @@
   .timing-wrap { position: relative; height: 72px; border-radius: 14px; overflow: hidden; margin-bottom: 10px; background: #e74c3c; }
   .timing-zone { position: absolute; top: 0; bottom: 0; }
   .timing-marker { position: absolute; top: 0; bottom: 0; width: 5px; background: #fff; border-radius: 3px; transform: translateX(-50%); box-shadow: 0 0 10px rgba(255,255,255,0.9); pointer-events: none; transition: none; }
+  .timing-live-label { font-size: 1rem; font-weight: 700; min-height: 1.4rem; margin-bottom: 6px; text-align: center; transition: color 0.1s; }
   .timing-result-label { font-size: 1.2rem; font-weight: 700; min-height: 1.8rem; margin-bottom: 16px; }
   .timing-stop-btn { width: 100%; padding: 18px; border-radius: 14px; border: none; background: var(--tg-theme-button-color, #6c5ce7); color: #fff; font-size: 1.2rem; font-weight: 700; cursor: pointer; letter-spacing: 0.5px; }
   .timing-stop-btn:disabled { opacity: 0.4; cursor: default; }
@@ -117,10 +118,11 @@
 
 <div id="timing-game" style="display:none">
   <div class="timing-prompt" id="timing-prompt"></div>
-  <div class="timing-result-label" id="timing-result-label"></div>
+  <div class="timing-live-label" id="timing-live-label"></div>
   <div class="timing-wrap" id="timing-wrap">
     <div class="timing-marker" id="timing-marker" style="left:0%"></div>
   </div>
+  <div class="timing-result-label" id="timing-result-label"></div>
   <button class="timing-stop-btn" id="timing-stop-btn" onclick="timingStop()">⚡ Стоп!</button>
 </div>
 
@@ -510,12 +512,25 @@ function initTiming() {
     wrap.insertBefore(div, marker);
   });
   const speed = gameData.speed || 1.5;
+  const liveLabel = document.getElementById('timing-live-label');
+  function getCurrentZone(p) {
+    for (const z of zones) { if (p >= z.min && p <= z.max) return z; }
+    return null;
+  }
   function tick() {
     if (timingStopped) return;
     timingPos += timingDir * speed;
     if (timingPos >= 100) { timingPos = 100; timingDir = -1; }
     if (timingPos <= 0) { timingPos = 0; timingDir = 1; }
     document.getElementById('timing-marker').style.left = timingPos + '%';
+    const cur = getCurrentZone(timingPos);
+    if (cur) {
+      liveLabel.textContent = cur.label;
+      liveLabel.style.color = ZONE_COLORS[Math.min(cur.level ?? 0, ZONE_COLORS.length-1)];
+    } else {
+      liveLabel.textContent = '—';
+      liveLabel.style.color = '#e74c3c';
+    }
     timingRAF = requestAnimationFrame(tick);
   }
   timingRAF = requestAnimationFrame(tick);
@@ -530,6 +545,7 @@ function timingStop() {
   let outcome = zones.length ? zones[zones.length-1] : {label:'промах', level:0};
   for (const z of zones) { if (pos >= z.min && pos <= z.max) { outcome = z; break; } }
   const level = outcome.level ?? 0;
+  document.getElementById('timing-live-label').textContent = '';
   document.getElementById('timing-result-label').textContent = `${pos}% — ${outcome.label}`;
   document.getElementById('timing-stop-btn').disabled = true;
   setTimeout(() => sendResultToBot({game:'timing', position:pos, outcome:outcome.label, level}), 600);
