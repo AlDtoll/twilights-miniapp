@@ -402,7 +402,7 @@ function bjNewGame() {
   bjStarted = true; bjDone = false;
   modifiers = modifiers.map(m => m.type==='choice'?{...m,state:'none'}:m.type==='foresight'?{...m,used:false,hint:null}:m.type==='discard'?{...m,used:false}:{...m,active:false});
   deck = shuffle(SUITS.flatMap(s => VALUES.map(v => ({s,v}))));
-  playerCards = [deck.pop(), deck.pop()];
+  playerCards = [deck.pop()];
   document.getElementById('bj-result').style.display = 'none';
   document.getElementById('bj-hit').disabled = false;
   document.getElementById('bj-stand').disabled = false;
