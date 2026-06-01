@@ -165,7 +165,7 @@ try {
 } catch(e) {}
 
 const game = gameData.game || 'choice';
-document.getElementById('subtitle').textContent = game === 'blackjack' ? 'Игра в 21' : 'Выбор';
+document.getElementById('subtitle').textContent = game === 'blackjack' ? 'Игра в 21' : game === 'timing' ? 'Тайминг' : 'Выбор';
 
 // ---- CHOICE ----
 let selectedChoice = null;
