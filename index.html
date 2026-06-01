@@ -491,7 +491,8 @@ function confirmBJ() {
 
 // ---- TIMING ----
 let timingPos = 0, timingDir = 1, timingStopped = false, timingRAF = null;
-const ZONE_COLORS = ['#00b894','#f1c40f','#f39c12','#e74c3c'];
+// Цвет зоны по уровню: 0=красный, 1=оранжевый, 2=жёлтый, 3=зелёный
+const ZONE_COLORS = ['#e74c3c','#f39c12','#f1c40f','#00b894'];
 
 function initTiming() {
   document.getElementById('timing-game').style.display = '';
@@ -499,12 +500,12 @@ function initTiming() {
   const zones = (gameData.thresholds || []).slice().sort((a,b) => (a.max-a.min)-(b.max-b.min)); // narrowest first
   const wrap = document.getElementById('timing-wrap');
   // Draw zones widest→narrowest so narrowest renders on top
-  [...zones].reverse().forEach((z, i) => {
+  [...zones].reverse().forEach((z) => {
     const div = document.createElement('div');
     div.className = 'timing-zone';
     div.style.left = z.min + '%';
     div.style.width = Math.max(0, z.max - z.min) + '%';
-    div.style.background = ZONE_COLORS[Math.min(i, ZONE_COLORS.length-1)];
+    div.style.background = ZONE_COLORS[Math.min(z.level ?? 0, ZONE_COLORS.length-1)];
     wrap.insertBefore(div, wrap.firstChild);
   });
   const speed = gameData.speed || 1.5;
