@@ -408,6 +408,7 @@ function renderBJ() {
 function bjHit() {
   playerCards.push(deck.pop());
   renderBJ();
+  renderModifiers();
   if (handScore(playerCards) >= 21) bjEndGame();
 }
 function bjStand() { bjEndGame(); }
