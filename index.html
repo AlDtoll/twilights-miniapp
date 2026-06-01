@@ -496,10 +496,18 @@ let timingPos = 0, timingDir = 1, timingStopped = false, timingRAF = null;
 // Цвет зоны по уровню: 0=красный, 1=оранжевый, 2=жёлтый, 3=зелёный
 const ZONE_COLORS = ['#e74c3c','#f39c12','#f1c40f','#00b894'];
 
+const DEFAULT_TIMING_ZONES = [
+  {min:40, max:60, label:'Идеально', level:3},
+  {min:25, max:75, label:'Хорошо',   level:2},
+  {min:10, max:90, label:'Норм',     level:1},
+  {min:0,  max:100, label:'Провал', level:0},
+];
+
 function initTiming() {
   document.getElementById('timing-game').style.display = '';
   document.getElementById('timing-prompt').textContent = gameData.prompt || 'Нажми в нужный момент!';
-  const zones = (gameData.thresholds || []).slice().sort((a,b) => (a.max-a.min)-(b.max-b.min)); // narrowest first
+  const rawZones = (gameData.thresholds && gameData.thresholds.length) ? gameData.thresholds : DEFAULT_TIMING_ZONES;
+  const zones = rawZones.slice().sort((a,b) => (a.max-a.min)-(b.max-b.min)); // narrowest first
   const wrap = document.getElementById('timing-wrap');
   const marker = document.getElementById('timing-marker');
   // Рисовать widest первым (снизу), narrowest последним (сверху)
@@ -541,12 +549,14 @@ function timingStop() {
   timingStopped = true;
   cancelAnimationFrame(timingRAF);
   const pos = Math.round(timingPos);
-  const zones = (gameData.thresholds || []).slice().sort((a,b) => (a.max-a.min)-(b.max-b.min));
+  const rawZones2 = (gameData.thresholds && gameData.thresholds.length) ? gameData.thresholds : DEFAULT_TIMING_ZONES;
+  const zones = rawZones2.slice().sort((a,b) => (a.max-a.min)-(b.max-b.min));
   let outcome = zones.length ? zones[zones.length-1] : {label:'промах', level:0};
   for (const z of zones) { if (pos >= z.min && pos <= z.max) { outcome = z; break; } }
   const level = outcome.level ?? 0;
   document.getElementById('timing-live-label').textContent = '';
-  document.getElementById('timing-result-label').textContent = `${pos}% — ${outcome.label}`;
+  document.getElementById('timing-result-label').textContent = outcome.label;
+  document.getElementById('timing-result-label').style.color = ZONE_COLORS[Math.min(outcome.level ?? 0, ZONE_COLORS.length-1)];
   document.getElementById('timing-stop-btn').disabled = true;
   setTimeout(() => sendResultToBot({game:'timing', position:pos, outcome:outcome.label, level}), 600);
 }
