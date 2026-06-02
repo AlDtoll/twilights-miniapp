@@ -105,6 +105,25 @@
   .timing-result-label { font-size: 1.2rem; font-weight: 700; min-height: 1.8rem; margin-bottom: 16px; }
   .timing-stop-btn { width: 100%; padding: 18px; border-radius: 14px; border: none; background: var(--tg-theme-button-color, #6c5ce7); color: #fff; font-size: 1.2rem; font-weight: 700; cursor: pointer; letter-spacing: 0.5px; }
   .timing-stop-btn:disabled { opacity: 0.4; cursor: default; }
+
+  /* SEQUENCE */
+  #sequence-game { width: 100%; max-width: 360px; }
+  .seq-ready-title { font-size: 1.3rem; font-weight: 700; text-align: center; margin-bottom: 10px; }
+  .seq-ready-info { font-size: 0.9rem; color: var(--tg-theme-hint-color, #aaa); text-align: center; margin-bottom: 24px; }
+  .seq-progress-wrap { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-bottom: 16px; overflow: hidden; }
+  .seq-progress-bar { height: 100%; border-radius: 3px; transition: width 0.1s linear, background 0.3s; }
+  .seq-counter { font-size: 0.8rem; color: var(--tg-theme-hint-color, #aaa); text-align: right; margin-bottom: 8px; }
+  .seq-question { font-size: 1.05rem; font-weight: 600; padding: 14px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 14px; line-height: 1.5; text-align: center; }
+  #seq-options { display: flex; flex-direction: column; gap: 8px; }
+  .seq-opt-btn { padding: 12px 16px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: var(--tg-theme-text-color, #fff); font-size: 0.95rem; cursor: pointer; text-align: left; transition: border-color 0.2s, background 0.2s; }
+  .seq-opt-btn:disabled { cursor: default; }
+  .seq-opt-correct { border-color: #00b894 !important; background: rgba(0,184,148,0.15) !important; }
+  .seq-opt-wrong { border-color: #e74c3c !important; background: rgba(231,76,60,0.15) !important; }
+  .seq-feedback { margin-top: 10px; font-size: 1rem; font-weight: 700; text-align: center; min-height: 1.4rem; }
+  .seq-result-wrap { text-align: center; }
+  .seq-result-score { font-size: 2.5rem; font-weight: 800; margin-bottom: 8px; }
+  .seq-result-total { font-size: 0.9rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 16px; }
+  .seq-result-label { font-size: 1.2rem; font-weight: 700; padding: 12px 20px; border-radius: 12px; display: inline-block; }
 </style>
 </head>
 <body>
@@ -116,6 +135,28 @@
   <div class="choice-buttons" id="choice-buttons"></div>
   <div class="choice-hint" id="choice-hint" style="display:none"></div>
   <button class="confirm-btn" id="choice-confirm" onclick="confirmChoice()" disabled>Подтвердить выбор</button>
+</div>
+
+<div id="sequence-game" style="display:none">
+  <div id="seq-ready">
+    <div class="seq-ready-title" id="seq-ready-title">⚡ Испытание</div>
+    <div class="seq-ready-info" id="seq-ready-info"></div>
+    <button class="confirm-btn" onclick="seqStart()">Начать</button>
+  </div>
+  <div id="seq-play" style="display:none">
+    <div class="seq-progress-wrap"><div class="seq-progress-bar" id="seq-progress-bar" style="width:100%"></div></div>
+    <div class="seq-counter" id="seq-counter"></div>
+    <div class="seq-question" id="seq-question"></div>
+    <div id="seq-options"></div>
+    <div class="seq-feedback" id="seq-feedback"></div>
+  </div>
+  <div id="seq-result" style="display:none">
+    <div class="seq-result-wrap">
+      <div class="seq-result-score" id="seq-result-score"></div>
+      <div class="seq-result-total" id="seq-result-total"></div>
+      <div class="seq-result-label" id="seq-result-label"></div>
+    </div>
+  </div>
 </div>
 
 <div id="timing-game" style="display:none">
@@ -590,6 +631,114 @@ function sendResultToBot(result) {
   }
 }
 
+// ---- SEQUENCE ----
+let seqQuestions = [], seqTotalTime = 15, seqCurrent = 0, seqCorrect = 0;
+let seqTimerInterval = null, seqTimeLeft = 0, seqAnswered = false, seqDone = false;
+
+function seqShuffle(arr, seed) {
+  const rng = makePRNG(seed);
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function initSequence() {
+  document.getElementById('sequence-game').style.display = '';
+  seqQuestions = JSON.parse(JSON.stringify(gameData.questions || []));
+  if (gameData.seed) seqShuffle(seqQuestions, gameData.seed);
+  seqTotalTime = gameData.time || 15;
+  const title = document.getElementById('seq-ready-title');
+  if (gameData.prompt) title.textContent = gameData.prompt;
+  document.getElementById('seq-ready-info').textContent =
+    `${seqQuestions.length} вопрос${seqQuestions.length === 1 ? '' : seqQuestions.length < 5 ? 'а' : 'ов'} · ${seqTotalTime} сек`;
+}
+
+function seqStart() {
+  document.getElementById('seq-ready').style.display = 'none';
+  document.getElementById('seq-play').style.display = '';
+  seqCurrent = 0; seqCorrect = 0; seqTimeLeft = seqTotalTime; seqDone = false;
+  seqTimerInterval = setInterval(() => {
+    seqTimeLeft = Math.max(0, seqTimeLeft - 0.1);
+    const pct = seqTimeLeft / seqTotalTime * 100;
+    const bar = document.getElementById('seq-progress-bar');
+    bar.style.width = pct + '%';
+    const hue = Math.round(pct * 1.2);
+    bar.style.background = `hsl(${hue}, 75%, 50%)`;
+    if (seqTimeLeft <= 0) { clearInterval(seqTimerInterval); seqFinish(); }
+  }, 100);
+  seqShowQuestion();
+}
+
+function seqShowQuestion() {
+  if (seqDone) return;
+  if (seqCurrent >= seqQuestions.length) { seqFinish(); return; }
+  const q = seqQuestions[seqCurrent];
+  seqAnswered = false;
+  document.getElementById('seq-counter').textContent = `${seqCurrent + 1} / ${seqQuestions.length}`;
+  document.getElementById('seq-question').textContent = q.q;
+  document.getElementById('seq-feedback').textContent = '';
+  const container = document.getElementById('seq-options');
+  container.innerHTML = '';
+  q.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'seq-opt-btn';
+    btn.textContent = opt;
+    btn.onclick = () => seqAnswer(i);
+    container.appendChild(btn);
+  });
+}
+
+function seqAnswer(idx) {
+  if (seqAnswered || seqDone) return;
+  seqAnswered = true;
+  const q = seqQuestions[seqCurrent];
+  const correct = idx === q.answer;
+  if (correct) seqCorrect++;
+  const btns = document.querySelectorAll('#seq-options .seq-opt-btn');
+  btns.forEach((b, i) => {
+    b.disabled = true;
+    if (i === q.answer) b.classList.add('seq-opt-correct');
+    else if (i === idx) b.classList.add('seq-opt-wrong');
+  });
+  const fb = document.getElementById('seq-feedback');
+  fb.textContent = correct ? '✓ Верно!' : '✗ Неверно';
+  fb.style.color = correct ? '#00b894' : '#e74c3c';
+  setTimeout(() => { seqCurrent++; seqShowQuestion(); }, 700);
+}
+
+function seqFinish() {
+  if (seqDone) return;
+  seqDone = true;
+  clearInterval(seqTimerInterval);
+  document.getElementById('seq-play').style.display = 'none';
+  document.getElementById('seq-result').style.display = '';
+  const total = seqQuestions.length;
+  const pct = total > 0 ? seqCorrect / total : 0;
+  const th = (gameData.thresholds || []).slice().sort((a, b) => b.min - a.min);
+  let outcome;
+  for (const t of th) { if (seqCorrect >= t.min) { outcome = t; break; } }
+  if (!outcome) {
+    const lvl = pct >= 0.8 ? 3 : pct >= 0.6 ? 2 : pct >= 0.4 ? 1 : 0;
+    const labels = ['Провал', 'Слабо', 'Хорошо', 'Отлично'];
+    const colors = ['#e74c3c', '#f39c12', '#f1c40f', '#00b894'];
+    outcome = {label: labels[lvl], level: lvl, _color: colors[lvl]};
+  }
+  const colors = ['#e74c3c', '#f39c12', '#f1c40f', '#00b894'];
+  const color = outcome._color || colors[Math.min(outcome.level ?? 0, 3)];
+  document.getElementById('seq-result-score').textContent = `${seqCorrect}`;
+  document.getElementById('seq-result-score').style.color = color;
+  document.getElementById('seq-result-total').textContent = `из ${total}`;
+  const labelEl = document.getElementById('seq-result-label');
+  labelEl.textContent = outcome.label;
+  labelEl.style.color = color;
+  labelEl.style.background = color.replace(')', ', 0.15)').replace('rgb', 'rgba').replace('#', 'rgba(').replace('rgba(', color.startsWith('#') ? `${color}22` : color);
+  labelEl.style.background = color + '22';
+  labelEl.style.border = `2px solid ${color}`;
+  setTimeout(() => sendResultToBot({game: 'sequence', correct: seqCorrect, total, outcome: outcome.label, level: outcome.level ?? 0}), 800);
+}
+
 tg.onEvent('mainButtonClicked', () => { if (game==='blackjack') confirmBJ(); else confirmChoice(); });
 
 if (game === 'blackjack') {
@@ -597,6 +746,8 @@ if (game === 'blackjack') {
   initThresholds(); initModifiers(); bjNewGame();
 } else if (game === 'timing') {
   initTiming();
+} else if (game === 'sequence') {
+  initSequence();
 } else { initChoice(); }
 </script>
 </body>
