@@ -36,6 +36,7 @@
   .choice-btn { padding: 14px 18px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: var(--tg-theme-text-color, #fff); font-size: 1rem; cursor: pointer; text-align: left; transition: all 0.2s; }
   .choice-btn:hover { border-color: var(--tg-theme-button-color, #6c5ce7); }
   .choice-btn.selected { border-color: #00b894; background: rgba(0,184,148,0.2); }
+  .choice-hint { margin-top: 10px; padding: 10px 14px; border-radius: 10px; background: rgba(162,155,254,0.12); border: 1px solid rgba(162,155,254,0.3); font-size: 0.9rem; color: #a29bfe; line-height: 1.5; }
 
   /* BLACKJACK */
   #bj-game { width: 100%; max-width: 360px; }
@@ -113,6 +114,7 @@
 <div id="choice-game" style="display:none">
   <div class="choice-prompt" id="choice-prompt"></div>
   <div class="choice-buttons" id="choice-buttons"></div>
+  <div class="choice-hint" id="choice-hint" style="display:none"></div>
   <button class="confirm-btn" id="choice-confirm" onclick="confirmChoice()" disabled>Подтвердить выбор</button>
 </div>
 
@@ -174,6 +176,7 @@ let selectedChoice = null;
 function initChoice() {
   document.getElementById('choice-game').style.display = '';
   document.getElementById('choice-prompt').textContent = gameData.prompt || 'Сделайте выбор:';
+  const hints = gameData.hints || [];
   const container = document.getElementById('choice-buttons');
   (gameData.options || ['А','Б','В']).forEach((opt, i) => {
     const btn = document.createElement('button');
@@ -183,6 +186,10 @@ function initChoice() {
       btn.classList.add('selected');
       selectedChoice = {index: i, text: opt};
       document.getElementById('choice-confirm').disabled = false;
+      const hintEl = document.getElementById('choice-hint');
+      const h = hints[i] || '';
+      hintEl.textContent = h;
+      hintEl.style.display = h ? '' : 'none';
     };
     container.appendChild(btn);
   });
@@ -492,7 +499,7 @@ function confirmBJ() {
 }
 
 // ---- TIMING ----
-let timingPos = 0, timingDir = 1, timingStopped = false, timingRAF = null;
+let timingPos = 0, timingDir = 1, timingStopped = false, timingRAF = null, timingSlowing = false;
 // Цвет зоны по уровню: 0=красный, 1=оранжевый, 2=жёлтый, 3=зелёный
 const ZONE_COLORS = ['#e74c3c','#f39c12','#f1c40f','#00b894'];
 
@@ -520,6 +527,7 @@ function initTiming() {
     wrap.insertBefore(div, marker);
   });
   const speed = gameData.speed || 1.5;
+  const slowOnPress = !!gameData.slow_on_press;
   const liveLabel = document.getElementById('timing-live-label');
   function getCurrentZone(p) {
     for (const z of zones) { if (p >= z.min && p <= z.max) return z; }
@@ -527,7 +535,8 @@ function initTiming() {
   }
   function tick() {
     if (timingStopped) return;
-    timingPos += timingDir * speed;
+    const currentSpeed = timingSlowing ? speed * 0.15 : speed;
+    timingPos += timingDir * currentSpeed;
     if (timingPos >= 100) { timingPos = 100; timingDir = -1; }
     if (timingPos <= 0) { timingPos = 0; timingDir = 1; }
     document.getElementById('timing-marker').style.left = timingPos + '%';
@@ -542,23 +551,35 @@ function initTiming() {
     timingRAF = requestAnimationFrame(tick);
   }
   timingRAF = requestAnimationFrame(tick);
+
+  window._timingFinalize = function() {
+    if (timingStopped) return;
+    timingStopped = true;
+    cancelAnimationFrame(timingRAF);
+    const pos = Math.round(timingPos);
+    const rawZones2 = (gameData.thresholds && gameData.thresholds.length) ? gameData.thresholds : DEFAULT_TIMING_ZONES;
+    const zones2 = rawZones2.slice().sort((a,b) => (a.max-a.min)-(b.max-b.min));
+    let outcome = zones2.length ? zones2[zones2.length-1] : {label:'промах', level:0};
+    for (const z of zones2) { if (pos >= z.min && pos <= z.max) { outcome = z; break; } }
+    const level = outcome.level ?? 0;
+    document.getElementById('timing-live-label').textContent = '';
+    document.getElementById('timing-result-label').textContent = outcome.label;
+    document.getElementById('timing-result-label').style.color = ZONE_COLORS[Math.min(outcome.level ?? 0, ZONE_COLORS.length-1)];
+    document.getElementById('timing-stop-btn').disabled = true;
+    setTimeout(() => sendResultToBot({game:'timing', position:pos, outcome:outcome.label, level}), 600);
+  };
+
+  window._timingSlowOnPress = slowOnPress;
 }
 
 function timingStop() {
   if (timingStopped) return;
-  timingStopped = true;
-  cancelAnimationFrame(timingRAF);
-  const pos = Math.round(timingPos);
-  const rawZones2 = (gameData.thresholds && gameData.thresholds.length) ? gameData.thresholds : DEFAULT_TIMING_ZONES;
-  const zones = rawZones2.slice().sort((a,b) => (a.max-a.min)-(b.max-b.min));
-  let outcome = zones.length ? zones[zones.length-1] : {label:'промах', level:0};
-  for (const z of zones) { if (pos >= z.min && pos <= z.max) { outcome = z; break; } }
-  const level = outcome.level ?? 0;
-  document.getElementById('timing-live-label').textContent = '';
-  document.getElementById('timing-result-label').textContent = outcome.label;
-  document.getElementById('timing-result-label').style.color = ZONE_COLORS[Math.min(outcome.level ?? 0, ZONE_COLORS.length-1)];
-  document.getElementById('timing-stop-btn').disabled = true;
-  setTimeout(() => sendResultToBot({game:'timing', position:pos, outcome:outcome.label, level}), 600);
+  if (window._timingSlowOnPress && !timingSlowing) {
+    timingSlowing = true;
+    document.getElementById('timing-stop-btn').textContent = '⚡ Фиксировать!';
+    return;
+  }
+  window._timingFinalize();
 }
 
 function sendResultToBot(result) {
