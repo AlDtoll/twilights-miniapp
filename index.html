@@ -169,7 +169,7 @@
     </div>
   </div>
   <div class="m3-time-bar-wrap" id="m3-time-bar-wrap"><div class="m3-time-bar" id="m3-time-bar" style="width:100%;background:#00b894"></div></div>
-  <div class="m3-thresholds" id="m3-thresholds"></div>
+  <div class="thresholds-panel" id="m3-thresholds-panel" style="display:none"></div>
   <div class="m3-combo" id="m3-combo"></div>
   <div class="m3-board" id="m3-board"></div>
   <div class="result-banner" id="m3-result" style="display:none"></div>
@@ -829,12 +829,7 @@ function initMatch3() {
     }
   }
 
-  const th = gameData.thresholds;
-  if (th && th.length) {
-    const s = [...th].sort((a,b) => b.min - a.min);
-    document.getElementById('m3-thresholds').textContent = s.map(t => `${t.label}: ${t.min}+`).join(' · ');
-  }
-
+  m3InitThresholds();
   m3Render();
   m3UpdateStatus();
 
@@ -852,10 +847,36 @@ function initMatch3() {
   }
 }
 
+function m3InitThresholds() {
+  const th = gameData.thresholds;
+  if (!th || !th.length) return;
+  const panel = document.getElementById('m3-thresholds-panel');
+  panel.style.display = 'flex';
+  const sorted = [...th].sort((a,b) => b.min - a.min);
+  sorted.forEach((t, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'threshold-chip';
+    chip.dataset.min = t.min;
+    const rangeStr = i === 0 ? `${t.min}+` : `${t.min}–${sorted[i-1].min - 1}`;
+    chip.innerHTML = `<span class="t-range">${rangeStr}</span><span class="t-label">${t.label}</span>`;
+    panel.appendChild(chip);
+  });
+}
+
+function m3HighlightThreshold(score) {
+  const sorted = [...document.querySelectorAll('#m3-thresholds-panel .threshold-chip')];
+  sorted.forEach((chip, i) => {
+    const minVal = +chip.dataset.min;
+    const nextMin = i > 0 ? +sorted[i-1].dataset.min : Infinity;
+    chip.classList.toggle('active', score >= minVal && score < nextMin);
+  });
+}
+
 function m3UpdateStatus() {
   document.getElementById('m3-score').textContent = m3Score;
   document.getElementById('m3-moves-val').textContent = m3Moves;
   if (m3UseTimer) document.getElementById('m3-time-val').textContent = Math.ceil(m3TimeLeft) + 'с';
+  m3HighlightThreshold(m3Score);
 }
 
 function m3Render() {
@@ -995,12 +1016,15 @@ function m3Cascade() {
   }
   m3Combo++;
   const n = matches.length;
-  const gained = Math.round((n <= 3 ? 30 : n <= 5 ? 60 : n <= 8 ? 90 : 120) * m3Combo);
+  // Базовые очки: 30 / 50 / 80 / 110 за длину совпадения
+  // Комбо: +10 за каждый каскад свыше первого (приглушённый бонус)
+  const base = n <= 3 ? 30 : n <= 5 ? 50 : n <= 8 ? 80 : 110;
+  const gained = base + (m3Combo - 1) * 10;
   m3Score += gained;
   m3UpdateStatus();
 
   const comboEl = document.getElementById('m3-combo');
-  comboEl.textContent = m3Combo > 1 ? `✨ Комбо ×${m3Combo}! +${gained}` : `+${gained}`;
+  comboEl.textContent = m3Combo > 1 ? `✨ Каскад ${m3Combo} (+${(m3Combo-1)*10} бонус)` : `+${gained}`;
   setTimeout(() => { comboEl.textContent = ''; }, 800);
 
   // Анимация исчезновения: добавляем .removing к совпавшим ячейкам
