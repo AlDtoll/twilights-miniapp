@@ -201,13 +201,23 @@ const tg = window.Telegram.WebApp;
 tg.ready(); tg.expand();
 
 let gameData = {};
+let _gameKey = null;
 try {
   const raw = new URLSearchParams(window.location.search).get('data');
   if (raw) {
     const bytes = Uint8Array.from(atob(raw), c => c.charCodeAt(0));
     gameData = JSON.parse(new TextDecoder('utf-8').decode(bytes));
+    _gameKey = 'twi_played_' + raw;
   }
 } catch(e) {}
+
+// Блокировка повторного прохождения
+if (_gameKey && localStorage.getItem(_gameKey)) {
+  document.getElementById('subtitle').textContent = '';
+  document.querySelector('h1').textContent = '⚔️ Twilights';
+  document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px;text-align:center;font-family:-apple-system,sans-serif;background:var(--tg-theme-bg-color,#1a1a2e);color:var(--tg-theme-text-color,#eee)"><div style="font-size:3rem;margin-bottom:16px">🔒</div><h2 style="margin-bottom:10px">Игра уже сыграна</h2><p style="color:var(--tg-theme-hint-color,#aaa);font-size:0.9rem">Результат уже был отправлен.<br>Повторное прохождение недоступно.</p></div>';
+  throw new Error('already_played');
+}
 
 const game = gameData.game || 'choice';
 document.getElementById('subtitle').textContent = game === 'blackjack' ? 'Игра в 21' : game === 'timing' ? 'Тайминг' : 'Выбор';
@@ -625,6 +635,7 @@ function timingStop() {
 
 function sendResultToBot(result) {
   if (gameData.chat_id) result.source_chat_id = gameData.chat_id;
+  if (_gameKey) { try { localStorage.setItem(_gameKey, '1'); } catch(e) {} }
   try { tg.sendData(JSON.stringify(result)); tg.close(); }
   catch(e) {
     document.body.innerHTML = `<div style="padding:20px;font-family:sans-serif;background:#1a1a2e;color:#eee;min-height:100vh"><h2>Результат</h2><pre style="background:rgba(255,255,255,0.1);padding:12px;border-radius:8px;overflow-x:auto;font-size:0.8rem">${JSON.stringify(result,null,2)}</pre></div>`;
