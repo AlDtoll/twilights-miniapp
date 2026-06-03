@@ -172,6 +172,7 @@
   <div class="m3-combo" id="m3-combo"></div>
   <div class="m3-board" id="m3-board"></div>
   <div class="result-banner" id="m3-result" style="display:none"></div>
+  <button class="btn btn-secondary" id="m3-finish-btn" onclick="m3End()" style="width:100%;margin-top:12px;padding:12px;border-radius:12px">Завершить досрочно</button>
 </div>
 
 <div id="sequence-game" style="display:none">
@@ -976,6 +977,8 @@ function m3End() {
     else if (score >= 100) { label='частичный'; level=1; }
   }
 
+  const finishBtn = document.getElementById('m3-finish-btn');
+  if (finishBtn) finishBtn.style.display = 'none';
   const banner = document.getElementById('m3-result');
   banner.style.display = '';
   banner.className = 'result-banner '+(level>=2?'result-good':level===1?'result-mid':'result-bad');
