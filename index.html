@@ -106,6 +106,21 @@
   .timing-stop-btn { width: 100%; padding: 18px; border-radius: 14px; border: none; background: var(--tg-theme-button-color, #6c5ce7); color: #fff; font-size: 1.2rem; font-weight: 700; cursor: pointer; letter-spacing: 0.5px; }
   .timing-stop-btn:disabled { opacity: 0.4; cursor: default; }
 
+  /* MATCH-3 */
+  #match3-game { width: 100%; max-width: 360px; }
+  .m3-status { display: flex; justify-content: space-around; margin-bottom: 10px; padding: 10px 14px; background: rgba(255,255,255,0.05); border-radius: 12px; }
+  .m3-status-item { text-align: center; }
+  .m3-status-label { font-size: 0.7rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 2px; }
+  .m3-status-val { font-size: 1.3rem; font-weight: bold; }
+  .m3-thresholds { font-size: 0.75rem; color: var(--tg-theme-hint-color, #aaa); text-align: center; margin-bottom: 6px; }
+  .m3-combo { font-size: 0.95rem; font-weight: 700; text-align: center; min-height: 1.4rem; color: #f1c40f; margin-bottom: 6px; }
+  .m3-board { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-bottom: 10px; touch-action: none; }
+  .m3-cell { aspect-ratio: 1; border-radius: 50%; cursor: pointer; transition: transform 0.12s, box-shadow 0.12s; }
+  .m3-cell.selected { transform: scale(1.18); box-shadow: 0 0 0 3px #fff, 0 0 10px rgba(255,255,255,0.5); }
+  .m3-cell.dead { background: rgba(255,255,255,0.04) !important; cursor: default; }
+  .m3-time-bar-wrap { width: 100%; height: 5px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-bottom: 8px; overflow: hidden; display: none; }
+  .m3-time-bar { height: 100%; border-radius: 3px; transition: width 0.1s linear, background 0.3s; }
+
   /* SEQUENCE */
   #sequence-game { width: 100%; max-width: 360px; }
   .seq-ready-title { font-size: 1.3rem; font-weight: 700; text-align: center; margin-bottom: 10px; }
@@ -135,6 +150,28 @@
   <div class="choice-buttons" id="choice-buttons"></div>
   <div class="choice-hint" id="choice-hint" style="display:none"></div>
   <button class="confirm-btn" id="choice-confirm" onclick="confirmChoice()" disabled>Подтвердить выбор</button>
+</div>
+
+<div id="match3-game" style="display:none">
+  <div class="m3-status" id="m3-status">
+    <div class="m3-status-item">
+      <div class="m3-status-label">Очки</div>
+      <div class="m3-status-val" id="m3-score">0</div>
+    </div>
+    <div class="m3-status-item">
+      <div class="m3-status-label">Ходы</div>
+      <div class="m3-status-val" id="m3-moves-val">—</div>
+    </div>
+    <div class="m3-status-item" id="m3-time-item" style="display:none">
+      <div class="m3-status-label">Время</div>
+      <div class="m3-status-val" id="m3-time-val">—</div>
+    </div>
+  </div>
+  <div class="m3-time-bar-wrap" id="m3-time-bar-wrap"><div class="m3-time-bar" id="m3-time-bar" style="width:100%;background:#00b894"></div></div>
+  <div class="m3-thresholds" id="m3-thresholds"></div>
+  <div class="m3-combo" id="m3-combo"></div>
+  <div class="m3-board" id="m3-board"></div>
+  <div class="result-banner" id="m3-result" style="display:none"></div>
 </div>
 
 <div id="sequence-game" style="display:none">
@@ -751,6 +788,201 @@ function seqFinish() {
   setTimeout(() => sendResultToBot({game: 'sequence', correct: seqCorrect, total, outcome: outcome.label, level: outcome.level ?? 0}), 800);
 }
 
+// ---- MATCH-3 ----
+const M3_SIZE = 6;
+const M3_COLORS = ['#e74c3c','#3498db','#2ecc71','#f1c40f','#a29bfe'];
+let m3Grid = [], m3Sel = null, m3Score = 0, m3Moves = 0, m3MaxMoves = 15;
+let m3UseTimer = false, m3TimeLeft = 0, m3MaxTime = 0, m3TimerInt = null;
+let m3Done = false, m3Animating = false, m3Combo = 0;
+
+function m3Gem() { return Math.floor(rng() * M3_COLORS.length); }
+
+function initMatch3() {
+  document.getElementById('match3-game').style.display = '';
+  document.getElementById('subtitle').textContent = '3 в ряд';
+
+  m3MaxMoves = parseInt(gameData.moves) || 15;
+  m3Moves = m3MaxMoves;
+  m3UseTimer = !!gameData.time;
+  if (m3UseTimer) {
+    m3MaxTime = parseInt(gameData.time) || 60;
+    m3TimeLeft = m3MaxTime;
+    document.getElementById('m3-time-item').style.display = '';
+    document.getElementById('m3-time-bar-wrap').style.display = '';
+  }
+
+  m3Score = 0; m3Done = false; m3Animating = false; m3Combo = 0; m3Sel = null;
+
+  m3Grid = Array.from({length: M3_SIZE}, () => new Array(M3_SIZE).fill(0));
+  for (let r = 0; r < M3_SIZE; r++) {
+    for (let c = 0; c < M3_SIZE; c++) {
+      let g;
+      do {
+        g = m3Gem();
+      } while (
+        (c >= 2 && m3Grid[r][c-1] === g && m3Grid[r][c-2] === g) ||
+        (r >= 2 && m3Grid[r-1][c] === g && m3Grid[r-2][c] === g)
+      );
+      m3Grid[r][c] = g;
+    }
+  }
+
+  const th = gameData.thresholds;
+  if (th && th.length) {
+    const s = [...th].sort((a,b) => b.min - a.min);
+    document.getElementById('m3-thresholds').textContent = s.map(t => `${t.label}: ${t.min}+`).join(' · ');
+  }
+
+  m3Render();
+  m3UpdateStatus();
+
+  if (m3UseTimer) {
+    m3TimerInt = setInterval(() => {
+      if (m3Done) return;
+      m3TimeLeft = Math.max(0, m3TimeLeft - 0.1);
+      const pct = m3TimeLeft / m3MaxTime * 100;
+      const bar = document.getElementById('m3-time-bar');
+      bar.style.width = pct + '%';
+      bar.style.background = pct > 50 ? '#00b894' : pct > 25 ? '#f1c40f' : '#e74c3c';
+      document.getElementById('m3-time-val').textContent = Math.ceil(m3TimeLeft) + 'с';
+      if (m3TimeLeft <= 0) { clearInterval(m3TimerInt); if (!m3Animating) m3End(); else m3Done = true; }
+    }, 100);
+  }
+}
+
+function m3UpdateStatus() {
+  document.getElementById('m3-score').textContent = m3Score;
+  document.getElementById('m3-moves-val').textContent = m3Moves;
+  if (m3UseTimer) document.getElementById('m3-time-val').textContent = Math.ceil(m3TimeLeft) + 'с';
+}
+
+function m3Render() {
+  const board = document.getElementById('m3-board');
+  board.innerHTML = '';
+  for (let r = 0; r < M3_SIZE; r++) {
+    for (let c = 0; c < M3_SIZE; c++) {
+      const cell = document.createElement('div');
+      const g = m3Grid[r][c];
+      cell.className = 'm3-cell';
+      if (g < 0) {
+        cell.classList.add('dead');
+      } else {
+        cell.style.background = M3_COLORS[g];
+        if (m3Sel && m3Sel.r === r && m3Sel.c === c) cell.classList.add('selected');
+        if (!m3Done && !m3Animating) cell.addEventListener('click', () => m3Click(r, c));
+      }
+      board.appendChild(cell);
+    }
+  }
+}
+
+function m3Click(r, c) {
+  if (m3Done || m3Animating || m3Grid[r][c] < 0) return;
+  if (!m3Sel) { m3Sel = {r, c}; m3Render(); return; }
+  if (m3Sel.r === r && m3Sel.c === c) { m3Sel = null; m3Render(); return; }
+  if (Math.abs(m3Sel.r - r) + Math.abs(m3Sel.c - c) !== 1) { m3Sel = {r, c}; m3Render(); return; }
+
+  const sr = m3Sel.r, sc = m3Sel.c;
+  m3Sel = null; m3Animating = true;
+  [m3Grid[r][c], m3Grid[sr][sc]] = [m3Grid[sr][sc], m3Grid[r][c]];
+
+  if (!m3FindMatches().length) {
+    [m3Grid[r][c], m3Grid[sr][sc]] = [m3Grid[sr][sc], m3Grid[r][c]];
+    m3Animating = false; m3Render(); return;
+  }
+
+  m3Moves = Math.max(0, m3Moves - 1);
+  m3UpdateStatus(); m3Combo = 0; m3Render();
+  setTimeout(m3Cascade, 150);
+}
+
+function m3FindMatches() {
+  const set = new Set();
+  for (let r = 0; r < M3_SIZE; r++) {
+    for (let c = 0; c <= M3_SIZE - 3; c++) {
+      const g = m3Grid[r][c];
+      if (g < 0) continue;
+      if (m3Grid[r][c+1] === g && m3Grid[r][c+2] === g) {
+        let len = 3; while (c+len < M3_SIZE && m3Grid[r][c+len] === g) len++;
+        for (let i = 0; i < len; i++) set.add(r+'_'+(c+i));
+      }
+    }
+  }
+  for (let c = 0; c < M3_SIZE; c++) {
+    for (let r = 0; r <= M3_SIZE - 3; r++) {
+      const g = m3Grid[r][c];
+      if (g < 0) continue;
+      if (m3Grid[r+1][c] === g && m3Grid[r+2][c] === g) {
+        let len = 3; while (r+len < M3_SIZE && m3Grid[r+len][c] === g) len++;
+        for (let i = 0; i < len; i++) set.add((r+i)+'_'+c);
+      }
+    }
+  }
+  return [...set].map(s => { const p = s.split('_'); return {r:+p[0], c:+p[1]}; });
+}
+
+function m3Cascade() {
+  const matches = m3FindMatches();
+  if (!matches.length) {
+    m3Animating = false; m3Render();
+    if (m3Moves <= 0 || m3Done) m3End();
+    return;
+  }
+  m3Combo++;
+  const n = matches.length;
+  const gained = Math.round((n <= 3 ? 30 : n <= 5 ? 60 : n <= 8 ? 90 : 120) * m3Combo);
+  m3Score += gained;
+  m3UpdateStatus();
+
+  const comboEl = document.getElementById('m3-combo');
+  comboEl.textContent = m3Combo > 1 ? `✨ Комбо ×${m3Combo}! +${gained}` : `+${gained}`;
+  setTimeout(() => { comboEl.textContent = ''; }, 700);
+
+  matches.forEach(({r,c}) => { m3Grid[r][c] = -1; });
+  m3Render();
+  setTimeout(() => {
+    for (let c = 0; c < M3_SIZE; c++) {
+      let w = M3_SIZE - 1;
+      for (let r = M3_SIZE - 1; r >= 0; r--) {
+        if (m3Grid[r][c] >= 0) { m3Grid[w][c] = m3Grid[r][c]; if (w !== r) m3Grid[r][c] = -1; w--; }
+      }
+      for (let r = w; r >= 0; r--) m3Grid[r][c] = -1;
+    }
+    for (let r = 0; r < M3_SIZE; r++)
+      for (let c = 0; c < M3_SIZE; c++)
+        if (m3Grid[r][c] < 0) m3Grid[r][c] = m3Gem();
+    m3Render();
+    setTimeout(m3Cascade, 200);
+  }, 200);
+}
+
+function m3End() {
+  if (m3Done && document.getElementById('m3-result').style.display !== 'none') return;
+  m3Done = true;
+  if (m3TimerInt) clearInterval(m3TimerInt);
+  m3Animating = false; m3Render();
+
+  const score = m3Score;
+  const th = gameData.thresholds;
+  let label = 'провал', level = 0;
+  if (th && th.length) {
+    const sorted = [...th].sort((a,b) => b.min - a.min);
+    let f = {label: sorted[sorted.length-1].label, level: sorted[sorted.length-1].level ?? 0};
+    for (const t of sorted) { if (score >= t.min) { f = {label:t.label, level:t.level??0}; break; } }
+    label = f.label; level = f.level;
+  } else {
+    if (score >= 500) { label='отлично'; level=3; }
+    else if (score >= 250) { label='хорошо'; level=2; }
+    else if (score >= 100) { label='частичный'; level=1; }
+  }
+
+  const banner = document.getElementById('m3-result');
+  banner.style.display = '';
+  banner.className = 'result-banner '+(level>=2?'result-good':level===1?'result-mid':'result-bad');
+  banner.textContent = `${score} очков — ${label}`;
+  setTimeout(() => sendResultToBot({game:'match3', score, outcome:label, level}), 700);
+}
+
 tg.onEvent('mainButtonClicked', () => { if (game==='blackjack') confirmBJ(); else confirmChoice(); });
 
 if (game === 'blackjack') {
@@ -760,6 +992,8 @@ if (game === 'blackjack') {
   initTiming();
 } else if (game === 'sequence') {
   initSequence();
+} else if (game === 'match3') {
+  initMatch3();
 } else { initChoice(); }
 </script>
 </body>
