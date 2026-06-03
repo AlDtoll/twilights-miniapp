@@ -922,6 +922,69 @@ function m3FindMatches() {
   return [...set].map(s => { const p = s.split('_'); return {r:+p[0], c:+p[1]}; });
 }
 
+function m3FallAnim(cb) {
+  // Рассчитываем движение каждого гема: откуда → куда
+  const moves = []; // {col, fromRow, toRow}
+  const fresh = []; // {col, toRow, aboveCount} — новые гемы сверху
+
+  for (let c = 0; c < M3_SIZE; c++) {
+    let w = M3_SIZE - 1, gap = 0;
+    for (let r = M3_SIZE - 1; r >= 0; r--) {
+      if (m3Grid[r][c] >= 0) {
+        if (w !== r) moves.push({col: c, fromRow: r, toRow: w});
+        w--;
+      } else { gap++; }
+    }
+    // Заполняем сверху новыми
+    let above = gap;
+    for (let r = w; r >= 0; r--) {
+      fresh.push({col: c, toRow: r, aboveCount: above--});
+    }
+  }
+
+  // Применяем гравитацию к данным
+  for (let c = 0; c < M3_SIZE; c++) {
+    let w = M3_SIZE - 1;
+    for (let r = M3_SIZE - 1; r >= 0; r--) {
+      if (m3Grid[r][c] >= 0) { m3Grid[w][c] = m3Grid[r][c]; if (w !== r) m3Grid[r][c] = -1; w--; }
+    }
+    for (let r = w; r >= 0; r--) m3Grid[r][c] = -1;
+  }
+  fresh.forEach(({col, toRow}) => { m3Grid[toRow][col] = m3Gem(); });
+
+  // Рендерим на новых позициях
+  m3Render();
+
+  const board = document.getElementById('m3-board');
+  const cellH = board.children[0] ? board.children[0].offsetHeight + 4 : 46;
+
+  // Смещаем гемы вверх (на старые позиции) без анимации
+  moves.forEach(({col, fromRow, toRow}) => {
+    const el = board.children[toRow * M3_SIZE + col];
+    if (!el || el.classList.contains('dead')) return;
+    el.style.transition = 'none';
+    el.style.transform = `translateY(${-(toRow - fromRow) * cellH}px)`;
+  });
+  fresh.forEach(({col, toRow, aboveCount}) => {
+    const el = board.children[toRow * M3_SIZE + col];
+    if (!el || el.classList.contains('dead')) return;
+    el.style.transition = 'none';
+    el.style.transform = `translateY(${-(toRow + aboveCount) * cellH}px)`;
+  });
+
+  const dur = 230;
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const cells = board.children;
+    for (let i = 0; i < cells.length; i++) {
+      if (cells[i].style.transform) {
+        cells[i].style.transition = `transform ${dur}ms cubic-bezier(0.3, 0.0, 0.6, 1.0)`;
+        cells[i].style.transform = '';
+      }
+    }
+    setTimeout(cb, dur + 20);
+  }));
+}
+
 function m3Cascade() {
   const matches = m3FindMatches();
   if (!matches.length) {
@@ -937,24 +1000,11 @@ function m3Cascade() {
 
   const comboEl = document.getElementById('m3-combo');
   comboEl.textContent = m3Combo > 1 ? `✨ Комбо ×${m3Combo}! +${gained}` : `+${gained}`;
-  setTimeout(() => { comboEl.textContent = ''; }, 700);
+  setTimeout(() => { comboEl.textContent = ''; }, 800);
 
   matches.forEach(({r,c}) => { m3Grid[r][c] = -1; });
   m3Render();
-  setTimeout(() => {
-    for (let c = 0; c < M3_SIZE; c++) {
-      let w = M3_SIZE - 1;
-      for (let r = M3_SIZE - 1; r >= 0; r--) {
-        if (m3Grid[r][c] >= 0) { m3Grid[w][c] = m3Grid[r][c]; if (w !== r) m3Grid[r][c] = -1; w--; }
-      }
-      for (let r = w; r >= 0; r--) m3Grid[r][c] = -1;
-    }
-    for (let r = 0; r < M3_SIZE; r++)
-      for (let c = 0; c < M3_SIZE; c++)
-        if (m3Grid[r][c] < 0) m3Grid[r][c] = m3Gem();
-    m3Render();
-    setTimeout(m3Cascade, 200);
-  }, 200);
+  setTimeout(() => m3FallAnim(() => setTimeout(m3Cascade, 60)), 140);
 }
 
 function m3End() {
