@@ -28,54 +28,78 @@
 
   .map-wrap {
     width: 100%;
-    display: flex;
-    justify-content: center;
+    overflow: hidden;
+    position: relative;
+    touch-action: none;
+    cursor: grab;
+  }
+  .map-wrap:active { cursor: grabbing; }
+
+  .map-zoom {
+    display: inline-block;
+    transform-origin: 0 0;
+    will-change: transform;
   }
 
   .map {
     display: grid;
-    --cell: clamp(40px, calc((100vw - 48px) / 8), 64px);
-    --axis: clamp(24px, calc((100vw - 48px) / 12), 36px);
-    grid-template-columns: var(--axis) repeat(7, var(--cell));
-    grid-template-rows: 20px repeat(5, var(--cell));
+    grid-template-columns: 36px repeat(7, 64px);
+    grid-template-rows: 24px repeat(5, 64px);
     gap: 3px;
+    user-select: none;
   }
 
   .axis-label {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: clamp(0.5rem, 2vw, 0.65rem);
+    font-size: 0.65rem;
     color: #5a5040;
   }
 
   .cell {
-    border-radius: 5px;
+    border-radius: 6px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     cursor: default;
     position: relative;
-    transition: filter 0.15s, transform 0.15s;
+    transition: filter 0.15s;
     border: 1px solid rgba(255,255,255,0.04);
-    touch-action: none;
   }
 
-  .cell:hover { filter: brightness(1.3); transform: scale(1.06); z-index: 10; }
+  .cell:hover { filter: brightness(1.25); }
   .cell[data-tip] { cursor: pointer; }
+  .cell.selected { filter: brightness(1.4); outline: 2px solid rgba(255,255,255,0.3); outline-offset: -1px; }
 
   .cell-code {
-    font-size: clamp(0.55rem, 2.2vw, 0.75rem);
+    font-size: 0.75rem;
     font-weight: bold;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.05em;
   }
 
   .cell-coord {
-    font-size: clamp(0.38rem, 1.4vw, 0.5rem);
-    opacity: 0.45;
+    font-size: 0.5rem;
+    opacity: 0.5;
     margin-top: 2px;
   }
+
+  /* info panel at bottom for mobile tap */
+  .info-panel {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: #1a1814;
+    border-top: 1px solid #4a4030;
+    padding: 14px 18px 20px;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: #c8b89a;
+    display: none;
+    z-index: 50;
+  }
+  .info-panel strong { color: #e0d090; display: block; margin-bottom: 4px; }
+  .info-panel .tip-coord { color: #5a5040; font-size: 0.68rem; }
 
   /* types */
   .t-unknown  { background: #1a1814; border-color: #2a2520; }
@@ -102,7 +126,7 @@
   .t-neutral { background: linear-gradient(135deg, #1e1c16, #161410); border-color: #3a3520; }
   .t-neutral .cell-code { color: #9a8a5a; }
 
-  /* tooltip */
+  /* tooltip (desktop hover) */
   .tooltip {
     position: fixed;
     background: #1e1c16;
@@ -117,9 +141,9 @@
     line-height: 1.5;
     display: none;
   }
-
   .tooltip strong { color: #e0d090; display: block; margin-bottom: 4px; }
   .tooltip .tip-coord { color: #5a5040; font-size: 0.68rem; }
+  @media (hover: none) { .tooltip { display: none !important; } }
 
   /* legend */
   .legend {
@@ -151,11 +175,14 @@
 
 <h1>Карта — run_004</h1>
 
-<div class="map-wrap">
-  <div class="map" id="map"></div>
+<div class="map-wrap" id="map-wrap">
+  <div class="map-zoom" id="map-zoom">
+    <div class="map" id="map"></div>
+  </div>
 </div>
 
 <div class="tooltip" id="tooltip"></div>
+<div class="info-panel" id="info-panel"></div>
 
 <div class="legend">
   <div class="leg-item"><div class="leg-dot" style="background:#1a5a8a"></div>Область игрока</div>
@@ -168,7 +195,6 @@
 
 <script>
 const CELLS = {
-  // format: "x,y": { code, type, name, note }
   "-3,0":  { code:"ОКН", type:"t-ocean",      name:"Океан",               note:"Западная граница. Выход через Бутылочное горлышко." },
   "-2,0":  { code:"ЛАК", type:"t-player-lak", name:"Бутылочное горлышко", note:"Лаки «Фартовый». Западный конец хребта; единственный наземный проход." },
   "-1,0":  { code:"~~~", type:"t-mountain",   name:"Горный хребет",       note:"Непроходим напрямую." },
@@ -184,31 +210,38 @@ const CELLS = {
   "2,-1":  { code:"ЗЛО", type:"t-evil",       name:"Злое место",          note:"Безлюдный пересечённый край к югу от Стоево. Источник нежити и монстров." },
 };
 
-// Grid: X from -3 to +3, Y from +2 to -2 (top = high Y)
-const X_MIN = -3, X_MAX = 3;
-const Y_MIN = -2, Y_MAX = 2;
+const X_MIN = -3, X_MAX = 3, Y_MIN = -2, Y_MAX = 2;
 
-const map = document.getElementById('map');
-const tip = document.getElementById('tooltip');
+const mapEl   = document.getElementById('map');
+const zoomEl  = document.getElementById('map-zoom');
+const wrapEl  = document.getElementById('map-wrap');
+const tip     = document.getElementById('tooltip');
+const panel   = document.getElementById('info-panel');
 
-// Header row: empty corner + X labels
+// ── Build grid ──────────────────────────────────────────────────────────────
 const corner = document.createElement('div');
 corner.className = 'axis-label';
-map.appendChild(corner);
+mapEl.appendChild(corner);
 for (let x = X_MIN; x <= X_MAX; x++) {
   const lbl = document.createElement('div');
   lbl.className = 'axis-label';
   lbl.textContent = (x > 0 ? '+' : '') + x;
-  map.appendChild(lbl);
+  mapEl.appendChild(lbl);
 }
 
-// Rows: Y from high to low
+let selectedCell = null;
+
+function infoHtml(data, x, y) {
+  return '<strong>' + data.name + '</strong>' +
+    data.note +
+    '<br><span class="tip-coord">(' + (x>0?'+':'') + x + ', ' + (y>0?'+':'') + y + ')</span>';
+}
+
 for (let y = Y_MAX; y >= Y_MIN; y--) {
-  // Y axis label
   const ylbl = document.createElement('div');
   ylbl.className = 'axis-label';
   ylbl.textContent = (y > 0 ? '+' : '') + y;
-  map.appendChild(ylbl);
+  mapEl.appendChild(ylbl);
 
   for (let x = X_MIN; x <= X_MAX; x++) {
     const key = x + ',' + y;
@@ -228,36 +261,153 @@ for (let y = Y_MAX; y >= Y_MIN; y--) {
 
     if (data) {
       cell.setAttribute('data-tip', '1');
-      const showTip = (cx, cy) => {
+
+      // Desktop: hover tooltip
+      cell.addEventListener('mouseenter', e => {
         tip.style.display = 'block';
-        tip.innerHTML =
-          '<strong>' + data.name + '</strong>' +
-          data.note +
-          '<br><span class="tip-coord">(' + (x>0?'+':'') + x + ', ' + (y>0?'+':'') + y + ')</span>';
+        tip.innerHTML = infoHtml(data, x, y);
+      });
+      cell.addEventListener('mousemove', e => {
         const tw = tip.offsetWidth, th = tip.offsetHeight;
         const vw = window.innerWidth, vh = window.innerHeight;
-        let lft = cx + 14, top = cy - 10;
-        if (lft + tw > vw - 8) lft = cx - tw - 14;
-        if (lft < 8) lft = 8;
-        if (top + th > vh - 8) top = cy - th - 10;
-        if (top < 8) top = 8;
-        tip.style.left = lft + 'px';
-        tip.style.top  = top + 'px';
-      };
-      cell.addEventListener('mousemove', e => showTip(e.clientX, e.clientY));
+        let lft = e.clientX + 14, top = e.clientY - 10;
+        if (lft + tw > vw - 8) lft = e.clientX - tw - 14;
+        if (top + th > vh - 8) top = e.clientY - th - 10;
+        tip.style.left = Math.max(8, lft) + 'px';
+        tip.style.top  = Math.max(8, top) + 'px';
+      });
       cell.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
-      // touch support
-      cell.addEventListener('touchstart', e => {
-        e.preventDefault();
-        const t = e.touches[0];
-        showTip(t.clientX, t.clientY);
-      }, { passive: false });
-      cell.addEventListener('touchend', () => { tip.style.display = 'none'; });
+
+      // Mobile: tap to select, info panel at bottom
+      cell.addEventListener('click', e => {
+        if (isPinching) return;
+        if (selectedCell === cell) {
+          cell.classList.remove('selected');
+          selectedCell = null;
+          panel.style.display = 'none';
+        } else {
+          if (selectedCell) selectedCell.classList.remove('selected');
+          selectedCell = cell;
+          cell.classList.add('selected');
+          panel.innerHTML = infoHtml(data, x, y);
+          panel.style.display = 'block';
+        }
+        e.stopPropagation();
+      });
     }
 
-    map.appendChild(cell);
+    mapEl.appendChild(cell);
   }
 }
+
+// Click outside → deselect
+document.addEventListener('click', () => {
+  if (selectedCell) { selectedCell.classList.remove('selected'); selectedCell = null; }
+  panel.style.display = 'none';
+});
+
+// ── Pinch-to-zoom + pan ─────────────────────────────────────────────────────
+let scale = 1, tx = 0, ty = 0;
+let isPinching = false;
+
+// Center the map initially
+function centerMap() {
+  const mw = mapEl.offsetWidth, mh = mapEl.offsetHeight;
+  const ww = wrapEl.offsetWidth, wh = wrapEl.offsetHeight;
+  tx = Math.max(0, (ww - mw) / 2);
+  ty = Math.max(0, (wh - mh) / 2);
+  applyT();
+}
+
+function applyT() {
+  zoomEl.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+}
+
+// clamp translation so map doesn't fly off
+function clampT() {
+  const mw = mapEl.offsetWidth * scale;
+  const mh = mapEl.offsetHeight * scale;
+  const ww = wrapEl.offsetWidth;
+  const wh = wrapEl.offsetHeight;
+  const margin = 60;
+  tx = Math.min(margin, Math.max(ww - mw - margin, tx));
+  ty = Math.min(margin, Math.max(wh - mh - margin, ty));
+}
+
+// wrap height = map height (initial scale)
+wrapEl.style.height = (mapEl.offsetHeight || 360) + 'px';
+
+let ptrs = {};
+let lastPinchDist = 0, pinchOriginX = 0, pinchOriginY = 0;
+let startTx = 0, startTy = 0, startScale = 1;
+let panStartX = 0, panStartY = 0;
+
+wrapEl.addEventListener('pointerdown', e => {
+  ptrs[e.pointerId] = { x: e.clientX, y: e.clientY };
+  wrapEl.setPointerCapture(e.pointerId);
+  const ids = Object.keys(ptrs);
+  if (ids.length === 1) {
+    panStartX = e.clientX - tx;
+    panStartY = e.clientY - ty;
+  } else if (ids.length === 2) {
+    isPinching = true;
+    const p0 = ptrs[ids[0]], p1 = ptrs[ids[1]];
+    lastPinchDist = Math.hypot(p0.x - p1.x, p0.y - p1.y);
+    pinchOriginX = (p0.x + p1.x) / 2;
+    pinchOriginY = (p0.y + p1.y) / 2;
+    startScale = scale;
+    startTx = tx; startTy = ty;
+  }
+});
+
+wrapEl.addEventListener('pointermove', e => {
+  if (!ptrs[e.pointerId]) return;
+  ptrs[e.pointerId] = { x: e.clientX, y: e.clientY };
+  const ids = Object.keys(ptrs);
+  if (ids.length === 2) {
+    const p0 = ptrs[ids[0]], p1 = ptrs[ids[1]];
+    const dist = Math.hypot(p0.x - p1.x, p0.y - p1.y);
+    const newScale = Math.min(4, Math.max(0.4, startScale * dist / lastPinchDist));
+    // zoom around pinch origin
+    const ratio = newScale / startScale;
+    tx = pinchOriginX - ratio * (pinchOriginX - startTx);
+    ty = pinchOriginY - ratio * (pinchOriginY - startTy);
+    scale = newScale;
+    clampT();
+    applyT();
+  } else if (ids.length === 1 && !isPinching) {
+    tx = e.clientX - panStartX;
+    ty = e.clientY - panStartY;
+    clampT();
+    applyT();
+  }
+});
+
+const endPtr = e => {
+  delete ptrs[e.pointerId];
+  if (Object.keys(ptrs).length < 2) {
+    setTimeout(() => { isPinching = false; }, 100);
+  }
+};
+wrapEl.addEventListener('pointerup', endPtr);
+wrapEl.addEventListener('pointercancel', endPtr);
+
+// Mouse wheel zoom
+wrapEl.addEventListener('wheel', e => {
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? 0.9 : 1.1;
+  const newScale = Math.min(4, Math.max(0.4, scale * delta));
+  const rect = wrapEl.getBoundingClientRect();
+  const ox = e.clientX - rect.left, oy = e.clientY - rect.top;
+  tx = ox - (newScale / scale) * (ox - tx);
+  ty = oy - (newScale / scale) * (oy - ty);
+  scale = newScale;
+  clampT();
+  applyT();
+}, { passive: false });
+
+window.addEventListener('load', centerMap);
+window.addEventListener('resize', centerMap);
 </script>
 </body>
 </html>
