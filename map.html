@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Карта — run_004</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0f0e0c;
+    color: #c8b89a;
+    font-family: 'Courier New', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px;
+  }
+
+  h1 {
+    font-size: 1rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #8a7a5a;
+    margin-bottom: 24px;
+  }
+
+  .map-wrap {
+    overflow-x: auto;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .map {
+    display: grid;
+    grid-template-columns: 36px repeat(7, 64px);
+    grid-template-rows: 24px repeat(5, 64px);
+    gap: 3px;
+  }
+
+  .axis-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    color: #5a5040;
+  }
+
+  .cell {
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+    position: relative;
+    transition: filter 0.15s, transform 0.15s;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .cell:hover { filter: brightness(1.3); transform: scale(1.04); z-index: 10; }
+  .cell[data-tip]:hover { cursor: pointer; }
+
+  .cell-code {
+    font-size: 0.75rem;
+    font-weight: bold;
+    letter-spacing: 0.05em;
+  }
+
+  .cell-coord {
+    font-size: 0.5rem;
+    opacity: 0.5;
+    margin-top: 2px;
+  }
+
+  /* types */
+  .t-unknown  { background: #1a1814; border-color: #2a2520; }
+  .t-unknown .cell-code { color: #3a3530; }
+
+  .t-player-lak { background: linear-gradient(135deg, #1a2a3a, #0f1f30); border-color: #2a5a8a; }
+  .t-player-lak .cell-code { color: #5aade0; }
+
+  .t-player-klo { background: linear-gradient(135deg, #2a1a0f, #1f1008); border-color: #8a5a2a; }
+  .t-player-klo .cell-code { color: #e0a05a; }
+
+  .t-player-dun { background: linear-gradient(135deg, #1a2a1a, #0f1f0f); border-color: #3a7a3a; }
+  .t-player-dun .cell-code { color: #6acf6a; }
+
+  .t-mountain { background: linear-gradient(135deg, #252320, #1a1816); border-color: #4a4540; }
+  .t-mountain .cell-code { color: #7a7060; }
+
+  .t-ocean { background: linear-gradient(135deg, #0a1828, #071020); border-color: #1a3a5a; }
+  .t-ocean .cell-code { color: #3a7aaa; }
+
+  .t-evil { background: linear-gradient(135deg, #2a0f0f, #1f0808); border-color: #6a1a1a; }
+  .t-evil .cell-code { color: #cc4444; }
+
+  .t-neutral { background: linear-gradient(135deg, #1e1c16, #161410); border-color: #3a3520; }
+  .t-neutral .cell-code { color: #9a8a5a; }
+
+  /* tooltip */
+  .tooltip {
+    position: fixed;
+    background: #1e1c16;
+    border: 1px solid #4a4030;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.78rem;
+    color: #c8b89a;
+    pointer-events: none;
+    z-index: 100;
+    max-width: 220px;
+    line-height: 1.5;
+    display: none;
+  }
+
+  .tooltip strong { color: #e0d090; display: block; margin-bottom: 4px; }
+  .tooltip .tip-coord { color: #5a5040; font-size: 0.68rem; }
+
+  /* legend */
+  .legend {
+    margin-top: 28px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 20px;
+    justify-content: center;
+    max-width: 480px;
+  }
+
+  .leg-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.7rem;
+    color: #7a6a4a;
+  }
+
+  .leg-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<h1>Карта — run_004</h1>
+
+<div class="map-wrap">
+  <div class="map" id="map"></div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<div class="legend">
+  <div class="leg-item"><div class="leg-dot" style="background:#1a5a8a"></div>Область игрока</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#3a3520;border:1px solid #5a5030"></div>Нейтральная зона</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#252320"></div>Горный хребет</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#071020"></div>Океан</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#2a0f0f"></div>Злое место</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#1a1814;border:1px solid #2a2520"></div>Неизвестно</div>
+</div>
+
+<script>
+const CELLS = {
+  // format: "x,y": { code, type, name, note }
+  "-3,0":  { code:"ОКН", type:"t-ocean",      name:"Океан",               note:"Западная граница. Выход через Бутылочное горлышко." },
+  "-2,0":  { code:"ЛАК", type:"t-player-lak", name:"Бутылочное горлышко", note:"Лаки «Фартовый». Западный конец хребта; единственный наземный проход." },
+  "-1,0":  { code:"~~~", type:"t-mountain",   name:"Горный хребет",       note:"Непроходим напрямую." },
+  "0,0":   { code:"~~~", type:"t-mountain",   name:"Горный хребет",       note:"Середина хребта. Точка отсчёта (0, 0)." },
+  "1,0":   { code:"~~~", type:"t-mountain",   name:"Горный хребет",       note:"Непроходим напрямую." },
+  "2,0":   { code:"КЛО", type:"t-player-klo", name:"Стоево",              note:"Клод «Бич». Восточный край хребта; горы на западе." },
+  "3,0":   { code:"ГРН", type:"t-neutral",    name:"Горн",                note:"Нейтральный НП. Упоминается у Лаки (хранение купца)." },
+  "1,1":   { code:"ДУН", type:"t-player-dun", name:"Железный Утёс",       note:"Сир Дунар «Костолом». Равнина к северу от хребта; богатые жилы (медь, железо)." },
+  "2,1":   { code:"ВРШ", type:"t-neutral",    name:"Вершнее",             note:"Нейтральный НП. ~3 дня от Стоево на север." },
+  "3,1":   { code:"ГРЛ", type:"t-neutral",    name:"Горлицы",             note:"Нейтральный НП. ~2 дня от Стоево на северо-восток. Лесозаготовка." },
+  "1,2":   { code:"ВРК", type:"t-neutral",    name:"Ворка",               note:"Нейтральный НП. В контактах Дунара (Хорват)." },
+  "-1,2":  { code:"ДТВ", type:"t-neutral",    name:"Дол Тавер",           note:"Нейтральный НП. Поставщик зерна для Дунара." },
+  "2,-1":  { code:"ЗЛО", type:"t-evil",       name:"Злое место",          note:"Безлюдный пересечённый край к югу от Стоево. Источник нежити и монстров." },
+};
+
+// Grid: X from -3 to +3, Y from +2 to -2 (top = high Y)
+const X_MIN = -3, X_MAX = 3;
+const Y_MIN = -2, Y_MAX = 2;
+
+const map = document.getElementById('map');
+const tip = document.getElementById('tooltip');
+
+// Header row: empty corner + X labels
+const corner = document.createElement('div');
+corner.className = 'axis-label';
+map.appendChild(corner);
+for (let x = X_MIN; x <= X_MAX; x++) {
+  const lbl = document.createElement('div');
+  lbl.className = 'axis-label';
+  lbl.textContent = (x > 0 ? '+' : '') + x;
+  map.appendChild(lbl);
+}
+
+// Rows: Y from high to low
+for (let y = Y_MAX; y >= Y_MIN; y--) {
+  // Y axis label
+  const ylbl = document.createElement('div');
+  ylbl.className = 'axis-label';
+  ylbl.textContent = (y > 0 ? '+' : '') + y;
+  map.appendChild(ylbl);
+
+  for (let x = X_MIN; x <= X_MAX; x++) {
+    const key = x + ',' + y;
+    const data = CELLS[key];
+    const cell = document.createElement('div');
+    cell.className = 'cell ' + (data ? data.type : 't-unknown');
+
+    const code = document.createElement('div');
+    code.className = 'cell-code';
+    code.textContent = data ? data.code : '---';
+    cell.appendChild(code);
+
+    const coord = document.createElement('div');
+    coord.className = 'cell-coord';
+    coord.textContent = (x > 0 ? '+' : '') + x + ' ' + (y > 0 ? '+' : '') + y;
+    cell.appendChild(coord);
+
+    if (data) {
+      cell.setAttribute('data-tip', '1');
+      cell.addEventListener('mousemove', e => {
+        tip.style.display = 'block';
+        tip.style.left = (e.clientX + 14) + 'px';
+        tip.style.top  = (e.clientY - 10) + 'px';
+        tip.innerHTML =
+          '<strong>' + data.name + '</strong>' +
+          data.note +
+          '<br><span class="tip-coord">(' + (x>0?'+':'') + x + ', ' + (y>0?'+':'') + y + ')</span>';
+      });
+      cell.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+    }
+
+    map.appendChild(cell);
+  }
+}
+</script>
+</body>
+</html>
