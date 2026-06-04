@@ -188,14 +188,16 @@
   <div class="leg-item"><div class="leg-dot" style="background:#1a5a8a"></div>Область игрока</div>
   <div class="leg-item"><div class="leg-dot" style="background:#3a3520;border:1px solid #5a5030"></div>Нейтральная зона</div>
   <div class="leg-item"><div class="leg-dot" style="background:#252320"></div>Горный хребет</div>
-  <div class="leg-item"><div class="leg-dot" style="background:#071020"></div>Океан</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#071020"></div>Море</div>
   <div class="leg-item"><div class="leg-dot" style="background:#2a0f0f"></div>Злое место</div>
   <div class="leg-item"><div class="leg-dot" style="background:#1a1814;border:1px solid #2a2520"></div>Неизвестно</div>
 </div>
 
 <script>
 const CELLS = {
-  "-3,0":  { code:"ОКН", type:"t-ocean",      name:"Океан",               note:"Западная граница. Выход через Бутылочное горлышко." },
+  "-3,1":  { code:"МРЕ", type:"t-ocean",      name:"Море",                note:"Северо-западнее Бутылочного горлышка." },
+  "-3,0":  { code:"МРЕ", type:"t-ocean",      name:"Море",                note:"Западнее Бутылочного горлышка. Выход к морским торговым путям." },
+  "-3,-1": { code:"МРЕ", type:"t-ocean",      name:"Море",                note:"Юго-западнее Бутылочного горлышка." },
   "-2,0":  { code:"ЛАК", type:"t-player-lak", name:"Бутылочное горлышко", note:"Лаки «Фартовый». Западный конец хребта; единственный наземный проход." },
   "-1,0":  { code:"~~~", type:"t-mountain",   name:"Горный хребет",       note:"Непроходим напрямую." },
   "0,0":   { code:"~~~", type:"t-mountain",   name:"Горный хребет",       note:"Середина хребта. Точка отсчёта (0, 0)." },
