@@ -67,7 +67,23 @@
     position: relative;
     transition: filter 0.15s;
     border: 1px solid rgba(255,255,255,0.04);
+    overflow: hidden;
   }
+
+  .cell-bg {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.4rem;
+    opacity: 0.13;
+    pointer-events: none;
+    z-index: 0;
+    user-select: none;
+  }
+
+  .cell-code, .cell-coord { position: relative; z-index: 1; }
 
   .cell:hover { filter: brightness(1.25); }
   .cell[data-tip] { cursor: pointer; }
@@ -195,21 +211,21 @@
 
 <script>
 const CELLS = {
-  "-3,1":  { code:"МРЕ", type:"t-ocean",      name:"Море",                note:"Северо-западнее Бутылочного горлышка." },
-  "-3,0":  { code:"МРЕ", type:"t-ocean",      name:"Море",                note:"Западнее Бутылочного горлышка. Выход к морским торговым путям." },
-  "-3,-1": { code:"МРЕ", type:"t-ocean",      name:"Море",                note:"Юго-западнее Бутылочного горлышка." },
-  "-2,0":  { code:"ЛАК", type:"t-player-lak", name:"Бутылочное горлышко", note:"Лаки «Фартовый». Западный конец хребта; единственный наземный проход." },
-  "-1,0":  { code:"~~~", type:"t-mountain",   name:"Горный хребет",       note:"Непроходим напрямую." },
-  "0,0":   { code:"~~~", type:"t-mountain",   name:"Горный хребет",       note:"Середина хребта. Точка отсчёта (0, 0)." },
-  "1,0":   { code:"~~~", type:"t-mountain",   name:"Горный хребет",       note:"Непроходим напрямую." },
-  "2,0":   { code:"КЛО", type:"t-player-klo", name:"Стоево",              note:"Клод «Бич». Восточный край хребта; горы на западе." },
-  "3,0":   { code:"ГРН", type:"t-neutral",    name:"Горн",                note:"Нейтральный НП. Упоминается у Лаки (хранение купца)." },
-  "0,1":   { code:"ДУН", type:"t-player-dun", name:"Железный Утёс",       note:"Сир Дунар «Костолом». Равнина к северу от центра хребта; богатые жилы (медь, железо)." },
-  "2,1":   { code:"ВРШ", type:"t-neutral",    name:"Вершнее",             note:"Нейтральный НП. ~3 дня от Стоево на север." },
-  "3,1":   { code:"ГРЛ", type:"t-neutral",    name:"Горлицы",             note:"Нейтральный НП. ~2 дня от Стоево на северо-восток. Лесозаготовка." },
-  "1,2":   { code:"ВРК", type:"t-neutral",    name:"Ворка",               note:"Нейтральный НП. В контактах Дунара (Хорват)." },
-  "-1,2":  { code:"ДТВ", type:"t-neutral",    name:"Дол Тавер",           note:"Нейтральный НП. Поставщик зерна для Дунара." },
-  "2,-1":  { code:"ЗЛО", type:"t-evil",       name:"Злое место",          note:"Безлюдный пересечённый край к югу от Стоево. Источник нежити и монстров." },
+  "-3,1":  { code:"МРЕ", type:"t-ocean",      icon:"〰", name:"Море",                note:"Северо-западнее Бутылочного горлышка." },
+  "-3,0":  { code:"МРЕ", type:"t-ocean",      icon:"〰", name:"Море",                note:"Западнее Бутылочного горлышка. Выход к морским торговым путям." },
+  "-3,-1": { code:"МРЕ", type:"t-ocean",      icon:"〰", name:"Море",                note:"Юго-западнее Бутылочного горлышка." },
+  "-2,0":  { code:"ЛАК", type:"t-player-lak", icon:"⛰", name:"Бутылочное горлышко", note:"Лаки «Фартовый». Западный конец хребта; единственный наземный проход." },
+  "-2,1":  { code:"ГРН", type:"t-neutral",    icon:"🏘", name:"Горн",                note:"Нейтральный НП. К северу от Лаки. Упоминается у Лаки (хранение купца)." },
+  "-1,0":  { code:"~~~", type:"t-mountain",   icon:"▲", name:"Горный хребет",       note:"Непроходим напрямую." },
+  "0,0":   { code:"~~~", type:"t-mountain",   icon:"▲", name:"Горный хребет",       note:"Середина хребта. Точка отсчёта (0, 0)." },
+  "1,0":   { code:"~~~", type:"t-mountain",   icon:"▲", name:"Горный хребет",       note:"Непроходим напрямую." },
+  "2,0":   { code:"КЛО", type:"t-player-klo", icon:"⛰", name:"Стоево",              note:"Клод «Бич». Восточный край хребта; горы на западе." },
+  "0,1":   { code:"ДУН", type:"t-player-dun", icon:"🏔", name:"Железный Утёс",       note:"Сир Дунар «Костолом». Равнина к северу от центра хребта; богатые жилы (медь, железо)." },
+  "2,1":   { code:"ВРШ", type:"t-neutral",    icon:"🌲", name:"Вершнее",             note:"Нейтральный НП. ~3 дня от Стоево на север." },
+  "3,1":   { code:"ГРЛ", type:"t-neutral",    icon:"🪵", name:"Горлицы",             note:"Нейтральный НП. ~2 дня от Стоево на северо-восток. Лесозаготовка." },
+  "1,2":   { code:"ВРК", type:"t-neutral",    icon:"🏘", name:"Ворка",               note:"Нейтральный НП. В контактах Дунара (Хорват)." },
+  "-1,2":  { code:"ДТВ", type:"t-neutral",    icon:"🌾", name:"Дол Тавер",           note:"Нейтральный НП. Поставщик зерна для Дунара." },
+  "2,-1":  { code:"ЗЛО", type:"t-evil",       icon:"💀", name:"Злое место",          note:"Безлюдный пересечённый край к югу от Стоево. Источник нежити и монстров." },
 };
 
 const X_MIN = -3, X_MAX = 3, Y_MIN = -2, Y_MAX = 2;
@@ -250,6 +266,13 @@ for (let y = Y_MAX; y >= Y_MIN; y--) {
     const data = CELLS[key];
     const cell = document.createElement('div');
     cell.className = 'cell ' + (data ? data.type : 't-unknown');
+
+    if (data && data.icon) {
+      const bg = document.createElement('div');
+      bg.className = 'cell-bg';
+      bg.textContent = data.icon;
+      cell.appendChild(bg);
+    }
 
     const code = document.createElement('div');
     code.className = 'cell-code';
