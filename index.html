@@ -1016,9 +1016,9 @@ function m3Cascade() {
   }
   m3Combo++;
   const n = matches.length;
-  // Базовые очки: 30 / 50 / 80 / 110 за длину совпадения
-  // Комбо: +10 за каждый каскад свыше первого (приглушённый бонус)
-  const base = n <= 3 ? 30 : n <= 5 ? 50 : n <= 8 ? 80 : 110;
+  // Базовые очки: каждый гем = 10 очков
+  // Комбо: +10 за каждый каскад свыше первого
+  const base = n * 10;
   const gained = base + (m3Combo - 1) * 10;
   m3Score += gained;
   m3UpdateStatus();
