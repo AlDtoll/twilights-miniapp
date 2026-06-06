@@ -103,7 +103,7 @@
   .timing-marker { position: absolute; top: 0; bottom: 0; width: 5px; background: #fff; border-radius: 3px; transform: translateX(-50%); box-shadow: 0 0 10px rgba(255,255,255,0.9); pointer-events: none; transition: none; }
   .timing-live-label { font-size: 1rem; font-weight: 700; min-height: 1.4rem; margin-bottom: 6px; text-align: center; transition: color 0.1s; }
   .timing-result-label { font-size: 1.2rem; font-weight: 700; min-height: 1.8rem; margin-bottom: 16px; }
-  .timing-stop-btn { width: 100%; padding: 18px; border-radius: 14px; border: none; background: var(--tg-theme-button-color, #6c5ce7); color: #fff; font-size: 1.2rem; font-weight: 700; cursor: pointer; letter-spacing: 0.5px; }
+  .timing-stop-btn { padding: 14px; border-radius: 12px; border: none; background: var(--tg-theme-button-color, #6c5ce7); color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; letter-spacing: 0.5px; }
   .timing-stop-btn:disabled { opacity: 0.4; cursor: default; }
 
   /* MATCH-3 */
@@ -199,13 +199,28 @@
 </div>
 
 <div id="timing-game" style="display:none">
-  <div class="timing-prompt" id="timing-prompt"></div>
-  <div class="timing-live-label" id="timing-live-label"></div>
-  <div class="timing-wrap" id="timing-wrap">
-    <div class="timing-marker" id="timing-marker" style="left:0%"></div>
+  <div id="timing-ready">
+    <div class="seq-ready-title" id="timing-ready-title">⚡ Тайминг</div>
+    <div class="seq-ready-info" id="timing-ready-info"></div>
+    <button class="confirm-btn" onclick="timingStart()">Готов</button>
   </div>
-  <div class="timing-result-label" id="timing-result-label"></div>
-  <button class="timing-stop-btn" id="timing-stop-btn" onclick="timingStop()">⚡ Стоп!</button>
+  <div id="timing-play" style="display:none">
+    <div class="timing-prompt" id="timing-prompt"></div>
+    <div style="margin-bottom: 10px;">
+      <div style="height: 4px; background: #333; border-radius: 2px; overflow: hidden;">
+        <div id="timing-progress-bar" style="height: 100%; background: #00b894; width: 100%; transition: width 0.1s;"></div>
+      </div>
+    </div>
+    <div class="timing-live-label" id="timing-live-label"></div>
+    <div class="timing-wrap" id="timing-wrap">
+      <div class="timing-marker" id="timing-marker" style="left:0%"></div>
+    </div>
+    <div class="timing-result-label" id="timing-result-label"></div>
+    <div style="display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 16px;">
+      <button class="timing-stop-btn" id="timing-stop-btn" onclick="timingStop()" style="width: 100% !important;">⚡ Стоп!</button>
+      <button class="timing-stop-btn" id="timing-slow-btn" onclick="timingSlow()" style="width: 100% !important;">⏱️ Замедли</button>
+    </div>
+  </div>
 </div>
 
 <div id="bj-game" style="display:none">
@@ -592,6 +607,7 @@ function confirmBJ() {
 
 // ---- TIMING ----
 let timingPos = 0, timingDir = 1, timingStopped = false, timingRAF = null, timingSlowing = false;
+let timingTotalTime = 20, timingTimeLeft = 0, timingTimerInt = null;
 // Цвет зоны по уровню: 0=красный, 1=оранжевый, 2=жёлтый, 3=зелёный
 const ZONE_COLORS = ['#e74c3c','#f39c12','#f1c40f','#00b894'];
 
@@ -604,7 +620,10 @@ const DEFAULT_TIMING_ZONES = [
 
 function initTiming() {
   document.getElementById('timing-game').style.display = '';
+  document.getElementById('timing-ready-title').textContent = gameData.prompt ? gameData.prompt.split('\n')[0] : '⚡ Тайминг';
+  document.getElementById('timing-ready-info').textContent = gameData.prompt ? gameData.prompt.split('\n').slice(1).join('\n') : 'Нажми в нужный момент!';
   document.getElementById('timing-prompt').textContent = gameData.prompt || 'Нажми в нужный момент!';
+
   const rawZones = (gameData.thresholds && gameData.thresholds.length) ? gameData.thresholds : DEFAULT_TIMING_ZONES;
   const zones = rawZones.slice().sort((a,b) => (a.max-a.min)-(b.max-b.min)); // narrowest first
   const wrap = document.getElementById('timing-wrap');
@@ -618,13 +637,39 @@ function initTiming() {
     div.style.background = ZONE_COLORS[Math.min(z.level ?? 0, ZONE_COLORS.length-1)];
     wrap.insertBefore(div, marker);
   });
+
+  timingTotalTime = gameData.time || 20;
   const speed = gameData.speed || 1.5;
-  const slowOnPress = !!gameData.slow_on_press;
   const liveLabel = document.getElementById('timing-live-label');
+
   function getCurrentZone(p) {
     for (const z of zones) { if (p >= z.min && p <= z.max) return z; }
     return null;
   }
+
+  window._timingZones = zones;
+  window._timingSpeed = speed;
+  window._timingGetCurrentZone = getCurrentZone;
+}
+
+function timingStart() {
+  document.getElementById('timing-ready').style.display = 'none';
+  document.getElementById('timing-play').style.display = '';
+
+  timingPos = 0; timingDir = 1; timingStopped = false; timingSlowing = false;
+  timingTimeLeft = timingTotalTime;
+
+  const speed = window._timingSpeed;
+  const liveLabel = document.getElementById('timing-live-label');
+  const slowBtn = document.getElementById('timing-slow-btn');
+  const stopBtn = document.getElementById('timing-stop-btn');
+
+  // Показать/скрыть кнопку Замедления в зависимости от параметра
+  slowBtn.style.display = gameData.slow_on_press ? '' : 'none';
+  stopBtn.style.display = '';
+  slowBtn.disabled = false;
+  stopBtn.disabled = false;
+
   function tick() {
     if (timingStopped) return;
     const currentSpeed = timingSlowing ? speed * 0.15 : speed;
@@ -632,7 +677,7 @@ function initTiming() {
     if (timingPos >= 100) { timingPos = 100; timingDir = -1; }
     if (timingPos <= 0) { timingPos = 0; timingDir = 1; }
     document.getElementById('timing-marker').style.left = timingPos + '%';
-    const cur = getCurrentZone(timingPos);
+    const cur = window._timingGetCurrentZone(timingPos);
     if (cur) {
       liveLabel.textContent = cur.label;
       liveLabel.style.color = ZONE_COLORS[Math.min(cur.level ?? 0, ZONE_COLORS.length-1)];
@@ -644,34 +689,48 @@ function initTiming() {
   }
   timingRAF = requestAnimationFrame(tick);
 
-  window._timingFinalize = function() {
-    if (timingStopped) return;
-    timingStopped = true;
-    cancelAnimationFrame(timingRAF);
-    const pos = Math.round(timingPos);
-    const rawZones2 = (gameData.thresholds && gameData.thresholds.length) ? gameData.thresholds : DEFAULT_TIMING_ZONES;
-    const zones2 = rawZones2.slice().sort((a,b) => (a.max-a.min)-(b.max-b.min));
-    let outcome = zones2.length ? zones2[zones2.length-1] : {label:'промах', level:0};
-    for (const z of zones2) { if (pos >= z.min && pos <= z.max) { outcome = z; break; } }
-    const level = outcome.level ?? 0;
-    document.getElementById('timing-live-label').textContent = '';
-    document.getElementById('timing-result-label').textContent = outcome.label;
-    document.getElementById('timing-result-label').style.color = ZONE_COLORS[Math.min(outcome.level ?? 0, ZONE_COLORS.length-1)];
-    document.getElementById('timing-stop-btn').disabled = true;
-    setTimeout(() => sendResultToBot({game:'timing', position:pos, outcome:outcome.label, level}), 600);
-  };
+  timingTimerInt = setInterval(() => {
+    timingTimeLeft = Math.max(0, timingTimeLeft - 0.1);
+    const pct = timingTimeLeft / timingTotalTime * 100;
+    const bar = document.getElementById('timing-progress-bar');
+    bar.style.width = pct + '%';
+    bar.style.background = pct > 50 ? '#00b894' : pct > 25 ? '#f1c40f' : '#e74c3c';
+    if (timingTimeLeft <= 0) {
+      clearInterval(timingTimerInt);
+      timingStop();
+    }
+  }, 100);
+}
 
-  window._timingSlowOnPress = slowOnPress;
+function timingSlow() {
+  if (timingStopped || timingSlowing) return;
+  timingSlowing = true;
+  document.getElementById('timing-slow-btn').disabled = true;
+  setTimeout(() => {
+    if (!timingStopped) {
+      timingSlowing = false;
+      document.getElementById('timing-slow-btn').disabled = false;
+    }
+  }, 500);
 }
 
 function timingStop() {
   if (timingStopped) return;
-  if (window._timingSlowOnPress && !timingSlowing) {
-    timingSlowing = true;
-    document.getElementById('timing-stop-btn').textContent = '⚡ Фиксировать!';
-    return;
-  }
-  window._timingFinalize();
+  timingStopped = true;
+  if (timingTimerInt) clearInterval(timingTimerInt);
+  cancelAnimationFrame(timingRAF);
+  const pos = Math.round(timingPos);
+  const rawZones2 = (gameData.thresholds && gameData.thresholds.length) ? gameData.thresholds : DEFAULT_TIMING_ZONES;
+  const zones2 = rawZones2.slice().sort((a,b) => (a.max-a.min)-(b.max-b.min));
+  let outcome = zones2.length ? zones2[zones2.length-1] : {label:'промах', level:0};
+  for (const z of zones2) { if (pos >= z.min && pos <= z.max) { outcome = z; break; } }
+  const level = outcome.level ?? 0;
+  document.getElementById('timing-live-label').textContent = '';
+  document.getElementById('timing-result-label').textContent = outcome.label;
+  document.getElementById('timing-result-label').style.color = ZONE_COLORS[Math.min(outcome.level ?? 0, ZONE_COLORS.length-1)];
+  document.getElementById('timing-slow-btn').disabled = true;
+  document.getElementById('timing-stop-btn').disabled = true;
+  setTimeout(() => sendResultToBot({game:'timing', position:pos, outcome:outcome.label, level}), 600);
 }
 
 function sendResultToBot(result) {
