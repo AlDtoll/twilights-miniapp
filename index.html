@@ -709,7 +709,6 @@ function timingSlow() {
   setTimeout(() => {
     if (!timingStopped) {
       timingSlowing = false;
-      document.getElementById('timing-slow-btn').disabled = false;
     }
   }, 500);
 }
