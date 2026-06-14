@@ -143,54 +143,39 @@
 
   /* COMBAT */
   #combat-game { width: 100%; max-width: 400px; }
-  .combat-enemies { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
-  .combat-enemy {
-    padding: 10px 14px; border-radius: 14px; position: relative;
-    background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.1);
-    cursor: pointer; transition: all 0.15s;
-  }
-  .combat-enemy.targeted { border-color: #e74c3c; background: rgba(231,76,60,0.15); }
-  .combat-enemy.dead { opacity: 0.35; pointer-events: none; }
+  .combat-enemies { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+  .combat-enemy { padding: 10px 14px; border-radius: 14px; background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.1); }
+  .combat-enemy.dead { opacity: 0.35; }
   .combat-enemy-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
   .combat-enemy-name { font-weight: 700; font-size: 1rem; }
   .combat-enemy-hp-text { font-size: 0.85rem; color: var(--tg-theme-hint-color, #aaa); }
-  .combat-hp-bar { height: 8px; border-radius: 4px; background: rgba(255,255,255,0.1); overflow: hidden; margin-bottom: 6px; }
+  .combat-hp-bar { height: 8px; border-radius: 4px; background: rgba(255,255,255,0.1); overflow: hidden; margin-bottom: 8px; }
   .combat-hp-fill { height: 100%; border-radius: 4px; background: #e74c3c; transition: width 0.4s; }
-  .combat-intent { font-size: 0.82rem; color: var(--tg-theme-hint-color, #aaa); }
-  .combat-die-tag {
-    position: absolute; top: 8px; right: 8px;
-    background: #e74c3c; color: #fff; border-radius: 8px;
-    padding: 2px 8px; font-size: 0.8rem; font-weight: 700;
-  }
-  .combat-slots { display: flex; gap: 8px; margin-bottom: 14px; }
-  .combat-slot {
-    flex: 1; min-height: 70px; border-radius: 12px;
-    border: 2px dashed rgba(255,255,255,0.2); background: rgba(255,255,255,0.04);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    cursor: pointer; transition: all 0.15s; gap: 3px;
-  }
-  .combat-slot:hover { border-color: rgba(255,255,255,0.4); }
-  .combat-slot.has-die { border-style: solid; border-color: #00b894; background: rgba(0,184,148,0.12); }
-  .combat-slot-icon { font-size: 1.3rem; }
-  .combat-slot-label { font-size: 0.68rem; color: var(--tg-theme-hint-color, #aaa); text-align: center; }
-  .combat-slot-die { font-size: 1.3rem; font-weight: 800; color: #00b894; }
-  .combat-dice-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 14px; }
-  .combat-die {
-    width: 56px; height: 56px; border-radius: 12px;
-    background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.15);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.8rem; cursor: pointer; transition: all 0.15s; user-select: none;
-  }
+  .combat-enemy-vals { display: flex; gap: 16px; margin-bottom: 8px; font-size: 0.95rem; }
+  .combat-val-def { color: #74b9ff; font-weight: 700; }
+  .combat-val-atk { color: #ff7675; font-weight: 700; }
+  .combat-atk-slot { padding: 7px 10px; border-radius: 8px; border: 1.5px dashed rgba(255,255,255,0.2); display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.83rem; color: var(--tg-theme-hint-color, #aaa); transition: all 0.15s; }
+  .combat-atk-slot:hover { border-color: rgba(255,255,255,0.4); }
+  .combat-atk-slot.has-die { border-style: solid; border-color: #e74c3c; background: rgba(231,76,60,0.1); color: var(--tg-theme-text-color, #fff); }
+  .combat-damage-2 { color: #fdcb6e; font-weight: 700; }
+  .combat-damage-1 { color: #a29bfe; font-weight: 700; }
+  .combat-damage-0 { color: #636e72; font-weight: 700; text-decoration: line-through; }
+  .combat-block-slot { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px; border: 1.5px dashed rgba(255,255,255,0.2); cursor: pointer; transition: all 0.15s; font-size: 0.85rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 12px; }
+  .combat-block-slot:hover { border-color: rgba(255,255,255,0.4); }
+  .combat-block-slot.has-die { border-style: solid; border-color: #74b9ff; background: rgba(116,185,255,0.08); color: var(--tg-theme-text-color, #fff); }
+  .combat-round-label { text-align: center; font-size: 0.88rem; font-weight: 600; margin-bottom: 10px; color: var(--tg-theme-hint-color, #aaa); }
+  .combat-dice-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 10px; }
+  .combat-die { width: 56px; height: 56px; border-radius: 12px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; cursor: pointer; transition: all 0.15s; user-select: none; }
   .combat-die:hover { border-color: rgba(255,255,255,0.4); }
   .combat-die.selected { border-color: #a29bfe; background: rgba(162,155,254,0.25); transform: scale(1.1); }
   .combat-die.used { opacity: 0.22; pointer-events: none; }
+  .combat-card-area { display: flex; align-items: center; gap: 8px; justify-content: center; padding: 6px 0 10px; }
+  .combat-card-label { font-size: 0.82rem; color: var(--tg-theme-hint-color, #aaa); }
+  .combat-card-btn { padding: 7px 18px; border-radius: 8px; border: 1.5px solid rgba(162,155,254,0.5); background: rgba(162,155,254,0.15); color: var(--tg-theme-text-color, #fff); font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.15s; }
+  .combat-card-btn:active { background: rgba(162,155,254,0.4); }
   .combat-player-hp { text-align: center; font-size: 1.2rem; margin-top: 6px; }
   .combat-section-label { font-size: 0.72rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 6px; }
-  .combat-log {
-    margin-top: 10px; padding: 10px 12px; border-radius: 10px;
-    background: rgba(255,255,255,0.05); font-size: 0.85rem;
-    color: var(--tg-theme-hint-color, #aaa); line-height: 1.6; min-height: 36px;
-  }
+  .combat-log { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,0.05); font-size: 0.85rem; color: var(--tg-theme-hint-color, #aaa); line-height: 1.6; min-height: 36px; }
 </style>
 </head>
 <body>
@@ -199,11 +184,17 @@
 
 <div id="combat-game" style="display:none">
   <div id="combat-prompt" class="subtitle" style="margin-bottom:12px;text-align:left;font-size:0.88rem;padding:10px 12px;background:rgba(255,255,255,0.05);border-radius:10px;line-height:1.5;display:none"></div>
+  <div id="combat-round-label" class="combat-round-label"></div>
   <div id="combat-enemies" class="combat-enemies"></div>
-  <div class="combat-section-label">🛡 Защита и приёмы (тапни слот)</div>
-  <div id="combat-slots" class="combat-slots"></div>
-  <div class="combat-section-label">🎲 Кубики — выбери и назначь на врага или слот</div>
+  <div class="combat-section-label">🛡 Блок (один кубик против всего входящего урона)</div>
+  <div id="combat-block-slot" class="combat-block-slot"></div>
+  <div class="combat-section-label">🎲 Кубики — выбери, потом тапни цель или блок</div>
   <div id="combat-dice-row" class="combat-dice-row"></div>
+  <div id="combat-card-area" class="combat-card-area" style="display:none">
+    <span class="combat-card-label">✏️ Карточка:</span>
+    <button class="combat-card-btn" onclick="combatApplyCard(1)">+1</button>
+    <button class="combat-card-btn" onclick="combatApplyCard(-1)">−1</button>
+  </div>
   <button class="confirm-btn" id="combat-confirm" onclick="combatResolve()" disabled>Разыграть раунд</button>
   <div id="combat-player-hp" class="combat-player-hp"></div>
   <div id="combat-log" class="combat-log"></div>
@@ -1192,7 +1183,7 @@ function m3End() {
   setTimeout(() => sendResultToBot({game:'match3', score, outcome:label, level}), 700);
 }
 
-// ---- COMBAT ----
+// ---- COMBAT v2 ----
 const DICE_FACES = ['⚀','⚁','⚂','⚃','⚄','⚅'];
 let combatState = null, combatSelectedDie = null;
 
@@ -1201,16 +1192,22 @@ function combatPRNG(seed) {
   return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 0x100000000; };
 }
 
+function calcCombatDamage(playerDie, enemyDefVal) {
+  const diff = Math.abs(playerDie - enemyDefVal);
+  return diff === 0 ? 2 : diff === 1 ? 1 : 0;
+}
+
 function initCombat() {
   document.getElementById('combat-game').style.display = '';
   document.getElementById('subtitle').textContent = '⚔️ Сражение';
-  const raw = gameData.enemies || [{name:'Противник', hp:4, danger:2}];
-  const enemies = raw.map(e => ({...e, max_hp: e.max_hp ?? e.hp, intent: null}));
+  const raw = gameData.enemies || [{name:'Противник', hp:2, danger:2}];
+  const enemies = raw.map(e => ({...e, max_hp: e.max_hp ?? e.hp, defVal: null, atkVal: null}));
   const playerHp = gameData.player_hp ?? 5;
   combatState = {
     enemies, playerHp, maxPlayerHp: playerHp,
-    round: 1, specialName: gameData.special || null,
-    assignments: {}, dice: [], roundLogs: [],
+    round: 1, maxRounds: gameData.max_rounds ?? 3,
+    dice: [], cardUsed: false,
+    assignments: {}, roundLogs: [],
     rng: combatPRNG(gameData.seed || 42), done: false,
   };
   if (gameData.prompt) {
@@ -1220,154 +1217,199 @@ function initCombat() {
   combatStartRound();
 }
 
-function combatRollDice() {
-  return Array.from({length: 4}, () => Math.floor(combatState.rng() * 6) + 1);
-}
-function combatRollIntents() {
-  combatState.enemies.forEach(e => {
-    if (e.hp <= 0) { e.intent = null; return; }
-    const r = combatState.rng();
-    e.intent = r < 0.55 ? 'attack' : r < 0.78 ? 'defend' : 'special';
+function combatRollEnemies() {
+  const s = combatState;
+  s.enemies.forEach(e => {
+    if (e.hp <= 0) { e.defVal = null; e.atkVal = null; return; }
+    e.defVal = Math.floor(s.rng() * 6) + 1;
+    const atkMax = Math.min(6, 2 + (e.danger ?? 1));
+    e.atkVal = Math.floor(s.rng() * atkMax) + 1;
   });
 }
+
 function combatStartRound() {
   if (combatState.done) return;
-  combatState.dice = combatRollDice();
-  combatRollIntents();
+  combatRollEnemies();
+  combatState.dice = Array.from({length: 4}, () => Math.floor(combatState.rng() * 6) + 1);
   combatState.assignments = {};
+  combatState.cardUsed = false;
   combatSelectedDie = null;
-  document.querySelector('h1').textContent = `Раунд ${combatState.round}`;
   document.getElementById('combat-log').innerHTML = '';
   combatRender();
 }
 
 function combatRender() {
   const s = combatState;
+
+  document.getElementById('combat-round-label').textContent = `Раунд ${s.round} / ${s.maxRounds}`;
+
   const enemiesEl = document.getElementById('combat-enemies');
   enemiesEl.innerHTML = '';
   s.enemies.forEach((e, i) => {
-    const hasAttack = Object.values(s.assignments).some(a => a.type === 'attack' && a.enemyIndex === i);
-    const dieEntry = Object.entries(s.assignments).find(([_, a]) => a.type === 'attack' && a.enemyIndex === i);
+    const atkEntry = Object.entries(s.assignments).find(([_, a]) => a.type === 'attack' && a.enemyIndex === i);
     const div = document.createElement('div');
-    div.className = 'combat-enemy' + (e.hp <= 0 ? ' dead' : '') + (hasAttack ? ' targeted' : '');
+    div.className = 'combat-enemy' + (e.hp <= 0 ? ' dead' : '');
     const pct = Math.max(0, e.hp / e.max_hp * 100);
-    const intentStr = !e.intent ? '' : e.intent === 'attack'
-      ? `⚔️ Атакует — ${e.danger ?? 1} урона`
-      : e.intent === 'defend' ? `🛡 Защищается — -1 к урону по нему`
-      : `✨ Особое — ${Math.ceil((e.danger ?? 1) * 1.5)} урона`;
+    let atkSlotHtml = '';
+    if (e.hp > 0) {
+      if (atkEntry) {
+        const dv = s.dice[+atkEntry[0]];
+        const dmg = calcCombatDamage(dv, e.defVal);
+        const dmgClass = dmg === 2 ? 'combat-damage-2' : dmg === 1 ? 'combat-damage-1' : 'combat-damage-0';
+        const dmgText = dmg === 2 ? '2 урона!' : dmg === 1 ? '1 урон' : 'промах';
+        atkSlotHtml = `<div class="combat-atk-slot has-die" onclick="combatUnassignEnemy(${i})">
+          <span>${DICE_FACES[dv-1]}</span>
+          <span class="${dmgClass}">→ ${dmgText}</span>
+          <span style="margin-left:auto;opacity:0.5;font-size:0.75rem">✕</span></div>`;
+      } else {
+        atkSlotHtml = `<div class="combat-atk-slot" onclick="combatAssignAttack(${i})">🗡 Нанести удар</div>`;
+      }
+    }
     div.innerHTML = `
       <div class="combat-enemy-header">
         <span class="combat-enemy-name">${e.hp<=0?'💀 ':''}${e.name}</span>
-        <span class="combat-enemy-hp-text">${Math.max(0,e.hp)}/${e.max_hp} ❤️</span>
+        <span class="combat-enemy-hp-text">${Math.max(0,e.hp)}/${e.max_hp}❤️</span>
       </div>
       <div class="combat-hp-bar"><div class="combat-hp-fill" style="width:${pct}%"></div></div>
-      ${e.hp>0 ? `<div class="combat-intent">${intentStr}</div>` : ''}
-      ${dieEntry ? `<div class="combat-die-tag">${DICE_FACES[s.dice[+dieEntry[0]]-1]}</div>` : ''}`;
-    if (e.hp > 0) div.onclick = () => combatTargetEnemy(i);
+      ${e.hp > 0 ? `<div class="combat-enemy-vals">
+        <span class="combat-val-def">🛡 ${e.defVal}</span>
+        <span class="combat-val-atk">⚔️ ${e.atkVal}</span>
+      </div>${atkSlotHtml}` : ''}`;
     enemiesEl.appendChild(div);
   });
 
-  const slotsEl = document.getElementById('combat-slots');
-  slotsEl.innerHTML = '';
-  const mkSlot = (type, icon, label) => {
-    const entry = Object.entries(s.assignments).find(([_, a]) => a.type === type);
-    const div = document.createElement('div');
-    div.className = 'combat-slot' + (entry ? ' has-die' : '');
-    div.innerHTML = `<span class="combat-slot-icon">${icon}</span><span class="combat-slot-label">${label}</span>${entry ? `<span class="combat-slot-die">${DICE_FACES[s.dice[+entry[0]]-1]}</span>` : ''}`;
-    div.onclick = () => entry ? combatUnassign(+entry[0]) : combatAssignSlot(type);
-    slotsEl.appendChild(div);
-  };
-  mkSlot('defend', '🛡', 'Защита');
-  if (s.specialName) mkSlot('special', '✨', s.specialName);
+  const blockEntry = Object.entries(s.assignments).find(([_, a]) => a.type === 'block');
+  const totalAtk = s.enemies.reduce((sum, e) => e.hp > 0 ? sum + (e.atkVal ?? 0) : sum, 0);
+  const blockEl = document.getElementById('combat-block-slot');
+  if (blockEntry) {
+    const dv = s.dice[+blockEntry[0]];
+    const taken = Math.max(0, totalAtk - dv);
+    blockEl.className = 'combat-block-slot has-die';
+    blockEl.innerHTML = `<span style="font-size:1.3rem">${DICE_FACES[dv-1]}</span><span>${taken === 0 ? '✅ весь урон поглощён' : `→ получишь ${taken} урона`}</span><span style="margin-left:auto;opacity:0.5;font-size:0.75rem">✕</span>`;
+    blockEl.onclick = () => { delete s.assignments[+blockEntry[0]]; combatRender(); };
+  } else {
+    blockEl.className = 'combat-block-slot';
+    blockEl.innerHTML = `<span>🛡</span><span>Блок — входящий урон: ${totalAtk}</span>`;
+    blockEl.onclick = () => combatAssignBlock();
+  }
 
   const diceEl = document.getElementById('combat-dice-row');
   diceEl.innerHTML = '';
   s.dice.forEach((val, i) => {
-    const div = document.createElement('div');
     const used = i in s.assignments;
+    const div = document.createElement('div');
     div.className = 'combat-die' + (used ? ' used' : '') + (combatSelectedDie === i ? ' selected' : '');
     div.textContent = DICE_FACES[val - 1];
     div.onclick = () => { if (!used) { combatSelectedDie = combatSelectedDie === i ? null : i; combatRender(); } };
     diceEl.appendChild(div);
   });
 
+  const cardArea = document.getElementById('combat-card-area');
+  cardArea.style.display = (combatSelectedDie !== null && !s.cardUsed && !(combatSelectedDie in s.assignments)) ? 'flex' : 'none';
+
   document.getElementById('combat-confirm').disabled = Object.keys(s.assignments).length === 0;
   const hearts = '❤️'.repeat(Math.max(0, s.playerHp)) + '🖤'.repeat(Math.max(0, s.maxPlayerHp - s.playerHp));
   document.getElementById('combat-player-hp').textContent = `Герой: ${hearts}`;
 }
 
-function combatTargetEnemy(ei) {
+function combatAssignAttack(ei) {
   if (combatSelectedDie === null) return;
   const s = combatState;
   const prev = Object.entries(s.assignments).find(([_, a]) => a.type === 'attack' && a.enemyIndex === ei);
   if (prev) delete s.assignments[+prev[0]];
+  delete s.assignments[combatSelectedDie];
   s.assignments[combatSelectedDie] = {type: 'attack', enemyIndex: ei};
   combatSelectedDie = null; combatRender();
 }
-function combatAssignSlot(type) {
+
+function combatAssignBlock() {
   if (combatSelectedDie === null) return;
   const s = combatState;
-  const prev = Object.entries(s.assignments).find(([_, a]) => a.type === type);
+  const prev = Object.entries(s.assignments).find(([_, a]) => a.type === 'block');
   if (prev) delete s.assignments[+prev[0]];
-  s.assignments[combatSelectedDie] = {type};
+  delete s.assignments[combatSelectedDie];
+  s.assignments[combatSelectedDie] = {type: 'block'};
   combatSelectedDie = null; combatRender();
 }
-function combatUnassign(di) { delete combatState.assignments[di]; combatRender(); }
+
+function combatUnassignEnemy(ei) {
+  const s = combatState;
+  const entry = Object.entries(s.assignments).find(([_, a]) => a.type === 'attack' && a.enemyIndex === ei);
+  if (entry) { delete s.assignments[+entry[0]]; combatRender(); }
+}
+
+function combatApplyCard(delta) {
+  if (combatSelectedDie === null || combatState.cardUsed) return;
+  combatState.dice[combatSelectedDie] = Math.max(1, Math.min(6, combatState.dice[combatSelectedDie] + delta));
+  combatState.cardUsed = true;
+  combatSelectedDie = null;
+  combatRender();
+}
 
 function combatResolve() {
   const s = combatState;
   const log = [];
-  const defEntry = Object.entries(s.assignments).find(([_, a]) => a.type === 'defend');
-  const defVal = defEntry ? s.dice[+defEntry[0]] : 0;
-  const spEntry = Object.entries(s.assignments).find(([_, a]) => a.type === 'special');
-  const spVal = spEntry ? s.dice[+spEntry[0]] : 0;
 
-  Object.entries(s.assignments).forEach(([di, a]) => {
-    if (a.type !== 'attack') return;
-    const e = s.enemies[a.enemyIndex];
-    if (!e || e.hp <= 0) return;
-    let dmg = s.dice[+di];
-    if (e.intent === 'defend') dmg = Math.max(0, dmg - 1);
-    if (spVal > 0 && s.specialName) dmg = Math.min(dmg + Math.floor(spVal / 2), 9);
-    const actual = Math.min(dmg, e.hp);
-    e.hp = Math.max(0, e.hp - dmg);
-    log.push(`⚔️ ${e.name}: -${actual} ❤️` + (e.hp <= 0 ? ' (повержен!)' : ''));
+  s.enemies.forEach((e, i) => {
+    if (e.hp <= 0) return;
+    const atkEntry = Object.entries(s.assignments).find(([_, a]) => a.type === 'attack' && a.enemyIndex === i);
+    if (!atkEntry) return;
+    const dv = s.dice[+atkEntry[0]];
+    const dmg = calcCombatDamage(dv, e.defVal);
+    if (dmg > 0) {
+      const actual = Math.min(dmg, e.hp);
+      e.hp = Math.max(0, e.hp - dmg);
+      log.push(`⚔️ ${e.name}: -${actual}❤️${e.hp <= 0 ? ' (повержен!)' : ''}`);
+    } else {
+      log.push(`💨 ${e.name}: промах (${DICE_FACES[dv-1]} ≠ 🛡${e.defVal})`);
+    }
   });
 
-  let incoming = 0;
-  s.enemies.forEach(e => {
-    if (e.hp <= 0 || !e.intent || e.intent === 'defend') return;
-    incoming += e.intent === 'special' ? Math.ceil((e.danger ?? 1) * 1.5) : (e.danger ?? 1);
-  });
-  const blocked = defVal >= incoming ? incoming : 0;
-  const taken = incoming - blocked;
-  if (blocked > 0) log.push(`🛡 Блок! Поглощено ${blocked} урона`);
-  if (taken > 0) { s.playerHp = Math.max(0, s.playerHp - taken); log.push(`💔 Герой получил ${taken} урона → ${s.playerHp}❤️`); }
-  else if (incoming === 0) log.push('✨ Враги не атаковали');
+  const blockEntry = Object.entries(s.assignments).find(([_, a]) => a.type === 'block');
+  const blockVal = blockEntry ? s.dice[+blockEntry[0]] : 0;
+  const totalAtk = s.enemies.reduce((sum, e) => e.hp > 0 ? sum + (e.atkVal ?? 0) : sum, 0);
+  const taken = Math.max(0, totalAtk - blockVal);
+  if (totalAtk > 0) {
+    if (blockVal > 0) log.push(`🛡 Блок ${DICE_FACES[blockVal-1]}: −${Math.min(blockVal, totalAtk)}`);
+    if (taken > 0) { s.playerHp = Math.max(0, s.playerHp - taken); log.push(`💔 Герой: -${taken}❤️ → ${s.playerHp}❤️`); }
+    else log.push(`✅ Урон полностью поглощён`);
+  } else {
+    log.push('✨ Враги повержены — урон не нанесён');
+  }
 
   s.roundLogs.push({round: s.round, dice: [...s.dice], log: [...log]});
   s.round++;
   document.getElementById('combat-log').innerHTML = log.join('<br>');
 
   const alive = s.enemies.filter(e => e.hp > 0).length;
-  if (s.playerHp <= 0 || alive === 0) { s.done = true; setTimeout(combatEnd, 900); }
-  else { document.getElementById('combat-confirm').disabled = true; setTimeout(combatStartRound, 1300); }
+  if (s.playerHp <= 0 || alive === 0 || s.round > s.maxRounds) {
+    s.done = true; setTimeout(combatEnd, 900);
+  } else {
+    document.getElementById('combat-confirm').disabled = true;
+    setTimeout(combatStartRound, 1300);
+  }
 }
 
 function combatEnd() {
   const s = combatState;
   const defeated = s.enemies.filter(e => e.hp <= 0).length;
-  const victory = s.playerHp > 0 && defeated === s.enemies.length;
-  const partial = s.playerHp > 0 && defeated > 0;
-  const outcome = victory ? 'victory' : partial ? 'partial' : 'defeat';
-  const level = victory ? 3 : partial ? 1 : 0;
-  const label = victory ? '⚔️ Победа!' : partial ? '🩸 Частичная победа' : '💀 Поражение';
-  const cls = victory ? 'result-good' : partial ? 'result-mid' : 'result-bad';
+  const allDefeated = defeated === s.enemies.length;
+  const playerAlive = s.playerHp > 0;
+  let outcome, level, label, cls;
+  if (playerAlive && allDefeated) {
+    outcome = 'victory'; level = 3; label = '⚔️ Победа!'; cls = 'result-good';
+  } else if (!playerAlive) {
+    outcome = 'defeat'; level = 0; label = '💀 Поражение'; cls = 'result-bad';
+  } else if (defeated > 0) {
+    outcome = 'partial'; level = 1; label = '🩸 Частичная победа'; cls = 'result-mid';
+  } else {
+    outcome = 'escape'; level = 0; label = '🌪 Бой прерван'; cls = 'result-bad';
+  }
   const banner = document.getElementById('combat-result');
   banner.style.display = ''; banner.className = 'result-banner ' + cls; banner.textContent = label;
   document.getElementById('combat-confirm').style.display = 'none';
   setTimeout(() => sendResultToBot({
-    game: 'combat', outcome, level, victory,
+    game: 'combat', outcome, level, victory: outcome === 'victory',
     rounds: s.round - 1, enemies_defeated: defeated, enemies_total: s.enemies.length,
     player_hp_remaining: s.playerHp, rounds_log: s.roundLogs,
   }), 700);
