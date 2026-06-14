@@ -1199,14 +1199,14 @@ function calcCombatDamage(playerDie, enemyDefVal) {
 }
 function calcCombatBlock(blockDie, enemyAtkVal) {
   const diff = Math.abs(blockDie - enemyAtkVal);
-  return diff === 0 ? 0 : diff === 1 ? 1 : enemyAtkVal;
+  return diff === 0 ? 0 : diff === 1 ? 1 : 2;
 }
 
 function initCombat() {
   document.getElementById('combat-game').style.display = '';
   document.getElementById('subtitle').textContent = '⚔️ Сражение';
   const raw = gameData.enemies || [{name:'Противник', hp:2, danger:2}];
-  const enemies = raw.map(e => ({...e, max_hp: e.max_hp ?? e.hp, defVal: null, atkVal: e.danger ?? 1}));
+  const enemies = raw.map(e => ({...e, max_hp: e.max_hp ?? e.hp, defVal: null, atkVal: null}));
   const playerHp = gameData.player_hp ?? 2;
   combatState = {
     enemies, playerHp, maxPlayerHp: playerHp,
@@ -1226,9 +1226,9 @@ function initCombat() {
 function combatRollEnemies() {
   const s = combatState;
   s.enemies.forEach(e => {
-    if (e.hp <= 0) { e.defVal = null; return; }
+    if (e.hp <= 0) { e.defVal = null; e.atkVal = null; return; }
     e.defVal = Math.floor(s.rng() * 6) + 1;
-    // atkVal = danger (fixed, not rolled)
+    e.atkVal = Math.floor(s.rng() * 6) + 1;
   });
 }
 
@@ -1272,7 +1272,7 @@ function combatRender() {
         const dv = s.dice[+blkEntry[0]];
         const taken = calcCombatBlock(dv, e.atkVal);
         const blkClass = taken === 0 ? 'combat-block-0' : taken === 1 ? 'combat-block-1' : 'combat-block-full';
-        const blkText = taken === 0 ? 'блок!' : taken === 1 ? '1 урон' : `${e.atkVal} урона`;
+        const blkText = taken === 0 ? 'блок!' : taken === 1 ? '1 урон' : '2 урона';
         blkSlotHtml = `<div class="combat-blk-slot has-die" onclick="combatUnassignBlk(${i})">${DICE_FACES[dv-1]} <span class="${blkClass}">→ ${blkText}</span> <span style="margin-left:auto;opacity:0.5;font-size:0.7rem">✕</span></div>`;
       } else {
         blkSlotHtml = `<div class="combat-blk-slot" onclick="combatAssignBlock(${i})">🛡 Блок — <span class="combat-val-atk">удар ${e.atkVal}</span></div>`;
@@ -1407,7 +1407,7 @@ function combatResolve() {
       if (taken === 0) log.push(`🛡 ${e.name}: блок! (${DICE_FACES[dv-1]} ↔ ⚔️${e.atkVal})`);
       else { log.push(`🛡 ${e.name}: ${DICE_FACES[dv-1]} → ${taken} урона`); totalTaken += taken; }
     } else {
-      log.push(`💔 ${e.name} атакует: ${e.atkVal} урона`); totalTaken += e.atkVal ?? 0;
+      log.push(`💔 ${e.name} атакует: 2 урона`); totalTaken += 2;
     }
   });
   if (totalTaken > 0) { s.playerHp = Math.max(0, s.playerHp - totalTaken); log.push(`Герой: ${s.playerHp}❤️ (−${totalTaken})`); }
