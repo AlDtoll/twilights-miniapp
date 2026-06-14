@@ -1306,7 +1306,7 @@ function combatRender() {
   const modsEl = document.getElementById('combat-mods');
   let modsHtml = '';
   const cardLabel = s.cardName ? `✨ ${s.cardName}` : '✏️ ±1';
-  const cardHint = s.cardName ? `<span class="combat-mod-hint">(±1 к кубику)</span>` : '';
+  const cardHint = `<span class="combat-mod-hint">(±1, раз в раунд)</span>`;
   if (s.cardUsed) {
     modsHtml += `<div class="combat-mod-row"><span class="combat-mod-label">${cardLabel}</span>${cardHint}<span class="combat-mod-used">использован</span></div>`;
   } else if (canMod) {
@@ -1316,7 +1316,7 @@ function combatRender() {
   }
   if (s.hasReroll) {
     const rerollLabel = s.rerollName ? `✨ ${s.rerollName}` : '🔄 Переброс';
-    const rerollHint = s.rerollName ? `<span class="combat-mod-hint">(переброс куба)</span>` : '';
+    const rerollHint = `<span class="combat-mod-hint">(переброс, раз в бой)</span>`;
     if (s.rerollUsed) {
       modsHtml += `<div class="combat-mod-row"><span class="combat-mod-label">${rerollLabel}</span>${rerollHint}<span class="combat-mod-used">использован</span></div>`;
     } else if (canMod) {
