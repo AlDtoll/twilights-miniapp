@@ -173,9 +173,12 @@
   .combat-die:hover { border-color: rgba(255,255,255,0.4); }
   .combat-die.selected { border-color: #a29bfe; background: rgba(162,155,254,0.25); transform: scale(1.1); }
   .combat-die.used { opacity: 0.22; pointer-events: none; }
-  .combat-card-area { display: flex; align-items: center; gap: 8px; justify-content: center; padding: 6px 0 10px; }
-  .combat-card-label { font-size: 0.82rem; color: var(--tg-theme-hint-color, #aaa); }
-  .combat-card-btn { padding: 7px 18px; border-radius: 8px; border: 1.5px solid rgba(162,155,254,0.5); background: rgba(162,155,254,0.15); color: var(--tg-theme-text-color, #fff); font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.15s; }
+  .combat-mods { padding: 8px 0 10px; display: flex; flex-direction: column; gap: 8px; }
+  .combat-mod-row { display: flex; align-items: center; gap: 8px; }
+  .combat-mod-label { font-size: 0.82rem; font-weight: 600; min-width: 110px; color: var(--tg-theme-text-color, #fff); }
+  .combat-mod-used { font-size: 0.78rem; color: #636e72; }
+  .combat-mod-hint { font-size: 0.78rem; color: var(--tg-theme-hint-color, #aaa); }
+  .combat-card-btn { padding: 6px 14px; border-radius: 8px; border: 1.5px solid rgba(162,155,254,0.5); background: rgba(162,155,254,0.15); color: var(--tg-theme-text-color, #fff); font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.15s; }
   .combat-card-btn:active { background: rgba(162,155,254,0.4); }
   .combat-player-hp { text-align: center; font-size: 1.2rem; margin-top: 6px; }
   .combat-section-label { font-size: 0.72rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 6px; }
@@ -192,11 +195,7 @@
   <div id="combat-enemies" class="combat-enemies"></div>
   <div class="combat-section-label">🎲 Кубики — выбери, потом тапни ⚔️ или 🛡 на враге</div>
   <div id="combat-dice-row" class="combat-dice-row"></div>
-  <div id="combat-card-area" class="combat-card-area" style="display:none">
-    <span class="combat-card-label">✏️ Карточка:</span>
-    <button class="combat-card-btn" onclick="combatApplyCard(1)">+1</button>
-    <button class="combat-card-btn" onclick="combatApplyCard(-1)">−1</button>
-  </div>
+  <div id="combat-mods" class="combat-mods"></div>
   <button class="confirm-btn" id="combat-confirm" onclick="combatResolve()" disabled>Разыграть раунд</button>
   <div id="combat-player-hp" class="combat-player-hp"></div>
   <div id="combat-log" class="combat-log"></div>
@@ -1213,6 +1212,7 @@ function initCombat() {
     enemies, playerHp, maxPlayerHp: playerHp,
     round: 1, maxRounds: gameData.max_rounds ?? 3,
     dice: [], cardUsed: false,
+    hasReroll: !!gameData.reroll, rerollUsed: false,
     assignments: {}, roundLogs: [],
     rng: combatPRNG(gameData.seed || 42), done: false,
   };
@@ -1264,10 +1264,10 @@ function combatRender() {
         const dv = s.dice[+atkEntry[0]];
         const dmg = calcCombatDamage(dv, e.defVal);
         const dmgClass = dmg === 2 ? 'combat-damage-2' : dmg === 1 ? 'combat-damage-1' : 'combat-damage-0';
-        const dmgText = dmg === 2 ? '+2 урона!' : dmg === 1 ? '+1 урон' : 'промах';
+        const dmgText = dmg === 2 ? '2 урона!' : dmg === 1 ? '1 урон' : 'промах';
         atkSlotHtml = `<div class="combat-atk-slot has-die" onclick="combatUnassignAtk(${i})">${DICE_FACES[dv-1]} <span class="${dmgClass}">→ ${dmgText}</span> <span style="margin-left:auto;opacity:0.5;font-size:0.7rem">✕</span></div>`;
       } else {
-        atkSlotHtml = `<div class="combat-atk-slot" onclick="combatAssignAttack(${i})">⚔️ Атака (🛡 ${e.defVal})</div>`;
+        atkSlotHtml = `<div class="combat-atk-slot" onclick="combatAssignAttack(${i})">🗡 Удар — <span class="combat-val-def">попасть в ${e.defVal}</span></div>`;
       }
       if (blkEntry) {
         const dv = s.dice[+blkEntry[0]];
@@ -1276,7 +1276,7 @@ function combatRender() {
         const blkText = taken === 0 ? 'блок!' : taken === 1 ? '1 урон' : `${e.atkVal} урона`;
         blkSlotHtml = `<div class="combat-blk-slot has-die" onclick="combatUnassignBlk(${i})">${DICE_FACES[dv-1]} <span class="${blkClass}">→ ${blkText}</span> <span style="margin-left:auto;opacity:0.5;font-size:0.7rem">✕</span></div>`;
       } else {
-        blkSlotHtml = `<div class="combat-blk-slot" onclick="combatAssignBlock(${i})">🛡 Блок (⚔️ ${e.atkVal})</div>`;
+        blkSlotHtml = `<div class="combat-blk-slot" onclick="combatAssignBlock(${i})">🛡 Блок — <span class="combat-val-atk">удар ${e.atkVal}</span></div>`;
       }
     }
 
@@ -1301,8 +1301,26 @@ function combatRender() {
     diceEl.appendChild(div);
   });
 
-  const cardArea = document.getElementById('combat-card-area');
-  cardArea.style.display = (combatSelectedDie !== null && !s.cardUsed && !(combatSelectedDie in s.assignments)) ? 'flex' : 'none';
+  const canMod = combatSelectedDie !== null && !(combatSelectedDie in s.assignments);
+  const modsEl = document.getElementById('combat-mods');
+  let modsHtml = '';
+  if (s.cardUsed) {
+    modsHtml += `<div class="combat-mod-row"><span class="combat-mod-label">✏️ ±1 (раунд)</span><span class="combat-mod-used">использована</span></div>`;
+  } else if (canMod) {
+    modsHtml += `<div class="combat-mod-row"><span class="combat-mod-label">✏️ ±1 (раунд)</span><button class="combat-card-btn" onclick="combatApplyCard(1)">+1</button><button class="combat-card-btn" onclick="combatApplyCard(-1)">−1</button></div>`;
+  } else {
+    modsHtml += `<div class="combat-mod-row"><span class="combat-mod-label">✏️ ±1 (раунд)</span><span class="combat-mod-hint">выбери кубик</span></div>`;
+  }
+  if (s.hasReroll) {
+    if (s.rerollUsed) {
+      modsHtml += `<div class="combat-mod-row"><span class="combat-mod-label">🔄 Переброс</span><span class="combat-mod-used">использован</span></div>`;
+    } else if (canMod) {
+      modsHtml += `<div class="combat-mod-row"><span class="combat-mod-label">🔄 Переброс</span><button class="combat-card-btn" onclick="combatReroll()">Перебросить</button></div>`;
+    } else {
+      modsHtml += `<div class="combat-mod-row"><span class="combat-mod-label">🔄 Переброс</span><span class="combat-mod-hint">выбери кубик</span></div>`;
+    }
+  }
+  modsEl.innerHTML = modsHtml;
 
   document.getElementById('combat-confirm').disabled = Object.keys(s.assignments).length === 0;
   const hearts = '❤️'.repeat(Math.max(0, s.playerHp)) + '🖤'.repeat(Math.max(0, s.maxPlayerHp - s.playerHp));
@@ -1345,6 +1363,14 @@ function combatApplyCard(delta) {
   if (combatSelectedDie === null || combatState.cardUsed) return;
   combatState.dice[combatSelectedDie] = Math.max(1, Math.min(6, combatState.dice[combatSelectedDie] + delta));
   combatState.cardUsed = true;
+  combatSelectedDie = null;
+  combatRender();
+}
+
+function combatReroll() {
+  if (combatSelectedDie === null || combatState.rerollUsed) return;
+  combatState.dice[combatSelectedDie] = Math.floor(combatState.rng() * 6) + 1;
+  combatState.rerollUsed = true;
   combatSelectedDie = null;
   combatRender();
 }
