@@ -1206,7 +1206,7 @@ function initCombat() {
   document.getElementById('combat-game').style.display = '';
   document.getElementById('subtitle').textContent = '⚔️ Сражение';
   const raw = gameData.enemies || [{name:'Противник', hp:2, danger:2}];
-  const enemies = raw.map(e => ({...e, max_hp: e.max_hp ?? e.hp, defVal: null, atkVal: null}));
+  const enemies = raw.map(e => ({...e, max_hp: e.max_hp ?? e.hp, defVal: null, atkVal: e.danger ?? 1}));
   const playerHp = gameData.player_hp ?? 2;
   combatState = {
     enemies, playerHp, maxPlayerHp: playerHp,
@@ -1226,10 +1226,9 @@ function initCombat() {
 function combatRollEnemies() {
   const s = combatState;
   s.enemies.forEach(e => {
-    if (e.hp <= 0) { e.defVal = null; e.atkVal = null; return; }
+    if (e.hp <= 0) { e.defVal = null; return; }
     e.defVal = Math.floor(s.rng() * 6) + 1;
-    const atkMax = Math.min(6, 2 + (e.danger ?? 1));
-    e.atkVal = Math.floor(s.rng() * atkMax) + 1;
+    // atkVal = danger (fixed, not rolled)
   });
 }
 
