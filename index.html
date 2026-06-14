@@ -160,9 +160,13 @@
   .combat-damage-2 { color: #fdcb6e; font-weight: 700; }
   .combat-damage-1 { color: #a29bfe; font-weight: 700; }
   .combat-damage-0 { color: #636e72; font-weight: 700; text-decoration: line-through; }
-  .combat-block-slot { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px; border: 1.5px dashed rgba(255,255,255,0.2); cursor: pointer; transition: all 0.15s; font-size: 0.85rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 12px; }
-  .combat-block-slot:hover { border-color: rgba(255,255,255,0.4); }
-  .combat-block-slot.has-die { border-style: solid; border-color: #74b9ff; background: rgba(116,185,255,0.08); color: var(--tg-theme-text-color, #fff); }
+  .combat-enemy-slots { display: flex; gap: 6px; margin-top: 4px; }
+  .combat-blk-slot { flex: 1; padding: 7px 10px; border-radius: 8px; border: 1.5px dashed rgba(116,185,255,0.35); display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.83rem; color: var(--tg-theme-hint-color, #aaa); transition: all 0.15s; }
+  .combat-blk-slot:hover { border-color: rgba(116,185,255,0.7); }
+  .combat-blk-slot.has-die { border-style: solid; border-color: #74b9ff; background: rgba(116,185,255,0.1); color: var(--tg-theme-text-color, #fff); }
+  .combat-block-0 { color: #00b894; font-weight: 700; }
+  .combat-block-1 { color: #a29bfe; font-weight: 700; }
+  .combat-block-full { color: #e17055; font-weight: 700; }
   .combat-round-label { text-align: center; font-size: 0.88rem; font-weight: 600; margin-bottom: 10px; color: var(--tg-theme-hint-color, #aaa); }
   .combat-dice-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 10px; }
   .combat-die { width: 56px; height: 56px; border-radius: 12px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; cursor: pointer; transition: all 0.15s; user-select: none; }
@@ -186,9 +190,7 @@
   <div id="combat-prompt" class="subtitle" style="margin-bottom:12px;text-align:left;font-size:0.88rem;padding:10px 12px;background:rgba(255,255,255,0.05);border-radius:10px;line-height:1.5;display:none"></div>
   <div id="combat-round-label" class="combat-round-label"></div>
   <div id="combat-enemies" class="combat-enemies"></div>
-  <div class="combat-section-label">🛡 Блок (один кубик против всего входящего урона)</div>
-  <div id="combat-block-slot" class="combat-block-slot"></div>
-  <div class="combat-section-label">🎲 Кубики — выбери, потом тапни цель или блок</div>
+  <div class="combat-section-label">🎲 Кубики — выбери, потом тапни ⚔️ или 🛡 на враге</div>
   <div id="combat-dice-row" class="combat-dice-row"></div>
   <div id="combat-card-area" class="combat-card-area" style="display:none">
     <span class="combat-card-label">✏️ Карточка:</span>
@@ -1196,13 +1198,17 @@ function calcCombatDamage(playerDie, enemyDefVal) {
   const diff = Math.abs(playerDie - enemyDefVal);
   return diff === 0 ? 2 : diff === 1 ? 1 : 0;
 }
+function calcCombatBlock(blockDie, enemyAtkVal) {
+  const diff = Math.abs(blockDie - enemyAtkVal);
+  return diff === 0 ? 0 : diff === 1 ? 1 : enemyAtkVal;
+}
 
 function initCombat() {
   document.getElementById('combat-game').style.display = '';
   document.getElementById('subtitle').textContent = '⚔️ Сражение';
   const raw = gameData.enemies || [{name:'Противник', hp:2, danger:2}];
   const enemies = raw.map(e => ({...e, max_hp: e.max_hp ?? e.hp, defVal: null, atkVal: null}));
-  const playerHp = gameData.player_hp ?? 5;
+  const playerHp = gameData.player_hp ?? 2;
   combatState = {
     enemies, playerHp, maxPlayerHp: playerHp,
     round: 1, maxRounds: gameData.max_rounds ?? 3,
@@ -1247,51 +1253,42 @@ function combatRender() {
   enemiesEl.innerHTML = '';
   s.enemies.forEach((e, i) => {
     const atkEntry = Object.entries(s.assignments).find(([_, a]) => a.type === 'attack' && a.enemyIndex === i);
+    const blkEntry = Object.entries(s.assignments).find(([_, a]) => a.type === 'block' && a.enemyIndex === i);
     const div = document.createElement('div');
     div.className = 'combat-enemy' + (e.hp <= 0 ? ' dead' : '');
     const pct = Math.max(0, e.hp / e.max_hp * 100);
-    let atkSlotHtml = '';
+
+    let atkSlotHtml = '', blkSlotHtml = '';
     if (e.hp > 0) {
       if (atkEntry) {
         const dv = s.dice[+atkEntry[0]];
         const dmg = calcCombatDamage(dv, e.defVal);
         const dmgClass = dmg === 2 ? 'combat-damage-2' : dmg === 1 ? 'combat-damage-1' : 'combat-damage-0';
-        const dmgText = dmg === 2 ? '2 урона!' : dmg === 1 ? '1 урон' : 'промах';
-        atkSlotHtml = `<div class="combat-atk-slot has-die" onclick="combatUnassignEnemy(${i})">
-          <span>${DICE_FACES[dv-1]}</span>
-          <span class="${dmgClass}">→ ${dmgText}</span>
-          <span style="margin-left:auto;opacity:0.5;font-size:0.75rem">✕</span></div>`;
+        const dmgText = dmg === 2 ? '+2 урона!' : dmg === 1 ? '+1 урон' : 'промах';
+        atkSlotHtml = `<div class="combat-atk-slot has-die" onclick="combatUnassignAtk(${i})">${DICE_FACES[dv-1]} <span class="${dmgClass}">→ ${dmgText}</span> <span style="margin-left:auto;opacity:0.5;font-size:0.7rem">✕</span></div>`;
       } else {
-        atkSlotHtml = `<div class="combat-atk-slot" onclick="combatAssignAttack(${i})">🗡 Нанести удар</div>`;
+        atkSlotHtml = `<div class="combat-atk-slot" onclick="combatAssignAttack(${i})">⚔️ Атака (🛡 ${e.defVal})</div>`;
+      }
+      if (blkEntry) {
+        const dv = s.dice[+blkEntry[0]];
+        const taken = calcCombatBlock(dv, e.atkVal);
+        const blkClass = taken === 0 ? 'combat-block-0' : taken === 1 ? 'combat-block-1' : 'combat-block-full';
+        const blkText = taken === 0 ? 'блок!' : taken === 1 ? '1 урон' : `${e.atkVal} урона`;
+        blkSlotHtml = `<div class="combat-blk-slot has-die" onclick="combatUnassignBlk(${i})">${DICE_FACES[dv-1]} <span class="${blkClass}">→ ${blkText}</span> <span style="margin-left:auto;opacity:0.5;font-size:0.7rem">✕</span></div>`;
+      } else {
+        blkSlotHtml = `<div class="combat-blk-slot" onclick="combatAssignBlock(${i})">🛡 Блок (⚔️ ${e.atkVal})</div>`;
       }
     }
+
     div.innerHTML = `
       <div class="combat-enemy-header">
         <span class="combat-enemy-name">${e.hp<=0?'💀 ':''}${e.name}</span>
         <span class="combat-enemy-hp-text">${Math.max(0,e.hp)}/${e.max_hp}❤️</span>
       </div>
       <div class="combat-hp-bar"><div class="combat-hp-fill" style="width:${pct}%"></div></div>
-      ${e.hp > 0 ? `<div class="combat-enemy-vals">
-        <span class="combat-val-def">🛡 ${e.defVal}</span>
-        <span class="combat-val-atk">⚔️ ${e.atkVal}</span>
-      </div>${atkSlotHtml}` : ''}`;
+      ${e.hp > 0 ? `<div class="combat-enemy-slots">${atkSlotHtml}${blkSlotHtml}</div>` : ''}`;
     enemiesEl.appendChild(div);
   });
-
-  const blockEntry = Object.entries(s.assignments).find(([_, a]) => a.type === 'block');
-  const totalAtk = s.enemies.reduce((sum, e) => e.hp > 0 ? sum + (e.atkVal ?? 0) : sum, 0);
-  const blockEl = document.getElementById('combat-block-slot');
-  if (blockEntry) {
-    const dv = s.dice[+blockEntry[0]];
-    const taken = Math.max(0, totalAtk - dv);
-    blockEl.className = 'combat-block-slot has-die';
-    blockEl.innerHTML = `<span style="font-size:1.3rem">${DICE_FACES[dv-1]}</span><span>${taken === 0 ? '✅ весь урон поглощён' : `→ получишь ${taken} урона`}</span><span style="margin-left:auto;opacity:0.5;font-size:0.75rem">✕</span>`;
-    blockEl.onclick = () => { delete s.assignments[+blockEntry[0]]; combatRender(); };
-  } else {
-    blockEl.className = 'combat-block-slot';
-    blockEl.innerHTML = `<span>🛡</span><span>Блок — входящий урон: ${totalAtk}</span>`;
-    blockEl.onclick = () => combatAssignBlock();
-  }
 
   const diceEl = document.getElementById('combat-dice-row');
   diceEl.innerHTML = '';
@@ -1322,19 +1319,25 @@ function combatAssignAttack(ei) {
   combatSelectedDie = null; combatRender();
 }
 
-function combatAssignBlock() {
+function combatAssignBlock(ei) {
   if (combatSelectedDie === null) return;
   const s = combatState;
-  const prev = Object.entries(s.assignments).find(([_, a]) => a.type === 'block');
+  const prev = Object.entries(s.assignments).find(([_, a]) => a.type === 'block' && a.enemyIndex === ei);
   if (prev) delete s.assignments[+prev[0]];
   delete s.assignments[combatSelectedDie];
-  s.assignments[combatSelectedDie] = {type: 'block'};
+  s.assignments[combatSelectedDie] = {type: 'block', enemyIndex: ei};
   combatSelectedDie = null; combatRender();
 }
 
-function combatUnassignEnemy(ei) {
+function combatUnassignAtk(ei) {
   const s = combatState;
   const entry = Object.entries(s.assignments).find(([_, a]) => a.type === 'attack' && a.enemyIndex === ei);
+  if (entry) { delete s.assignments[+entry[0]]; combatRender(); }
+}
+
+function combatUnassignBlk(ei) {
+  const s = combatState;
+  const entry = Object.entries(s.assignments).find(([_, a]) => a.type === 'block' && a.enemyIndex === ei);
   if (entry) { delete s.assignments[+entry[0]]; combatRender(); }
 }
 
@@ -1365,17 +1368,25 @@ function combatResolve() {
     }
   });
 
-  const blockEntry = Object.entries(s.assignments).find(([_, a]) => a.type === 'block');
-  const blockVal = blockEntry ? s.dice[+blockEntry[0]] : 0;
-  const totalAtk = s.enemies.reduce((sum, e) => e.hp > 0 ? sum + (e.atkVal ?? 0) : sum, 0);
-  const taken = Math.max(0, totalAtk - blockVal);
-  if (totalAtk > 0) {
-    if (blockVal > 0) log.push(`🛡 Блок ${DICE_FACES[blockVal-1]}: −${Math.min(blockVal, totalAtk)}`);
-    if (taken > 0) { s.playerHp = Math.max(0, s.playerHp - taken); log.push(`💔 Герой: -${taken}❤️ → ${s.playerHp}❤️`); }
-    else log.push(`✅ Урон полностью поглощён`);
-  } else {
-    log.push('✨ Враги повержены — урон не нанесён');
-  }
+  let totalTaken = 0;
+  s.enemies.forEach((e, i) => {
+    if (e.hp > 0) return;
+    if (e.hp <= 0 && !Object.entries(s.assignments).find(([_, a]) => a.type === 'block' && a.enemyIndex === i)) return;
+  });
+  s.enemies.forEach((e, i) => {
+    if (e.hp <= 0) return;
+    const blkEntry = Object.entries(s.assignments).find(([_, a]) => a.type === 'block' && a.enemyIndex === i);
+    if (blkEntry) {
+      const dv = s.dice[+blkEntry[0]];
+      const taken = calcCombatBlock(dv, e.atkVal);
+      if (taken === 0) log.push(`🛡 ${e.name}: блок! (${DICE_FACES[dv-1]} ↔ ⚔️${e.atkVal})`);
+      else { log.push(`🛡 ${e.name}: ${DICE_FACES[dv-1]} → ${taken} урона`); totalTaken += taken; }
+    } else {
+      log.push(`💔 ${e.name} атакует: ${e.atkVal} урона`); totalTaken += e.atkVal ?? 0;
+    }
+  });
+  if (totalTaken > 0) { s.playerHp = Math.max(0, s.playerHp - totalTaken); log.push(`Герой: ${s.playerHp}❤️ (−${totalTaken})`); }
+  else if (s.enemies.some(e => e.hp > 0)) log.push('✅ Весь урон поглощён');
 
   s.roundLogs.push({round: s.round, dice: [...s.dice], log: [...log]});
   s.round++;
