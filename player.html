@@ -444,13 +444,13 @@ select:focus { outline: none; border-color: var(--gold-dim); }
       <div class="card-body" id="body-staff"></div>
     </div>
 
-    <!-- Placeholder: Территория -->
-    <div class="card" id="card-territory">
+    <!-- Territory -->
+    <div class="card card-wide" id="card-territory">
       <div class="card-title" onclick="toggleCard('card-territory')">
         <span class="icon">🗾</span> Территория
         <em class="chevron">▼</em>
       </div>
-      <div class="card-body placeholder-body">Раздел в разработке</div>
+      <div class="card-body" id="body-territory"></div>
     </div>
 
   </div>
@@ -554,11 +554,12 @@ function render(d) {
   document.getElementById("hdr-phase").textContent  = PHASE_LABELS[phase] || phase || "?";
 
   renderFinance(d.finance);
-  renderBuildings(d.buildings);
+  renderBuildings(d.buildings, d.settlements);
   renderEvents(d.events);
   renderHero(d.hero);
   renderRetinue(d.hero);
-  renderStaff(d.staff);
+  renderStaff(d.settlements);
+  renderTerritory(d.settlements);
 }
 
 // ── Finance ───────────────────────────────────────────────────────────────────
@@ -640,30 +641,36 @@ function renderFinance(f) {
 }
 
 // ── Buildings ─────────────────────────────────────────────────────────────────
-function renderBuildings(b) {
+function renderBuildings(b, settlements) {
   if (!b) { document.getElementById("body-buildings").innerHTML = "<div class='placeholder-body'>Нет данных</div>"; return; }
   const el = document.getElementById("body-buildings");
-  const { base, extra, used, max_extra, free } = b.slots || {};
-  const total = (base || 0) + (extra || 0);
-  const pct   = total > 0 ? Math.round((used || 0) / total * 100) : 0;
 
-  let html = `
-    <div class="slots-bar-wrap">
-      <div class="slots-info">
-        <span>Слоты: ${used || 0}/${total}</span>
-        <span>${free || 0} свободных · Доп. ${extra || 0}/${max_extra || 0}</span>
-      </div>
-      <div class="slots-bar"><div class="slots-bar-fill" style="width:${pct}%"></div></div>
-    </div>`;
+  const settBuildings = (settlements || []).filter(s => (s.buildings || []).length > 0);
+  let html = "";
 
-  (b.buildings || []).forEach(bld => {
-    const maint = bld.maint ? `${fmt(bld.maint)}${bld.rate ? " ("+bld.rate+"%)" : ""}` : bld.status === "доходная" ? "дох." : "—";
-    html += `<div class="building-row">
-      <span class="building-name">${esc(bld.name)}</span>
-      <span class="building-maint">${esc(maint)}</span>
-    </div>`;
-  });
+  if (settBuildings.length > 0) {
+    settBuildings.forEach(s => {
+      html += `<div class="sett-section">${esc(s.name)}</div>`;
+      s.buildings.forEach(bld => {
+        const maint = bld.maint ? `${fmt(bld.maint)}${bld.rate ? " ("+bld.rate+"%)" : ""}` : bld.status === "доходная" ? "дох." : "—";
+        html += `<div class="building-row">
+          <span class="building-name">${esc(bld.name)}</span>
+          <span class="building-maint">${esc(maint)}</span>
+        </div>`;
+      });
+    });
+  } else {
+    // Fallback: flat list
+    (b.buildings || []).forEach(bld => {
+      const maint = bld.maint ? `${fmt(bld.maint)}${bld.rate ? " ("+bld.rate+"%)" : ""}` : bld.status === "доходная" ? "дох." : "—";
+      html += `<div class="building-row">
+        <span class="building-name">${esc(bld.name)}</span>
+        <span class="building-maint">${esc(maint)}</span>
+      </div>`;
+    });
+  }
 
+  if (!html) html = `<div style="color:var(--muted);font-size:0.78rem;padding:6px 0">Построек нет</div>`;
   el.innerHTML = html;
 }
 
@@ -805,25 +812,52 @@ function renderRetinue(hero) {
 }
 
 // ── Staff ─────────────────────────────────────────────────────────────────────
-function renderStaff(rows) {
+function renderStaff(settlements) {
   const el = document.getElementById("body-staff");
-  if (!rows || !rows.length) { el.innerHTML = "<div class='placeholder-body'>Нет данных</div>"; return; }
-  let html = `<table class="staff-table"><thead><tr>
-    <th>Категория</th><th>Факт</th><th>Норма</th><th>Статус</th>
+  if (!settlements || !settlements.length) { el.innerHTML = "<div class='placeholder-body'>Нет данных</div>"; return; }
+
+  let html = "";
+  settlements.forEach(sett => {
+    const rows = sett.staff || [];
+    if (!rows.length) return;
+    html += `<div class="sett-section">${esc(sett.name)}</div>`;
+    html += `<table class="staff-table"><thead><tr>
+      <th>Категория</th><th>Факт</th><th>Норма</th><th>Статус</th>
+    </tr></thead><tbody>`;
+    rows.forEach(r => {
+      const isWarn = r.status && r.status.includes("⚠");
+      const stClass = isWarn ? "staff-status-warn" : "staff-status-ok";
+      let stShort = r.status || "";
+      let stNote  = "";
+      const noteMatch = stShort.match(/^([✅⚠️]+)\s+(.+)$/u);
+      if (noteMatch) { stShort = noteMatch[1]; stNote = noteMatch[2]; }
+      html += `<tr>
+        <td class="staff-cat">${esc(r.category)}</td>
+        <td class="staff-num">${esc(r.fact)}</td>
+        <td class="staff-num">${r.norm ? esc(r.norm) : "—"}</td>
+        <td class="${stClass}">${esc(stShort)}${stNote ? `<br><span class="staff-status-note">${esc(stNote)}</span>` : ""}</td>
+      </tr>`;
+    });
+    html += `</tbody></table>`;
+  });
+
+  el.innerHTML = html || "<div class='placeholder-body'>Нет данных</div>";
+}
+
+// ── Territory ─────────────────────────────────────────────────────────────────
+function renderTerritory(settlements) {
+  const el = document.getElementById("body-territory");
+  if (!settlements || !settlements.length) { el.innerHTML = "<div class='placeholder-body'>Нет данных</div>"; return; }
+
+  let html = `<table class="sett-table"><thead><tr>
+    <th>НП</th><th>Население</th><th>Рост</th><th style="text-align:right">Домов</th>
   </tr></thead><tbody>`;
-  rows.forEach(r => {
-    const isWarn = r.status && r.status.includes("⚠");
-    const stClass = isWarn ? "staff-status-warn" : "staff-status-ok";
-    // Split short status (✅/⚠️) from extra text after space
-    let stShort = r.status || "";
-    let stNote  = "";
-    const noteMatch = stShort.match(/^([✅⚠️]+)\s+(.+)$/u);
-    if (noteMatch) { stShort = noteMatch[1]; stNote = noteMatch[2]; }
+  settlements.forEach(s => {
     html += `<tr>
-      <td class="staff-cat">${esc(r.category)}</td>
-      <td class="staff-num">${esc(r.fact)}</td>
-      <td class="staff-num">${r.norm ? esc(r.norm) : "—"}</td>
-      <td class="${stClass}">${esc(stShort)}${stNote ? `<br><span class="staff-status-note">${esc(stNote)}</span>` : ""}</td>
+      <td class="sett-name">${esc(s.name)}</td>
+      <td>${esc(s.population || "—")}</td>
+      <td style="color:var(--green)">${esc(s.growth || "—")}</td>
+      <td style="text-align:right;color:var(--muted)">${esc(s.houses || "—")}</td>
     </tr>`;
   });
   html += `</tbody></table>`;
