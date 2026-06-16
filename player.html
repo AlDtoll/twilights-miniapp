@@ -386,6 +386,7 @@ select:focus { outline: none; border-color: var(--gold-dim); }
     <div class="select-wrap">
       <select id="sel-run"></select>
       <select id="sel-player"></select>
+      <select id="sel-np" style="display:none"></select>
     </div>
     <a class="map-link" href="map.html">🗺 Карта</a>
   </div>
@@ -535,7 +536,8 @@ async function loadData(run, player) {
     if (!res.ok) throw new Error(res.status);
     const d = await res.json();
     currentData = d;
-    render(d);
+    buildNPSelect(d.settlements || []);
+    render(d, null);
     document.getElementById("loading").style.display = "none";
     document.getElementById("app").style.display = "block";
   } catch (e) {
@@ -554,7 +556,27 @@ function fmt(n) {
        : n.toLocaleString("ru-RU");
 }
 
-function render(d) {
+// ── NP Select ─────────────────────────────────────────────────────────────────
+function buildNPSelect(settlements) {
+  const sel = document.getElementById("sel-np");
+  sel.innerHTML = "";
+  if (!settlements || settlements.length <= 1) {
+    sel.style.display = "none";
+    return;
+  }
+  sel.style.display = "";
+  const allOpt = document.createElement("option");
+  allOpt.value = ""; allOpt.textContent = "Все НП";
+  sel.appendChild(allOpt);
+  settlements.forEach(s => {
+    const o = document.createElement("option");
+    o.value = s.name; o.textContent = s.name;
+    sel.appendChild(o);
+  });
+  sel.onchange = () => render(currentData, sel.value || null);
+}
+
+function render(d, npFilter) {
   // Header
   const heroName = d.hero?.name?.replace(/—.+/, "").trim() || "—";
   document.title = heroName + " — Дашборд";
@@ -565,17 +587,21 @@ function render(d) {
   const phase = d.active_phase;
   document.getElementById("hdr-phase").textContent  = PHASE_LABELS[phase] || phase || "?";
 
-  renderFinance(d.finance);
-  renderBuildings(d.buildings, d.settlements);
+  const setts = npFilter
+    ? (d.settlements || []).filter(s => s.name === npFilter)
+    : (d.settlements || []);
+
+  renderFinance(d.finance, npFilter);
+  renderBuildings(d.buildings, setts);
   renderEvents(d.events);
   renderHero(d.hero);
   renderRetinue(d.hero);
-  renderStaff(d.settlements);
-  renderTerritory(d.settlements);
+  renderStaff(setts);
+  renderTerritory(setts);
 }
 
 // ── Finance ───────────────────────────────────────────────────────────────────
-function renderFinance(f) {
+function renderFinance(f, npFilter) {
   if (!f) { document.getElementById("body-finance").innerHTML = "<div class='placeholder-body'>Нет данных</div>"; return; }
   const el = document.getElementById("body-finance");
 
@@ -585,10 +611,20 @@ function renderFinance(f) {
       <span class="amount">${fmt(f.start)} мон</span>
     </div>`;
 
-  const incBy  = f.income_by   || {};
-  const expBy  = f.expenses_by || {};
-  const setts  = [...new Set([...Object.keys(incBy), ...Object.keys(expBy)])];
-  const hasNP  = setts.length > 1 || (setts.length === 1 && setts[0] !== "");
+  const incByAll  = f.income_by   || {};
+  const expByAll  = f.expenses_by || {};
+  const allSetts  = [...new Set([...Object.keys(incByAll), ...Object.keys(expByAll)])];
+
+  // Фильтр по НП
+  const incBy = npFilter ? { [npFilter]: incByAll[npFilter] || [] } : incByAll;
+  const expBy = npFilter ? { [npFilter]: expByAll[npFilter] || [] } : expByAll;
+  const setts = npFilter ? [npFilter] : allSetts;
+  const hasNP = setts.length > 1 || (setts.length === 1 && setts[0] !== "");
+
+  // Пересчитать итоги если фильтр
+  const filtIncome   = setts.reduce((s, k) => s + (incBy[k] || []).reduce((a, i) => a + i.amount, 0), 0);
+  const filtExpenses = setts.reduce((s, k) => s + (expBy[k] || []).reduce((a, i) => a + i.amount, 0), 0);
+  const showTotals   = npFilter ? { income: filtIncome, expenses: filtExpenses } : { income: f.total_income, expenses: f.total_expenses };
 
   // Доходы с отсечками по НП
   html += `<div class="treasury-section">Доходы</div>`;
@@ -612,7 +648,7 @@ function renderFinance(f) {
   }
   html += `<div class="treasury-row" style="font-weight:bold">
     <span class="label">Итого доходов</span>
-    <span class="amount pos">+${fmt(f.total_income)}</span>
+    <span class="amount pos">+${fmt(showTotals.income)}</span>
   </div>`;
 
   // Расходы с отсечками по НП
@@ -637,23 +673,33 @@ function renderFinance(f) {
   }
   html += `<div class="treasury-row" style="font-weight:bold">
     <span class="label">Итого расходов</span>
-    <span class="amount neg">−${fmt(f.total_expenses)}</span>
+    <span class="amount neg">−${fmt(showTotals.expenses)}</span>
   </div>`;
 
-  const receipts  = f.receipts  || [];
-  const spendings = f.spendings || [];
-  if (receipts.length || spendings.length) {
-    html += `<div class="treasury-section">Разовые</div>`;
-    receipts.forEach(i  => { html += `<div class="treasury-row"><span class="label">${esc(i.label)}</span><span class="amount pos">+${fmt(i.amount)}</span></div>`; });
-    spendings.forEach(i => { html += `<div class="treasury-row"><span class="label">${esc(i.label)}</span><span class="amount neg">−${fmt(i.amount)}</span></div>`; });
+  if (!npFilter) {
+    const receipts  = f.receipts  || [];
+    const spendings = f.spendings || [];
+    if (receipts.length || spendings.length) {
+      html += `<div class="treasury-section">Разовые</div>`;
+      receipts.forEach(i  => { html += `<div class="treasury-row"><span class="label">${esc(i.label)}</span><span class="amount pos">+${fmt(i.amount)}</span></div>`; });
+      spendings.forEach(i => { html += `<div class="treasury-row"><span class="label">${esc(i.label)}</span><span class="amount neg">−${fmt(i.amount)}</span></div>`; });
+    }
+
+    const balColor = (f.balance || 0) >= 0 ? "pos" : "neg";
+    const balSign  = (f.balance || 0) >= 0 ? "+" : "";
+    html += `<div class="treasury-total">
+      <span class="label">Расчётная казна</span>
+      <span class="amount ${balColor}">${balSign}${fmt(f.balance)} мон</span>
+    </div>`;
+  } else {
+    const npBal = filtIncome - filtExpenses;
+    const balColor = npBal >= 0 ? "pos" : "neg";
+    const balSign  = npBal >= 0 ? "+" : "";
+    html += `<div class="treasury-total">
+      <span class="label">Баланс НП</span>
+      <span class="amount ${balColor}">${balSign}${fmt(npBal)} мон</span>
+    </div>`;
   }
-
-  const balColor = (f.balance || 0) >= 0 ? "pos" : "neg";
-  const balSign  = (f.balance || 0) >= 0 ? "+" : "";
-  html += `<div class="treasury-total">
-    <span class="label">Расчётная казна</span>
-    <span class="amount ${balColor}">${balSign}${fmt(f.balance)} мон</span>
-  </div>`;
 
   el.innerHTML = html;
 }
