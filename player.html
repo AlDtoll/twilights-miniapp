@@ -289,6 +289,23 @@ body {
 .hero-status-row span { color: var(--muted); }
 .hero-status-row b { color: var(--text); }
 
+/* ── Settlement breakdown ── */
+.sett-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; margin-top: 10px; }
+.sett-table th {
+  font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--gold-dim); text-align: left; padding: 0 6px 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+.sett-table td { padding: 4px 6px 4px 0; border-bottom: 1px solid #1a1814; }
+.sett-table tr:last-child td { border-bottom: none; }
+.sett-name { color: var(--text); }
+.sett-pos  { color: var(--green); text-align: right; white-space: nowrap; }
+.sett-neg  { color: var(--red);   text-align: right; white-space: nowrap; }
+.sett-bal-pos { color: #7acc8a; text-align: right; white-space: nowrap; font-weight: bold; }
+.sett-bal-neg { color: #cc7a6a; text-align: right; white-space: nowrap; font-weight: bold; }
+.sett-section { font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--gold-dim); padding: 10px 0 4px; border-bottom: 1px solid var(--border); margin-bottom: 2px; }
+
 /* ── Staff ── */
 .staff-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
 .staff-table th {
@@ -592,6 +609,32 @@ function renderFinance(f) {
     <span class="label">Расчётная казна</span>
     <span class="amount ${balColor}">${balSign}${fmt(f.balance)} мон</span>
   </div>`;
+
+  // Settlement breakdown
+  const incBy  = f.income_by   || {};
+  const expBy  = f.expenses_by || {};
+  const setts  = [...new Set([...Object.keys(incBy), ...Object.keys(expBy)])];
+  if (setts.length > 1 || (setts.length === 1 && setts[0] !== "")) {
+    html += `<div class="sett-section">По населённым пунктам</div>`;
+    html += `<table class="sett-table"><thead><tr>
+      <th>НП</th><th style="text-align:right">Доход</th><th style="text-align:right">Расход</th><th style="text-align:right">Баланс</th>
+    </tr></thead><tbody>`;
+    setts.forEach(s => {
+      const inc = (incBy[s]  || []).reduce((a, i) => a + i.amount, 0);
+      const exp = (expBy[s]  || []).reduce((a, i) => a + i.amount, 0);
+      const bal = inc - exp;
+      const balCls = bal >= 0 ? "sett-bal-pos" : "sett-bal-neg";
+      const balSign = bal >= 0 ? "+" : "";
+      const label = s || "Прочее";
+      html += `<tr>
+        <td class="sett-name">${esc(label)}</td>
+        <td class="sett-pos">${inc ? "+"+fmt(inc) : "—"}</td>
+        <td class="sett-neg">${exp ? "−"+fmt(exp) : "—"}</td>
+        <td class="${balCls}">${inc||exp ? balSign+fmt(bal) : "—"}</td>
+      </tr>`;
+    });
+    html += `</tbody></table>`;
+  }
 
   el.innerHTML = html;
 }

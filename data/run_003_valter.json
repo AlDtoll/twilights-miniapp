@@ -28,6 +28,8 @@
         "amount": 300
       }
     ],
+    "income_by": {},
+    "expenses_by": {},
     "total_income": 0,
     "total_expenses": 0,
     "balance": 12952
