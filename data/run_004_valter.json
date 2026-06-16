@@ -668,31 +668,55 @@
     {
       "category": "Стража (бойцы)",
       "fact": "42",
-      "norm": "46",
-      "status": "⚠️ нехватка −4 (+1d3 П&О)"
+      "norm": "17",
+      "status": "✅"
     },
     {
       "category": "Клерки",
       "fact": "6",
-      "norm": "13",
-      "status": "⚠️ нехватка −7 (+1d3 происш.)"
+      "norm": "4",
+      "status": "✅"
     },
     {
       "category": "Рабочие руки",
       "fact": "6",
-      "norm": "66",
+      "norm": "22",
       "status": "✅"
     },
     {
       "category": "Стража (бойцы)",
       "fact": "20",
-      "norm": null,
+      "norm": "15",
       "status": "✅"
     },
     {
       "category": "Клерки",
+      "fact": "0",
+      "norm": "4",
+      "status": "⚠️ нехватка −4"
+    },
+    {
+      "category": "Рабочие руки",
+      "fact": "0",
+      "norm": "20",
+      "status": "✅"
+    },
+    {
+      "category": "Стража (бойцы)",
+      "fact": "0",
+      "norm": "18",
+      "status": "⚠️ нет стражи"
+    },
+    {
+      "category": "Клерки",
       "fact": "1",
-      "norm": null,
+      "norm": "5",
+      "status": "⚠️ нехватка −4"
+    },
+    {
+      "category": "Рабочие руки",
+      "fact": "0",
+      "norm": "24",
       "status": "✅"
     }
   ]
