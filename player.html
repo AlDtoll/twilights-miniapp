@@ -289,6 +289,20 @@ body {
 .hero-status-row span { color: var(--muted); }
 .hero-status-row b { color: var(--text); }
 
+/* ── Staff ── */
+.staff-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+.staff-table th {
+  font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--gold-dim); text-align: left; padding: 0 6px 6px 0; border-bottom: 1px solid var(--border);
+}
+.staff-table td { padding: 5px 6px 5px 0; border-bottom: 1px solid #1a1814; vertical-align: top; }
+.staff-table tr:last-child td { border-bottom: none; }
+.staff-cat { color: var(--text); }
+.staff-num { color: var(--muted); white-space: nowrap; }
+.staff-status-ok   { color: var(--green); white-space: nowrap; }
+.staff-status-warn { color: #c8883a; white-space: nowrap; }
+.staff-status-note { color: var(--muted); font-size: 0.7rem; }
+
 /* ── Placeholder ── */
 .placeholder-body {
   padding: 20px 14px;
@@ -395,13 +409,13 @@ select:focus { outline: none; border-color: var(--gold-dim); }
       <div class="card-body" id="body-hero"></div>
     </div>
 
-    <!-- Placeholder: Свита -->
-    <div class="card" id="card-retinue">
-      <div class="card-title" onclick="toggleCard('card-retinue')">
-        <span class="icon">👥</span> Свита
+    <!-- Staff -->
+    <div class="card" id="card-staff">
+      <div class="card-title" onclick="toggleCard('card-staff')">
+        <span class="icon">👥</span> Персонал
         <em class="chevron">▼</em>
       </div>
-      <div class="card-body placeholder-body">Раздел в разработке</div>
+      <div class="card-body" id="body-staff"></div>
     </div>
 
     <!-- Placeholder: Территория -->
@@ -517,6 +531,7 @@ function render(d) {
   renderBuildings(d.buildings);
   renderEvents(d.events);
   renderHero(d.hero);
+  renderStaff(d.staff);
 }
 
 // ── Finance ───────────────────────────────────────────────────────────────────
@@ -708,6 +723,32 @@ function renderHero(hero) {
   }
 
   el.innerHTML = html || "<div class='placeholder-body'>Нет данных</div>";
+}
+
+// ── Staff ─────────────────────────────────────────────────────────────────────
+function renderStaff(rows) {
+  const el = document.getElementById("body-staff");
+  if (!rows || !rows.length) { el.innerHTML = "<div class='placeholder-body'>Нет данных</div>"; return; }
+  let html = `<table class="staff-table"><thead><tr>
+    <th>Категория</th><th>Факт</th><th>Норма</th><th>Статус</th>
+  </tr></thead><tbody>`;
+  rows.forEach(r => {
+    const isWarn = r.status && r.status.includes("⚠");
+    const stClass = isWarn ? "staff-status-warn" : "staff-status-ok";
+    // Split short status (✅/⚠️) from extra text after space
+    let stShort = r.status || "";
+    let stNote  = "";
+    const noteMatch = stShort.match(/^([✅⚠️]+)\s+(.+)$/u);
+    if (noteMatch) { stShort = noteMatch[1]; stNote = noteMatch[2]; }
+    html += `<tr>
+      <td class="staff-cat">${esc(r.category)}</td>
+      <td class="staff-num">${esc(r.fact)}</td>
+      <td class="staff-num">${r.norm ? esc(r.norm) : "—"}</td>
+      <td class="${stClass}">${esc(stShort)}${stNote ? `<br><span class="staff-status-note">${esc(stNote)}</span>` : ""}</td>
+    </tr>`;
+  });
+  html += `</tbody></table>`;
+  el.innerHTML = html;
 }
 
 // ── Escape HTML ───────────────────────────────────────────────────────────────
