@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Дашборд — Сумерки мира</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #0f0e0c;
+  --bg2:      #1a1814;
+  --bg3:      #232018;
+  --border:   #2e2a22;
+  --text:     #c8b89a;
+  --muted:    #7a6e5a;
+  --gold:     #c8a84a;
+  --gold-dim: #6a5820;
+  --green:    #4a8a5a;
+  --red:      #8a3a2a;
+  --blue:     #2a5a8a;
+  --font:     'Courier New', monospace;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  min-height: 100vh;
+  padding: 16px;
+  font-size: 14px;
+}
+
+/* ── Header ── */
+.header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+.header-run {
+  font-size: 0.65rem;
+  color: var(--muted);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.header-char {
+  font-size: 1.2rem;
+  color: var(--gold);
+  font-weight: bold;
+  letter-spacing: 0.05em;
+}
+.header-player {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.header-season {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid;
+}
+.badge-season { border-color: var(--gold-dim); color: var(--gold); background: #2a2010; }
+.badge-phase  { border-color: var(--blue); color: #6a9acc; background: #0a1a2a; }
+
+/* ── Cards grid ── */
+.cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+@media (min-width: 540px) {
+  .cards { grid-template-columns: 1fr 1fr; }
+  .card-wide { grid-column: 1 / -1; }
+}
+
+/* ── Card ── */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+.card-title .icon { font-size: 1rem; }
+.card-title .chevron {
+  margin-left: auto;
+  transition: transform 0.2s;
+  font-style: normal;
+  font-size: 0.6rem;
+  color: var(--muted);
+}
+.card.collapsed .chevron { transform: rotate(-90deg); }
+.card-body { padding: 12px 14px; }
+.card.collapsed .card-body { display: none; }
+
+/* ── Treasury ── */
+.treasury-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+  border-bottom: 1px solid #1e1c18;
+  font-size: 0.8rem;
+}
+.treasury-row:last-child { border-bottom: none; }
+.treasury-row .label { color: var(--muted); flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding-right: 8px; }
+.treasury-row .amount { white-space: nowrap; }
+.treasury-row .amount.pos { color: var(--green); }
+.treasury-row .amount.neg { color: var(--red); }
+.treasury-section {
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  padding: 8px 0 4px;
+}
+.treasury-total {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0 2px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+  font-weight: bold;
+}
+.treasury-total .label { color: var(--text); }
+.treasury-total .amount { color: var(--gold); font-size: 1.05rem; }
+
+.btn-expand {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.65rem;
+  padding: 3px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  margin-top: 8px;
+  width: 100%;
+}
+.btn-expand:hover { border-color: var(--muted); color: var(--text); }
+
+/* ── Buildings ── */
+.slots-bar-wrap {
+  margin-bottom: 10px;
+}
+.slots-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.slots-bar {
+  height: 6px;
+  background: var(--bg3);
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.slots-bar-fill {
+  height: 100%;
+  background: var(--gold);
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+.building-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px solid #1a1814;
+  font-size: 0.78rem;
+  gap: 8px;
+}
+.building-row:last-child { border-bottom: none; }
+.building-name { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.building-status { color: var(--green); white-space: nowrap; font-size: 0.7rem; }
+.building-maint { color: var(--muted); white-space: nowrap; font-size: 0.7rem; }
+
+/* ── Events points ── */
+.points-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.points-block {
+  flex: 1;
+  min-width: 90px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  text-align: center;
+}
+.points-who { font-size: 0.6rem; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+.points-num {
+  font-size: 1.4rem;
+  color: var(--gold);
+  font-weight: bold;
+  line-height: 1;
+}
+.points-of { font-size: 0.65rem; color: var(--muted); margin-top: 2px; }
+
+.events-section-title {
+  font-size: 0.6rem;
+  color: var(--gold-dim);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 8px 0 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+.event-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 5px 0;
+  border-bottom: 1px solid #1a1814;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+.event-item:last-child { border-bottom: none; }
+.event-check { font-size: 0.85rem; flex-shrink: 0; margin-top: 1px; }
+.event-text { flex: 1; }
+.event-text.done { opacity: 0.45; text-decoration: line-through; }
+.event-tags { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px; }
+.event-tag {
+  font-size: 0.55rem;
+  padding: 1px 4px;
+  border-radius: 2px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.event-tag.wait   { border-color: var(--blue); color: #6a9acc; }
+.event-tag.harm   { border-color: var(--red); color: #cc7a6a; }
+.event-tag.chance { border-color: var(--green); color: #7acc8a; }
+.event-tag.noise  { opacity: 0.6; }
+.event-mon { font-size: 0.7rem; color: #cc7a6a; white-space: nowrap; margin-left: auto; flex-shrink: 0; }
+
+/* ── Hero ── */
+.skill-row {
+  display: flex;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid #1a1814;
+  font-size: 0.78rem;
+}
+.skill-row:last-child { border-bottom: none; }
+.skill-label { color: var(--muted); min-width: 140px; flex-shrink: 0; }
+.skill-value { color: var(--text); }
+
+/* ── Placeholder ── */
+.placeholder-body {
+  padding: 20px 14px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+}
+
+/* ── Error / Loading ── */
+#loading { text-align: center; padding: 40px; color: var(--muted); font-size: 0.85rem; letter-spacing: 0.1em; }
+
+/* ── Run/player switcher ── */
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 640px;
+  margin: 0 auto 14px;
+  gap: 8px;
+}
+.select-wrap {
+  display: flex;
+  gap: 6px;
+}
+select {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+select:focus { outline: none; border-color: var(--gold-dim); }
+.map-link {
+  font-size: 0.65rem;
+  color: var(--muted);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+.map-link:hover { color: var(--text); border-color: var(--muted); }
+</style>
+</head>
+<body>
+<div id="loading">Загрузка…</div>
+<div id="app" style="display:none">
+  <div class="top-bar">
+    <div class="select-wrap">
+      <select id="sel-run"></select>
+      <select id="sel-player"></select>
+    </div>
+    <a class="map-link" href="map.html">🗺 Карта</a>
+  </div>
+
+  <div class="header">
+    <div class="header-run" id="hdr-run"></div>
+    <div class="header-char" id="hdr-char"></div>
+    <div class="header-player" id="hdr-player"></div>
+    <div class="header-season">
+      <span class="badge badge-season" id="hdr-season"></span>
+      <span class="badge badge-phase"  id="hdr-phase"></span>
+    </div>
+  </div>
+
+  <div class="cards">
+
+    <!-- Treasury -->
+    <div class="card card-wide" id="card-finance">
+      <div class="card-title" onclick="toggleCard('card-finance')">
+        <span class="icon">💰</span> Казна
+        <em class="chevron">▼</em>
+      </div>
+      <div class="card-body" id="body-finance"></div>
+    </div>
+
+    <!-- Buildings -->
+    <div class="card" id="card-buildings">
+      <div class="card-title" onclick="toggleCard('card-buildings')">
+        <span class="icon">🏗</span> Постройки
+        <em class="chevron">▼</em>
+      </div>
+      <div class="card-body" id="body-buildings"></div>
+    </div>
+
+    <!-- Events -->
+    <div class="card" id="card-events">
+      <div class="card-title" onclick="toggleCard('card-events')">
+        <span class="icon">📋</span> События
+        <em class="chevron">▼</em>
+      </div>
+      <div class="card-body" id="body-events"></div>
+    </div>
+
+    <!-- Hero -->
+    <div class="card card-wide" id="card-hero">
+      <div class="card-title" onclick="toggleCard('card-hero')">
+        <span class="icon">⚔️</span> Герой
+        <em class="chevron">▼</em>
+      </div>
+      <div class="card-body" id="body-hero"></div>
+    </div>
+
+    <!-- Placeholder: Свита -->
+    <div class="card" id="card-retinue">
+      <div class="card-title" onclick="toggleCard('card-retinue')">
+        <span class="icon">👥</span> Свита
+        <em class="chevron">▼</em>
+      </div>
+      <div class="card-body placeholder-body">Раздел в разработке</div>
+    </div>
+
+    <!-- Placeholder: Территория -->
+    <div class="card" id="card-territory">
+      <div class="card-title" onclick="toggleCard('card-territory')">
+        <span class="icon">🗾</span> Территория
+        <em class="chevron">▼</em>
+      </div>
+      <div class="card-body placeholder-body">Раздел в разработке</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const RUNS    = ["run_004", "run_003"];
+const PLAYERS = ["valter", "danil", "misha"];
+const PLAYER_LABELS = { valter: "Лаки (Егор)", danil: "Клод (Данил)", misha: "Дунар (Миша)" };
+const RUN_LABELS    = { run_004: "Забег 004", run_003: "Забег 003" };
+
+const PHASE_LABELS = {
+  leader:    "Лидер",
+  adventure: "Приключение",
+  hearth:    "Очаг",
+  defence:   "Оборона",
+};
+
+let currentData = null;
+
+// ── URL params ────────────────────────────────────────────────────────────────
+function getParams() {
+  const p = new URLSearchParams(location.search);
+  return {
+    run:    p.get("run")    || "run_004",
+    player: p.get("player") || "valter",
+  };
+}
+
+function setParams(run, player) {
+  const url = new URL(location.href);
+  url.searchParams.set("run",    run);
+  url.searchParams.set("player", player);
+  history.replaceState(null, "", url);
+}
+
+// ── Selects ───────────────────────────────────────────────────────────────────
+function buildSelects() {
+  const rSel = document.getElementById("sel-run");
+  const pSel = document.getElementById("sel-player");
+  const { run, player } = getParams();
+
+  RUNS.forEach(r => {
+    const o = document.createElement("option");
+    o.value = r; o.textContent = RUN_LABELS[r] || r;
+    if (r === run) o.selected = true;
+    rSel.appendChild(o);
+  });
+  PLAYERS.forEach(pl => {
+    const o = document.createElement("option");
+    o.value = pl; o.textContent = PLAYER_LABELS[pl] || pl;
+    if (pl === player) o.selected = true;
+    pSel.appendChild(o);
+  });
+
+  rSel.onchange = () => loadData(rSel.value, pSel.value);
+  pSel.onchange = () => loadData(rSel.value, pSel.value);
+}
+
+// ── Load & render ─────────────────────────────────────────────────────────────
+async function loadData(run, player) {
+  setParams(run, player);
+  document.getElementById("sel-run").value    = run;
+  document.getElementById("sel-player").value = player;
+  document.getElementById("loading").style.display = "block";
+  document.getElementById("app").style.display = "none";
+
+  try {
+    const res = await fetch(`data/${run}_${player}.json?_=${Date.now()}`);
+    if (!res.ok) throw new Error(res.status);
+    const d = await res.json();
+    currentData = d;
+    render(d);
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("app").style.display = "block";
+  } catch (e) {
+    document.getElementById("loading").textContent = "Данные не найдены (" + run + "/" + player + ")";
+  }
+}
+
+// ── Toggle card ───────────────────────────────────────────────────────────────
+function toggleCard(id) {
+  document.getElementById(id).classList.toggle("collapsed");
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function fmt(n) {
+  return n === undefined || n === null ? "—"
+       : n.toLocaleString("ru-RU");
+}
+
+function render(d) {
+  // Header
+  const heroName = d.hero?.name?.replace(/—.+/, "").trim() || "—";
+  document.title = heroName + " — Дашборд";
+  document.getElementById("hdr-run").textContent    = (RUN_LABELS[d.run] || d.run) + " · С" + (d.season || "?");
+  document.getElementById("hdr-char").textContent   = heroName;
+  document.getElementById("hdr-player").textContent = PLAYER_LABELS[d.player] || d.player;
+  document.getElementById("hdr-season").textContent = "Сезон " + (d.season || "?");
+  const phase = d.active_phase;
+  document.getElementById("hdr-phase").textContent  = PHASE_LABELS[phase] || phase || "?";
+
+  renderFinance(d.finance);
+  renderBuildings(d.buildings);
+  renderEvents(d.events);
+  renderHero(d.hero);
+}
+
+// ── Finance ───────────────────────────────────────────────────────────────────
+function renderFinance(f) {
+  if (!f) { document.getElementById("body-finance").innerHTML = "<div class='placeholder-body'>Нет данных</div>"; return; }
+  const el = document.getElementById("body-finance");
+
+  let html = `
+    <div class="treasury-row">
+      <span class="label">Начало сезона</span>
+      <span class="amount">${fmt(f.start)} мон</span>
+    </div>`;
+
+  // Summary
+  html += `<div class="treasury-section">Доходы</div>`;
+  html += `<div id="income-rows">`;
+  (f.income || []).forEach(i => {
+    html += `<div class="treasury-row"><span class="label">${esc(i.label)}</span><span class="amount pos">+${fmt(i.amount)}</span></div>`;
+  });
+  html += `</div>`;
+  html += `<div class="treasury-row" style="font-weight:bold">
+    <span class="label">Итого доходов</span>
+    <span class="amount pos">+${fmt(f.total_income)}</span>
+  </div>`;
+
+  html += `<div class="treasury-section">Расходы</div>`;
+  html += `<div id="expense-rows">`;
+  (f.expenses || []).forEach(i => {
+    html += `<div class="treasury-row"><span class="label">${esc(i.label)}</span><span class="amount neg">−${fmt(i.amount)}</span></div>`;
+  });
+  html += `</div>`;
+  html += `<div class="treasury-row" style="font-weight:bold">
+    <span class="label">Итого расходов</span>
+    <span class="amount neg">−${fmt(f.total_expenses)}</span>
+  </div>`;
+
+  const receipts  = f.receipts  || [];
+  const spendings = f.spendings || [];
+  if (receipts.length || spendings.length) {
+    html += `<div class="treasury-section">Разовые</div>`;
+    receipts.forEach(i  => { html += `<div class="treasury-row"><span class="label">${esc(i.label)}</span><span class="amount pos">+${fmt(i.amount)}</span></div>`; });
+    spendings.forEach(i => { html += `<div class="treasury-row"><span class="label">${esc(i.label)}</span><span class="amount neg">−${fmt(i.amount)}</span></div>`; });
+  }
+
+  const balColor = (f.balance || 0) >= 0 ? "pos" : "neg";
+  const balSign  = (f.balance || 0) >= 0 ? "+" : "";
+  html += `<div class="treasury-total">
+    <span class="label">Расчётная казна</span>
+    <span class="amount ${balColor}">${balSign}${fmt(f.balance)} мон</span>
+  </div>`;
+
+  el.innerHTML = html;
+}
+
+// ── Buildings ─────────────────────────────────────────────────────────────────
+function renderBuildings(b) {
+  if (!b) { document.getElementById("body-buildings").innerHTML = "<div class='placeholder-body'>Нет данных</div>"; return; }
+  const el = document.getElementById("body-buildings");
+  const { base, extra, used, max_extra, free } = b.slots || {};
+  const total = (base || 0) + (extra || 0);
+  const pct   = total > 0 ? Math.round((used || 0) / total * 100) : 0;
+
+  let html = `
+    <div class="slots-bar-wrap">
+      <div class="slots-info">
+        <span>Слоты: ${used || 0}/${total}</span>
+        <span>${free || 0} свободных · Доп. ${extra || 0}/${max_extra || 0}</span>
+      </div>
+      <div class="slots-bar"><div class="slots-bar-fill" style="width:${pct}%"></div></div>
+    </div>`;
+
+  (b.buildings || []).forEach(bld => {
+    const maint = bld.maint ? `${fmt(bld.maint)}${bld.rate ? " ("+bld.rate+"%)" : ""}` : bld.status === "доходная" ? "дох." : "—";
+    html += `<div class="building-row">
+      <span class="building-name">${esc(bld.name)}</span>
+      <span class="building-maint">${esc(maint)}</span>
+    </div>`;
+  });
+
+  el.innerHTML = html;
+}
+
+// ── Events ────────────────────────────────────────────────────────────────────
+function renderEvents(ev) {
+  if (!ev) { document.getElementById("body-events").innerHTML = "<div class='placeholder-body'>Нет данных</div>"; return; }
+  const el = document.getElementById("body-events");
+
+  // Points
+  const pts = ev.points || {};
+  let html = `<div class="points-row">`;
+  if (pts.player)     html += pointBlock("Игрок",    pts.player.left,    pts.player.total);
+  if (pts.chancellor) html += pointBlock(pts.chancellor.name || "Канцлер", pts.chancellor.left, pts.chancellor.total);
+  if (pts.captain)    html += pointBlock(pts.captain.name    || "Капитан", pts.captain.left,    pts.captain.total);
+  html += `</div>`;
+
+  const sections = [
+    { key: "incidents",   label: "Происшествия" },
+    { key: "visitors",    label: "Посетители" },
+    { key: "po",          label: ev.po_title || "П&О" },
+    { key: "assignments", label: "Предложения" },
+    { key: "custom",      label: "Свои события" },
+  ];
+
+  sections.forEach(sec => {
+    const items = ev[sec.key] || [];
+    if (!items.length) return;
+    html += `<div class="events-section-title">${esc(sec.label)} (${items.length})</div>`;
+    items.forEach(item => {
+      html += renderEventItem(item);
+    });
+  });
+
+  el.innerHTML = html;
+}
+
+function pointBlock(who, left, total) {
+  return `<div class="points-block">
+    <div class="points-who">${esc(who)}</div>
+    <div class="points-num">${left}</div>
+    <div class="points-of">из ${total}</div>
+  </div>`;
+}
+
+function tagClass(t) {
+  if (t === "#ждёт") return "wait";
+  if (t.startsWith("#вред")) return "harm";
+  if (t === "#возможность") return "chance";
+  if (t === "#шум") return "noise";
+  return "";
+}
+
+function renderEventItem(item) {
+  const check = item.done ? "✅" : "◻️";
+  const tags  = (item.tags || []).filter(t => !t.startsWith("#мон"));
+  const tagsHtml = tags.map(t => `<span class="event-tag ${tagClass(t)}">${esc(t)}</span>`).join("");
+  const monHtml  = item.mon ? `<span class="event-mon">#мон${item.mon}</span>` : "";
+  return `<div class="event-item">
+    <span class="event-check">${check}</span>
+    <div class="event-text${item.done ? " done" : ""}">
+      ${esc(item.text)}
+      ${tagsHtml || monHtml ? `<div class="event-tags">${tagsHtml}${monHtml}</div>` : ""}
+    </div>
+  </div>`;
+}
+
+// ── Hero ──────────────────────────────────────────────────────────────────────
+function renderHero(hero) {
+  if (!hero) { document.getElementById("body-hero").innerHTML = "<div class='placeholder-body'>Нет данных</div>"; return; }
+  const el = document.getElementById("body-hero");
+  let html = "";
+  (hero.skills || []).forEach(s => {
+    html += `<div class="skill-row">
+      <span class="skill-label">${esc(s.label)}</span>
+      <span class="skill-value">${esc(s.value)}</span>
+    </div>`;
+  });
+  el.innerHTML = html || "<div class='placeholder-body'>Нет данных</div>";
+}
+
+// ── Escape HTML ───────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+buildSelects();
+const { run, player } = getParams();
+loadData(run, player);
+</script>
+</body>
+</html>

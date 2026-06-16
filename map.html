@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Карта — run_004</title>
+<title>Карта — Сумерки мира</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -189,7 +189,16 @@
 </head>
 <body>
 
-<h1>Карта — run_004</h1>
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;width:100%">
+  <h1 id="map-title" style="flex:1">Карта</h1>
+  <div style="display:flex;gap:6px">
+    <select id="run-sel" style="background:#1a1814;border:1px solid #2e2a22;color:#c8b89a;font:inherit;font-size:0.7rem;padding:4px 8px;border-radius:4px;cursor:pointer" onchange="switchRun(this.value)">
+      <option value="run_004">Забег 004</option>
+      <option value="run_003">Забег 003</option>
+    </select>
+    <a href="player.html" style="font-size:0.65rem;color:#7a6e5a;text-decoration:none;border:1px solid #2e2a22;padding:4px 8px;border-radius:4px">👤 Дашборд</a>
+  </div>
+</div>
 
 <div class="map-wrap" id="map-wrap">
   <div class="map-zoom" id="map-zoom">
@@ -210,7 +219,7 @@
 </div>
 
 <script>
-const CELLS = {
+const CELLS_RUN004 = {
   "-3,-1":  { code:"МРЕ", type:"t-ocean", icon:"〰", name:"Море (юго-запад)", note:"Юго-западнее Лаки" },
   "-3,0":  { code:"МРЕ", type:"t-ocean", icon:"〰", name:"Море (запад)", note:"Западнее Лаки" },
   "-3,1":  { code:"МРЕ", type:"t-ocean", icon:"〰", name:"Море (северо-запад)", note:"Северо-западнее Лаки" },
@@ -234,6 +243,31 @@ const CELLS = {
   "3,1":  { code:"ГРЛ", type:"t-neutral", icon:"🪵", name:"Горлицы", note:"~600 чел. ~2 дня от Стоево на северо-восток; лесозаготовка" },
 };
 
+// run_003 had same geography but different player configs (archived S11)
+const CELLS_RUN003 = Object.fromEntries(
+  Object.entries(CELLS_RUN004).map(([k,v]) => {
+    // Same world map; player ownership markers are the same (same trio)
+    return [k, {...v}];
+  })
+);
+
+const RUNS_META = {
+  run_004: { label: "Забег 004 — текущий",  cells: CELLS_RUN004 },
+  run_003: { label: "Забег 003 — архив С11", cells: CELLS_RUN003 },
+};
+
+let CELLS = CELLS_RUN004;
+let currentRun = "run_004";
+
+function switchRun(run) {
+  currentRun = run;
+  const meta = RUNS_META[run] || RUNS_META["run_004"];
+  CELLS = meta.cells;
+  document.getElementById("map-title").textContent = "Карта — " + (run === "run_004" ? "Забег 004" : "Забег 003");
+  document.title = "Карта — " + (run === "run_004" ? "Забег 004" : "Забег 003");
+  rebuildMap();
+}
+
 const X_MIN = -3, X_MAX = 3, Y_MIN = -2, Y_MAX = 2;
 
 const mapEl   = document.getElementById('map');
@@ -242,93 +276,97 @@ const wrapEl  = document.getElementById('map-wrap');
 const tip     = document.getElementById('tooltip');
 const panel   = document.getElementById('info-panel');
 
-// ── Build grid ──────────────────────────────────────────────────────────────
-const corner = document.createElement('div');
-corner.className = 'axis-label';
-mapEl.appendChild(corner);
-for (let x = X_MIN; x <= X_MAX; x++) {
-  const lbl = document.createElement('div');
-  lbl.className = 'axis-label';
-  lbl.textContent = (x > 0 ? '+' : '') + x;
-  mapEl.appendChild(lbl);
-}
-
 let selectedCell = null;
 
 function infoHtml(data, x, y) {
-  return '<strong>' + data.name + '</strong>' +
+  return '<strong>' + data.name + '</strong><br>' +
     data.note +
     '<br><span class="tip-coord">(' + (x>0?'+':'') + x + ', ' + (y>0?'+':'') + y + ')</span>';
 }
 
-for (let y = Y_MAX; y >= Y_MIN; y--) {
-  const ylbl = document.createElement('div');
-  ylbl.className = 'axis-label';
-  ylbl.textContent = (y > 0 ? '+' : '') + y;
-  mapEl.appendChild(ylbl);
+// ── Build/rebuild grid ───────────────────────────────────────────────────────
+function rebuildMap() {
+  mapEl.innerHTML = '';
+  if (selectedCell) { selectedCell = null; panel.style.display = 'none'; }
 
+  const corner = document.createElement('div');
+  corner.className = 'axis-label';
+  mapEl.appendChild(corner);
   for (let x = X_MIN; x <= X_MAX; x++) {
-    const key = x + ',' + y;
-    const data = CELLS[key];
-    const cell = document.createElement('div');
-    cell.className = 'cell ' + (data ? data.type : 't-unknown');
-
-    if (data && data.icon) {
-      const bg = document.createElement('div');
-      bg.className = 'cell-bg';
-      bg.textContent = data.icon;
-      cell.appendChild(bg);
-    }
-
-    const code = document.createElement('div');
-    code.className = 'cell-code';
-    code.textContent = data ? data.code : '---';
-    cell.appendChild(code);
-
-    const coord = document.createElement('div');
-    coord.className = 'cell-coord';
-    coord.textContent = (x > 0 ? '+' : '') + x + ' ' + (y > 0 ? '+' : '') + y;
-    cell.appendChild(coord);
-
-    if (data) {
-      cell.setAttribute('data-tip', '1');
-
-      // Desktop: hover tooltip
-      cell.addEventListener('mouseenter', e => {
-        tip.style.display = 'block';
-        tip.innerHTML = infoHtml(data, x, y);
-      });
-      cell.addEventListener('mousemove', e => {
-        const tw = tip.offsetWidth, th = tip.offsetHeight;
-        const vw = window.innerWidth, vh = window.innerHeight;
-        let lft = e.clientX + 14, top = e.clientY - 10;
-        if (lft + tw > vw - 8) lft = e.clientX - tw - 14;
-        if (top + th > vh - 8) top = e.clientY - th - 10;
-        tip.style.left = Math.max(8, lft) + 'px';
-        tip.style.top  = Math.max(8, top) + 'px';
-      });
-      cell.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
-
-      // Mobile: tap to select, info panel at bottom
-      cell.addEventListener('click', e => {
-        if (isPinching) return;
-        if (selectedCell === cell) {
-          cell.classList.remove('selected');
-          selectedCell = null;
-          panel.style.display = 'none';
-        } else {
-          if (selectedCell) selectedCell.classList.remove('selected');
-          selectedCell = cell;
-          cell.classList.add('selected');
-          panel.innerHTML = infoHtml(data, x, y);
-          panel.style.display = 'block';
-        }
-        e.stopPropagation();
-      });
-    }
-
-    mapEl.appendChild(cell);
+    const lbl = document.createElement('div');
+    lbl.className = 'axis-label';
+    lbl.textContent = (x > 0 ? '+' : '') + x;
+    mapEl.appendChild(lbl);
   }
+
+  for (let y = Y_MAX; y >= Y_MIN; y--) {
+    const ylbl = document.createElement('div');
+    ylbl.className = 'axis-label';
+    ylbl.textContent = (y > 0 ? '+' : '') + y;
+    mapEl.appendChild(ylbl);
+
+    for (let x = X_MIN; x <= X_MAX; x++) {
+      const key = x + ',' + y;
+      const data = CELLS[key];
+      const cell = document.createElement('div');
+      cell.className = 'cell ' + (data ? data.type : 't-unknown');
+
+      if (data && data.icon) {
+        const bg = document.createElement('div');
+        bg.className = 'cell-bg';
+        bg.textContent = data.icon;
+        cell.appendChild(bg);
+      }
+
+      const code = document.createElement('div');
+      code.className = 'cell-code';
+      code.textContent = data ? data.code : '---';
+      cell.appendChild(code);
+
+      const coord = document.createElement('div');
+      coord.className = 'cell-coord';
+      coord.textContent = (x > 0 ? '+' : '') + x + ' ' + (y > 0 ? '+' : '') + y;
+      cell.appendChild(coord);
+
+      if (data) {
+        cell.setAttribute('data-tip', '1');
+
+        cell.addEventListener('mouseenter', e => {
+          tip.style.display = 'block';
+          tip.innerHTML = infoHtml(data, x, y);
+        });
+        cell.addEventListener('mousemove', e => {
+          const tw = tip.offsetWidth, th = tip.offsetHeight;
+          const vw = window.innerWidth, vh = window.innerHeight;
+          let lft = e.clientX + 14, top = e.clientY - 10;
+          if (lft + tw > vw - 8) lft = e.clientX - tw - 14;
+          if (top + th > vh - 8) top = e.clientY - th - 10;
+          tip.style.left = Math.max(8, lft) + 'px';
+          tip.style.top  = Math.max(8, top) + 'px';
+        });
+        cell.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+
+        cell.addEventListener('click', e => {
+          if (isPinching) return;
+          if (selectedCell === cell) {
+            cell.classList.remove('selected');
+            selectedCell = null;
+            panel.style.display = 'none';
+          } else {
+            if (selectedCell) selectedCell.classList.remove('selected');
+            selectedCell = cell;
+            cell.classList.add('selected');
+            panel.innerHTML = infoHtml(data, x, y);
+            panel.style.display = 'block';
+          }
+          e.stopPropagation();
+        });
+      }
+
+      mapEl.appendChild(cell);
+    }
+  }
+  centerMap();
 }
 
 // Click outside → deselect
@@ -437,7 +475,7 @@ wrapEl.addEventListener('wheel', e => {
   applyT();
 }, { passive: false });
 
-window.addEventListener('load', centerMap);
+window.addEventListener('load', rebuildMap);
 window.addEventListener('resize', centerMap);
 </script>
 </body>
