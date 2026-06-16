@@ -637,15 +637,9 @@ function tagClass(t) {
 
 function renderEventItem(item) {
   const check = item.done ? "✅" : "◻️";
-  const tags  = (item.tags || []).filter(t => !t.startsWith("#мон"));
-  const tagsHtml = tags.map(t => `<span class="event-tag ${tagClass(t)}">${esc(t)}</span>`).join("");
-  const monHtml  = item.mon ? `<span class="event-mon">#мон${item.mon}</span>` : "";
   return `<div class="event-item">
     <span class="event-check">${check}</span>
-    <div class="event-text${item.done ? " done" : ""}">
-      ${esc(item.text)}
-      ${tagsHtml || monHtml ? `<div class="event-tags">${tagsHtml}${monHtml}</div>` : ""}
-    </div>
+    <div class="event-text${item.done ? " done" : ""}">${esc(item.text)}</div>
   </div>`;
 }
 
