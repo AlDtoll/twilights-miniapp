@@ -222,49 +222,56 @@
         "cost": 10000,
         "status": "✅ (С2)",
         "maint": 500,
-        "rate": 5
+        "rate": 5,
+        "hands": 0
       },
       {
         "name": "Мастерская кадавров (пристройка)",
         "cost": 5000,
         "status": "✅ (С3)",
         "maint": 250,
-        "rate": 5
+        "rate": 5,
+        "hands": 0
       },
       {
         "name": "Камера Эхо (стена в подземелье)",
         "cost": 5000,
         "status": "✅ (С4)",
         "maint": 250,
-        "rate": 5
+        "rate": 5,
+        "hands": 0
       },
       {
         "name": "Придел Живоносного Креста",
         "cost": 150,
         "status": "✅ (С5)",
         "maint": 0,
-        "rate": 0
+        "rate": 0,
+        "hands": 0
       },
       {
         "name": "Управа",
         "cost": 5000,
         "status": "✅ (С6)",
         "maint": 250,
-        "rate": 5
+        "rate": 5,
+        "hands": 0
       },
       {
         "name": "Больница",
         "cost": 10000,
         "status": "✅ (С7)",
         "maint": 500,
-        "rate": 5
+        "rate": 5,
+        "hands": 2
       },
       {
         "name": "Прийск энтилехия",
         "cost": 5000,
         "status": "✅ (С8)",
         "maint": 0,
-        "rate": 0
+        "rate": 0,
+        "hands": 4
       }
     ]
   },
@@ -605,49 +612,56 @@
           "cost": 10000,
           "status": "✅ (С2)",
           "maint": 500,
-          "rate": 5
+          "rate": 5,
+          "hands": 0
         },
         {
           "name": "Мастерская кадавров (пристройка)",
           "cost": 5000,
           "status": "✅ (С3)",
           "maint": 250,
-          "rate": 5
+          "rate": 5,
+          "hands": 0
         },
         {
           "name": "Камера Эхо (стена в подземелье)",
           "cost": 5000,
           "status": "✅ (С4)",
           "maint": 250,
-          "rate": 5
+          "rate": 5,
+          "hands": 0
         },
         {
           "name": "Придел Живоносного Креста",
           "cost": 150,
           "status": "✅ (С5)",
           "maint": 0,
-          "rate": 0
+          "rate": 0,
+          "hands": 0
         },
         {
           "name": "Управа",
           "cost": 5000,
           "status": "✅ (С6)",
           "maint": 250,
-          "rate": 5
+          "rate": 5,
+          "hands": 0
         },
         {
           "name": "Больница",
           "cost": 10000,
           "status": "✅ (С7)",
           "maint": 500,
-          "rate": 5
+          "rate": 5,
+          "hands": 2
         },
         {
           "name": "Прийск энтилехия",
           "cost": 5000,
           "status": "✅ (С8)",
           "maint": 0,
-          "rate": 0
+          "rate": 0,
+          "hands": 4
         }
       ],
       "income": [

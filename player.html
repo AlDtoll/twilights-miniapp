@@ -201,6 +201,7 @@ body {
 .building-name { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .building-status { color: var(--green); white-space: nowrap; font-size: 0.7rem; }
 .building-maint { color: var(--muted); white-space: nowrap; font-size: 0.7rem; }
+.building-hands { color: #6a9acc; white-space: nowrap; font-size: 0.7rem; }
 
 /* ── Events points ── */
 .points-row {
@@ -653,8 +654,10 @@ function renderBuildings(b, settlements) {
       html += `<div class="sett-section">${esc(s.name)}</div>`;
       s.buildings.forEach(bld => {
         const maint = bld.maint ? `${fmt(bld.maint)}${bld.rate ? " ("+bld.rate+"%)" : ""}` : bld.status === "доходная" ? "дох." : "—";
+        const hands = bld.hands ? `<span class="building-hands">${bld.hands}р</span>` : "";
         html += `<div class="building-row">
           <span class="building-name">${esc(bld.name)}</span>
+          ${hands}
           <span class="building-maint">${esc(maint)}</span>
         </div>`;
       });
@@ -663,8 +666,10 @@ function renderBuildings(b, settlements) {
     // Fallback: flat list
     (b.buildings || []).forEach(bld => {
       const maint = bld.maint ? `${fmt(bld.maint)}${bld.rate ? " ("+bld.rate+"%)" : ""}` : bld.status === "доходная" ? "дох." : "—";
+      const hands = bld.hands ? `<span class="building-hands">${bld.hands}р</span>` : "";
       html += `<div class="building-row">
         <span class="building-name">${esc(bld.name)}</span>
+        ${hands}
         <span class="building-maint">${esc(maint)}</span>
       </div>`;
     });

@@ -297,84 +297,96 @@
         "cost": 5000,
         "status": "✅ (С2)",
         "maint": 0,
-        "rate": 0
+        "rate": 0,
+        "hands": 0
       },
       {
         "name": "Рыбный склад",
         "cost": 5000,
         "status": "✅ (С2)",
         "maint": 0,
-        "rate": 0
+        "rate": 0,
+        "hands": 0
       },
       {
         "name": "Таверна",
         "cost": 5000,
         "status": "✅ (С3)",
         "maint": 250,
-        "rate": 5
+        "rate": 5,
+        "hands": 4
       },
       {
         "name": "Управа",
         "cost": 5000,
         "status": "✅ (С3)",
         "maint": 250,
-        "rate": 5
+        "rate": 5,
+        "hands": 0
       },
       {
         "name": "Дом героя",
         "cost": 5000,
         "status": "✅ (С1)",
         "maint": 250,
-        "rate": 5
+        "rate": 5,
+        "hands": 0
       },
       {
         "name": "Сторожевая вышка",
         "cost": 5000,
         "status": "✅ (С4)",
         "maint": 250,
-        "rate": 5
+        "rate": 5,
+        "hands": 0
       },
       {
         "name": "Склады",
         "cost": 10000,
         "status": "✅ (С4)",
         "maint": 500,
-        "rate": 5
+        "rate": 5,
+        "hands": 0
       },
       {
         "name": "Цитадель + Стена",
         "cost": 70000,
         "status": "✅ (С6)",
         "maint": 3500,
-        "rate": 5
+        "rate": 5,
+        "hands": 0
       },
       {
         "name": "Верфь",
         "cost": 8000,
         "status": "✅ (С6)",
         "maint": 400,
-        "rate": 5
+        "rate": 5,
+        "hands": 0
       },
       {
         "name": "Казармы (расширенные)",
         "cost": 10000,
         "status": "✅ (С7)",
         "maint": 500,
-        "rate": 5
+        "rate": 5,
+        "hands": 0
       },
       {
         "name": "Больница",
         "cost": 10000,
         "status": "✅ (С7)",
         "maint": 500,
-        "rate": 5
+        "rate": 5,
+        "hands": 2
       },
       {
         "name": "Склад в Горне",
         "cost": 5000,
         "status": "✅ (С8)",
         "maint": 250,
-        "rate": 5
+        "rate": 5,
+        "hands": 0
       }
     ]
   },
@@ -764,77 +776,88 @@
           "cost": 5000,
           "status": "✅ (С2)",
           "maint": 0,
-          "rate": 0
+          "rate": 0,
+          "hands": 0
         },
         {
           "name": "Рыбный склад",
           "cost": 5000,
           "status": "✅ (С2)",
           "maint": 0,
-          "rate": 0
+          "rate": 0,
+          "hands": 0
         },
         {
           "name": "Таверна",
           "cost": 5000,
           "status": "✅ (С3)",
           "maint": 250,
-          "rate": 5
+          "rate": 5,
+          "hands": 4
         },
         {
           "name": "Управа",
           "cost": 5000,
           "status": "✅ (С3)",
           "maint": 250,
-          "rate": 5
+          "rate": 5,
+          "hands": 0
         },
         {
           "name": "Дом героя",
           "cost": 5000,
           "status": "✅ (С1)",
           "maint": 250,
-          "rate": 5
+          "rate": 5,
+          "hands": 0
         },
         {
           "name": "Сторожевая вышка",
           "cost": 5000,
           "status": "✅ (С4)",
           "maint": 250,
-          "rate": 5
+          "rate": 5,
+          "hands": 0
         },
         {
           "name": "Склады",
           "cost": 10000,
           "status": "✅ (С4)",
           "maint": 500,
-          "rate": 5
+          "rate": 5,
+          "hands": 0
         },
         {
           "name": "Цитадель + Стена",
           "cost": 70000,
           "status": "✅ (С6)",
           "maint": 3500,
-          "rate": 5
+          "rate": 5,
+          "hands": 0
         },
         {
           "name": "Верфь",
           "cost": 8000,
           "status": "✅ (С6)",
           "maint": 400,
-          "rate": 5
+          "rate": 5,
+          "hands": 0
         },
         {
           "name": "Казармы (расширенные)",
           "cost": 10000,
           "status": "✅ (С7)",
           "maint": 500,
-          "rate": 5
+          "rate": 5,
+          "hands": 0
         },
         {
           "name": "Больница",
           "cost": 10000,
           "status": "✅ (С7)",
           "maint": 500,
-          "rate": 5
+          "rate": 5,
+          "hands": 2
         }
       ],
       "income": [
@@ -990,7 +1013,8 @@
           "cost": 5000,
           "status": "✅ (С8)",
           "maint": 250,
-          "rate": 5
+          "rate": 5,
+          "hands": 0
         }
       ],
       "income": [

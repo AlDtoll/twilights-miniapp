@@ -286,98 +286,112 @@
         "cost": 10000,
         "status": "✅ (С1)",
         "maint": 500,
-        "rate": 5
+        "rate": 5,
+        "hands": 0
       },
       {
         "name": "Управа",
         "cost": 5000,
         "status": "✅ (С2)",
         "maint": 250,
-        "rate": 5
+        "rate": 5,
+        "hands": 0
       },
       {
         "name": "Караулка",
         "cost": 5000,
         "status": "✅ (С2)",
         "maint": 250,
-        "rate": 5
+        "rate": 5,
+        "hands": 0
       },
       {
         "name": "Сапожная мастерская",
         "cost": 5000,
         "status": "✅ (С2)",
         "maint": 0,
-        "rate": 0
+        "rate": 0,
+        "hands": 4
       },
       {
         "name": "Таверна",
         "cost": 5000,
         "status": "✅ (С3)",
         "maint": 250,
-        "rate": 5
+        "rate": 5,
+        "hands": 4
       },
       {
         "name": "Торговый пост",
         "cost": 5000,
         "status": "✅ (С3)",
         "maint": 250,
-        "rate": 5
+        "rate": 5,
+        "hands": 0
       },
       {
         "name": "Конюшня",
         "cost": 5000,
         "status": "✅ (С3)",
         "maint": 250,
-        "rate": 5
+        "rate": 5,
+        "hands": 0
       },
       {
         "name": "Скобяная мастерская",
         "cost": 5000,
         "status": "✅ (С4)",
         "maint": 0,
-        "rate": 0
+        "rate": 0,
+        "hands": 4
       },
       {
         "name": "Мастерская инструментов",
         "cost": 5000,
         "status": "✅ (С4)",
         "maint": 0,
-        "rate": 0
+        "rate": 0,
+        "hands": 4
       },
       {
         "name": "Алхимическая лаборатория",
         "cost": 5000,
         "status": "✅ (С4)",
         "maint": 250,
-        "rate": 5
+        "rate": 5,
+        "hands": 0
       },
       {
         "name": "Больница",
         "cost": 10000,
         "status": "✅ (С7)",
         "maint": 500,
-        "rate": 5
+        "rate": 5,
+        "hands": 2
       },
       {
         "name": "Ювелирная мастерская",
         "cost": 5000,
         "status": "✅ (С7)",
         "maint": 0,
-        "rate": 0
+        "rate": 0,
+        "hands": 4
       },
       {
         "name": "Тренировочная площадка",
         "cost": 5000,
         "status": "✅ (С8)",
         "maint": 250,
-        "rate": 5
+        "rate": 5,
+        "hands": 0
       },
       {
         "name": "Рудник",
         "cost": 10000,
         "status": "✅ (С8)",
         "maint": 500,
-        "rate": 5
+        "rate": 5,
+        "hands": 0
       }
     ]
   },
@@ -390,7 +404,7 @@
       "chancellor": {
         "name": "Артейнор",
         "total": 5,
-        "left": 1
+        "left": 0
       },
       "captain": {
         "name": "Улан",
@@ -418,8 +432,8 @@
         "mon": 540
       },
       {
-        "text": "Обоз Дарга вернулся — доставка в Ворк состоялась, но сломалась ось повозки; Дарг ждёт слова по следующему рейсу",
-        "done": false,
+        "text": "Обоз Дарга вернулся — доставка в Ворк состоялась, но сломалась ось повозки; Дарг ждёт слова по следующему рейсу  — Артейнор: ось починена, плотник нанят (~45 мон); следующий рейс Дарга подтверждён",
+        "done": true,
         "tags": [
           "#ждёт"
         ],
@@ -712,98 +726,112 @@
           "cost": 10000,
           "status": "✅ (С1)",
           "maint": 500,
-          "rate": 5
+          "rate": 5,
+          "hands": 0
         },
         {
           "name": "Управа",
           "cost": 5000,
           "status": "✅ (С2)",
           "maint": 250,
-          "rate": 5
+          "rate": 5,
+          "hands": 0
         },
         {
           "name": "Караулка",
           "cost": 5000,
           "status": "✅ (С2)",
           "maint": 250,
-          "rate": 5
+          "rate": 5,
+          "hands": 0
         },
         {
           "name": "Сапожная мастерская",
           "cost": 5000,
           "status": "✅ (С2)",
           "maint": 0,
-          "rate": 0
+          "rate": 0,
+          "hands": 4
         },
         {
           "name": "Таверна",
           "cost": 5000,
           "status": "✅ (С3)",
           "maint": 250,
-          "rate": 5
+          "rate": 5,
+          "hands": 4
         },
         {
           "name": "Торговый пост",
           "cost": 5000,
           "status": "✅ (С3)",
           "maint": 250,
-          "rate": 5
+          "rate": 5,
+          "hands": 0
         },
         {
           "name": "Конюшня",
           "cost": 5000,
           "status": "✅ (С3)",
           "maint": 250,
-          "rate": 5
+          "rate": 5,
+          "hands": 0
         },
         {
           "name": "Скобяная мастерская",
           "cost": 5000,
           "status": "✅ (С4)",
           "maint": 0,
-          "rate": 0
+          "rate": 0,
+          "hands": 4
         },
         {
           "name": "Мастерская инструментов",
           "cost": 5000,
           "status": "✅ (С4)",
           "maint": 0,
-          "rate": 0
+          "rate": 0,
+          "hands": 4
         },
         {
           "name": "Алхимическая лаборатория",
           "cost": 5000,
           "status": "✅ (С4)",
           "maint": 250,
-          "rate": 5
+          "rate": 5,
+          "hands": 0
         },
         {
           "name": "Больница",
           "cost": 10000,
           "status": "✅ (С7)",
           "maint": 500,
-          "rate": 5
+          "rate": 5,
+          "hands": 2
         },
         {
           "name": "Ювелирная мастерская",
           "cost": 5000,
           "status": "✅ (С7)",
           "maint": 0,
-          "rate": 0
+          "rate": 0,
+          "hands": 4
         },
         {
           "name": "Тренировочная площадка",
           "cost": 5000,
           "status": "✅ (С8)",
           "maint": 250,
-          "rate": 5
+          "rate": 5,
+          "hands": 0
         },
         {
           "name": "Рудник",
           "cost": 10000,
           "status": "✅ (С8)",
           "maint": 500,
-          "rate": 5
+          "rate": 5,
+          "hands": 0
         }
       ],
       "income": [
