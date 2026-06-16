@@ -266,15 +266,28 @@ body {
 
 /* ── Hero ── */
 .skill-row {
-  display: flex;
-  gap: 8px;
-  padding: 4px 0;
+  padding: 6px 0;
   border-bottom: 1px solid #1a1814;
   font-size: 0.78rem;
 }
 .skill-row:last-child { border-bottom: none; }
-.skill-label { color: var(--muted); min-width: 140px; flex-shrink: 0; }
-.skill-value { color: var(--text); }
+.skill-name { color: var(--text); font-weight: bold; }
+.skill-meta { display: flex; gap: 10px; margin-top: 3px; flex-wrap: wrap; }
+.skill-bank { color: var(--gold); font-size: 0.7rem; }
+.skill-tech { color: #7acc8a; font-size: 0.7rem; font-style: italic; }
+.hero-section-title {
+  font-size: 0.6rem; color: var(--gold-dim); letter-spacing: 0.15em;
+  text-transform: uppercase; padding: 8px 0 4px;
+  border-bottom: 1px solid var(--border); margin-bottom: 4px;
+}
+.hero-item {
+  font-size: 0.78rem; padding: 3px 0;
+  border-bottom: 1px solid #1a1814; color: var(--text);
+}
+.hero-item:last-child { border-bottom: none; }
+.hero-status-row { display: flex; gap: 16px; font-size: 0.78rem; margin-bottom: 4px; }
+.hero-status-row span { color: var(--muted); }
+.hero-status-row b { color: var(--text); }
 
 /* ── Placeholder ── */
 .placeholder-body {
@@ -648,12 +661,52 @@ function renderHero(hero) {
   if (!hero) { document.getElementById("body-hero").innerHTML = "<div class='placeholder-body'>Нет данных</div>"; return; }
   const el = document.getElementById("body-hero");
   let html = "";
-  (hero.skills || []).forEach(s => {
-    html += `<div class="skill-row">
-      <span class="skill-label">${esc(s.label)}</span>
-      <span class="skill-value">${esc(s.value)}</span>
-    </div>`;
-  });
+
+  // Status
+  const st = hero.status || {};
+  if (Object.keys(st).length) {
+    html += `<div class="hero-status-row">`;
+    for (const [k, v] of Object.entries(st)) {
+      html += `<span>${esc(k)}:</span> <b>${esc(v)}</b> &nbsp;`;
+    }
+    html += `</div>`;
+  }
+
+  // Skills
+  if ((hero.skills || []).length) {
+    html += `<div class="hero-section-title">Навыки</div>`;
+    hero.skills.forEach(s => {
+      const bankHtml = s.bank !== null && s.bank !== undefined ? `<span class="skill-bank">банк: ${s.bank}</span>` : "";
+      const techHtml = (s.techniques || []).map(t => `<span class="skill-tech">${esc(t)}</span>`).join("");
+      html += `<div class="skill-row">
+        <div class="skill-name">${esc(s.name)}</div>
+        <div class="skill-meta">${bankHtml}${techHtml}</div>
+      </div>`;
+    });
+  }
+
+  // Features
+  if ((hero.features || []).length) {
+    html += `<div class="hero-section-title">Особенности</div>`;
+    hero.features.forEach(f => { html += `<div class="hero-item">${esc(f)}</div>`; });
+  }
+
+  // Retinue
+  if ((hero.retinue || []).length) {
+    html += `<div class="hero-section-title">Свита</div>`;
+    hero.retinue.forEach(r => { html += `<div class="hero-item">${esc(r)}</div>`; });
+  }
+
+  // Items (collapsed by default — show count + expand)
+  if ((hero.items || []).length) {
+    const count = hero.items.length;
+    html += `<div class="hero-section-title">Предметы (${count})</div>`;
+    html += `<div id="hero-items" style="display:none">`;
+    hero.items.forEach(i => { html += `<div class="hero-item">${esc(i)}</div>`; });
+    html += `</div>`;
+    html += `<button class="btn-expand" onclick="this.previousElementSibling.style.display=this.previousElementSibling.style.display==='none'?'block':'none';this.textContent=this.textContent.includes('▼')?'Скрыть ▲':'Показать ▼'">Показать ▼</button>`;
+  }
+
   el.innerHTML = html || "<div class='placeholder-body'>Нет данных</div>";
 }
 
