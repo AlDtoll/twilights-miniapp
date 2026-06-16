@@ -409,6 +409,15 @@ select:focus { outline: none; border-color: var(--gold-dim); }
       <div class="card-body" id="body-hero"></div>
     </div>
 
+    <!-- Retinue -->
+    <div class="card" id="card-retinue">
+      <div class="card-title" onclick="toggleCard('card-retinue')">
+        <span class="icon">🗡</span> Свита
+        <em class="chevron">▼</em>
+      </div>
+      <div class="card-body" id="body-retinue"></div>
+    </div>
+
     <!-- Staff -->
     <div class="card" id="card-staff">
       <div class="card-title" onclick="toggleCard('card-staff')">
@@ -531,6 +540,7 @@ function render(d) {
   renderBuildings(d.buildings);
   renderEvents(d.events);
   renderHero(d.hero);
+  renderRetinue(d.hero);
   renderStaff(d.staff);
 }
 
@@ -722,6 +732,32 @@ function renderHero(hero) {
     html += `<button class="btn-expand" onclick="this.previousElementSibling.style.display=this.previousElementSibling.style.display==='none'?'block':'none';this.textContent=this.textContent.includes('▼')?'Скрыть ▲':'Показать ▼'">Показать ▼</button>`;
   }
 
+  el.innerHTML = html || "<div class='placeholder-body'>Нет данных</div>";
+}
+
+// ── Retinue ───────────────────────────────────────────────────────────────────
+function renderRetinue(hero) {
+  const el = document.getElementById("body-retinue");
+  if (!hero) { el.innerHTML = "<div class='placeholder-body'>Нет данных</div>"; return; }
+  const slots = hero.retinue_slots;
+  const list  = hero.retinue || [];
+
+  let html = "";
+  if (slots) {
+    const pct = slots.total > 0 ? Math.round(slots.used / slots.total * 100) : 0;
+    html += `<div class="slots-bar-wrap">
+      <div class="slots-info">
+        <span>Слоты: ${slots.used}/${slots.total}</span>
+        <span>${slots.total - slots.used} свободных</span>
+      </div>
+      <div class="slots-bar"><div class="slots-bar-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }
+  if (list.length) {
+    list.forEach(r => { html += `<div class="hero-item">${esc(r)}</div>`; });
+  } else {
+    html += `<div style="color:var(--muted);font-size:0.78rem;padding:6px 0">Свита пуста</div>`;
+  }
   el.innerHTML = html || "<div class='placeholder-body'>Нет данных</div>";
 }
 
