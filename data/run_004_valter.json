@@ -285,11 +285,11 @@
   },
   "buildings": {
     "slots": {
-      "base": 0,
+      "base": 2,
       "extra": 0,
-      "used": 12,
-      "max_extra": 0,
-      "free": 0
+      "used": 0,
+      "max_extra": 2,
+      "free": 2
     },
     "buildings": [
       {
