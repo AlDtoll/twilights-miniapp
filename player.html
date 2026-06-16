@@ -139,6 +139,17 @@ body {
   color: var(--gold-dim);
   padding: 8px 0 4px;
 }
+.treasury-np-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0 2px;
+  font-size: 0.7rem;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  margin-top: 4px;
+  letter-spacing: 0.04em;
+}
+.treasury-row-indent .label { padding-left: 10px; }
 .treasury-total {
   display: flex;
   justify-content: space-between;
@@ -574,24 +585,56 @@ function renderFinance(f) {
       <span class="amount">${fmt(f.start)} мон</span>
     </div>`;
 
-  // Summary
+  const incBy  = f.income_by   || {};
+  const expBy  = f.expenses_by || {};
+  const setts  = [...new Set([...Object.keys(incBy), ...Object.keys(expBy)])];
+  const hasNP  = setts.length > 1 || (setts.length === 1 && setts[0] !== "");
+
+  // Доходы с отсечками по НП
   html += `<div class="treasury-section">Доходы</div>`;
-  html += `<div id="income-rows">`;
-  (f.income || []).forEach(i => {
-    html += `<div class="treasury-row"><span class="label">${esc(i.label)}</span><span class="amount pos">+${fmt(i.amount)}</span></div>`;
-  });
-  html += `</div>`;
+  if (hasNP) {
+    setts.forEach(s => {
+      const items = incBy[s] || [];
+      if (!items.length) return;
+      const npTotal = items.reduce((a, i) => a + i.amount, 0);
+      html += `<div class="treasury-np-header">
+        <span>${esc(s || "Прочее")}</span>
+        <span class="amount pos">+${fmt(npTotal)}</span>
+      </div>`;
+      items.forEach(i => {
+        html += `<div class="treasury-row treasury-row-indent"><span class="label">${esc(i.label)}</span><span class="amount pos">+${fmt(i.amount)}</span></div>`;
+      });
+    });
+  } else {
+    (f.income || []).forEach(i => {
+      html += `<div class="treasury-row"><span class="label">${esc(i.label)}</span><span class="amount pos">+${fmt(i.amount)}</span></div>`;
+    });
+  }
   html += `<div class="treasury-row" style="font-weight:bold">
     <span class="label">Итого доходов</span>
     <span class="amount pos">+${fmt(f.total_income)}</span>
   </div>`;
 
+  // Расходы с отсечками по НП
   html += `<div class="treasury-section">Расходы</div>`;
-  html += `<div id="expense-rows">`;
-  (f.expenses || []).forEach(i => {
-    html += `<div class="treasury-row"><span class="label">${esc(i.label)}</span><span class="amount neg">−${fmt(i.amount)}</span></div>`;
-  });
-  html += `</div>`;
+  if (hasNP) {
+    setts.forEach(s => {
+      const items = expBy[s] || [];
+      if (!items.length) return;
+      const npTotal = items.reduce((a, i) => a + i.amount, 0);
+      html += `<div class="treasury-np-header">
+        <span>${esc(s || "Прочее")}</span>
+        <span class="amount neg">−${fmt(npTotal)}</span>
+      </div>`;
+      items.forEach(i => {
+        html += `<div class="treasury-row treasury-row-indent"><span class="label">${esc(i.label)}</span><span class="amount neg">−${fmt(i.amount)}</span></div>`;
+      });
+    });
+  } else {
+    (f.expenses || []).forEach(i => {
+      html += `<div class="treasury-row"><span class="label">${esc(i.label)}</span><span class="amount neg">−${fmt(i.amount)}</span></div>`;
+    });
+  }
   html += `<div class="treasury-row" style="font-weight:bold">
     <span class="label">Итого расходов</span>
     <span class="amount neg">−${fmt(f.total_expenses)}</span>
@@ -611,32 +654,6 @@ function renderFinance(f) {
     <span class="label">Расчётная казна</span>
     <span class="amount ${balColor}">${balSign}${fmt(f.balance)} мон</span>
   </div>`;
-
-  // Settlement breakdown
-  const incBy  = f.income_by   || {};
-  const expBy  = f.expenses_by || {};
-  const setts  = [...new Set([...Object.keys(incBy), ...Object.keys(expBy)])];
-  if (setts.length > 1 || (setts.length === 1 && setts[0] !== "")) {
-    html += `<div class="sett-section">По населённым пунктам</div>`;
-    html += `<table class="sett-table"><thead><tr>
-      <th>НП</th><th style="text-align:right">Доход</th><th style="text-align:right">Расход</th><th style="text-align:right">Баланс</th>
-    </tr></thead><tbody>`;
-    setts.forEach(s => {
-      const inc = (incBy[s]  || []).reduce((a, i) => a + i.amount, 0);
-      const exp = (expBy[s]  || []).reduce((a, i) => a + i.amount, 0);
-      const bal = inc - exp;
-      const balCls = bal >= 0 ? "sett-bal-pos" : "sett-bal-neg";
-      const balSign = bal >= 0 ? "+" : "";
-      const label = s || "Прочее";
-      html += `<tr>
-        <td class="sett-name">${esc(label)}</td>
-        <td class="sett-pos">${inc ? "+"+fmt(inc) : "—"}</td>
-        <td class="sett-neg">${exp ? "−"+fmt(exp) : "—"}</td>
-        <td class="${balCls}">${inc||exp ? balSign+fmt(bal) : "—"}</td>
-      </tr>`;
-    });
-    html += `</tbody></table>`;
-  }
 
   el.innerHTML = html;
 }
