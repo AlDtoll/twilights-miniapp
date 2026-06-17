@@ -161,6 +161,76 @@
   .tooltip .tip-coord { color: #5a5040; font-size: 0.68rem; }
   @media (hover: none) { .tooltip { display: none !important; } }
 
+  /* ── Area overlay ── */
+  .area-overlay {
+    position: fixed;
+    inset: 0;
+    background: #0f0e0c;
+    z-index: 200;
+    overflow-y: auto;
+    display: none;
+    flex-direction: column;
+  }
+  .area-overlay.open { display: flex; }
+
+  .area-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid #2e2a22;
+    flex-shrink: 0;
+  }
+  .area-back {
+    background: none;
+    border: 1px solid #3a3020;
+    color: #9a8a6a;
+    font: inherit;
+    font-size: 0.75rem;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .area-back:hover { background: #1a1814; }
+  .area-title { flex: 1; font-size: 0.95rem; color: #e0d090; letter-spacing: 0.05em; }
+  .area-dash {
+    font-size: 0.65rem;
+    color: #7a6e5a;
+    text-decoration: none;
+    border: 1px solid #2e2a22;
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+
+  .area-nps {
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .np-card {
+    background: #1a1814;
+    border: 1px solid #2e2a22;
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .np-card-name {
+    font-size: 0.9rem;
+    color: #c8a84a;
+    font-weight: bold;
+    margin-bottom: 8px;
+  }
+  .np-stat { font-size: 0.78rem; color: #c8b89a; margin-bottom: 4px; }
+  .np-stat-label { color: #7a6e5a; }
+  .np-buildings {
+    font-size: 0.7rem;
+    color: #7a6e5a;
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+  .area-loading { padding: 32px; text-align: center; color: #5a5040; font-size: 0.85rem; }
+
   /* legend */
   .legend {
     margin-top: 28px;
@@ -208,6 +278,15 @@
 
 <div class="tooltip" id="tooltip"></div>
 <div class="info-panel" id="info-panel"></div>
+
+<div id="area-overlay" class="area-overlay">
+  <div class="area-header">
+    <button class="area-back" onclick="closeArea()">← Карта</button>
+    <div class="area-title" id="area-title"></div>
+    <a class="area-dash" id="area-dash" href="player.html">Дашборд ↗</a>
+  </div>
+  <div class="area-nps" id="area-nps"></div>
+</div>
 
 <div class="legend">
   <div class="leg-item"><div class="leg-dot" style="background:#1a5a8a"></div>Область игрока</div>
@@ -346,6 +425,8 @@ function rebuildMap() {
 
         cell.addEventListener('click', e => {
           if (isPinching) return;
+          const pm = data.type.match(/^t-player-(\w+)$/);
+          if (pm) { openArea(pm[1]); e.stopPropagation(); return; }
           if (selectedCell === cell) {
             cell.classList.remove('selected');
             selectedCell = null;
@@ -475,6 +556,60 @@ wrapEl.addEventListener('wheel', e => {
 
 window.addEventListener('load', rebuildMap);
 window.addEventListener('resize', centerMap);
+
+// ── Area overlay ─────────────────────────────────────────────────────────────
+const PLAYER_META = {
+  lak: { key: 'valter', name: 'Область Лаки' },
+  klo: { key: 'danil',  name: 'Область Клода' },
+  dun: { key: 'misha',  name: 'Область Дунара' },
+};
+const areaCache = {};
+const areaOverlay = document.getElementById('area-overlay');
+const areaNps     = document.getElementById('area-nps');
+const areaTitle   = document.getElementById('area-title');
+const areaDash    = document.getElementById('area-dash');
+
+async function openArea(playerType) {
+  const meta = PLAYER_META[playerType];
+  if (!meta) return;
+  areaTitle.textContent = meta.name;
+  areaDash.href = `player.html?player=${meta.key}&run=${currentRun}`;
+  areaNps.innerHTML = '<div class="area-loading">Загрузка…</div>';
+  areaOverlay.classList.add('open');
+
+  const cacheKey = currentRun + '_' + meta.key;
+  if (!areaCache[cacheKey]) {
+    try {
+      const res = await fetch(`data/${cacheKey}.json?_=${Date.now()}`);
+      areaCache[cacheKey] = await res.json();
+    } catch {
+      areaNps.innerHTML = '<div class="area-loading">Ошибка загрузки данных</div>';
+      return;
+    }
+  }
+  const settlements = areaCache[cacheKey].settlements || [];
+  areaNps.innerHTML = settlements.length
+    ? settlements.map(renderNPCard).join('')
+    : '<div class="area-loading">Нет данных о НП</div>';
+}
+
+function closeArea() {
+  areaOverlay.classList.remove('open');
+}
+
+function renderNPCard(s) {
+  const blds = (s.buildings || []).map(b => b.name).join(', ');
+  const staff = (s.staff || []).map(st =>
+    `<div class="np-stat"><span class="np-stat-label">${st.category}:</span> ${st.fact}/${st.norm} ${st.status}</div>`
+  ).join('');
+  return `<div class="np-card">
+    <div class="np-card-name">${s.name}</div>
+    <div class="np-stat"><span class="np-stat-label">Население:</span> ${s.population}</div>
+    <div class="np-stat"><span class="np-stat-label">Рост:</span> ${s.growth}</div>
+    ${staff}
+    ${blds ? `<div class="np-buildings">Постройки: ${blds}</div>` : ''}
+  </div>`;
+}
 </script>
 </body>
 </html>
