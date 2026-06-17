@@ -555,8 +555,41 @@ wrapEl.addEventListener('wheel', e => {
   applyT();
 }, { passive: false });
 
-window.addEventListener('load', rebuildMap);
 window.addEventListener('resize', centerMap);
+
+// ── TOON loader ───────────────────────────────────────────────────────────────
+function parseToon(text) {
+  const root = {};
+  const stack = [{ indent: -1, obj: root }];
+  for (const raw of text.split('\n')) {
+    const trimmed = raw.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const indent = raw.search(/\S/);
+    const ci = trimmed.indexOf(':');
+    if (ci === -1) continue;
+    const key = trimmed.slice(0, ci).trim();
+    const val = trimmed.slice(ci + 1).trim();
+    while (stack.length > 1 && stack[stack.length - 1].indent >= indent) stack.pop();
+    const parent = stack[stack.length - 1].obj;
+    if (val) { parent[key] = val; }
+    else { parent[key] = {}; stack.push({ indent, obj: parent[key] }); }
+  }
+  return root;
+}
+
+async function initMap() {
+  try {
+    const res = await fetch(`data/map_cells.toon?_=${Date.now()}`);
+    const parsed = parseToon(await res.text());
+    if (parsed.run_004) {
+      RUNS_META.run_004.cells = parsed.run_004;
+      RUNS_META.run_003.cells = parsed.run_003 || parsed.run_004;
+      CELLS = RUNS_META[currentRun].cells;
+    }
+  } catch { /* fallback to hardcoded */ }
+  rebuildMap();
+}
+window.addEventListener('load', initMap);
 
 // ── Area overlay ─────────────────────────────────────────────────────────────
 const PLAYER_META = {
