@@ -311,6 +311,15 @@ body {
 .sett-table td { padding: 4px 6px 4px 0; border-bottom: 1px solid #1a1814; }
 .sett-table tr:last-child td { border-bottom: none; }
 .sett-name { color: var(--text); }
+.loyalty-wrap { display: flex; flex-direction: column; gap: 2px; min-width: 120px; }
+.loyalty-bar { display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: var(--border); }
+.lb-l  { background: var(--green); }
+.lb-n  { background: #555; }
+.lb-nl { background: var(--red); }
+.loyalty-nums { display: flex; gap: 6px; font-size: 0.65rem; }
+.ly-l  { color: var(--green); }
+.ly-n  { color: var(--muted); }
+.ly-nl { color: var(--red); }
 .sett-pos  { color: var(--green); text-align: right; white-space: nowrap; }
 .sett-neg  { color: var(--red);   text-align: right; white-space: nowrap; }
 .sett-bal-pos { color: #7acc8a; text-align: right; white-space: nowrap; font-weight: bold; }
@@ -924,12 +933,33 @@ function renderStaff(settlements) {
 }
 
 // ── Territory ─────────────────────────────────────────────────────────────────
+function loyaltyBar(ly) {
+  if (!ly) return "";
+  const l = ly["Л"] || 0, n = ly["Н"] || 0, nl = ly["НЛ"] || 0;
+  const total = l + n + nl;
+  if (!total) return "";
+  const lp = Math.round(l / total * 100);
+  const np = Math.round(n / total * 100);
+  const nlp = 100 - lp - np;
+  const crisis = nlp >= 40 ? ' style="outline:1px solid var(--red)"' : "";
+  return `<div class="loyalty-wrap"${crisis}>` +
+    `<div class="loyalty-bar">` +
+    `<div class="lb-l" style="width:${lp}%" title="Лояльные ${l}"></div>` +
+    `<div class="lb-n" style="width:${np}%" title="Нейтральные ${n}"></div>` +
+    `<div class="lb-nl" style="width:${nlp}%" title="Нелояльные ${nl}"></div>` +
+    `</div>` +
+    `<div class="loyalty-nums"><span class="ly-l">${l}</span> <span class="ly-n">${n}</span> <span class="ly-nl">${nl}</span></div>` +
+    `</div>`;
+}
+
 function renderTerritory(settlements) {
   const el = document.getElementById("body-territory");
   if (!settlements || !settlements.length) { el.innerHTML = "<div class='placeholder-body'>Нет данных</div>"; return; }
 
+  const hasLoyalty = settlements.some(s => s.loyalty);
   let html = `<table class="sett-table"><thead><tr>
     <th>НП</th><th>Население</th><th>Рост</th><th style="text-align:right">Домов</th>
+    ${hasLoyalty ? "<th>Лояльность</th>" : ""}
   </tr></thead><tbody>`;
   settlements.forEach(s => {
     html += `<tr>
@@ -937,6 +967,7 @@ function renderTerritory(settlements) {
       <td>${esc(s.population || "—")}</td>
       <td style="color:var(--green)">${esc(s.growth || "—")}</td>
       <td style="text-align:right;color:var(--muted)">${esc(s.houses || "—")}</td>
+      ${hasLoyalty ? `<td>${loyaltyBar(s.loyalty)}</td>` : ""}
     </tr>`;
   });
   html += `</tbody></table>`;
