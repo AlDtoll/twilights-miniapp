@@ -230,6 +230,7 @@
     line-height: 1.5;
   }
   .area-loading { padding: 32px; text-align: center; color: #5a5040; font-size: 0.85rem; }
+  .area-desc { font-size: 0.78rem; color: #9a8a6a; line-height: 1.55; padding: 10px 14px 0; }
 
   /* legend */
   .legend {
@@ -426,7 +427,7 @@ function rebuildMap() {
         cell.addEventListener('click', e => {
           if (isPinching) return;
           const pm = data.type.match(/^t-player-(\w+)$/);
-          if (pm) { openArea(pm[1]); e.stopPropagation(); return; }
+          if (pm) { openCell(data, pm[1]); e.stopPropagation(); return; }
           if (selectedCell === cell) {
             cell.classList.remove('selected');
             selectedCell = null;
@@ -492,7 +493,7 @@ let panStartX = 0, panStartY = 0;
 
 wrapEl.addEventListener('pointerdown', e => {
   ptrs[e.pointerId] = { x: e.clientX, y: e.clientY };
-  wrapEl.setPointerCapture(e.pointerId);
+  // no setPointerCapture — it redirects click events to wrapEl, breaking cell clicks
   const ids = Object.keys(ptrs);
   if (ids.length === 1) {
     panStartX = e.clientX - tx;
@@ -569,13 +570,19 @@ const areaNps     = document.getElementById('area-nps');
 const areaTitle   = document.getElementById('area-title');
 const areaDash    = document.getElementById('area-dash');
 
-async function openArea(playerType) {
+async function openCell(cellData, playerType) {
   const meta = PLAYER_META[playerType];
   if (!meta) return;
-  areaTitle.textContent = meta.name;
+  areaTitle.textContent = cellData.name;
   areaDash.href = `player.html?player=${meta.key}&run=${currentRun}`;
-  areaNps.innerHTML = '<div class="area-loading">Загрузка…</div>';
   areaOverlay.classList.add('open');
+
+  // Area description from map data
+  const descHtml = cellData.note
+    ? `<div class="area-desc">${cellData.note}</div>`
+    : '';
+
+  areaNps.innerHTML = descHtml + '<div class="area-loading">Загрузка НП…</div>';
 
   const cacheKey = currentRun + '_' + meta.key;
   if (!areaCache[cacheKey]) {
@@ -583,14 +590,17 @@ async function openArea(playerType) {
       const res = await fetch(`data/${cacheKey}.json?_=${Date.now()}`);
       areaCache[cacheKey] = await res.json();
     } catch {
-      areaNps.innerHTML = '<div class="area-loading">Ошибка загрузки данных</div>';
+      areaNps.innerHTML = descHtml + '<div class="area-loading">Ошибка загрузки данных</div>';
       return;
     }
   }
-  const settlements = areaCache[cacheKey].settlements || [];
-  areaNps.innerHTML = settlements.length
+  const all = areaCache[cacheKey].settlements || [];
+  const matched = all.filter(s => s.name === cellData.name);
+  const settlements = matched.length > 0 ? matched : [];
+  const npHtml = settlements.length
     ? settlements.map(renderNPCard).join('')
-    : '<div class="area-loading">Нет данных о НП</div>';
+    : '<div class="area-loading">НП не найден в данных</div>';
+  areaNps.innerHTML = descHtml + npHtml;
 }
 
 function closeArea() {
