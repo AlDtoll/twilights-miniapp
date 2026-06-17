@@ -320,6 +320,20 @@ body {
 .ly-l  { color: var(--green); }
 .ly-n  { color: var(--muted); }
 .ly-nl { color: var(--red); }
+.ly-card { padding: 10px 0 14px; border-bottom: 1px solid var(--border); }
+.ly-card:last-child { border-bottom: none; }
+.ly-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.ly-card-name { font-size: 0.85rem; color: var(--text); flex: 1; }
+.ly-card-mod { font-size: 0.78rem; font-weight: bold; }
+.ly-card-mod.pos { color: var(--green); }
+.ly-card-mod.neg { color: var(--red); }
+.ly-card-mod.zero { color: var(--muted); }
+.ly-bar-full { display: flex; height: 10px; border-radius: 4px; overflow: hidden; background: var(--border); margin-bottom: 4px; }
+.ly-nums-full { display: flex; gap: 14px; font-size: 0.72rem; margin-bottom: 6px; }
+.ly-reasons { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 2px; }
+.ly-reasons li { font-size: 0.7rem; color: var(--muted); }
+.ly-reasons li.pos { color: var(--green); }
+.ly-reasons li.neg { color: var(--red); }
 .sett-pos  { color: var(--green); text-align: right; white-space: nowrap; }
 .sett-neg  { color: var(--red);   text-align: right; white-space: nowrap; }
 .sett-bal-pos { color: #7acc8a; text-align: right; white-space: nowrap; font-weight: bold; }
@@ -475,6 +489,15 @@ select:focus { outline: none; border-color: var(--gold-dim); }
       <div class="card-body" id="body-territory"></div>
     </div>
 
+    <!-- Loyalty -->
+    <div class="card card-wide" id="card-loyalty">
+      <div class="card-title" onclick="toggleCard('card-loyalty')">
+        <span class="icon">🏘</span> Лояльность
+        <em class="chevron">▼</em>
+      </div>
+      <div class="card-body" id="body-loyalty"></div>
+    </div>
+
   </div>
 </div>
 
@@ -607,6 +630,7 @@ function render(d, npFilter) {
   renderRetinue(d.hero);
   renderStaff(setts);
   renderTerritory(setts);
+  renderLoyalty(setts);
 }
 
 // ── Finance ───────────────────────────────────────────────────────────────────
@@ -971,6 +995,54 @@ function renderTerritory(settlements) {
     </tr>`;
   });
   html += `</tbody></table>`;
+  el.innerHTML = html;
+}
+
+// ── Loyalty ───────────────────────────────────────────────────────────────────
+function renderLoyalty(settlements) {
+  const el = document.getElementById("body-loyalty");
+  if (!settlements || !settlements.length) { el.innerHTML = "<div class='placeholder-body'>Нет данных</div>"; return; }
+  const withLoyalty = settlements.filter(s => s.loyalty && s.loyalty["Л"] != null);
+  if (!withLoyalty.length) { el.innerHTML = "<div class='placeholder-body'>Нет данных о лояльности</div>"; return; }
+
+  let html = "";
+  withLoyalty.forEach(s => {
+    const ly = s.loyalty;
+    const l = ly["Л"] || 0, n = ly["Н"] || 0, nl = ly["НЛ"] || 0;
+    const total = l + n + nl;
+    const lp  = total ? Math.round(l  / total * 100) : 0;
+    const np  = total ? Math.round(n  / total * 100) : 0;
+    const nlp = 100 - lp - np;
+    const mod = ly.mod || 0;
+    const modCls = mod > 0 ? "pos" : mod < 0 ? "neg" : "zero";
+    const modStr = mod > 0 ? `+${mod}` : String(mod);
+    const crisis = nlp >= 40 ? ' style="outline:1px solid var(--red);border-radius:4px"' : "";
+
+    const reasons = ly.reasons || [];
+    const reasonsHtml = reasons.map(r => {
+      const cls = r.startsWith("+") ? "pos" : r.startsWith("−") ? "neg" : "";
+      return `<li class="${cls}">${esc(r)}</li>`;
+    }).join("");
+
+    html += `<div class="ly-card">
+      <div class="ly-card-header">
+        <span class="ly-card-name">${esc(s.name)}</span>
+        <span class="ly-card-mod ${modCls}">мод ${modStr}</span>
+      </div>
+      <div class="ly-bar-full"${crisis}>
+        <div class="lb-l" style="width:${lp}%" title="Лояльные ${l}"></div>
+        <div class="lb-n" style="width:${np}%" title="Нейтральные ${n}"></div>
+        <div class="lb-nl" style="width:${nlp}%" title="Нелояльные ${nl}"></div>
+      </div>
+      <div class="ly-nums-full">
+        <span class="ly-l">Л ${l} (${lp}%)</span>
+        <span class="ly-n">Н ${n} (${np}%)</span>
+        <span class="ly-nl">НЛ ${nl} (${nlp}%)</span>
+      </div>
+      ${reasonsHtml ? `<ul class="ly-reasons">${reasonsHtml}</ul>` : ""}
+    </div>`;
+  });
+
   el.innerHTML = html;
 }
 
