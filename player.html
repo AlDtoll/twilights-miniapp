@@ -797,6 +797,14 @@ function renderFinance(f, npFilter) {
       <span class="label">Прибыль</span>
       <span class="amount ${profCls}">${profSign}${fmt(profit)} мон</span>
     </div>`;
+
+    // Казна на конец (крупно)
+    const endTreasury = (f.start || 0) + profit;
+    const endCls  = endTreasury >= 0 ? "pos" : "neg";
+    html += `<div class="treasury-total" style="border-top:2px solid var(--gold-dim);margin-top:6px;padding-top:8px">
+      <span class="label" style="color:var(--text)">Казна на конец</span>
+      <span class="amount ${endCls}" style="font-size:1.15rem">${fmt(endTreasury)} мон</span>
+    </div>`;
   } else {
     const npBal = filtIncome - filtExpenses;
     const balColor = npBal >= 0 ? "pos" : "neg";
