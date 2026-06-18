@@ -1121,7 +1121,8 @@ function renderSettlements(setts) {
     const np  = total ? Math.round(n  / total * 100) : 0;
     const nlp = 100 - lp - np;
     const nlPct = total ? Math.round(nl / total * 100) : 0;
-    const eff = 90 - Math.floor(nlPct / 10) * 2;
+    const effBd = s.eff_breakdown || null;
+    const eff = effBd ? effBd.total : (90 - Math.floor(nlPct / 10) * 2);
 
     const income   = s.income      || [];
     const expenses = s.expenses_np || [];
@@ -1184,7 +1185,9 @@ function renderSettlements(setts) {
           <span class="ly-l">Л ${l} (${lp}%)</span>
           <span class="ly-n">Н ${n} (${np}%)</span>
           <span class="ly-nl">НЛ ${nl} (${nlp}%)</span>
-          <span style="color:var(--muted);margin-left:auto">эфф. ${eff}% · мод <span class="ly-card-mod ${modCls}">${modStr}</span></span>
+          <span style="color:var(--muted);margin-left:auto">${effBd && effBd.loyalty_penalty > 0
+            ? `эфф. <b style="color:var(--text)">${effBd.total}%</b> = ${effBd.base}% − ${effBd.loyalty_penalty}% нел.`
+            : `эфф. ${eff}%`} · мод <span class="ly-card-mod ${modCls}">${modStr}</span></span>
         </div>
         ${reasons.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px">${
           reasons.map(r => {

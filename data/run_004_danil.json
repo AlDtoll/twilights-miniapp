@@ -731,6 +731,11 @@
           "+1 Управа",
           "+1 Больница"
         ]
+      },
+      "eff_breakdown": {
+        "base": 90,
+        "loyalty_penalty": 0,
+        "total": 90
       }
     }
   ]
