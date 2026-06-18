@@ -767,38 +767,35 @@ function renderFinance(f, npFilter) {
   </div>`;
 
   if (!npFilter) {
-    // Прибыль
-    const profit = showTotals.income - showTotals.expenses;
-    const profCls  = profit >= 0 ? "pos" : "neg";
-    const profSign = profit >= 0 ? "+" : "";
-    html += `<div class="treasury-row" style="font-weight:bold;border-top:1px solid var(--border);margin-top:4px;padding-top:6px">
-      <span class="label">Прибыль</span>
-      <span class="amount ${profCls}">${profSign}${fmt(profit)}</span>
-    </div>`;
-
     // Поступления
-    const receipts = f.receipts || [];
+    const receipts     = f.receipts  || [];
+    const totalReceipts = receipts.reduce((a, i) => a + i.amount, 0);
     html += `<div class="treasury-section">Поступления</div>`;
     if (receipts.length) {
       receipts.forEach(i => { html += `<div class="treasury-row"><span class="label">${esc(i.label)}</span><span class="amount pos">+${fmt(i.amount)}</span></div>`; });
+      html += `<div class="treasury-row" style="font-weight:bold"><span class="label">Итого поступлений</span><span class="amount pos">+${fmt(totalReceipts)}</span></div>`;
     } else {
-      html += `<div class="treasury-row"><span class="label" style="font-style:italic">—</span></div>`;
+      html += `<div class="treasury-row"><span class="label" style="font-style:italic">—</span><span class="amount pos">+0</span></div>`;
     }
 
     // Траты
-    const spendings = f.spendings || [];
+    const spendings     = f.spendings || [];
+    const totalSpendings = spendings.reduce((a, i) => a + i.amount, 0);
     html += `<div class="treasury-section">Траты</div>`;
     if (spendings.length) {
       spendings.forEach(i => { html += `<div class="treasury-row"><span class="label">${esc(i.label)}</span><span class="amount neg">−${fmt(i.amount)}</span></div>`; });
+      html += `<div class="treasury-row" style="font-weight:bold"><span class="label">Итого трат</span><span class="amount neg">−${fmt(totalSpendings)}</span></div>`;
     } else {
-      html += `<div class="treasury-row"><span class="label" style="font-style:italic">—</span></div>`;
+      html += `<div class="treasury-row"><span class="label" style="font-style:italic">—</span><span class="amount neg">−0</span></div>`;
     }
 
-    const balColor = (f.balance || 0) >= 0 ? "pos" : "neg";
-    const balSign  = (f.balance || 0) >= 0 ? "+" : "";
+    // Прибыль (крупно)
+    const profit   = showTotals.income - showTotals.expenses + totalReceipts - totalSpendings;
+    const profCls  = profit >= 0 ? "pos" : "neg";
+    const profSign = profit >= 0 ? "+" : "";
     html += `<div class="treasury-total">
-      <span class="label">Расчётная казна</span>
-      <span class="amount ${balColor}">${balSign}${fmt(f.balance)} мон</span>
+      <span class="label">Прибыль</span>
+      <span class="amount ${profCls}">${profSign}${fmt(profit)} мон</span>
     </div>`;
   } else {
     const npBal = filtIncome - filtExpenses;
