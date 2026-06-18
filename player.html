@@ -767,12 +767,31 @@ function renderFinance(f, npFilter) {
   </div>`;
 
   if (!npFilter) {
-    const receipts  = f.receipts  || [];
+    // Прибыль
+    const profit = showTotals.income - showTotals.expenses;
+    const profCls  = profit >= 0 ? "pos" : "neg";
+    const profSign = profit >= 0 ? "+" : "";
+    html += `<div class="treasury-row" style="font-weight:bold;border-top:1px solid var(--border);margin-top:4px;padding-top:6px">
+      <span class="label">Прибыль</span>
+      <span class="amount ${profCls}">${profSign}${fmt(profit)}</span>
+    </div>`;
+
+    // Поступления
+    const receipts = f.receipts || [];
+    html += `<div class="treasury-section">Поступления</div>`;
+    if (receipts.length) {
+      receipts.forEach(i => { html += `<div class="treasury-row"><span class="label">${esc(i.label)}</span><span class="amount pos">+${fmt(i.amount)}</span></div>`; });
+    } else {
+      html += `<div class="treasury-row"><span class="label" style="font-style:italic">—</span></div>`;
+    }
+
+    // Траты
     const spendings = f.spendings || [];
-    if (receipts.length || spendings.length) {
-      html += `<div class="treasury-section">Разовые</div>`;
-      receipts.forEach(i  => { html += `<div class="treasury-row"><span class="label">${esc(i.label)}</span><span class="amount pos">+${fmt(i.amount)}</span></div>`; });
+    html += `<div class="treasury-section">Траты</div>`;
+    if (spendings.length) {
       spendings.forEach(i => { html += `<div class="treasury-row"><span class="label">${esc(i.label)}</span><span class="amount neg">−${fmt(i.amount)}</span></div>`; });
+    } else {
+      html += `<div class="treasury-row"><span class="label" style="font-style:italic">—</span></div>`;
     }
 
     const balColor = (f.balance || 0) >= 0 ? "pos" : "neg";
