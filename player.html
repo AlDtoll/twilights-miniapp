@@ -355,6 +355,53 @@ body {
 .staff-status-warn { color: #c8883a; white-space: nowrap; }
 .staff-status-note { color: var(--muted); font-size: 0.7rem; }
 
+/* ── Per-НП settlement cards ── */
+.np-block { border-bottom: 1px solid var(--border); }
+.np-block:last-child { border-bottom: none; }
+.np-block-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  cursor: pointer;
+  user-select: none;
+}
+.np-block.collapsed .np-block-body { display: none; }
+.np-block.collapsed .np-chevron { transform: rotate(-90deg); }
+.np-block-name { font-size: 0.88rem; color: var(--text); font-weight: bold; }
+.np-type-badge {
+  font-size: 0.58rem; padding: 1px 5px; border-radius: 3px;
+  border: 1px solid var(--gold-dim); color: var(--gold); background: #2a2010; white-space: nowrap;
+}
+.np-type-badge.joined { border-color: #555; color: var(--muted); background: transparent; }
+.np-type-badge.annex  { border-color: var(--red); color: #cc7a6a; background: transparent; }
+.np-block-pop { font-size: 0.7rem; color: var(--muted); white-space: nowrap; }
+.np-block-bal { font-size: 0.72rem; white-space: nowrap; font-weight: bold; margin-right: 4px; }
+.np-chevron { font-size: 0.6rem; color: var(--muted); transition: transform 0.2s; flex-shrink: 0; }
+.np-block-body { padding-bottom: 12px; }
+.np-sec {
+  font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--gold-dim); padding: 8px 0 4px;
+}
+.np-row {
+  display: flex; justify-content: space-between;
+  padding: 2px 0; font-size: 0.75rem; border-bottom: 1px solid #1a1814;
+}
+.np-row:last-child { border-bottom: none; }
+.np-row .np-lbl { color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 8px; }
+.np-amt-pos { color: var(--green); white-space: nowrap; }
+.np-amt-neg { color: var(--red); white-space: nowrap; }
+.np-subtotal {
+  display: flex; justify-content: space-between;
+  padding: 5px 0 2px; border-top: 1px solid var(--border);
+  font-size: 0.76rem; font-weight: bold;
+}
+.np-bal {
+  display: flex; justify-content: space-between;
+  padding: 7px 0; font-size: 0.82rem; font-weight: bold;
+  border-top: 2px solid var(--border); margin-top: 4px;
+}
+
 /* ── Placeholder ── */
 .placeholder-body {
   padding: 20px 14px;
@@ -498,6 +545,15 @@ select:focus { outline: none; border-color: var(--gold-dim); }
       <div class="card-body" id="body-loyalty"></div>
     </div>
 
+    <!-- Per-НП view -->
+    <div class="card card-wide" id="card-settlements">
+      <div class="card-title" onclick="toggleCard('card-settlements')">
+        <span class="icon">🏛</span> Поселения
+        <em class="chevron">▼</em>
+      </div>
+      <div class="card-body" id="body-settlements"></div>
+    </div>
+
   </div>
 </div>
 
@@ -631,6 +687,7 @@ function render(d, npFilter) {
   renderStaff(setts);
   renderTerritory(setts);
   renderLoyalty(setts);
+  renderSettlements(setts);
 }
 
 // ── Finance ───────────────────────────────────────────────────────────────────
@@ -1041,6 +1098,170 @@ function renderLoyalty(settlements) {
       </div>
       ${reasonsHtml ? `<ul class="ly-reasons">${reasonsHtml}</ul>` : ""}
     </div>`;
+  });
+
+  el.innerHTML = html;
+}
+
+// ── Settlements (per-НП) ──────────────────────────────────────────────────────
+function toggleNP(id) {
+  document.getElementById(id).classList.toggle("collapsed");
+}
+
+function renderSettlements(setts) {
+  const el = document.getElementById("body-settlements");
+  if (!setts || !setts.length) { el.innerHTML = "<div class='placeholder-body'>Нет данных</div>"; return; }
+
+  let html = "";
+  setts.forEach((s, idx) => {
+    const ly = s.loyalty || {};
+    const l = ly["Л"] || 0, n = ly["Н"] || 0, nl = ly["НЛ"] || 0;
+    const total = l + n + nl;
+    const lp  = total ? Math.round(l  / total * 100) : 0;
+    const np  = total ? Math.round(n  / total * 100) : 0;
+    const nlp = 100 - lp - np;
+    const nlPct = total ? Math.round(nl / total * 100) : 0;
+    const eff = 90 - Math.floor(nlPct / 10) * 2;
+
+    const income   = s.income      || [];
+    const expenses = s.expenses_np || [];
+    const totalInc = income.reduce((a, i) => a + i.amount, 0);
+    const totalExp = expenses.reduce((a, i) => a + i.amount, 0);
+    const bal      = totalInc - totalExp;
+    const balCls   = bal >= 0 ? "np-amt-pos" : "np-amt-neg";
+    const balSign  = bal >= 0 ? "+" : "";
+
+    // Type badge
+    const typ = ly["Тип"] || "";
+    let typBadge = "";
+    if (typ === "стартовая")       typBadge = `<span class="np-type-badge">${esc(typ)}</span>`;
+    else if (typ === "присоединённая") typBadge = `<span class="np-type-badge joined">${esc(typ)}</span>`;
+    else if (typ === "аннексия")   typBadge = `<span class="np-type-badge annex">${esc(typ)}</span>`;
+
+    // Mini loyalty bar in header
+    const crisis = nlPct >= 40 ? ' style="outline:1px solid var(--red)"' : "";
+    const miniBar = total ? `<div class="loyalty-bar" style="height:5px;width:80px;flex-shrink:0"${crisis}>
+      <div class="lb-l" style="width:${lp}%"></div>
+      <div class="lb-n" style="width:${np}%"></div>
+      <div class="lb-nl" style="width:${nlp}%"></div>
+    </div>` : "";
+
+    const mod    = ly.mod || 0;
+    const modStr = mod > 0 ? `+${mod}` : String(mod);
+    const modCls = mod > 0 ? "pos" : mod < 0 ? "neg" : "zero";
+
+    const buildings = s.buildings || [];
+    const staff     = s.staff     || [];
+
+    // Start block — first НП expanded, rest collapsed
+    html += `<div class="np-block${idx > 0 ? " collapsed" : ""}" id="np-block-${idx}">
+      <div class="np-block-header" onclick="toggleNP('np-block-${idx}')">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span class="np-block-name">${esc(s.name)}</span>
+            ${typBadge}
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:3px">
+            <span class="np-block-pop">${esc(s.population || "?")} · ${esc(s.growth || "")}</span>
+            ${miniBar}
+          </div>
+        </div>
+        <span class="np-block-bal ${balCls}">${balSign}${fmt(bal)}</span>
+        <em class="np-chevron">▼</em>
+      </div>
+      <div class="np-block-body">`;
+
+    // Loyalty
+    if (total) {
+      const reasons = ly.reasons || [];
+      html += `<div class="np-sec">Лояльность</div>
+        <div class="ly-bar-full" style="margin-bottom:5px">
+          <div class="lb-l" style="width:${lp}%"></div>
+          <div class="lb-n" style="width:${np}%"></div>
+          <div class="lb-nl" style="width:${nlp}%"></div>
+        </div>
+        <div style="display:flex;gap:12px;font-size:0.72rem;margin-bottom:5px">
+          <span class="ly-l">Л ${l} (${lp}%)</span>
+          <span class="ly-n">Н ${n} (${np}%)</span>
+          <span class="ly-nl">НЛ ${nl} (${nlp}%)</span>
+          <span style="color:var(--muted);margin-left:auto">эфф. ${eff}% · мод <span class="ly-card-mod ${modCls}">${modStr}</span></span>
+        </div>
+        ${reasons.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px">${
+          reasons.map(r => {
+            const cls = r.startsWith("+") ? "ly-l" : r.startsWith("−") ? "ly-nl" : "";
+            return `<span style="font-size:0.68rem" class="${cls}">${esc(r)}</span>`;
+          }).join("")
+        }</div>` : ""}`;
+    }
+
+    // Income
+    if (income.length) {
+      html += `<div class="np-sec">Доходы</div>`;
+      income.forEach(i => {
+        html += `<div class="np-row"><span class="np-lbl">${esc(i.label)}</span><span class="np-amt-pos">+${fmt(i.amount)}</span></div>`;
+      });
+      html += `<div class="np-subtotal"><span style="color:var(--muted)">Итого доходов</span><span class="np-amt-pos">+${fmt(totalInc)}</span></div>`;
+    }
+
+    // Expenses
+    if (expenses.length) {
+      const expId = `np-exp-${idx}`;
+      html += `<div class="np-sec">Расходы</div>`;
+      // Show first 4, rest hidden
+      const show = expenses.slice(0, 4);
+      const hide = expenses.slice(4);
+      show.forEach(i => {
+        html += `<div class="np-row"><span class="np-lbl">${esc(i.label)}</span><span class="np-amt-neg">−${fmt(i.amount)}</span></div>`;
+      });
+      if (hide.length) {
+        html += `<div id="${expId}" style="display:none">`;
+        hide.forEach(i => {
+          html += `<div class="np-row"><span class="np-lbl">${esc(i.label)}</span><span class="np-amt-neg">−${fmt(i.amount)}</span></div>`;
+        });
+        html += `</div>
+        <button class="btn-expand" onclick="
+          var el=document.getElementById('${expId}');
+          el.style.display=el.style.display==='none'?'block':'none';
+          this.textContent=this.textContent.includes('▼')?'Скрыть ▲':'Ещё ${hide.length} ▼'
+        ">Ещё ${hide.length} ▼</button>`;
+      }
+      html += `<div class="np-subtotal"><span style="color:var(--muted)">Итого расходов</span><span class="np-amt-neg">−${fmt(totalExp)}</span></div>`;
+    }
+
+    // Balance
+    if (income.length || expenses.length) {
+      html += `<div class="np-bal">
+        <span style="color:var(--muted)">Баланс НП</span>
+        <span class="${balCls}">${balSign}${fmt(bal)} мон</span>
+      </div>`;
+    }
+
+    // Buildings
+    if (buildings.length) {
+      html += `<div class="np-sec">Постройки (${buildings.length})</div>`;
+      buildings.forEach(b => {
+        const maint = b.maint ? `${fmt(b.maint)}/сез${b.hands ? " · " + b.hands + "р" : ""}` : "—";
+        html += `<div class="np-row">
+          <span class="np-lbl">${esc(b.name)}</span>
+          <span style="color:var(--muted);white-space:nowrap;font-size:0.7rem">${esc(maint)}</span>
+        </div>`;
+      });
+    }
+
+    // Staff
+    if (staff.length) {
+      html += `<div class="np-sec">Персонал</div>`;
+      staff.forEach(r => {
+        const isWarn = r.status && r.status.includes("⚠");
+        const stCls = isWarn ? "staff-status-warn" : "staff-status-ok";
+        html += `<div class="np-row">
+          <span class="np-lbl">${esc(r.category)}</span>
+          <span class="${stCls}" style="white-space:nowrap;font-size:0.74rem">${esc(r.fact)}/${esc(r.norm || "?")} ${esc(r.status || "")}</span>
+        </div>`;
+      });
+    }
+
+    html += `</div></div>`; // close np-block-body + np-block
   });
 
   el.innerHTML = html;
