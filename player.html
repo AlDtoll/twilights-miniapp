@@ -1101,7 +1101,7 @@ function renderLoyalty(settlements) {
 
     const reasons = ly.reasons || [];
     const reasonsHtml = reasons.map(r => {
-      const cls = r.startsWith("+") ? "pos" : r.startsWith("−") ? "neg" : "";
+      const cls = r.startsWith("+") ? "pos" : (r.startsWith("−") || r.startsWith("-")) ? "neg" : "";
       return `<li class="${cls}">${esc(r)}</li>`;
     }).join("");
 
@@ -1215,7 +1215,7 @@ function renderSettlements(setts) {
         </div>
         ${reasons.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px">${
           reasons.map(r => {
-            const cls = r.startsWith("+") ? "ly-l" : r.startsWith("−") ? "ly-nl" : "";
+            const cls = r.startsWith("+") ? "ly-l" : (r.startsWith("−") || r.startsWith("-")) ? "ly-nl" : "";
             return `<span style="font-size:0.68rem" class="${cls}">${esc(r)}</span>`;
           }).join("")
         }</div>` : ""}`;
