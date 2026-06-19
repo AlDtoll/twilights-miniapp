@@ -299,40 +299,10 @@
 </div>
 
 <script>
-const CELLS_RUN004 = {
-  "-3,-1":  { code:"МРЕ", type:"t-ocean", icon:"〰", name:"Море (юго-запад)", note:"Юго-западнее Лаки" },
-  "-3,0":  { code:"МРЕ", type:"t-ocean", icon:"〰", name:"Море (запад)", note:"Западнее Лаки" },
-  "-3,1":  { code:"МРЕ", type:"t-ocean", icon:"〰", name:"Море (северо-запад)", note:"Северо-западнее Лаки" },
-  "-3,2":  { code:"МРЕ", type:"t-ocean", icon:"〰", name:"Море (север)", note:"Северо-западнее Горна" },
-  "-2,-1":  { code:"УСТ", type:"t-player-lak", icon:"⚓", name:"Устье", note:"~1000 чел. к югу от Лаки; портовый посёлок (аннексирован Лаки С4); причал, рыбак Лой, перевозчик Варо («Ключ»)" },
-  "-2,0":  { code:"ЛАК", type:"t-player-lak", icon:"⛰", name:"Бутылочное горлышко", note:"Лаки «Фартовый». Западный конец хребта; контролирует единственный наземный проход; море на западе, юго-западе, северо-западе" },
-  "-2,1":  { code:"ГРН", type:"t-player-lak", icon:"🏘", name:"Горн", note:"~1200 чел. под управлением Лаки; постоялый двор «Серая лошадь», купец Йовец" },
-  "-2,2":  { code:"МРЕ", type:"t-ocean", icon:"〰", name:"Море (у Горна)", note:"Севернее Горна; прибрежная зона" },
-  "-1,0":  { code:"~~~", type:"t-mountain", icon:"▲", name:"Горный хребет", note:"Непроходим напрямую." },
-  "-1,2":  { code:"ДТВ", type:"t-neutral", icon:"🌾", name:"Дол Тавер", note:"~2000 чел. поставщик зерна для Дунара; прибрежный город" },
-  "0,0":  { code:"~~~", type:"t-mountain", icon:"▲", name:"Горный хребет (центр)", note:"Точка отсчёта; непроходим" },
-  "0,1":  { code:"ДУН", type:"t-player-dun", icon:"🏔", name:"Железный Утёс", note:"Сир Дунар «Костолом». Равнина к северу от центра хребта" },
-  "1,0":  { code:"ЖИЛ", type:"t-mountain", icon:"💎", name:"Жила энтилехия", note:"В хребте; зелёные кристаллы, Тени ночью. С7 — приключение Клода." },
-  "1,1":  { code:"ЛГВ", type:"t-player-dun", icon:"🌾", name:"Луговое", note:"~600 чел. Присоединено Дунаром (С8). Каменистые луга, скотоводство." },
-  "1,2":  { code:"ВРК", type:"t-neutral", icon:"🏘", name:"Ворка", note:"~1000 чел. у Дунара в контактах" },
-  "2,-1":  { code:"ЗЛО", type:"t-evil", icon:"💀", name:"Злое место", note:"Безлюдный пересечённый край к югу от Стоево; источник нежити и монстров. Включает южные пустоши и руины Гора «Нетопыря» на востоке." },
-  "2,0":  { code:"КЛО", type:"t-player-klo", icon:"⛰", name:"Стоево", note:"Клод «Бич». Восточный край хребта; горы на западе" },
-  "2,1":  { code:"ВРШ", type:"t-neutral", icon:"🌲", name:"Вершнее", note:"~1000 чел. ~3 дня от Стоево на север" },
-  "3,0":  { code:"СБР", type:"t-neutral", icon:"🏪", name:"Солёный Брод", note:"~900 чел. ~2 дня от Стоево на восток; торговый узел, соляные промыслы, брод через реку; торговый дом Живоносного Креста" },
-  "3,1":  { code:"ГРЛ", type:"t-neutral", icon:"🪵", name:"Горлицы", note:"~600 чел. ~2 дня от Стоево на северо-восток; лесозаготовка" },
-};
-
-// run_003 had same geography but different player configs (archived S11)
-const CELLS_RUN003 = Object.fromEntries(
-  Object.entries(CELLS_RUN004).map(([k,v]) => {
-    // Same world map; player ownership markers are the same (same trio)
-    return [k, {...v}];
-  })
-);
-
+// Ячейки карты загружаются из data/map_cells.toon — не редактировать здесь
 const RUNS_META = {
-  run_004: { label: "Забег 004 — текущий",  cells: CELLS_RUN004 },
-  run_003: { label: "Забег 003 — архив С11", cells: CELLS_RUN003 },
+  run_004: { label: "Забег 004 — текущий",  cells: {} },
+  run_003: { label: "Забег 003 — архив С11", cells: {} },
 };
 
 let CELLS = CELLS_RUN004;
@@ -582,12 +552,13 @@ async function initMap() {
   try {
     const res = await fetch(`data/map_cells.toon?_=${Date.now()}`);
     const parsed = parseToon(await res.text());
-    if (parsed.run_004) {
-      RUNS_META.run_004.cells = parsed.run_004;
-      RUNS_META.run_003.cells = parsed.run_003 || parsed.run_004;
-      CELLS = RUNS_META[currentRun].cells;
-    }
-  } catch { /* fallback to hardcoded */ }
+    RUNS_META.run_004.cells = parsed.run_004 || {};
+    RUNS_META.run_003.cells = parsed.run_003 || parsed.run_004 || {};
+    CELLS = RUNS_META[currentRun].cells;
+  } catch (e) {
+    mapEl.innerHTML = `<div style="grid-column:1/-1;padding:32px;color:#c8883a">Ошибка загрузки map_cells.toon: ${e.message}</div>`;
+    return;
+  }
   rebuildMap();
 }
 window.addEventListener('load', initMap);
