@@ -407,7 +407,7 @@
         "status": "✅ (С8)",
         "maint": 500,
         "rate": 5,
-        "hands": 0
+        "hands": 8
       }
     ]
   },
@@ -847,7 +847,7 @@
           "status": "✅ (С8)",
           "maint": 500,
           "rate": 5,
-          "hands": 0
+          "hands": 8
         }
       ],
       "income": [
