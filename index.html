@@ -516,7 +516,7 @@ if (_gameKey && localStorage.getItem(_gameKey)) {
 if (_gameKey) { try { localStorage.setItem(_gameKey, '1'); } catch(e) {} }
 
 const game = gameData.game || 'choice';
-const _subtitles={blackjack:'Игра в 21',timing:'Тайминг',compare:'Сравнение',findall:'Найди все',memory:'Пары',oddone:'Лишний',reaction:'Реакция',sorting:'Порядок',estimate:'Угадай число'};
+const _subtitles={blackjack:'Игра в 21',timing:'Тайминг',compare:'Сравнение',findall:'Найди все',memory:'Пары',oddone:'Лишний',reaction:'Реакция',sorting:'Порядок',estimate:'Оцени число'};
 document.getElementById('subtitle').textContent=_subtitles[game]||'Выбор';
 
 // ---- CHOICE ----
@@ -1273,7 +1273,7 @@ let estRounds=[],estIdx=0,estScores=[],estGuesses=[],estActuals=[];
 function initEstimate(){
   document.getElementById('estimate-game').style.display='';
   estRounds=gameData.rounds||[{count:12,symbol:'●',showTime:1500}];
-  document.getElementById('est-ready-title').textContent=gameData.prompt||'Угадай число';
+  document.getElementById('est-ready-title').textContent=gameData.prompt||'Оцени число';
   document.getElementById('est-ready-info').textContent=estRounds.length+' раундов · '+((estRounds[0].showTime||1500)/1000).toFixed(1)+' сек показа';
 }
 
