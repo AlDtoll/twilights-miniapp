@@ -984,10 +984,11 @@ function initMemory(){
   const syms=gameData.pairs||['★','▲','●','■','♦','◆','✦','✚'];
   memTotal=syms.length;
   memCards=memRandShuffle([...syms,...syms].map((s,i)=>({symbol:s,id:i,matched:false})));
-  const secs=gameData.timeLimit||45;
+  const secs=gameData.timeLimit||35;
   memTotalTicks=secs*10;
   document.getElementById('mem-ready-title').textContent=gameData.prompt||'Найди пары';
   document.getElementById('mem-ready-info').textContent=memTotal+' пар · '+secs+' сек';
+
   document.getElementById('mem-grid').style.gridTemplateColumns='repeat('+(gameData.cols||4)+', 1fr)';
 }
 
