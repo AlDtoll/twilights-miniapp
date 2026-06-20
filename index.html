@@ -141,6 +141,20 @@
   .seq-result-total { font-size: 0.9rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 16px; }
   .seq-result-label { font-size: 1.2rem; font-weight: 700; padding: 12px 20px; border-radius: 12px; display: inline-block; }
 
+  /* COMPARE */
+  #compare-game { width: 100%; max-width: 360px; }
+  .cmp-timer-bar { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-bottom: 14px; overflow: hidden; }
+  .cmp-timer-fill { height: 100%; background: #00b894; border-radius: 3px; transition: width 0.1s linear, background 0.3s; }
+  .cmp-prompt { text-align: center; font-size: 1.1rem; font-weight: 700; margin-bottom: 14px; }
+  .cmp-pair { display: flex; gap: 12px; width: 100%; margin-bottom: 10px; }
+  .cmp-card { flex: 1; min-height: 110px; border-radius: 14px; border: 2px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: var(--tg-theme-text-color, #fff); font-size: 1.05rem; cursor: pointer; display: flex; align-items: center; justify-content: center; text-align: center; padding: 12px; transition: all 0.15s; line-height: 1.3; }
+  .cmp-card:active { transform: scale(0.96); }
+  .cmp-card.correct { border-color: #00b894; background: rgba(0,184,148,0.25); }
+  .cmp-card.wrong { border-color: #e74c3c; background: rgba(231,76,60,0.2); }
+  .cmp-card:disabled { cursor: default; }
+  .cmp-progress { text-align: center; font-size: 0.82rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 6px; }
+  .cmp-feedback { text-align: center; min-height: 1.4rem; font-size: 1.1rem; font-weight: 700; }
+
   /* COMBAT */
   #combat-game { width: 100%; max-width: 400px; }
   .combat-enemies { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
@@ -188,6 +202,17 @@
 <body>
 <h1>⚔️ Twilights</h1>
 <p class="subtitle" id="subtitle">Загрузка...</p>
+
+<div id="compare-game" style="display:none">
+  <div class="cmp-timer-bar"><div class="cmp-timer-fill" id="cmp-timer-fill"></div></div>
+  <div class="cmp-prompt" id="cmp-prompt"></div>
+  <div class="cmp-pair">
+    <button class="cmp-card" id="cmp-left" onclick="cmpChoose('left')"></button>
+    <button class="cmp-card" id="cmp-right" onclick="cmpChoose('right')"></button>
+  </div>
+  <div class="cmp-progress" id="cmp-progress"></div>
+  <div class="cmp-feedback" id="cmp-feedback"></div>
+</div>
 
 <div id="combat-game" style="display:none">
   <div id="combat-prompt" class="subtitle" style="margin-bottom:12px;text-align:left;font-size:0.88rem;padding:10px 12px;background:rgba(255,255,255,0.05);border-radius:10px;line-height:1.5;display:none"></div>
@@ -332,7 +357,7 @@ if (_gameKey && localStorage.getItem(_gameKey)) {
 if (_gameKey) { try { localStorage.setItem(_gameKey, '1'); } catch(e) {} }
 
 const game = gameData.game || 'choice';
-document.getElementById('subtitle').textContent = game === 'blackjack' ? 'Игра в 21' : game === 'timing' ? 'Тайминг' : 'Выбор';
+document.getElementById('subtitle').textContent = game === 'blackjack' ? 'Игра в 21' : game === 'timing' ? 'Тайминг' : game === 'compare' ? 'Сравнение' : 'Выбор';
 
 // ---- CHOICE ----
 let selectedChoice = null;
@@ -786,6 +811,79 @@ function timingStop() {
   document.getElementById('timing-slow-btn').disabled = true;
   document.getElementById('timing-stop-btn').disabled = true;
   setTimeout(() => sendResultToBot({game:'timing', position:pos, outcome:outcome.label, level}), 600);
+}
+
+// ---- COMPARE ----
+let cmpPairs = [], cmpIdx = 0, cmpCorrect = 0, cmpTimerInterval = null, cmpTotalTicks = 0, cmpTicksLeft = 0, cmpAnswered = false;
+
+function initCompare() {
+  document.getElementById('compare-game').style.display = '';
+  cmpPairs = (gameData.pairs || []).slice();
+  const secs = gameData.timeLimit || 15;
+  cmpTotalTicks = secs * 10;
+  cmpTicksLeft = cmpTotalTicks;
+  cmpIdx = 0; cmpCorrect = 0;
+  cmpShowPair();
+  cmpTimerInterval = setInterval(() => {
+    cmpTicksLeft--;
+    const pct = Math.max(0, cmpTicksLeft / cmpTotalTicks * 100);
+    const fill = document.getElementById('cmp-timer-fill');
+    if (fill) {
+      fill.style.width = pct + '%';
+      fill.style.background = pct < 30 ? '#e74c3c' : pct < 60 ? '#f39c12' : '#00b894';
+    }
+    if (cmpTicksLeft <= 0) { clearInterval(cmpTimerInterval); cmpFinish(); }
+  }, 100);
+}
+
+function cmpShowPair() {
+  if (cmpIdx >= cmpPairs.length) { clearInterval(cmpTimerInterval); cmpFinish(); return; }
+  const pair = cmpPairs[cmpIdx];
+  document.getElementById('cmp-prompt').textContent = gameData.prompt || 'Что больше?';
+  const lBtn = document.getElementById('cmp-left');
+  const rBtn = document.getElementById('cmp-right');
+  lBtn.textContent = pair.left; lBtn.className = 'cmp-card'; lBtn.disabled = false;
+  rBtn.textContent = pair.right; rBtn.className = 'cmp-card'; rBtn.disabled = false;
+  document.getElementById('cmp-progress').textContent = (cmpIdx + 1) + ' / ' + cmpPairs.length;
+  document.getElementById('cmp-feedback').textContent = '';
+  cmpAnswered = false;
+}
+
+function cmpChoose(side) {
+  if (cmpAnswered) return;
+  cmpAnswered = true;
+  const pair = cmpPairs[cmpIdx];
+  const correct = pair.answer === side;
+  if (correct) cmpCorrect++;
+  const other = side === 'left' ? 'right' : 'left';
+  document.getElementById('cmp-' + side).classList.add(correct ? 'correct' : 'wrong');
+  document.getElementById('cmp-' + side).disabled = true;
+  document.getElementById('cmp-' + other).disabled = true;
+  if (!correct) document.getElementById('cmp-' + pair.answer).classList.add('correct');
+  const fb = document.getElementById('cmp-feedback');
+  fb.textContent = correct ? '✓' : '✗';
+  fb.style.color = correct ? '#00b894' : '#e74c3c';
+  cmpIdx++;
+  setTimeout(cmpShowPair, 700);
+}
+
+function cmpFinish() {
+  clearInterval(cmpTimerInterval);
+  const total = cmpPairs.length;
+  const pct = total ? cmpCorrect / total : 0;
+  let outcome, level;
+  if (pct >= 0.8) { outcome = 'Отлично'; level = 3; }
+  else if (pct >= 0.6) { outcome = 'Хорошо'; level = 2; }
+  else if (pct >= 0.4) { outcome = 'Неплохо'; level = 1; }
+  else { outcome = 'Слабо'; level = 0; }
+  const emoji = pct >= 0.8 ? '🏆' : pct >= 0.6 ? '✅' : pct >= 0.4 ? '⚡' : '💀';
+  document.getElementById('compare-game').innerHTML =
+    '<div style="text-align:center;padding:20px">' +
+    '<div style="font-size:2.5rem;margin-bottom:12px">' + emoji + '</div>' +
+    '<div style="font-size:1.4rem;font-weight:700;margin-bottom:8px">' + outcome + '</div>' +
+    '<div style="font-size:1rem;color:var(--tg-theme-hint-color,#aaa)">' + cmpCorrect + ' из ' + total + '</div>' +
+    '</div>';
+  setTimeout(() => sendResultToBot({game:'compare', correct:cmpCorrect, total, outcome, level}), 600);
 }
 
 function sendResultToBot(result) {
@@ -1464,6 +1562,8 @@ if (game === 'blackjack') {
   initThresholds(); initModifiers(); bjNewGame();
 } else if (game === 'timing') {
   initTiming();
+} else if (game === 'compare') {
+  initCompare();
 } else if (game === 'sequence') {
   initSequence();
 } else if (game === 'match3') {
