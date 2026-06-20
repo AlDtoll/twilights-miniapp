@@ -155,6 +155,22 @@
   .cmp-progress { text-align: center; font-size: 0.82rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 6px; }
   .cmp-feedback { text-align: center; min-height: 1.4rem; font-size: 1.1rem; font-weight: 700; }
 
+  /* FINDALL */
+  #findall-game { width: 100%; max-width: 400px; }
+  .fa-timer-bar { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-bottom: 12px; overflow: hidden; }
+  .fa-timer-fill { height: 100%; background: #00b894; border-radius: 3px; transition: width 0.1s linear, background 0.3s; }
+  .fa-target-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 12px; }
+  .fa-target-label { font-size: 0.85rem; color: var(--tg-theme-hint-color, #aaa); }
+  .fa-target-val { font-size: 2rem; padding: 6px 14px; border-radius: 10px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.2); }
+  .fa-grid { display: grid; gap: 5px; margin-bottom: 10px; }
+  .fa-cell { aspect-ratio: 1; border-radius: 10px; border: 2px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: var(--tg-theme-text-color, #fff); font-size: 1.3rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color 0.12s, background 0.12s; -webkit-tap-highlight-color: transparent; user-select: none; }
+  .fa-cell:active:not([disabled]) { transform: scale(0.88); }
+  .fa-cell.found { border-color: #00b894; background: rgba(0,184,148,0.3); cursor: default; }
+  .fa-cell.wrong { border-color: #e74c3c; background: rgba(231,76,60,0.25); cursor: default; animation: fa-shake 0.25s; }
+  .fa-cell[disabled] { cursor: default; }
+  @keyframes fa-shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-3px)} 75%{transform:translateX(3px)} }
+  .fa-progress { text-align: center; font-size: 0.85rem; color: var(--tg-theme-hint-color, #aaa); }
+
   /* COMBAT */
   #combat-game { width: 100%; max-width: 400px; }
   .combat-enemies { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
@@ -202,6 +218,24 @@
 <body>
 <h1>⚔️ Twilights</h1>
 <p class="subtitle" id="subtitle">Загрузка...</p>
+
+<div id="findall-game" style="display:none">
+  <div id="fa-ready">
+    <div class="seq-ready-title" id="fa-ready-title">Найди все</div>
+    <div style="font-size:3rem;text-align:center;margin:16px 0;letter-spacing:4px" id="fa-ready-target"></div>
+    <div class="seq-ready-info" id="fa-ready-info"></div>
+    <button class="confirm-btn" onclick="faStart()">Начать</button>
+  </div>
+  <div id="fa-play" style="display:none">
+    <div class="fa-timer-bar"><div class="fa-timer-fill" id="fa-timer-fill"></div></div>
+    <div class="fa-target-row">
+      <span class="fa-target-label">Найди:</span>
+      <span class="fa-target-val" id="fa-target-val"></span>
+    </div>
+    <div class="fa-grid" id="fa-grid"></div>
+    <div class="fa-progress" id="fa-progress"></div>
+  </div>
+</div>
 
 <div id="compare-game" style="display:none">
   <div id="cmp-ready">
@@ -364,7 +398,7 @@ if (_gameKey && localStorage.getItem(_gameKey)) {
 if (_gameKey) { try { localStorage.setItem(_gameKey, '1'); } catch(e) {} }
 
 const game = gameData.game || 'choice';
-document.getElementById('subtitle').textContent = game === 'blackjack' ? 'Игра в 21' : game === 'timing' ? 'Тайминг' : game === 'compare' ? 'Сравнение' : 'Выбор';
+document.getElementById('subtitle').textContent = game === 'blackjack' ? 'Игра в 21' : game === 'timing' ? 'Тайминг' : game === 'compare' ? 'Сравнение' : game === 'findall' ? 'Найди все' : 'Выбор';
 
 // ---- CHOICE ----
 let selectedChoice = null;
@@ -818,6 +852,103 @@ function timingStop() {
   document.getElementById('timing-slow-btn').disabled = true;
   document.getElementById('timing-stop-btn').disabled = true;
   setTimeout(() => sendResultToBot({game:'timing', position:pos, outcome:outcome.label, level}), 600);
+}
+
+// ---- FINDALL ----
+let faGrid = [], faTarget = '', faCols = 6, faFound = 0, faTotal = 0, faWrongTaps = 0;
+let faTimerInterval = null, faTotalTicks = 0, faTicksLeft = 0, faWrongPenalty = 'time', faTimePenalty = 3;
+
+function initFindall() {
+  document.getElementById('findall-game').style.display = '';
+  faGrid = (gameData.grid || []).slice();
+  faTarget = gameData.target || '';
+  faCols = gameData.cols || 6;
+  faWrongPenalty = gameData.wrongPenalty || 'time';
+  faTimePenalty = typeof gameData.timePenalty === 'number' ? gameData.timePenalty : 3;
+  const secs = gameData.timeLimit || 15;
+  faTotalTicks = secs * 10;
+  faTotal = faGrid.filter(x => x === faTarget).length;
+  const prompt = gameData.prompt || 'Найди все';
+  document.getElementById('fa-ready-title').textContent = prompt;
+  document.getElementById('fa-ready-target').textContent = faTarget;
+  const tWord = faTotal === 1 ? 'цель' : faTotal < 5 ? 'цели' : 'целей';
+  document.getElementById('fa-ready-info').textContent = faTotal + ' ' + tWord + ' · ' + secs + ' сек';
+}
+
+function faStart() {
+  document.getElementById('fa-ready').style.display = 'none';
+  document.getElementById('fa-play').style.display = '';
+  faFound = 0; faWrongTaps = 0;
+  faTicksLeft = faTotalTicks;
+  document.getElementById('fa-target-val').textContent = faTarget;
+  const grid = document.getElementById('fa-grid');
+  grid.style.gridTemplateColumns = 'repeat(' + faCols + ', 1fr)';
+  grid.innerHTML = '';
+  faGrid.forEach(function(item, i) {
+    const btn = document.createElement('button');
+    btn.className = 'fa-cell';
+    btn.textContent = item;
+    btn.onclick = function() { faTap(btn, item); };
+    grid.appendChild(btn);
+  });
+  faUpdateProgress();
+  faTimerInterval = setInterval(function() {
+    faTicksLeft = Math.max(0, faTicksLeft - 1);
+    const pct = faTicksLeft / faTotalTicks * 100;
+    const fill = document.getElementById('fa-timer-fill');
+    if (fill) {
+      fill.style.width = pct + '%';
+      fill.style.background = pct < 30 ? '#e74c3c' : pct < 60 ? '#f39c12' : '#00b894';
+    }
+    if (faTicksLeft <= 0) { clearInterval(faTimerInterval); faFinish(); }
+  }, 100);
+}
+
+function faTap(btn, item) {
+  if (btn.disabled) return;
+  btn.disabled = true;
+  if (item === faTarget) {
+    btn.classList.add('found');
+    faFound++;
+    faUpdateProgress();
+    if (faFound >= faTotal) { clearInterval(faTimerInterval); setTimeout(faFinish, 300); }
+  } else {
+    btn.classList.add('wrong');
+    faWrongTaps++;
+    if (faWrongPenalty === 'time') {
+      faTicksLeft = Math.max(0, faTicksLeft - faTimePenalty * 10);
+      const pct = faTicksLeft / faTotalTicks * 100;
+      const fill = document.getElementById('fa-timer-fill');
+      if (fill) fill.style.width = pct + '%';
+      if (faTicksLeft <= 0) { clearInterval(faTimerInterval); setTimeout(faFinish, 300); }
+    }
+  }
+}
+
+function faUpdateProgress() {
+  document.getElementById('fa-progress').textContent = 'Найдено: ' + faFound + ' / ' + faTotal;
+}
+
+function faFinish() {
+  clearInterval(faTimerInterval);
+  const timeSpent = Math.round((faTotalTicks - faTicksLeft) / 10 * 10) / 10;
+  const effectiveFound = faWrongPenalty === 'point' ? Math.max(0, faFound - faWrongTaps) : faFound;
+  const pct = faTotal > 0 ? effectiveFound / faTotal : 0;
+  let outcome, level;
+  if (pct >= 1 && faWrongTaps === 0) { outcome = 'Идеально'; level = 4; }
+  else if (pct >= 0.8) { outcome = 'Отлично'; level = 3; }
+  else if (pct >= 0.6) { outcome = 'Хорошо'; level = 2; }
+  else if (pct >= 0.4) { outcome = 'Неплохо'; level = 1; }
+  else { outcome = 'Слабо'; level = 0; }
+  const wrongStr = faWrongTaps > 0 ? ' · ' + faWrongTaps + ' ошиб.' : '';
+  document.getElementById('findall-game').innerHTML =
+    '<div style="text-align:center;padding:20px">' +
+    '<div style="font-size:1.4rem;font-weight:700;margin-bottom:8px">' + outcome + '</div>' +
+    '<div style="font-size:1rem;color:var(--tg-theme-hint-color,#aaa)">' + effectiveFound + ' из ' + faTotal + wrongStr + ' · ' + timeSpent + ' сек</div>' +
+    '</div>';
+  setTimeout(function() {
+    sendResultToBot({game:'findall', found:faFound, effectiveFound, total:faTotal, wrongTaps:faWrongTaps, outcome, level, timeSpent});
+  }, 600);
 }
 
 // ---- COMPARE ----
@@ -1577,6 +1708,8 @@ if (game === 'blackjack') {
   initThresholds(); initModifiers(); bjNewGame();
 } else if (game === 'timing') {
   initTiming();
+} else if (game === 'findall') {
+  initFindall();
 } else if (game === 'compare') {
   initCompare();
 } else if (game === 'sequence') {
