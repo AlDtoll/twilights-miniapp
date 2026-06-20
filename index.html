@@ -981,7 +981,7 @@ function memRandShuffle(arr){const a=arr.slice();for(let i=a.length-1;i>0;i--){c
 
 function initMemory(){
   document.getElementById('memory-game').style.display='';
-  const syms=gameData.pairs||['★','▲','●','■','♦','◆','✦','✚'];
+  const syms=gameData.pairs||['★','▲','●','■','♦','✿','✦','✚'];
   memTotal=syms.length;
   memCards=memRandShuffle([...syms,...syms].map((s,i)=>({symbol:s,id:i,matched:false})));
   const secs=gameData.timeLimit||35;
