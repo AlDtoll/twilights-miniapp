@@ -1186,8 +1186,10 @@ function rxFinish(){
   let outcome,level;
   if(pct>=0.9&&rxFalse===0){outcome='Идеально';level=4;}else if(pct>=0.75){outcome='Отлично';level=3;}
   else if(pct>=0.55){outcome='Хорошо';level=2;}else if(pct>=0.35){outcome='Неплохо';level=1;}else{outcome='Слабо';level=0;}
-  document.getElementById('reaction-game').innerHTML='<div style="text-align:center;padding:20px"><div style="font-size:1.4rem;font-weight:700;margin-bottom:8px">'+outcome+'</div><div style="font-size:1rem;color:var(--tg-theme-hint-color,#aaa)">Попаданий: '+rxHits+' · Промахов: '+rxMisses+' · Ложных: '+rxFalse+'</div></div>';
-  setTimeout(function(){sendResultToBot({game:'reaction',hits:rxHits,misses:rxMisses,falseAlarms:rxFalse,outcome,level,timeSpent});},600);
+  const rxTotal=rxHits+rxMisses;
+  const wrongStr=rxFalse>0?' · '+rxFalse+' ложных':'';
+  document.getElementById('reaction-game').innerHTML='<div style="text-align:center;padding:20px"><div style="font-size:1.4rem;font-weight:700;margin-bottom:8px">'+outcome+'</div><div style="font-size:1rem;color:var(--tg-theme-hint-color,#aaa)">'+rxHits+' из '+rxTotal+wrongStr+'</div></div>';
+  setTimeout(function(){sendResultToBot({game:'reaction',hits:rxHits,misses:rxMisses,falseAlarms:rxFalse,total:rxTotal,outcome,level,timeSpent});},600);
 }
 
 // ---- SORTING ----
