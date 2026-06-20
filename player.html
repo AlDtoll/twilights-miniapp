@@ -454,7 +454,6 @@ select:focus { outline: none; border-color: var(--gold-dim); }
 <div id="app" style="display:none">
   <div class="top-bar">
     <div class="select-wrap">
-      <select id="sel-run"></select>
       <select id="sel-player"></select>
       <select id="sel-np" style="display:none"></select>
     </div>
@@ -558,7 +557,6 @@ select:focus { outline: none; border-color: var(--gold-dim); }
 </div>
 
 <script>
-const RUNS    = ["run_004", "run_003"];
 const PLAYERS = ["valter", "danil", "misha"];
 const PLAYER_LABELS = { valter: "Лаки (Егор)", danil: "Клод (Данил)", misha: "Дунар (Миша)" };
 const RUN_LABELS    = { run_004: "Забег 004", run_003: "Забег 003" };
@@ -590,16 +588,9 @@ function setParams(run, player) {
 
 // ── Selects ───────────────────────────────────────────────────────────────────
 function buildSelects() {
-  const rSel = document.getElementById("sel-run");
   const pSel = document.getElementById("sel-player");
   const { run, player } = getParams();
 
-  RUNS.forEach(r => {
-    const o = document.createElement("option");
-    o.value = r; o.textContent = RUN_LABELS[r] || r;
-    if (r === run) o.selected = true;
-    rSel.appendChild(o);
-  });
   PLAYERS.forEach(pl => {
     const o = document.createElement("option");
     o.value = pl; o.textContent = PLAYER_LABELS[pl] || pl;
@@ -607,14 +598,12 @@ function buildSelects() {
     pSel.appendChild(o);
   });
 
-  rSel.onchange = () => loadData(rSel.value, pSel.value);
-  pSel.onchange = () => loadData(rSel.value, pSel.value);
+  pSel.onchange = () => loadData(getParams().run, pSel.value);
 }
 
 // ── Load & render ─────────────────────────────────────────────────────────────
 async function loadData(run, player) {
   setParams(run, player);
-  document.getElementById("sel-run").value    = run;
   document.getElementById("sel-player").value = player;
   document.getElementById("loading").style.display = "block";
   document.getElementById("app").style.display = "none";
