@@ -155,6 +155,50 @@
   .cmp-progress { text-align: center; font-size: 0.82rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 6px; }
   .cmp-feedback { text-align: center; min-height: 1.4rem; font-size: 1.1rem; font-weight: 700; }
 
+  /* MEMORY */
+  #memory-game { width: 100%; max-width: 400px; }
+  .mem-header { display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--tg-theme-hint-color,#aaa); margin-bottom: 8px; }
+  .mem-grid { display: grid; gap: 5px; margin-bottom: 8px; }
+  .mem-card { aspect-ratio: 1; border-radius: 10px; border: 2px solid rgba(255,255,255,0.12); background: rgba(108,92,231,0.12); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; user-select: none; -webkit-tap-highlight-color: transparent; transition: background 0.15s, border-color 0.15s; }
+  .mem-card.face-down { color: transparent !important; font-size: 0; }
+  .mem-card.face-down::after { content: '?'; color: rgba(255,255,255,0.18); font-size: 1rem; }
+  .mem-card.matched { border-color: #00b894; background: rgba(0,184,148,0.2); cursor: default; }
+  .mem-card.wrong-pair { border-color: #e74c3c; background: rgba(231,76,60,0.18); }
+  @keyframes mem-shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+
+  /* ODDONE */
+  #oddone-game { width: 100%; max-width: 360px; }
+  .oo-grid { display: grid; gap: 8px; margin-bottom: 10px; }
+  .oo-cell { aspect-ratio: 1; border-radius: 12px; border: 2px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.05); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; user-select: none; -webkit-tap-highlight-color: transparent; transition: all 0.12s; }
+  .oo-cell.correct { border-color: #00b894; background: rgba(0,184,148,0.2); }
+  .oo-cell.wrong-tap { border-color: #e74c3c; background: rgba(231,76,60,0.18); animation: mem-shake 0.3s; }
+
+  /* REACTION */
+  #reaction-game { width: 100%; max-width: 360px; text-align: center; }
+  .rx-stats { display: flex; justify-content: center; gap: 20px; margin-bottom: 10px; font-size: 0.85rem; color: var(--tg-theme-hint-color,#aaa); }
+  .rx-display { font-size: 4.5rem; height: 120px; display: flex; align-items: center; justify-content: center; border-radius: 20px; background: rgba(255,255,255,0.04); border: 2px solid rgba(255,255,255,0.08); margin-bottom: 14px; transition: background 0.1s, border-color 0.1s; }
+  .rx-display.rx-target { background: rgba(108,92,231,0.15); border-color: rgba(108,92,231,0.4); }
+  .rx-tap-btn { width: 100%; padding: 20px; border-radius: 16px; border: none; background: var(--tg-theme-button-color,#6c5ce7); color: #fff; font-size: 1.1rem; font-weight: 700; cursor: pointer; }
+  .rx-tap-btn:active { transform: scale(0.96); }
+  .rx-tap-btn:disabled { opacity: 0.4; cursor: default; }
+
+  /* SORTING */
+  #sorting-game { width: 100%; max-width: 360px; }
+  .sort-round-label { font-size: 0.82rem; color: var(--tg-theme-hint-color,#aaa); text-align: center; margin-bottom: 8px; }
+  .sort-items { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+  .sort-item { padding: 12px 16px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: var(--tg-theme-text-color,#fff); cursor: pointer; text-align: left; font-size: 1rem; display: flex; align-items: center; gap: 10px; user-select: none; -webkit-tap-highlight-color: transparent; transition: all 0.15s; }
+  .sort-item.selected { border-color: #00b894; background: rgba(0,184,148,0.15); cursor: default; }
+  .sort-badge { width: 24px; height: 24px; border-radius: 50%; background: #00b894; color: #fff; font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; visibility: hidden; }
+
+  /* ESTIMATE */
+  #estimate-game { width: 100%; max-width: 360px; text-align: center; }
+  .est-round-label { font-size: 0.82rem; color: var(--tg-theme-hint-color,#aaa); margin-bottom: 8px; text-align: center; }
+  .est-display { width: 100%; height: 150px; border-radius: 16px; background: rgba(255,255,255,0.04); border: 2px solid rgba(255,255,255,0.08); margin-bottom: 14px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: rgba(255,255,255,0.12); }
+  .est-dot-el { position: absolute; font-size: 1.2rem; line-height: 1; }
+  .est-slider-wrap { margin-bottom: 12px; }
+  .est-slider { width: 100%; accent-color: var(--tg-theme-button-color,#6c5ce7); }
+  .est-slider-val { font-size: 1.5rem; font-weight: 700; margin-top: 4px; }
+
   /* FINDALL */
   #findall-game { width: 100%; max-width: 400px; }
   .fa-timer-bar { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-bottom: 12px; overflow: hidden; }
@@ -218,6 +262,80 @@
 <body>
 <h1>⚔️ Twilights</h1>
 <p class="subtitle" id="subtitle">Загрузка...</p>
+
+<div id="memory-game" style="display:none">
+  <div id="mem-ready">
+    <div class="seq-ready-title" id="mem-ready-title">Найди пары</div>
+    <div class="seq-ready-info" id="mem-ready-info"></div>
+    <button class="confirm-btn" onclick="memStart()">Начать</button>
+  </div>
+  <div id="mem-play" style="display:none">
+    <div class="mem-header"><span id="mem-pairs-status">Пар: 0 / 0</span><span id="mem-timer">45</span></div>
+    <div class="mem-grid" id="mem-grid"></div>
+  </div>
+</div>
+
+<div id="oddone-game" style="display:none">
+  <div id="oo-ready">
+    <div class="seq-ready-title" id="oo-ready-title">Найди лишнего</div>
+    <div class="seq-ready-info" id="oo-ready-info"></div>
+    <button class="confirm-btn" onclick="ooStart()">Начать</button>
+  </div>
+  <div id="oo-play" style="display:none">
+    <div class="cmp-timer-bar"><div class="cmp-timer-fill" id="oo-timer-fill"></div></div>
+    <div class="cmp-progress" id="oo-progress"></div>
+    <div class="oo-grid" id="oo-grid"></div>
+    <div class="cmp-feedback" id="oo-feedback"></div>
+  </div>
+</div>
+
+<div id="reaction-game" style="display:none">
+  <div id="rx-ready">
+    <div class="seq-ready-title" id="rx-ready-title">Реакция</div>
+    <div style="font-size:3rem;text-align:center;margin:16px 0" id="rx-ready-target"></div>
+    <div class="seq-ready-info" id="rx-ready-info"></div>
+    <button class="confirm-btn" onclick="rxStart()">Начать</button>
+  </div>
+  <div id="rx-play" style="display:none">
+    <div class="cmp-timer-bar"><div class="cmp-timer-fill" id="rx-timer-fill"></div></div>
+    <div class="rx-stats"><span>Попадания: <b id="rx-hits">0</b></span><span>Ложные: <b id="rx-false">0</b></span></div>
+    <div class="rx-display" id="rx-display"></div>
+    <button class="rx-tap-btn" id="rx-tap-btn" onclick="rxTap()">Тап!</button>
+  </div>
+</div>
+
+<div id="sorting-game" style="display:none">
+  <div id="sort-ready">
+    <div class="seq-ready-title" id="sort-ready-title">Порядок</div>
+    <div class="seq-ready-info" id="sort-ready-info"></div>
+    <button class="confirm-btn" onclick="sortStart()">Начать</button>
+  </div>
+  <div id="sort-play" style="display:none">
+    <div class="cmp-timer-bar"><div class="cmp-timer-fill" id="sort-timer-fill"></div></div>
+    <div class="sort-round-label" id="sort-round-label"></div>
+    <div class="sort-items" id="sort-items"></div>
+    <div class="cmp-feedback" id="sort-feedback"></div>
+  </div>
+</div>
+
+<div id="estimate-game" style="display:none">
+  <div id="est-ready">
+    <div class="seq-ready-title" id="est-ready-title">Угадай число</div>
+    <div class="seq-ready-info" id="est-ready-info"></div>
+    <button class="confirm-btn" onclick="estStart()">Начать</button>
+  </div>
+  <div id="est-play" style="display:none">
+    <div class="est-round-label" id="est-round-label"></div>
+    <div class="est-display" id="est-display">?</div>
+    <div id="est-guess-area" style="display:none">
+      <div class="est-slider-wrap">
+        <input type="range" class="est-slider" id="est-slider" min="1" max="50" value="25" oninput="document.getElementById('est-slider-val').textContent=this.value">
+        <div class="est-slider-val" id="est-slider-val">25</div>
+      </div>
+      <button class="confirm-btn" onclick="estSubmit()">Готово</button>
+    </div>
+  </div>
+</div>
 
 <div id="findall-game" style="display:none">
   <div id="fa-ready">
@@ -398,7 +516,8 @@ if (_gameKey && localStorage.getItem(_gameKey)) {
 if (_gameKey) { try { localStorage.setItem(_gameKey, '1'); } catch(e) {} }
 
 const game = gameData.game || 'choice';
-document.getElementById('subtitle').textContent = game === 'blackjack' ? 'Игра в 21' : game === 'timing' ? 'Тайминг' : game === 'compare' ? 'Сравнение' : game === 'findall' ? 'Найди все' : 'Выбор';
+const _subtitles={blackjack:'Игра в 21',timing:'Тайминг',compare:'Сравнение',findall:'Найди все',memory:'Пары',oddone:'Лишний',reaction:'Реакция',sorting:'Порядок',estimate:'Угадай число'};
+document.getElementById('subtitle').textContent=_subtitles[game]||'Выбор';
 
 // ---- CHOICE ----
 let selectedChoice = null;
@@ -852,6 +971,355 @@ function timingStop() {
   document.getElementById('timing-slow-btn').disabled = true;
   document.getElementById('timing-stop-btn').disabled = true;
   setTimeout(() => sendResultToBot({game:'timing', position:pos, outcome:outcome.label, level}), 600);
+}
+
+// ---- MEMORY ----
+let memCards=[], memFlipped=[], memMatched=0, memTotal=0, memLocked=false;
+let memTimerInterval=null, memTotalTicks=0, memTicksLeft=0;
+
+function memRandShuffle(arr){const a=arr.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function initMemory(){
+  document.getElementById('memory-game').style.display='';
+  const syms=gameData.pairs||['★','▲','●','■','♦','◆','✦','✚'];
+  memTotal=syms.length;
+  memCards=memRandShuffle([...syms,...syms].map((s,i)=>({symbol:s,id:i,matched:false})));
+  const secs=gameData.timeLimit||45;
+  memTotalTicks=secs*10;
+  document.getElementById('mem-ready-title').textContent=gameData.prompt||'Найди пары';
+  document.getElementById('mem-ready-info').textContent=memTotal+' пар · '+secs+' сек';
+  document.getElementById('mem-grid').style.gridTemplateColumns='repeat('+(gameData.cols||4)+', 1fr)';
+}
+
+function memStart(){
+  document.getElementById('mem-ready').style.display='none';
+  document.getElementById('mem-play').style.display='';
+  memMatched=0;memFlipped=[];memLocked=false;memTicksLeft=memTotalTicks;
+  const grid=document.getElementById('mem-grid');grid.innerHTML='';
+  memCards.forEach(function(card,i){
+    const btn=document.createElement('button');
+    btn.className='mem-card face-down';btn.textContent=card.symbol;btn.dataset.i=i;
+    btn.onclick=function(){memFlip(i,btn);};grid.appendChild(btn);
+  });
+  memUpdateStatus();
+  memTimerInterval=setInterval(function(){
+    memTicksLeft=Math.max(0,memTicksLeft-1);
+    document.getElementById('mem-timer').textContent=Math.ceil(memTicksLeft/10);
+    if(memTicksLeft<=0){clearInterval(memTimerInterval);memFinish();}
+  },100);
+}
+
+function memFlip(idx,btn){
+  if(memLocked||memCards[idx].matched||memFlipped.some(f=>f.idx===idx)||memFlipped.length>=2)return;
+  btn.classList.remove('face-down');
+  memFlipped.push({idx,btn});
+  if(memFlipped.length===2){
+    memLocked=true;
+    const[a,b]=memFlipped;
+    if(memCards[a.idx].symbol===memCards[b.idx].symbol){
+      memCards[a.idx].matched=memCards[b.idx].matched=true;
+      a.btn.classList.add('matched');b.btn.classList.add('matched');
+      a.btn.disabled=true;b.btn.disabled=true;
+      memFlipped=[];memLocked=false;memMatched++;memUpdateStatus();
+      if(memMatched>=memTotal){clearInterval(memTimerInterval);setTimeout(memFinish,300);}
+    }else{
+      a.btn.classList.add('wrong-pair');b.btn.classList.add('wrong-pair');
+      setTimeout(function(){
+        a.btn.className='mem-card face-down';b.btn.className='mem-card face-down';
+        memFlipped=[];memLocked=false;
+      },900);
+    }
+  }
+}
+
+function memUpdateStatus(){document.getElementById('mem-pairs-status').textContent='Пар: '+memMatched+' / '+memTotal;}
+
+function memFinish(){
+  clearInterval(memTimerInterval);
+  const timeSpent=Math.round((memTotalTicks-memTicksLeft)/10*10)/10;
+  const pct=memMatched/memTotal;
+  let outcome,level;
+  if(pct>=1){outcome='Идеально';level=4;}else if(pct>=0.75){outcome='Отлично';level=3;}
+  else if(pct>=0.5){outcome='Хорошо';level=2;}else if(pct>=0.25){outcome='Неплохо';level=1;}else{outcome='Слабо';level=0;}
+  document.getElementById('memory-game').innerHTML='<div style="text-align:center;padding:20px"><div style="font-size:1.4rem;font-weight:700;margin-bottom:8px">'+outcome+'</div><div style="font-size:1rem;color:var(--tg-theme-hint-color,#aaa)">'+memMatched+' из '+memTotal+' пар · '+timeSpent+' сек</div></div>';
+  setTimeout(function(){sendResultToBot({game:'memory',found:memMatched,total:memTotal,timeSpent,outcome,level});},600);
+}
+
+// ---- ODDONE ----
+let ooRounds=[],ooIdx=0,ooCorrect=0;
+let ooTimerInterval=null,ooTotalTicks=0,ooTicksLeft=0;
+
+function initOddone(){
+  document.getElementById('oddone-game').style.display='';
+  const secs=gameData.timeLimit||15;
+  ooTotalTicks=secs*10;
+  ooRounds=(gameData.rounds||[]).map(function(r){
+    if(r.items)return r;
+    const size=r.size||9;
+    const arr=Array(size).fill(r.majority);
+    const pos=Math.floor(Math.random()*size);
+    arr[pos]=r.odd;
+    return{items:arr,answer:pos};
+  });
+  document.getElementById('oo-ready-title').textContent=gameData.prompt||'Найди лишнего';
+  document.getElementById('oo-ready-info').textContent=ooRounds.length+' раундов · '+secs+' сек';
+}
+
+function ooStart(){
+  document.getElementById('oo-ready').style.display='none';
+  document.getElementById('oo-play').style.display='';
+  ooIdx=0;ooCorrect=0;ooTicksLeft=ooTotalTicks;
+  ooShowRound();
+  ooTimerInterval=setInterval(function(){
+    ooTicksLeft=Math.max(0,ooTicksLeft-1);
+    const pct=ooTicksLeft/ooTotalTicks*100;
+    const fill=document.getElementById('oo-timer-fill');
+    if(fill){fill.style.width=pct+'%';fill.style.background=pct<30?'#e74c3c':pct<60?'#f39c12':'#00b894';}
+    if(ooTicksLeft<=0){clearInterval(ooTimerInterval);ooFinish();}
+  },100);
+}
+
+function ooShowRound(){
+  if(ooIdx>=ooRounds.length){clearInterval(ooTimerInterval);ooFinish();return;}
+  const round=ooRounds[ooIdx];
+  document.getElementById('oo-progress').textContent=(ooIdx+1)+' / '+ooRounds.length;
+  document.getElementById('oo-feedback').textContent='';
+  const grid=document.getElementById('oo-grid');
+  const cols=Math.round(Math.sqrt(round.items.length));
+  grid.style.gridTemplateColumns='repeat('+cols+', 1fr)';
+  grid.innerHTML='';
+  round.items.forEach(function(item,i){
+    const btn=document.createElement('button');
+    btn.className='oo-cell';btn.textContent=item;
+    btn.onclick=function(){ooTap(i,round.answer,btn,grid);};
+    grid.appendChild(btn);
+  });
+}
+
+function ooTap(idx,answer,btn,grid){
+  Array.from(grid.querySelectorAll('.oo-cell')).forEach(function(b){b.disabled=true;});
+  const correct=idx===answer;
+  if(correct){btn.classList.add('correct');ooCorrect++;}
+  else{btn.classList.add('wrong-tap');grid.querySelectorAll('.oo-cell')[answer].classList.add('correct');}
+  const fb=document.getElementById('oo-feedback');
+  fb.textContent=correct?'Верно':'Нет';fb.style.color=correct?'#00b894':'#e74c3c';
+  ooIdx++;setTimeout(ooShowRound,700);
+}
+
+function ooFinish(){
+  clearInterval(ooTimerInterval);
+  const timeSpent=Math.round((ooTotalTicks-ooTicksLeft)/10*10)/10;
+  const total=ooRounds.length,pct=total>0?ooCorrect/total:0;
+  let outcome,level;
+  if(pct>=1){outcome='Идеально';level=4;}else if(pct>=0.8){outcome='Отлично';level=3;}
+  else if(pct>=0.6){outcome='Хорошо';level=2;}else if(pct>=0.4){outcome='Неплохо';level=1;}else{outcome='Слабо';level=0;}
+  document.getElementById('oddone-game').innerHTML='<div style="text-align:center;padding:20px"><div style="font-size:1.4rem;font-weight:700;margin-bottom:8px">'+outcome+'</div><div style="font-size:1rem;color:var(--tg-theme-hint-color,#aaa)">'+ooCorrect+' из '+total+' · '+timeSpent+' сек</div></div>';
+  setTimeout(function(){sendResultToBot({game:'oddone',correct:ooCorrect,total,timeSpent,outcome,level});},600);
+}
+
+// ---- REACTION ----
+let rxTarget='',rxSymbols=[],rxInterval=1200,rxHits=0,rxMisses=0,rxFalse=0;
+let rxTimerInterval=null,rxSymInterval=null,rxTotalTicks=0,rxTicksLeft=0;
+let rxCurrent=null,rxTapWindow=false,rxDone=false;
+
+function initReaction(){
+  document.getElementById('reaction-game').style.display='';
+  rxTarget=gameData.target||'★';
+  const dist=gameData.distractors||['▲','●','■','♦'];
+  rxSymbols=[rxTarget,...dist];
+  rxInterval=gameData.interval||1200;
+  const secs=gameData.timeLimit||15;
+  rxTotalTicks=secs*10;
+  document.getElementById('rx-ready-title').textContent=gameData.prompt||'Реакция';
+  document.getElementById('rx-ready-target').textContent=rxTarget;
+  document.getElementById('rx-ready-info').textContent='Тапни только мишень · '+secs+' сек';
+}
+
+function rxStart(){
+  document.getElementById('rx-ready').style.display='none';
+  document.getElementById('rx-play').style.display='';
+  rxHits=0;rxMisses=0;rxFalse=0;rxDone=false;rxTicksLeft=rxTotalTicks;
+  document.getElementById('rx-hits').textContent='0';document.getElementById('rx-false').textContent='0';
+  document.getElementById('rx-tap-btn').disabled=false;
+  rxTimerInterval=setInterval(function(){
+    rxTicksLeft=Math.max(0,rxTicksLeft-1);
+    const pct=rxTicksLeft/rxTotalTicks*100;
+    const fill=document.getElementById('rx-timer-fill');
+    if(fill){fill.style.width=pct+'%';fill.style.background=pct<30?'#e74c3c':pct<60?'#f39c12':'#00b894';}
+    if(rxTicksLeft<=0&&!rxDone){rxDone=true;clearInterval(rxTimerInterval);clearInterval(rxSymInterval);rxFinish();}
+  },100);
+  rxNextSymbol();
+  rxSymInterval=setInterval(rxNextSymbol,rxInterval);
+}
+
+function rxNextSymbol(){
+  if(rxDone)return;
+  if(rxCurrent===rxTarget&&rxTapWindow){rxMisses++;}
+  const rate=gameData.targetRatio||0.35;
+  rxCurrent=Math.random()<rate?rxTarget:rxSymbols.filter(function(s){return s!==rxTarget;})[Math.floor(Math.random()*(rxSymbols.length-1))];
+  rxTapWindow=true;
+  const d=document.getElementById('rx-display');
+  d.textContent=rxCurrent;
+  d.className='rx-display'+(rxCurrent===rxTarget?' rx-target':'');
+}
+
+function rxTap(){
+  if(rxDone)return;
+  const d=document.getElementById('rx-display');
+  if(rxCurrent===rxTarget&&rxTapWindow){
+    rxHits++;rxTapWindow=false;
+    document.getElementById('rx-hits').textContent=rxHits;
+    d.style.background='rgba(0,184,148,0.25)';setTimeout(function(){if(d)d.style.background='';},200);
+  }else{
+    rxFalse++;document.getElementById('rx-false').textContent=rxFalse;
+    d.style.background='rgba(231,76,60,0.25)';setTimeout(function(){if(d)d.style.background='';},200);
+  }
+}
+
+function rxFinish(){
+  clearInterval(rxTimerInterval);clearInterval(rxSymInterval);
+  const timeSpent=Math.round((rxTotalTicks-rxTicksLeft)/10*10)/10;
+  const total=rxHits+rxMisses;
+  const pct=total>0?rxHits/total:0;
+  let outcome,level;
+  if(pct>=0.9&&rxFalse===0){outcome='Идеально';level=4;}else if(pct>=0.75){outcome='Отлично';level=3;}
+  else if(pct>=0.55){outcome='Хорошо';level=2;}else if(pct>=0.35){outcome='Неплохо';level=1;}else{outcome='Слабо';level=0;}
+  document.getElementById('reaction-game').innerHTML='<div style="text-align:center;padding:20px"><div style="font-size:1.4rem;font-weight:700;margin-bottom:8px">'+outcome+'</div><div style="font-size:1rem;color:var(--tg-theme-hint-color,#aaa)">Попаданий: '+rxHits+' · Промахов: '+rxMisses+' · Ложных: '+rxFalse+'</div></div>';
+  setTimeout(function(){sendResultToBot({game:'reaction',hits:rxHits,misses:rxMisses,falseAlarms:rxFalse,outcome,level,timeSpent});},600);
+}
+
+// ---- SORTING ----
+let sortRounds=[],sortIdx=0,sortCorrect=0,sortTapOrder=[],sortCurrentItems=[];
+let sortTimerInterval=null,sortTotalTicks=0,sortTicksLeft=0;
+
+function sortRandShuffle(arr){const a=arr.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function initSorting(){
+  document.getElementById('sorting-game').style.display='';
+  sortRounds=gameData.rounds||[];
+  const secs=gameData.timeLimit||20;
+  sortTotalTicks=secs*10;
+  document.getElementById('sort-ready-title').textContent=gameData.prompt||'Порядок';
+  document.getElementById('sort-ready-info').textContent=sortRounds.length+' раундов · '+secs+' сек';
+}
+
+function sortStart(){
+  document.getElementById('sort-ready').style.display='none';
+  document.getElementById('sort-play').style.display='';
+  sortIdx=0;sortCorrect=0;sortTicksLeft=sortTotalTicks;
+  sortShowRound();
+  sortTimerInterval=setInterval(function(){
+    sortTicksLeft=Math.max(0,sortTicksLeft-1);
+    const pct=sortTicksLeft/sortTotalTicks*100;
+    const fill=document.getElementById('sort-timer-fill');
+    if(fill){fill.style.width=pct+'%';fill.style.background=pct<30?'#e74c3c':pct<60?'#f39c12':'#00b894';}
+    if(sortTicksLeft<=0){clearInterval(sortTimerInterval);sortFinish();}
+  },100);
+}
+
+function sortShowRound(){
+  if(sortIdx>=sortRounds.length){clearInterval(sortTimerInterval);sortFinish();return;}
+  const round=sortRounds[sortIdx];
+  sortTapOrder=[];
+  sortCurrentItems=sortRandShuffle(round.items.map(function(item){
+    return{label:item.label||item,value:item.value!==undefined?item.value:0};
+  }));
+  document.getElementById('sort-round-label').textContent=(sortIdx+1)+' / '+sortRounds.length+' — '+(round.prompt||gameData.prompt||'Расставь по порядку');
+  document.getElementById('sort-feedback').textContent='';
+  const container=document.getElementById('sort-items');container.innerHTML='';
+  sortCurrentItems.forEach(function(item,di){
+    const btn=document.createElement('button');btn.className='sort-item';
+    btn.innerHTML='<span class="sort-badge" id="sort-badge-'+di+'">'+di+'</span>'+item.label;
+    btn.onclick=function(){sortTap(di,btn,round);};
+    container.appendChild(btn);
+  });
+}
+
+function sortTap(di,btn,round){
+  if(btn.classList.contains('selected'))return;
+  sortTapOrder.push(di);
+  const badge=document.getElementById('sort-badge-'+di);
+  badge.textContent=sortTapOrder.length;badge.style.visibility='visible';
+  btn.classList.add('selected');
+  if(sortTapOrder.length===sortCurrentItems.length){
+    const desc=round.order==='desc';
+    const sorted=sortCurrentItems.slice().sort(function(a,b){return desc?b.value-a.value:a.value-b.value;});
+    const ok=sortTapOrder.every(function(d,pos){return sortCurrentItems[d].value===sorted[pos].value;});
+    const fb=document.getElementById('sort-feedback');
+    fb.textContent=ok?'Верно':'Нет';fb.style.color=ok?'#00b894':'#e74c3c';
+    if(ok)sortCorrect++;
+    sortIdx++;setTimeout(sortShowRound,800);
+  }
+}
+
+function sortFinish(){
+  clearInterval(sortTimerInterval);
+  const timeSpent=Math.round((sortTotalTicks-sortTicksLeft)/10*10)/10;
+  const total=sortRounds.length,pct=total>0?sortCorrect/total:0;
+  let outcome,level;
+  if(pct>=1){outcome='Идеально';level=4;}else if(pct>=0.8){outcome='Отлично';level=3;}
+  else if(pct>=0.6){outcome='Хорошо';level=2;}else if(pct>=0.4){outcome='Неплохо';level=1;}else{outcome='Слабо';level=0;}
+  document.getElementById('sorting-game').innerHTML='<div style="text-align:center;padding:20px"><div style="font-size:1.4rem;font-weight:700;margin-bottom:8px">'+outcome+'</div><div style="font-size:1rem;color:var(--tg-theme-hint-color,#aaa)">'+sortCorrect+' из '+total+' · '+timeSpent+' сек</div></div>';
+  setTimeout(function(){sendResultToBot({game:'sorting',correct:sortCorrect,total,timeSpent,outcome,level});},600);
+}
+
+// ---- ESTIMATE ----
+let estRounds=[],estIdx=0,estScores=[],estGuesses=[],estActuals=[];
+
+function initEstimate(){
+  document.getElementById('estimate-game').style.display='';
+  estRounds=gameData.rounds||[{count:12,symbol:'●',showTime:1500}];
+  document.getElementById('est-ready-title').textContent=gameData.prompt||'Угадай число';
+  document.getElementById('est-ready-info').textContent=estRounds.length+' раундов · '+((estRounds[0].showTime||1500)/1000).toFixed(1)+' сек показа';
+}
+
+function estStart(){
+  document.getElementById('est-ready').style.display='none';
+  document.getElementById('est-play').style.display='';
+  estIdx=0;estScores=[];estGuesses=[];estActuals=[];
+  estShowRound();
+}
+
+function estShowRound(){
+  if(estIdx>=estRounds.length){estFinish();return;}
+  const round=estRounds[estIdx];
+  const sym=round.symbol||'●';
+  const count=round.count;
+  document.getElementById('est-round-label').textContent=(estIdx+1)+' / '+estRounds.length;
+  document.getElementById('est-guess-area').style.display='none';
+  const disp=document.getElementById('est-display');disp.textContent='';
+  for(let i=0;i<count;i++){
+    const el=document.createElement('span');el.className='est-dot-el';
+    el.textContent=sym;
+    el.style.left=(5+Math.random()*88)+'%';el.style.top=(5+Math.random()*80)+'%';
+    disp.appendChild(el);
+  }
+  const max=Math.max(count*2,20);
+  setTimeout(function(){
+    disp.textContent='?';
+    const sl=document.getElementById('est-slider');
+    sl.max=max;sl.min=1;sl.value=Math.round(max/2);
+    document.getElementById('est-slider-val').textContent=sl.value;
+    document.getElementById('est-guess-area').style.display='';
+  },round.showTime||1500);
+}
+
+function estSubmit(){
+  const round=estRounds[estIdx];
+  const guess=parseInt(document.getElementById('est-slider').value);
+  const actual=round.count;
+  estGuesses.push(guess);estActuals.push(actual);
+  estScores.push(Math.max(0,1-Math.abs(guess-actual)/actual));
+  estIdx++;estShowRound();
+}
+
+function estFinish(){
+  const avg=estScores.length>0?estScores.reduce(function(a,b){return a+b;},0)/estScores.length:0;
+  let outcome,level;
+  if(avg>=0.9){outcome='Идеально';level=4;}else if(avg>=0.75){outcome='Отлично';level=3;}
+  else if(avg>=0.6){outcome='Хорошо';level=2;}else if(avg>=0.4){outcome='Неплохо';level=1;}else{outcome='Слабо';level=0;}
+  document.getElementById('estimate-game').innerHTML='<div style="text-align:center;padding:20px"><div style="font-size:1.4rem;font-weight:700;margin-bottom:8px">'+outcome+'</div><div style="font-size:1rem;color:var(--tg-theme-hint-color,#aaa)">Точность: '+Math.round(avg*100)+'%</div></div>';
+  setTimeout(function(){sendResultToBot({game:'estimate',guesses:estGuesses,actuals:estActuals,avgAccuracy:Math.round(avg*100),outcome,level});},600);
 }
 
 // ---- FINDALL ----
@@ -1708,6 +2176,16 @@ if (game === 'blackjack') {
   initThresholds(); initModifiers(); bjNewGame();
 } else if (game === 'timing') {
   initTiming();
+} else if (game === 'memory') {
+  initMemory();
+} else if (game === 'oddone') {
+  initOddone();
+} else if (game === 'reaction') {
+  initReaction();
+} else if (game === 'sorting') {
+  initSorting();
+} else if (game === 'estimate') {
+  initEstimate();
 } else if (game === 'findall') {
   initFindall();
 } else if (game === 'compare') {
