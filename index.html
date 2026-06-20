@@ -299,8 +299,8 @@
   <div id="rx-play" style="display:none">
     <div class="cmp-timer-bar"><div class="cmp-timer-fill" id="rx-timer-fill"></div></div>
     <div class="rx-stats"><span>Попадания: <b id="rx-hits">0</b></span><span>Ложные: <b id="rx-false">0</b></span></div>
-    <div class="rx-display" id="rx-display"></div>
-    <button class="rx-tap-btn" id="rx-tap-btn" onclick="rxTap()">Тап!</button>
+    <div class="rx-display" id="rx-display" onclick="rxTap()" style="cursor:pointer;font-size:5rem;"></div>
+    <div style="text-align:center;font-size:0.8rem;color:var(--tg-theme-hint-color,#aaa);margin-top:8px">Тапни символ когда видишь мишень</div>
   </div>
 </div>
 
@@ -1133,7 +1133,7 @@ function initReaction(){
   rxTotalTicks=secs*10;
   document.getElementById('rx-ready-title').textContent=gameData.prompt||'Реакция';
   document.getElementById('rx-ready-target').textContent=rxTarget;
-  document.getElementById('rx-ready-info').textContent='Тапни только мишень · '+secs+' сек';
+  document.getElementById('rx-ready-info').textContent='Тапни символ только когда это мишень · по одному разу · '+secs+' сек';
 }
 
 function rxStart(){
@@ -1141,7 +1141,6 @@ function rxStart(){
   document.getElementById('rx-play').style.display='';
   rxHits=0;rxMisses=0;rxFalse=0;rxDone=false;rxTicksLeft=rxTotalTicks;
   document.getElementById('rx-hits').textContent='0';document.getElementById('rx-false').textContent='0';
-  document.getElementById('rx-tap-btn').disabled=false;
   rxTimerInterval=setInterval(function(){
     rxTicksLeft=Math.max(0,rxTicksLeft-1);
     const pct=rxTicksLeft/rxTotalTicks*100;
@@ -1170,10 +1169,12 @@ function rxTap(){
   if(rxCurrent===rxTarget&&rxTapWindow){
     rxHits++;rxTapWindow=false;
     document.getElementById('rx-hits').textContent=rxHits;
-    d.style.background='rgba(0,184,148,0.25)';setTimeout(function(){if(d)d.style.background='';},200);
-  }else{
+    d.style.background='rgba(0,184,148,0.35)';d.style.transform='scale(0.92)';
+    setTimeout(function(){if(d){d.style.background='';d.style.transform='';}},180);
+  }else if(rxTapWindow!==false||rxCurrent!==rxTarget){
     rxFalse++;document.getElementById('rx-false').textContent=rxFalse;
-    d.style.background='rgba(231,76,60,0.25)';setTimeout(function(){if(d)d.style.background='';},200);
+    d.style.background='rgba(231,76,60,0.35)';d.style.transform='scale(0.92)';
+    setTimeout(function(){if(d){d.style.background='';d.style.transform='';}},180);
   }
 }
 
