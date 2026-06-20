@@ -2329,15 +2329,21 @@ function initCard() {
   let deck=[...CG_BASE.map((c,i)=>({...c,uid:'b'+i}))];
   if(gameData.weapon_card && CG_BY_ID[gameData.weapon_card]) deck.push({...CG_BY_ID[gameData.weapon_card],uid:'w0'});
   if(gameData.magic_card && CG_BY_ID[gameData.magic_card]) deck.push({...CG_BY_ID[gameData.magic_card],uid:'m0'});
-  // also support cards array directly
   if(gameData.cards) gameData.cards.forEach((id,i)=>{ if(CG_BY_ID[id]) deck.push({...CG_BY_ID[id],uid:'x'+i}); });
   deck=cgShuffle(deck);
+  // enemy pattern: [{type:'attack',value:8},{type:'block',value:5},...]
+  // or simple attack: uses enemy.attack each turn
+  const pattern = enemy.pattern || [{type:'attack',value:enemy.attack||8}];
   cgs={deck,hand:[],discard:[],exhaust:[],
     playerHp:ph,playerMaxHp:ph,playerBlock:0,
     enemyHp:enemy.hp,enemyMaxHp:enemy.hp,
-    enemyAttack:enemy.attack||8,enemyName:enemy.name||'Враг',
+    enemyBlock:0,
+    enemyPattern:pattern,enemyPatIdx:0,
+    enemyName:enemy.name||'Враг',
+    enemyFlavor:enemy.flavor||[],flavorShown:{},
     enemyVulnerable:0,enemyWeak:0,
-    energy:3,maxEnergy:3,sel:null,turn:1,played:0};
+    energy:3,maxEnergy:3,sel:null,turn:1,played:0,
+    lowestHp:ph,damageTaken:0};
   // ready screen
   document.getElementById('cg-ready-title').textContent=gameData.prompt||'Карточный бой';
   document.getElementById('cg-ready-sub').textContent=
@@ -2393,8 +2399,9 @@ function cgPlaySelected(){
   const e=card.effect; const parts=['▶ '+card.name+':'];
   if(e.damage){
     let d=e.damage; if(cgs.enemyVulnerable>0) d=Math.floor(d*1.5);
+    const ebl=Math.min(d,cgs.enemyBlock); d-=ebl; cgs.enemyBlock=Math.max(0,cgs.enemyBlock-ebl);
     cgs.enemyHp=Math.max(0,cgs.enemyHp-d);
-    parts.push('💥'+(cgs.enemyVulnerable>0?d+'(×1.5)':d));
+    parts.push('💥'+(cgs.enemyVulnerable>0?d+'(×1.5)':d)+(ebl>0?' блок−'+ebl:''));
     if(e.lifesteal){const hl=Math.min(d,cgs.playerMaxHp-cgs.playerHp);cgs.playerHp+=hl;parts.push('❤️+'+hl);}
   }
   if(e.block){cgs.playerBlock+=e.block;parts.push('🛡+'+e.block);}
@@ -2406,6 +2413,7 @@ function cgPlaySelected(){
   cgLog(parts.join(' '));
   if(e.exhaust) cgs.exhaust.push(card); else cgs.discard.push(card);
   document.getElementById('cg-play-btn').disabled=true;
+  cgCheckFlavor();
   if(cgs.enemyHp<=0){cgEnd(true);return;}
   cgRenderHand(); cgUpdateUI();
 }
@@ -2414,33 +2422,68 @@ function cgEndTurn(){
   if(cgs.enemyHp<=0||cgs.playerHp<=0) return;
   cgs.discard.push(...cgs.hand); cgs.hand=[]; cgs.sel=null;
   cgLog('— Конец хода '+cgs.turn+' —');
-  // enemy turn
-  let atk=cgs.enemyAttack;
-  if(cgs.enemyWeak>0){atk=Math.floor(atk*0.7);cgs.enemyWeak--;}
-  const bl=Math.min(atk,cgs.playerBlock); const tk=atk-bl; cgs.playerBlock=0;
-  cgs.playerHp=Math.max(0,cgs.playerHp-tk);
-  let msg='👹'+cgs.enemyName+' '+atk+(cgs.enemyWeak>0?'(-30%)':'');
-  if(bl>0) msg+=' блок-'+bl; msg+=' → -'+tk+' HP';
-  cgLog(msg);
+  // enemy action from pattern
+  const step=cgs.enemyPattern[cgs.enemyPatIdx%cgs.enemyPattern.length];
+  cgs.enemyPatIdx++;
+  if(step.type==='attack'){
+    let atk=step.value;
+    if(cgs.enemyWeak>0){atk=Math.floor(atk*0.7);cgs.enemyWeak--;}
+    const bl=Math.min(atk,cgs.playerBlock); const tk=atk-bl; cgs.playerBlock=0;
+    cgs.playerHp=Math.max(0,cgs.playerHp-tk);
+    cgs.damageTaken+=tk; cgs.lowestHp=Math.min(cgs.lowestHp,cgs.playerHp);
+    let msg='👹'+cgs.enemyName+' атакует '+atk;
+    if(bl>0) msg+=' (блок −'+bl+')'; msg+=' → −'+tk+' HP';
+    cgLog(msg);
+  } else if(step.type==='block'){
+    cgs.enemyBlock+=step.value;
+    cgLog('🛡 '+cgs.enemyName+' блокируется (+'+step.value+')');
+  } else if(step.type==='buff'){
+    cgLog('✨ '+cgs.enemyName+': '+(step.text||'усиливается'));
+  }
   if(cgs.enemyVulnerable>0) cgs.enemyVulnerable--;
   if(cgs.playerHp<=0){cgEnd(false);return;}
   cgs.turn++; cgs.energy=cgs.maxEnergy; cgDraw(5); cgUpdateUI();
 }
 
+function cgGetIntent(){
+  const step=cgs.enemyPattern[cgs.enemyPatIdx%cgs.enemyPattern.length];
+  if(step.type==='attack'){
+    let v=step.value; if(cgs.enemyWeak>0) v=Math.floor(v*0.7);
+    return '⚔️ '+v+' урона'+(cgs.enemyWeak>0?' (−30%)':'');
+  } else if(step.type==='block') return '🛡 Блок '+step.value;
+  else if(step.type==='buff') return '✨ '+( step.text||'Усиление');
+  return '⚔️ ?';
+}
+
 function cgUpdateUI(){
   const s=cgs;
-  // enemy
   const eName=s.enemyName+(s.enemyVulnerable>0?' <span class="cg-status-tag cg-vuln">Уязв.</span>':'')+(s.enemyWeak>0?' <span class="cg-status-tag cg-weak">Слаб.</span>':'');
-  document.getElementById('cg-enemy-name').innerHTML=eName+' HP '+s.enemyHp+'/'+s.enemyMaxHp;
+  document.getElementById('cg-enemy-name').innerHTML=eName+' HP '+s.enemyHp+'/'+s.enemyMaxHp+(s.enemyBlock>0?' 🛡'+s.enemyBlock:'');
   document.getElementById('cg-enemy-hp-fill').style.width=Math.max(0,s.enemyHp/s.enemyMaxHp*100)+'%';
-  let intent='⚔️ '+s.enemyAttack+' урона'; if(s.enemyWeak>0) intent+=' (−30%)'; document.getElementById('cg-intent').textContent=intent;
-  // player
+  document.getElementById('cg-intent').textContent='Намерение: '+cgGetIntent();
   const pLabel='Герой HP '+s.playerHp+'/'+s.playerMaxHp+(s.playerBlock>0?' <span class="cg-status-tag cg-block-tag">🛡'+s.playerBlock+'</span>':'');
   document.getElementById('cg-player-label').innerHTML=pLabel;
   document.getElementById('cg-player-hp-fill').style.width=Math.max(0,s.playerHp/s.playerMaxHp*100)+'%';
-  // energy
   const ep=document.getElementById('cg-energy-pips'); ep.innerHTML='';
   for(let i=0;i<s.maxEnergy;i++){const p=document.createElement('div');p.className='cg-energy-pip'+(i<s.energy?' active':'');ep.appendChild(p);}
+}
+
+function cgCheckFlavor(){
+  const pct=cgs.enemyHp/cgs.enemyMaxHp;
+  cgs.enemyFlavor.forEach((f,i)=>{
+    if(!cgs.flavorShown[i] && pct<=f.at){
+      cgs.flavorShown[i]=true;
+      cgShowBanner(f.text||'');
+    }
+  });
+}
+
+function cgShowBanner(text){
+  const b=document.createElement('div');
+  b.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.85);color:#eee;padding:14px 20px;border-radius:12px;font-size:0.9rem;font-style:italic;text-align:center;max-width:280px;z-index:999;line-height:1.5;';
+  b.textContent=text; document.body.appendChild(b);
+  b.onclick=()=>b.remove();
+  setTimeout(()=>{ if(b.parentNode) b.remove(); },2500);
 }
 
 function cgEnd(won){
@@ -2452,7 +2495,10 @@ function cgEnd(won){
     ' · HP: '+cgs.playerHp+'/'+cgs.playerMaxHp+
     (won?' · Враг повержен':' · Пал в бою');
   const level=won?(cgs.playerHp>cgs.playerMaxHp*0.7?4:cgs.playerHp>cgs.playerMaxHp*0.3?3:2):1;
-  setTimeout(()=>sendResultToBot({game:'card',win:won,outcome:won?'Победа':'Поражение',level,turns:cgs.turn,cards_played:cgs.played,player_hp_remaining:cgs.playerHp,player_max_hp:cgs.playerMaxHp}),800);
+  setTimeout(()=>sendResultToBot({game:'card',win:won,outcome:won?'Победа':'Поражение',level,
+    turns:cgs.turn,cards_played:cgs.played,
+    player_hp_remaining:cgs.playerHp,player_max_hp:cgs.playerMaxHp,
+    lowest_hp:cgs.lowestHp,damage_taken:cgs.damageTaken}),800);
 }
 
 function cgLog(msg){ document.getElementById('cg-log').textContent=msg; }
