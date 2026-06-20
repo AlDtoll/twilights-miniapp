@@ -892,12 +892,13 @@ function cmpFinish() {
   else if (pct >= 0.6) { outcome = 'Хорошо'; level = 2; }
   else if (pct >= 0.4) { outcome = 'Неплохо'; level = 1; }
   else { outcome = 'Слабо'; level = 0; }
+  const timeSpent = Math.round((cmpTotalTicks - cmpTicksLeft) / 10 * 10) / 10;
   document.getElementById('compare-game').innerHTML =
     '<div style="text-align:center;padding:20px">' +
     '<div style="font-size:1.4rem;font-weight:700;margin-bottom:8px">' + outcome + '</div>' +
-    '<div style="font-size:1rem;color:var(--tg-theme-hint-color,#aaa)">' + cmpCorrect + ' из ' + total + '</div>' +
+    '<div style="font-size:1rem;color:var(--tg-theme-hint-color,#aaa)">' + cmpCorrect + ' из ' + total + ' · ' + timeSpent + ' сек</div>' +
     '</div>';
-  setTimeout(() => sendResultToBot({game:'compare', correct:cmpCorrect, total, outcome, level}), 600);
+  setTimeout(() => sendResultToBot({game:'compare', correct:cmpCorrect, total, outcome, level, timeSpent}), 600);
 }
 
 function sendResultToBot(result) {
