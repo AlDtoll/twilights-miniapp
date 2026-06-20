@@ -204,14 +204,21 @@
 <p class="subtitle" id="subtitle">Загрузка...</p>
 
 <div id="compare-game" style="display:none">
-  <div class="cmp-timer-bar"><div class="cmp-timer-fill" id="cmp-timer-fill"></div></div>
-  <div class="cmp-prompt" id="cmp-prompt"></div>
-  <div class="cmp-pair">
-    <button class="cmp-card" id="cmp-left" onclick="cmpChoose('left')"></button>
-    <button class="cmp-card" id="cmp-right" onclick="cmpChoose('right')"></button>
+  <div id="cmp-ready">
+    <div class="seq-ready-title" id="cmp-ready-title">Сравнение</div>
+    <div class="seq-ready-info" id="cmp-ready-info"></div>
+    <button class="confirm-btn" onclick="cmpStart()">Начать</button>
   </div>
-  <div class="cmp-progress" id="cmp-progress"></div>
-  <div class="cmp-feedback" id="cmp-feedback"></div>
+  <div id="cmp-play" style="display:none">
+    <div class="cmp-timer-bar"><div class="cmp-timer-fill" id="cmp-timer-fill"></div></div>
+    <div class="cmp-prompt" id="cmp-prompt"></div>
+    <div class="cmp-pair">
+      <button class="cmp-card" id="cmp-left" onclick="cmpChoose('left')"></button>
+      <button class="cmp-card" id="cmp-right" onclick="cmpChoose('right')"></button>
+    </div>
+    <div class="cmp-progress" id="cmp-progress"></div>
+    <div class="cmp-feedback" id="cmp-feedback"></div>
+  </div>
 </div>
 
 <div id="combat-game" style="display:none">
@@ -821,6 +828,15 @@ function initCompare() {
   cmpPairs = (gameData.pairs || []).slice();
   const secs = gameData.timeLimit || 15;
   cmpTotalTicks = secs * 10;
+  const prompt = gameData.prompt || 'Что больше?';
+  document.getElementById('cmp-ready-title').textContent = prompt;
+  document.getElementById('cmp-ready-info').textContent =
+    cmpPairs.length + ' пар · ' + secs + ' сек';
+}
+
+function cmpStart() {
+  document.getElementById('cmp-ready').style.display = 'none';
+  document.getElementById('cmp-play').style.display = '';
   cmpTicksLeft = cmpTotalTicks;
   cmpIdx = 0; cmpCorrect = 0;
   cmpShowPair();
@@ -861,7 +877,7 @@ function cmpChoose(side) {
   document.getElementById('cmp-' + other).disabled = true;
   if (!correct) document.getElementById('cmp-' + pair.answer).classList.add('correct');
   const fb = document.getElementById('cmp-feedback');
-  fb.textContent = correct ? '✓' : '✗';
+  fb.textContent = correct ? 'Верно' : 'Нет';
   fb.style.color = correct ? '#00b894' : '#e74c3c';
   cmpIdx++;
   setTimeout(cmpShowPair, 700);
@@ -876,10 +892,8 @@ function cmpFinish() {
   else if (pct >= 0.6) { outcome = 'Хорошо'; level = 2; }
   else if (pct >= 0.4) { outcome = 'Неплохо'; level = 1; }
   else { outcome = 'Слабо'; level = 0; }
-  const emoji = pct >= 0.8 ? '🏆' : pct >= 0.6 ? '✅' : pct >= 0.4 ? '⚡' : '💀';
   document.getElementById('compare-game').innerHTML =
     '<div style="text-align:center;padding:20px">' +
-    '<div style="font-size:2.5rem;margin-bottom:12px">' + emoji + '</div>' +
     '<div style="font-size:1.4rem;font-weight:700;margin-bottom:8px">' + outcome + '</div>' +
     '<div style="font-size:1rem;color:var(--tg-theme-hint-color,#aaa)">' + cmpCorrect + ' из ' + total + '</div>' +
     '</div>';
