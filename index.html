@@ -1302,7 +1302,10 @@ function estShowRound(){
   setTimeout(function(){
     disp.textContent='?';
     const sl=document.getElementById('est-slider');
-    sl.max=max;sl.min=1;sl.value=Math.round(max/2);
+    sl.max=max;sl.min=1;
+    const margin=Math.max(2,Math.round(count*0.25));
+    let sv;do{sv=Math.floor(1+Math.random()*max);}while(Math.abs(sv-count)<=margin);
+    sl.value=sv;
     document.getElementById('est-slider-val').textContent=sl.value;
     document.getElementById('est-guess-area').style.display='';
   },round.showTime||1500);
