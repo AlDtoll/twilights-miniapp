@@ -148,6 +148,125 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" combat \
 
 ---
 
+### compare — что больше/тяжелее/дальше
+
+Два объекта рядом. Игрок тапает тот, что больше (или что задал мастер). Несколько раундов на общее время.
+
+```bash
+python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" compare \
+  --rounds '[{"a":"Камень","b":"Перо","correct":"a"},{"a":"Мышь","b":"Кот","correct":"b"}]' \
+  --time 15 \
+  --prompt "Что тяжелее?"
+```
+
+- `rounds` — JSON-массив `{a, b, correct}`. `correct` — `"a"` или `"b"`.
+- `--time` — общее время на все раунды (сек, по умолчанию 15).
+- `--prompt` — вопрос-критерий (отображается над каждым раундом).
+
+Результат: `{"game":"compare","correct":4,"total":5,"timeSpent":9.2,"outcome":"Отлично","level":3}`
+
+---
+
+### estimate — оцени число точек
+
+На экране на секунду появляются точки (1–20). Игрок двигает слайдер на предполагаемое число.
+
+```bash
+python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" estimate \
+  --rounds '[{"count":7,"showTime":1200},{"count":14,"showTime":1200},{"count":19,"showTime":1200}]'
+```
+
+- `count` — количество точек (1–20).
+- `showTime` — мс показа (по умолчанию 1200).
+- Слайдер всегда 1–20, старт с 1.
+
+Результат: `{"game":"estimate","guesses":[7,15,18],"actuals":[7,14,19],"avgAccuracy":91,"outcome":"Отлично","level":3}`
+
+---
+
+### memory — найди все пары
+
+Поле перевёрнутых карточек. Открывать по две — если совпадают, остаются открытыми. На время.
+
+```bash
+python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" memory \
+  --rounds '[{"pairs":["🗡","🛡","🏹","💎","🔑","🌿"],"timeLimit":40}]'
+```
+
+- `pairs` — список символов (каждый встречается дважды, по умолчанию 8 пар).
+- `timeLimit` — секунды (по умолчанию 35).
+
+Результат: `{"game":"memory","found":8,"total":8,"timeSpent":28.4,"outcome":"Идеально","level":4}`
+
+---
+
+### oddone — найди лишнего
+
+Поле символов одного вида — один отличается. Тапнуть лишнего. Несколько раундов.
+
+```bash
+python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" oddone \
+  --rounds '[{"main":"★","odd":"☆","count":12},{"main":"●","odd":"○","count":16}]'
+```
+
+- `main` — основной символ, `odd` — лишний, `count` — всего символов в раунде.
+- По умолчанию 3 раунда с нарастающей сложностью.
+
+Результат: `{"game":"oddone","correct":5,"total":6,"timeSpent":11.4,"outcome":"Отлично","level":3}`
+
+---
+
+### reaction — поймай мишень
+
+На экране мелькают символы-отвлекалки и мишень. Тапнуть именно мишень — не промахнуться по другим.
+
+```bash
+python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" reaction \
+  --rounds '[{"target":"★","distractors":["●","■","▲"],"count":6,"interval":1200}]'
+```
+
+- `target` — мишень, `distractors` — отвлекалки, `count` — сколько раз появится мишень, `interval` — мс между сменой символа.
+- Тапать нужно по области экрана в момент когда видна мишень.
+
+Результат: `{"game":"reaction","hits":5,"total":6,"falseAlarms":1,"timeSpent":8.1,"outcome":"Отлично","level":3}`
+
+---
+
+### sorting — расставь по порядку
+
+Несколько элементов, нужно перетащить в правильном порядке (от начала к концу или как задаст мастер).
+
+```bash
+python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" sorting \
+  --rounds '[{"items":["Рассвет","Полдень","Закат","Ночь"],"prompt":"По времени суток"}]'
+```
+
+- `items` — элементы в правильном порядке (игрок видит их перемешанными).
+- `prompt` — критерий сортировки.
+
+Результат: `{"game":"sorting","correct":3,"total":4,"timeSpent":24,"outcome":"Хорошо","level":2}`
+
+---
+
+### findall — найди все одинаковые
+
+Поле символов — один вид целевой. Тапнуть все вхождения. Ошибка (лишний тап) = штраф.
+
+```bash
+python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" findall \
+  --rounds '[{"target":"★","symbols":["★","●","■","▲","♦"],"cols":6,"rows":6,"count":8}]' \
+  --time 30
+```
+
+- `target` — целевой символ, `symbols` — пул символов для заполнения поля.
+- `cols`/`rows` — размер сетки (по умолчанию 6×6), `count` — сколько мишеней на поле.
+- `--time` — лимит в секундах.
+- `wrongPenalty` — `"time"` (штраф 3 сек) или `"point"` (штраф к счёту).
+
+Результат: `{"game":"findall","effectiveFound":7,"total":8,"wrongTaps":1,"timeSpent":18,"outcome":"Отлично","level":3}`
+
+---
+
 ## Общие параметры
 
 | Параметр | Игры | Описание |
@@ -181,9 +300,14 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" combat \
 
 | Навык героя | Что добавить |
 |---|---|
-| Ловкость, рефлексы | timing `--slow-on-press`, уже более узкие зоны |
-| Сила, боевой опыт | blackjack `+2` модификатор |
+| Ловкость, рефлексы | timing `--slow-on-press`; reaction с коротким interval |
+| Сила, боевой опыт | blackjack `+2` модификатор; combat с высоким HP врагов |
 | Интеллект, образование | sequence — больше вопросов, меньше времени |
+| Восприятие, внимание | findall или oddone |
+| Память, сосредоточенность | memory — больше пар, меньше времени |
+| Оценка и счёт | estimate — больше точек (до 20), меньше showTime |
 | Предвидение, магия | blackjack `foresight-both` или `foresight-suit` |
 | Удача | blackjack без модификаторов, пороги мягче |
 | Харизма, убеждение | choice `--hints` — игрок видит последствия |
+| Организация, порядок | sorting — больше элементов, сложнее критерий |
+| Сравнение и оценка | compare — больше раундов, меньше общее время |
