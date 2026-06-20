@@ -1272,9 +1272,9 @@ let estRounds=[],estIdx=0,estScores=[],estGuesses=[],estActuals=[];
 
 function initEstimate(){
   document.getElementById('estimate-game').style.display='';
-  estRounds=gameData.rounds||[{count:12,symbol:'●',showTime:1500}];
+  estRounds=gameData.rounds||[{count:10,symbol:'●',showTime:1200}];
   document.getElementById('est-ready-title').textContent=gameData.prompt||'Оцени число';
-  document.getElementById('est-ready-info').textContent=estRounds.length+' раундов · '+((estRounds[0].showTime||1500)/1000).toFixed(1)+' сек показа';
+  document.getElementById('est-ready-info').textContent=estRounds.length+' раундов · '+((estRounds[0].showTime||1200)/1000).toFixed(1)+' сек показа';
 }
 
 function estStart(){
@@ -1298,17 +1298,13 @@ function estShowRound(){
     el.style.left=(5+Math.random()*88)+'%';el.style.top=(5+Math.random()*80)+'%';
     disp.appendChild(el);
   }
-  const max=Math.max(count*2,20);
   setTimeout(function(){
     disp.textContent='?';
     const sl=document.getElementById('est-slider');
-    sl.max=max;sl.min=1;
-    const margin=Math.max(2,Math.round(count*0.25));
-    let sv;do{sv=Math.floor(1+Math.random()*max);}while(Math.abs(sv-count)<=margin);
-    sl.value=sv;
-    document.getElementById('est-slider-val').textContent=sl.value;
+    sl.max=20;sl.min=1;sl.value=1;
+    document.getElementById('est-slider-val').textContent='1';
     document.getElementById('est-guess-area').style.display='';
-  },round.showTime||1500);
+  },round.showTime||1200);
 }
 
 function estSubmit(){
