@@ -379,7 +379,7 @@
   #hx-summary { text-align:center; font-size:0.78rem; color:rgba(255,255,255,0.6); margin-bottom:4px; }
 
   /* FFT ABILITY PANEL */
-  #hx-ability-panel { display:none; overflow-x:auto; -webkit-overflow-scrolling:touch; margin-bottom:4px; padding-bottom:2px; }
+  #hx-ability-panel { display:none; overflow-x:auto; -webkit-overflow-scrolling:touch; margin-bottom:4px; padding-bottom:2px; min-height:58px; }
   #hx-ability-panel::-webkit-scrollbar { height:3px; }
   #hx-ability-panel::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.2); border-radius:2px; }
   .hx-ability-row { display:flex; gap:5px; padding:2px 0; min-width:max-content; }
@@ -407,6 +407,9 @@
   .hx-ability-type-heal   { border-color:rgba(0,184,148,0.45); }
   .hx-ability-type-summon { border-color:rgba(155,89,182,0.5); }
   .hx-ability-type-debuff { border-color:rgba(243,156,18,0.4); }
+  .hx-ab-tier { font-size:8px; vertical-align:super; margin-left:2px; }
+  .hx-ab-tier.mid { color:#a0a0d0; }
+  .hx-ab-tier.strong { color:#f0c040; }
 
   @keyframes hxFlash { 0%{fill-opacity:0.9} 50%{fill-opacity:0.15} 100%{fill-opacity:0} }
   @keyframes hxPulse { 0%,100%{r:16} 50%{r:20} }
@@ -638,9 +641,9 @@
   </div>
   <div class="hx-turn-label" id="hx-turn-label">Ход игрока</div>
   <div id="hx-summary"></div>
-  <svg id="hx-svg" viewBox="0 0 408 222" xmlns="http://www.w3.org/2000/svg"></svg>
+  <svg id="hx-svg" viewBox="0 0 262 272" xmlns="http://www.w3.org/2000/svg"></svg>
   <div id="hx-legend" style="font-size:0.65rem; color:rgba(255,255,255,0.4); text-align:center; padding:2px 4px; line-height:1.6;">
-    🌲 +2 блок  ⛰ +2 атк (дальн.)  ⌖ Разлом  🪨 Непроход.  ⭐ Цель
+    🌳 Дерево +2 блок  🗿 Камни +2 атк (дальн.)  🌿 Кусты: -2 урон (дальн.)  ⌖ Разлом  🧱 Стена  ⭐ Цель
   </div>
   <div class="hx-log" id="hx-log">Выбери юнит и действуй!</div>
   <div class="hx-info" id="hx-info">
@@ -2900,8 +2903,8 @@ function cgShowBanner(text){
 function cgLog(msg){ document.getElementById('cg-log').textContent=msg; }
 
 // ---- HEX GAME (FFT-style) ----
-const HEX_COLS = 8, HEX_ROWS = 5;
-const HEX_SIZE = 24;
+const HEX_COLS = 7, HEX_ROWS = 8;
+const HEX_SIZE = 20;
 
 // ---- ABILITY LIBRARY ----
 // Weapon ability sets
@@ -3219,6 +3222,9 @@ function hxApplyAbility(caster, ability, primaryTarget) {
   if(isRanged && hxs.heights.some(([hc,hr])=>hc===caster.col&&hr===caster.row)) {
     bonusDmg = 2;
   }
+  // Кусты: цель в кустах снижает урон дальних/магических атак
+  const inBushes = (hxs.bushes||[]).some(([bc,br])=>bc===primaryTarget.col&&br===primaryTarget.row);
+  if(inBushes && isRanged) bonusDmg -= 2;
 
   // --- BLOCK self-buff ---
   if(eff?.type === 'block') {
@@ -3312,7 +3318,7 @@ function hxApplyAbility(caster, ability, primaryTarget) {
 
     const actualDmg = doHit(primaryTarget, totalDmg);
     let logMsg = `${caster.name} — ${ability.icon||''} ${ability.name}: ${actualDmg} урона → ${primaryTarget.name} (${primaryTarget.hp}/${primaryTarget.maxHp})`;
-    if(bonusDmg > 0) logMsg += ` [⛰+${bonusDmg}]`;
+    if(bonusDmg > 0) logMsg += ` [🗿+${bonusDmg}]`;
 
     hxFlashHex(primaryTarget.col, primaryTarget.row, 'rgba(231,76,60,0.75)');
 
@@ -3831,7 +3837,7 @@ function hexEnemyTurn() {
   const forestSet = new Set(hxs.forests.map(([fc,fr])=>`${fc},${fr}`));
   hxs.units.filter(u=>u.hp>0&&forestSet.has(`${u.col},${u.row}`)).forEach(u=>{
     u.block = (u.block||0) + 2;
-    hxLog(`🌲 ${u.name} укрылся в лесу (+2 блок)`, 'info');
+    hxLog(`🌳 ${u.name} укрылся в дереве (+2 блок)`, 'info');
   });
 
   // Necromancer cadaver aura for player necromancers
@@ -3912,13 +3918,14 @@ function hxRender() {
   const riftSet = new Set(hxs.rifts.map(([c,r])=>`${c},${r}`));
   const forestSet2 = new Set(hxs.forests.map(([c,r])=>`${c},${r}`));
   const heightSet = new Set(hxs.heights.map(([c,r])=>`${c},${r}`));
+  const bushSet = new Set((hxs.bushes||[]).map(([c,r])=>`${c},${r}`));
   for(let row=0; row<HEX_ROWS; row++) {
     for(let col=0; col<HEX_COLS; col++) {
       const {x,y} = hexToPixel(col,row);
       const key = `${col},${row}`;
-      let fill = riftSet.has(key) ? 'rgba(138,43,226,0.25)' : forestSet2.has(key) ? 'rgba(34,139,34,0.3)' : heightSet.has(key) ? 'rgba(139,90,43,0.35)' : 'rgba(255,255,255,0.04)';
-      let stroke = riftSet.has(key) ? '#9b59b6' : forestSet2.has(key) ? '#27ae60' : heightSet.has(key) ? '#8B5E3C' : '#444';
-      let sw = (riftSet.has(key)||forestSet2.has(key)||heightSet.has(key)) ? '1.2' : '0.8';
+      let fill = riftSet.has(key) ? 'rgba(138,43,226,0.25)' : forestSet2.has(key) ? 'rgba(34,139,34,0.3)' : heightSet.has(key) ? 'rgba(100,100,100,0.3)' : bushSet.has(key) ? 'rgba(34,80,34,0.3)' : 'rgba(255,255,255,0.04)';
+      let stroke = riftSet.has(key) ? '#9b59b6' : forestSet2.has(key) ? '#27ae60' : heightSet.has(key) ? '#777' : bushSet.has(key) ? '#3d8b40' : '#444';
+      let sw = (riftSet.has(key)||forestSet2.has(key)||heightSet.has(key)||bushSet.has(key)) ? '1.2' : '0.8';
       if(reachSet.has(key) && hxs.mode === 'move') { fill='rgba(52,152,219,0.28)'; stroke='#3498db'; sw='1.2'; }
       if(abilityTargetSet.has(key) && hxs.mode === 'ability') {
         fill = isHealAbility ? 'rgba(46,213,115,0.28)' : isSummonAbility ? 'rgba(162,155,254,0.3)' : 'rgba(255,140,0,0.28)';
@@ -3961,17 +3968,26 @@ function hxRender() {
         fLbl.setAttribute('text-anchor','middle'); fLbl.setAttribute('dominant-baseline','middle');
         fLbl.setAttribute('font-size','10'); fLbl.setAttribute('fill','rgba(39,174,96,0.8)');
         fLbl.setAttribute('pointer-events','none');
-        fLbl.textContent = '🌲';
+        fLbl.textContent = '🌳';
         svg.appendChild(fLbl);
       }
       if(heightSet.has(key)) {
         const hLbl = document.createElementNS('http://www.w3.org/2000/svg','text');
         hLbl.setAttribute('x', x); hLbl.setAttribute('y', y+1);
         hLbl.setAttribute('text-anchor','middle'); hLbl.setAttribute('dominant-baseline','middle');
-        hLbl.setAttribute('font-size','10'); hLbl.setAttribute('fill','rgba(139,90,43,0.85)');
+        hLbl.setAttribute('font-size','10'); hLbl.setAttribute('fill','rgba(150,150,150,0.9)');
         hLbl.setAttribute('pointer-events','none');
-        hLbl.textContent = '⛰';
+        hLbl.textContent = '🗿';
         svg.appendChild(hLbl);
+      }
+      if(bushSet.has(key)) {
+        const bLbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+        bLbl.setAttribute('x', x); bLbl.setAttribute('y', y+1);
+        bLbl.setAttribute('text-anchor','middle'); bLbl.setAttribute('dominant-baseline','middle');
+        bLbl.setAttribute('font-size','10'); bLbl.setAttribute('fill','rgba(61,139,64,0.9)');
+        bLbl.setAttribute('pointer-events','none');
+        bLbl.textContent = '🌿';
+        svg.appendChild(bLbl);
       }
     }
   }
@@ -4094,7 +4110,7 @@ function hxRender() {
     obstLbl.setAttribute('x', x); obstLbl.setAttribute('y', y+5);
     obstLbl.setAttribute('text-anchor','middle'); obstLbl.setAttribute('font-size','16');
     obstLbl.setAttribute('pointer-events','none');
-    obstLbl.textContent = '🪨';
+    obstLbl.textContent = '🧱';
     svg.appendChild(obstLbl);
   });
 
@@ -4261,7 +4277,8 @@ function hexUpdateInfo(unit) {
     if(nameEl)   nameEl.textContent  = 'Выбери персонажа';
     if(statsEl)  statsEl.textContent  = '';
     if(statusEl) statusEl.textContent = '';
-    if(panel)    panel.style.display  = 'none';
+    if(panel)    panel.style.display  = 'block';
+    if(row)      row.innerHTML = '';
     if(skipBtn)  skipBtn.disabled = true;
     return;
   }
@@ -4283,7 +4300,9 @@ function hexUpdateInfo(unit) {
   // Build ability panel (only for player units)
   if(!panel || !row) return;
   if(unit.team !== 'player' || hxs.turn !== 'player' || hxs.ended) {
-    panel.style.display = 'none'; return;
+    panel.style.display = 'block';
+    row.innerHTML = '';
+    return;
   }
   panel.style.display = 'block';
   row.innerHTML = '';
@@ -4306,7 +4325,8 @@ function hexUpdateInfo(unit) {
     btn.disabled = onCd || cantAct;
     const cdText = onCd ? `<span class="hx-ability-cd">⏳${ab.cooldown}</span>` : `<span class="hx-ability-cd ready">✓</span>`;
     const cdBadge = onCd ? `<span class="cd-badge">⏳${ab.cooldown}</span>` : '';
-    btn.innerHTML = `${cdBadge}<span class="hx-ability-icon">${ab.icon||'?'}</span><span class="hx-ability-name">${ab.name}</span>${cdText}`;
+    const tier = ab.maxCooldown === 0 ? '' : ab.maxCooldown <= 2 ? '<span class="hx-ab-tier mid">◆</span>' : '<span class="hx-ab-tier strong">★</span>';
+    btn.innerHTML = `${cdBadge}<span class="hx-ability-icon">${ab.icon||'?'}</span><span class="hx-ability-name">${ab.name}${tier}</span>${cdText}`;
     btn.onclick = () => hxSelectAbility(idx);
     // Long-press tooltip
     hxAttachAbilityTooltip(btn, ab);
@@ -4478,7 +4498,7 @@ function initHex() {
   const playerDefs = heroDef ? null : (Array.isArray(gameData.player_units) ? gameData.player_units : [{type:'warrior',name:'Воин'}]);
   const enemyDefs  = Array.isArray(gameData.enemy_units)  ? gameData.enemy_units  : [{type:'warrior',name:'Страж'}];
 
-  hxs = {units:[], turn:'player', selected:null, reachable:[], attackable:[], abilityTargets:[], activeAbilityIdx:null, mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, ended:false, rifts:[], forests:[], heights:[], obstacles:[], objective:null, enemyIntents:{}, totalDamageDealt:0, totalDamageTaken:0, aoeHover:null, abilitiesUsed:{}, hero: heroDef};
+  hxs = {units:[], turn:'player', selected:null, reachable:[], attackable:[], abilityTargets:[], activeAbilityIdx:null, mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, ended:false, rifts:[], forests:[], heights:[], obstacles:[], bushes:[], objective:null, enemyIntents:{}, totalDamageDealt:0, totalDamageTaken:0, aoeHover:null, abilitiesUsed:{}, hero: heroDef};
 
   let idCtr = 0;
 
@@ -4561,7 +4581,7 @@ function initHex() {
   // Place rifts in the center area, not on any unit
   const _occupied = new Set(hxs.units.map(u=>`${u.col},${u.row}`));
   const _riftCandidates = [];
-  for(let r=1; r<=3; r++) for(let c=2; c<=5; c++) {
+  for(let r=2; r<=5; r++) for(let c=2; c<=4; c++) {
     if(!_occupied.has(`${c},${r}`)) _riftCandidates.push([c,r]);
   }
   const _placed = new Set();
@@ -4573,12 +4593,12 @@ function initHex() {
     _occupied.add(`${rc},${rr}`);
   }
 
-  // PASS A: Place forests — col 1, random row; col 6, random row
-  const _forestColCandidates = [[1,0],[1,1],[1,2],[1,3],[1,4],[6,0],[6,1],[6,2],[6,3],[6,4]];
+  // PASS A: Place forests — col 1, random row; col 5, random row
+  const _forestColCandidates = [[1,0],[1,1],[1,2],[1,3],[1,4],[1,5],[1,6],[1,7],[5,0],[5,1],[5,2],[5,3],[5,4],[5,5],[5,6],[5,7]];
   const _forestCandidates = _forestColCandidates.filter(([c,r])=>!_occupied.has(`${c},${r}`));
-  // Prefer one from col 1, one from col 6
+  // Prefer one from col 1, one from col 5
   const _fc1 = _forestCandidates.filter(([c])=>c===1);
-  const _fc6 = _forestCandidates.filter(([c])=>c===6);
+  const _fc6 = _forestCandidates.filter(([c])=>c===5);
   let _forestsToPlace = _numForests;
   if(_fc1.length && _forestsToPlace > 0) {
     const pick = _fc1[Math.floor(Math.random()*_fc1.length)];
@@ -4589,8 +4609,8 @@ function initHex() {
     hxs.forests.push(pick); _occupied.add(`${pick[0]},${pick[1]}`); _forestsToPlace--;
   }
 
-  // PASS A: Place heights — col 3 or 4, row 0 or row 4
-  const _heightCandidates = [[3,0],[4,0],[3,4],[4,4]].filter(([c,r])=>!_occupied.has(`${c},${r}`));
+  // PASS A: Place heights — col 2-4, row 0 or row 7
+  const _heightCandidates = [[2,0],[3,0],[4,0],[2,7],[3,7],[4,7]].filter(([c,r])=>!_occupied.has(`${c},${r}`));
   for(let hi=0; hi<_numHeights && _heightCandidates.length; hi++) {
     const idx = Math.floor(Math.random() * _heightCandidates.length);
     const pick = _heightCandidates.splice(idx,1)[0];
@@ -4609,7 +4629,7 @@ function initHex() {
     ...(hxs.heights||[]).map(([c,r])=>`${c},${r}`),
   ]);
   const _obstCandidates = [];
-  for(let r=0;r<HEX_ROWS;r++) for(let c=2;c<=5;c++) {
+  for(let r=1;r<HEX_ROWS-1;r++) for(let c=2;c<=4;c++) {
     if(!_allBlocked.has(`${c},${r}`)) _obstCandidates.push([c,r]);
   }
   hxs.obstacles = [];
@@ -4620,8 +4640,22 @@ function initHex() {
     _allBlocked.add(`${oc},${or}`);
   }
 
+  // PASS E: Place bushes — passable, ranged/magic target gets -2 dmg
+  const _bushCandidates = [];
+  for(let r=1;r<HEX_ROWS-1;r++) {
+    if(!_allBlocked.has(`2,${r}`)) _bushCandidates.push([2,r]);
+    if(!_allBlocked.has(`4,${r}`)) _bushCandidates.push([4,r]);
+  }
+  hxs.bushes = [];
+  for(let i=0; i<2 && _bushCandidates.length; i++) {
+    const idx = Math.floor(Math.random()*_bushCandidates.length);
+    const pick = _bushCandidates.splice(idx,1)[0];
+    hxs.bushes.push(pick);
+    _allBlocked.add(`${pick[0]},${pick[1]}`);
+  }
+
   // PASS D: Place objective hex in center (col 3 or 4, row 2), avoiding obstacles
-  const _objCandidates = [[3,2],[4,2],[3,1],[4,1],[3,3],[4,3]].filter(([c,r])=>!_allBlocked.has(`${c},${r}`));
+  const _objCandidates = [[3,3],[3,4],[2,3],[4,3],[3,2],[3,5]].filter(([c,r])=>!_allBlocked.has(`${c},${r}`));
   if(_objCandidates.length > 0) {
     const [oc2,or2] = _objCandidates[0];
     hxs.objective = {col:oc2, row:or2, controlled:'none', playerTurns:0, enemyTurns:0};
