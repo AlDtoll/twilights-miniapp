@@ -3153,11 +3153,46 @@ function hexNeighbors(col, row) {
     .filter(([c,r]) => c>=0 && c<HEX_COLS && r>=0 && r<HEX_ROWS);
 }
 
+function hxObstAt(col, row) {
+  return (hxs.obstacles||[]).find(ob=>ob.col===col&&ob.row===row) || null;
+}
+
+// Returns true if a wall obstacle blocks line-of-sight between two hexes
+function hxLoSBlocked(c1, r1, c2, r2) {
+  const a = toCube(c1, r1), b = toCube(c2, r2);
+  const n = Math.max(Math.abs(a.x-b.x), Math.abs(a.y-b.y), Math.abs(a.z-b.z));
+  if(n <= 1) return false;
+  for(let i = 1; i < n; i++) {
+    const t = i / n;
+    const fx = a.x + (b.x-a.x)*t, fy = a.y + (b.y-a.y)*t, fz = a.z + (b.z-a.z)*t;
+    let rx = Math.round(fx), ry = Math.round(fy), rz = Math.round(fz);
+    const xd = Math.abs(rx-fx), yd = Math.abs(ry-fy), zd = Math.abs(rz-fz);
+    if(xd>yd&&xd>zd) rx=-ry-rz; else if(yd>zd) ry=-rx-rz; else rz=-rx-ry;
+    const mc = rx + (rz - (rz & 1)) / 2, mr = rz;
+    if(mc===c1&&mr===r1) continue;
+    if(mc===c2&&mr===r2) continue;
+    const ob = hxObstAt(mc, mr);
+    if(ob && ob.blocksLos) return true;
+  }
+  return false;
+}
+
+// Damage an obstacle; removes it when hp reaches 0
+function hxDamageObstacle(ob, dmg) {
+  ob.hp = Math.max(0, ob.hp - dmg);
+  hxLog(`💥 ${ob.type==='wall'?'🧱 Стена':'🪨 Обломки'}: ${dmg} урона (${ob.hp}/${ob.maxHp} HP)`, 'attack');
+  hxFlashHex(ob.col, ob.row, 'rgba(231,76,60,0.6)');
+  if(ob.hp <= 0) {
+    hxs.obstacles = hxs.obstacles.filter(x=>x!==ob);
+    hxLog(`🗑 ${ob.type==='wall'?'Стена разрушена':'Обломки расчищены'}!`, 'special');
+  }
+}
+
 function hexReachable(unit) {
   const range = unit.remainingMove !== undefined ? unit.remainingMove : unit.moveRange;
   const blocked = new Set([
     ...hxs.units.filter(u=>u.id!==unit.id&&u.hp>0).map(u=>`${u.col},${u.row}`),
-    ...(hxs.obstacles||[]).map(([c,r])=>`${c},${r}`),
+    ...(hxs.obstacles||[]).map(ob=>`${ob.col},${ob.row}`),
   ]);
   const visited = new Map([[`${unit.col},${unit.row}`, 0]]);
   const queue = [[unit.col, unit.row, 0]];
@@ -3187,27 +3222,32 @@ function hxAbilityTargets(unit, ability) {
   // PASS B: hero gets hex-based targeting — bright targets depend on ability type
   if(unit.isHero) {
     const result = [];
+    const isRangedMagic = ability.type === 'ranged' || ability.type === 'magic';
     const inRange = (c,r) => hexDist(unit.col,unit.row,c,r) <= ability.range &&
-                              !(hxs.obstacles||[]).some(([oc,or])=>oc===c&&or===r);
+                              !hxObstAt(c,r) &&
+                              !(isRangedMagic && hxLoSBlocked(unit.col,unit.row,c,r));
     if(ability.type === 'heal') {
-      // bright: allies in range
       hxs.units.filter(u=>u.team===unit.team&&u.hp>0&&inRange(u.col,u.row))
                .forEach(u=>result.push({col:u.col,row:u.row,isFreeHex:false}));
     } else if(ability.type === 'summon') {
-      // bright: empty hexes adjacent to unit
       const occupied = new Set(hxs.units.filter(u=>u.hp>0).map(u=>`${u.col},${u.row}`));
       for(let r=0;r<HEX_ROWS;r++) for(let c=0;c<HEX_COLS;c++) {
         if(inRange(c,r) && !occupied.has(`${c},${r}`)) result.push({col:c,row:r,isFreeHex:true});
       }
     } else if((ability.aoe||0) > 0) {
-      // AoE: bright on all in-range hexes (pick center anywhere)
       for(let r=0;r<HEX_ROWS;r++) for(let c=0;c<HEX_COLS;c++) {
-        if(inRange(c,r)) result.push({col:c,row:r,isFreeHex:true});
+        if(hexDist(unit.col,unit.row,c,r) <= ability.range &&
+           !(isRangedMagic && hxLoSBlocked(unit.col,unit.row,c,r)))
+          result.push({col:c,row:r,isFreeHex:true});
       }
     } else {
-      // Single-target damage/debuff: bright only on enemy hexes
+      // Single-target: enemies + obstacle hexes in range
       hxs.units.filter(u=>u.team!==unit.team&&u.hp>0&&inRange(u.col,u.row))
                .forEach(u=>result.push({col:u.col,row:u.row,isFreeHex:false}));
+      // Obstacles are also valid targets
+      (hxs.obstacles||[]).filter(ob=>hexDist(unit.col,unit.row,ob.col,ob.row)<=ability.range &&
+               !(isRangedMagic && hxLoSBlocked(unit.col,unit.row,ob.col,ob.row)))
+               .forEach(ob=>result.push({col:ob.col,row:ob.row,isFreeHex:true,isObstacle:true}));
     }
     return result;
   }
@@ -3255,11 +3295,15 @@ function hxConfirmApplyBtn() {
 
 // PASS B/C: confirm and apply hero ability at hex {col, row}
 function hxConfirmApply(unit, ab, col, row) {
-  // Resolve primaryTarget: find unit on hex, fallback to hex coords
   const unitOnTarget = hxs.units.find(u=>u.hp>0&&u.col===col&&u.row===row);
+  const obstOnTarget = hxObstAt(col, row);
   const primaryTarget = unitOnTarget || {col, row, isFreeHex:true};
 
-  // For heal: require ally on hex
+  const dmgForObst = () => {
+    const d = hxAbilityDamage(ab, unit);
+    return d > 0 ? d : Math.max(1, Math.round(unit.atk * 0.5));
+  };
+
   if(ab.type === 'heal') {
     const allyOnHex = hxs.units.find(u=>u.team===unit.team&&u.hp>0&&u.col===col&&u.row===row);
     if(!allyOnHex) {
@@ -3268,20 +3312,26 @@ function hxConfirmApply(unit, ab, col, row) {
     }
     hxApplyAbility(unit, ab, allyOnHex);
   } else if(ab.effect?.type === 'stun' && (ab.damage === 0 || !ab.damage)) {
-    // Stun-only: require enemy on hex
     if(!unitOnTarget || unitOnTarget.team === unit.team) {
       hxLog(`${ab.name}: нет врага на этом гексе.`, 'info');
       hxs.confirming = null; hxRender(); hexUpdateInfo(); return;
     }
     hxApplyAbility(unit, ab, unitOnTarget);
   } else if(!ab.aoe && primaryTarget.isFreeHex) {
-    // Single-target damage on empty hex — require enemy
-    const enemyInRange = hxs.units.find(u=>u.team!==unit.team&&u.hp>0&&u.col===col&&u.row===row);
-    if(!enemyInRange) {
-      hxLog(`${ab.name}: нет цели на этом гексе.`, 'info');
-      hxs.confirming = null; hxRender(); hexUpdateInfo(); return;
+    // Single-target on empty hex: check obstacle first, then enemy
+    if(obstOnTarget) {
+      hxDamageObstacle(obstOnTarget, dmgForObst());
+      hxMarkActed(unit, ab);
+      if(ab.maxCooldown > 0) ab.cooldown = ab.maxCooldown;
+      hexCheckEnd();
+    } else {
+      const enemyInRange = hxs.units.find(u=>u.team!==unit.team&&u.hp>0&&u.col===col&&u.row===row);
+      if(!enemyInRange) {
+        hxLog(`${ab.name}: нет цели на этом гексе.`, 'info');
+        hxs.confirming = null; hxRender(); hexUpdateInfo(); return;
+      }
+      hxApplyAbility(unit, ab, enemyInRange);
     }
-    hxApplyAbility(unit, ab, enemyInRange);
   } else {
     hxApplyAbility(unit, ab, primaryTarget);
   }
@@ -3322,6 +3372,11 @@ function hxApplyAbility(caster, ability, primaryTarget) {
   // Кусты: цель в кустах снижает урон дальних/магических атак
   const inBushes = (hxs.bushes||[]).some(([bc,br])=>bc===primaryTarget.col&&br===primaryTarget.row);
   if(inBushes && isRanged) bonusDmg -= 2;
+  // Укрытие: обломки рядом с целью снижают дальний урон
+  if(isRanged && !inBushes) {
+    const hasCover = (hxs.obstacles||[]).some(ob=>ob.type==='rubble'&&hexDist(ob.col,ob.row,primaryTarget.col,primaryTarget.row)===1&&hexDist(ob.col,ob.row,caster.col,caster.row)>1);
+    if(hasCover) { bonusDmg -= 2; }
+  }
 
   // --- BLOCK self-buff ---
   if(eff?.type === 'block') {
@@ -3427,6 +3482,13 @@ function hxApplyAbility(caster, ability, primaryTarget) {
         logMsg += `, ${sd}→${t.name}`;
         hxFlashHex(t.col, t.row, 'rgba(231,76,60,0.5)');
       });
+      // AoE also damages obstacles in radius
+      const aoeObst = (hxs.obstacles||[]).filter(ob=>hexDist(primaryTarget.col,primaryTarget.row,ob.col,ob.row)<=ability.aoe);
+      aoeObst.forEach(ob => {
+        const od = Math.round(totalDmg*0.6);
+        logMsg += `, ${od}→${ob.type==='wall'?'🧱':'🪨'}`;
+        hxDamageObstacle(ob, od);
+      });
     }
 
     // Chain (lightning)
@@ -3452,7 +3514,7 @@ function hxApplyAbility(caster, ability, primaryTarget) {
       const dr = primaryTarget.row - caster.row;
       const nc = primaryTarget.col + Math.sign(dc);
       const nr = primaryTarget.row + Math.sign(dr);
-      if(nc>=0&&nc<HEX_COLS&&nr>=0&&nr<HEX_ROWS&&!hxs.units.find(u=>u.col===nc&&u.row===nr&&u.hp>0)&&!hxs.obstacles.some(([oc,or])=>oc===nc&&or===nr)) {
+      if(nc>=0&&nc<HEX_COLS&&nr>=0&&nr<HEX_ROWS&&!hxs.units.find(u=>u.col===nc&&u.row===nr&&u.hp>0)&&!hxObstAt(nc,nr)) {
         primaryTarget.col = nc; primaryTarget.row = nr;
         logMsg += ' [отбросил]';
       }
@@ -3465,7 +3527,7 @@ function hxApplyAbility(caster, ability, primaryTarget) {
       const nc = primaryTarget.col + Math.sign(dc);
       const nr = primaryTarget.row + Math.sign(dr);
       const occupied = hxs.units.find(u=>u.id!==primaryTarget.id&&u.col===nc&&u.row===nr&&u.hp>0);
-      if(nc>=0&&nc<HEX_COLS&&nr>=0&&nr<HEX_ROWS&&!occupied&&!hxs.obstacles.some(([oc,or])=>oc===nc&&or===nr)) {
+      if(nc>=0&&nc<HEX_COLS&&nr>=0&&nr<HEX_ROWS&&!occupied&&!hxObstAt(nc,nr)) {
         primaryTarget.col = nc; primaryTarget.row = nr;
         logMsg += ' [притянул]';
       }
@@ -3639,7 +3701,7 @@ function hxPickEnemyAbility(enemy, players, allies) {
       const summoned = alive.filter(u=>summonedTypes.includes(u.type)&&u.team===enemy.team);
       if(summoned.length < 1) {
         const occupied = new Set(alive.map(u=>`${u.col},${u.row}`));
-        const obst = new Set((hxs.obstacles||[]).map(([c,r])=>`${c},${r}`));
+        const obst = new Set((hxs.obstacles||[]).map(ob=>`${ob.col},${ob.row}`));
         const freeHex = hexNeighbors(enemy.col,enemy.row).find(([nc,nr])=>!occupied.has(`${nc},${nr}`)&&!obst.has(`${nc},${nr}`));
         if(freeHex) return {ability:summonAb, target:{isFreeHex:true,col:freeHex[0],row:freeHex[1],id:`free_${freeHex[0]}_${freeHex[1]}`,team:'free',hp:1}};
       }
@@ -4238,13 +4300,17 @@ function hxRender() {
     }
   }
 
-  // Draw obstacle hexes
-  (hxs.obstacles||[]).forEach(([oc,or]) => {
-    const {x,y} = hexToPixel(oc,or);
+  // Draw obstacle hexes (with HP bar)
+  (hxs.obstacles||[]).forEach(ob => {
+    const {x,y} = hexToPixel(ob.col, ob.row);
+    const isWall = ob.type === 'wall';
+    const hpPct = ob.hp / ob.maxHp;
+    const fillColor = isWall ? `rgba(80,80,80,${0.5+0.3*hpPct})` : `rgba(120,80,40,${0.4+0.3*hpPct})`;
+    const strokeColor = isWall ? '#666' : '#8b5e3c';
     const obstPoly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
     obstPoly.setAttribute('points', hexPoints(x,y));
-    obstPoly.setAttribute('fill', 'rgba(80,80,80,0.6)');
-    obstPoly.setAttribute('stroke', '#555');
+    obstPoly.setAttribute('fill', fillColor);
+    obstPoly.setAttribute('stroke', strokeColor);
     obstPoly.setAttribute('stroke-width', '1.5');
     obstPoly.setAttribute('pointer-events','none');
     svg.appendChild(obstPoly);
@@ -4252,8 +4318,23 @@ function hxRender() {
     obstLbl.setAttribute('x', x); obstLbl.setAttribute('y', y+5);
     obstLbl.setAttribute('text-anchor','middle'); obstLbl.setAttribute('font-size','16');
     obstLbl.setAttribute('pointer-events','none');
-    obstLbl.textContent = '🧱';
+    obstLbl.textContent = isWall ? '🧱' : '🪨';
     svg.appendChild(obstLbl);
+    // HP bar (only if damaged)
+    if(ob.hp < ob.maxHp) {
+      const barW = HEX_SIZE * 1.2, barH = 4;
+      const barX = x - barW/2, barY = y + HEX_SIZE*0.55;
+      const bg = document.createElementNS('http://www.w3.org/2000/svg','rect');
+      bg.setAttribute('x', barX); bg.setAttribute('y', barY);
+      bg.setAttribute('width', barW); bg.setAttribute('height', barH);
+      bg.setAttribute('fill','#333'); bg.setAttribute('rx','2'); bg.setAttribute('pointer-events','none');
+      svg.appendChild(bg);
+      const fg = document.createElementNS('http://www.w3.org/2000/svg','rect');
+      fg.setAttribute('x', barX); fg.setAttribute('y', barY);
+      fg.setAttribute('width', barW * hpPct); fg.setAttribute('height', barH);
+      fg.setAttribute('fill', hpPct > 0.5 ? '#e67e22' : '#e74c3c'); fg.setAttribute('rx','2'); fg.setAttribute('pointer-events','none');
+      svg.appendChild(fg);
+    }
   });
 
   // Draw objective hex (PASS D) — update control status first
@@ -4719,8 +4800,10 @@ function hxClickHex(col, row) {
         nameEl.textContent = '🌿 Кусты'; statsEl.textContent = 'Укрытие: −2 урон от дальних атак';
       } else if((hxs.heights||[]).some(([c,r])=>c===col&&r===row)) {
         nameEl.textContent = '🗿 Камни'; statsEl.textContent = '+2 атк дальнобойным юнитам';
-      } else if((hxs.obstacles||[]).some(([c,r])=>c===col&&r===row)) {
-        nameEl.textContent = '🧱 Стена'; statsEl.textContent = 'Непроходимо';
+      } else if(hxObstAt(col,row)) {
+        const _ob = hxObstAt(col,row);
+        if(_ob.type==='wall') { nameEl.textContent = `🧱 Стена (${_ob.hp}/${_ob.maxHp})`; statsEl.textContent = 'Блокирует движение и дальний обзор'; }
+        else { nameEl.textContent = `🪨 Обломки (${_ob.hp}/${_ob.maxHp})`; statsEl.textContent = 'Укрытие: −2 урон от дальних атак; разрушаемо'; }
       } else if(hxs.objective&&hxs.objective.col===col&&hxs.objective.row===row) {
         nameEl.textContent = '⭐ Цель'; statsEl.textContent = `Захват: ${hxs.objective.playerTurns||0}/3 ходов`;
       }
@@ -4884,7 +4967,7 @@ function initHex() {
   const _forestSet0 = new Set(hxs.forests.map(([c,r])=>`${c},${r}`));
   hxs.units.filter(u=>u.hp>0&&_forestSet0.has(`${u.col},${u.row}`)).forEach(u=>{ u.block = (u.block||0) + 2; });
 
-  // PASS C: Place obstacles — 2 impassable hexes in middle columns
+  // PASS C: Place obstacles — 1 wall (blocks LoS) + 2 rubble (destructible, cover)
   const _allBlocked = new Set([
     ...hxs.units.map(u=>`${u.col},${u.row}`),
     ...(hxs.rifts||[]).map(([c,r])=>`${c},${r}`),
@@ -4896,10 +4979,22 @@ function initHex() {
     if(!_allBlocked.has(`${c},${r}`)) _obstCandidates.push([c,r]);
   }
   hxs.obstacles = [];
-  for(let i=0;i<2&&_obstCandidates.length;i++){
+  // 1 wall
+  if(_obstCandidates.length) {
     const idx=Math.floor(Math.random()*_obstCandidates.length);
     const [oc,or]=_obstCandidates.splice(idx,1)[0];
-    hxs.obstacles.push([oc,or]);
+    hxs.obstacles.push({col:oc,row:or,hp:50,maxHp:50,type:'wall',blocksLos:true});
+    _allBlocked.add(`${oc},${or}`);
+  }
+  // 2 rubble (from wider area)
+  const _rubbleCandidates = [];
+  for(let r=1;r<HEX_ROWS-1;r++) for(let c=1;c<=5;c++) {
+    if(!_allBlocked.has(`${c},${r}`)) _rubbleCandidates.push([c,r]);
+  }
+  for(let i=0;i<2&&_rubbleCandidates.length;i++){
+    const idx=Math.floor(Math.random()*_rubbleCandidates.length);
+    const [oc,or]=_rubbleCandidates.splice(idx,1)[0];
+    hxs.obstacles.push({col:oc,row:or,hp:5,maxHp:5,type:'rubble',blocksLos:false});
     _allBlocked.add(`${oc},${or}`);
   }
 
