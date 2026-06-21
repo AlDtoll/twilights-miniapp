@@ -3995,6 +3995,11 @@ function hxLog(msg, type) {
 function hxRender() {
   const svg = document.getElementById('hx-svg');
   svg.innerHTML = '';
+  // Dark background rect so highlight colors are consistent regardless of Telegram theme
+  const bgR = document.createElementNS('http://www.w3.org/2000/svg','rect');
+  bgR.setAttribute('x','0'); bgR.setAttribute('y','0'); bgR.setAttribute('width','262'); bgR.setAttribute('height','272');
+  bgR.setAttribute('fill','#1a1a2e'); bgR.setAttribute('pointer-events','none');
+  svg.appendChild(bgR);
   const reachSet = new Set(hxs.reachable.map(([c,r])=>`${c},${r}`));
   // abilityTargets can contain units or free hexes
   const abilityTargetSet = new Set(hxs.abilityTargets.map(t=>`${t.col},${t.row}`));
@@ -4034,16 +4039,16 @@ function hxRender() {
       let stroke = riftSet.has(key) ? '#9b59b6' : forestSet2.has(key) ? '#27ae60' : heightSet.has(key) ? '#777' : bushSet.has(key) ? '#3d8b40' : '#444';
       let sw = (riftSet.has(key)||forestSet2.has(key)||heightSet.has(key)||bushSet.has(key)) ? '1.2' : '0.8';
       if(reachSet.has(key) && hxs.mode === 'move') { fill='rgba(52,152,219,0.28)'; stroke='#3498db'; sw='1.2'; }
-      if(abilityRangeSet.has(key) && hxs.mode === 'ability' && !abilityTargetSet.has(key)) { fill='rgba(255,100,0,0.1)'; stroke='rgba(255,100,0,0.35)'; sw='0.8'; }
+      if(abilityRangeSet.has(key) && hxs.mode === 'ability' && !abilityTargetSet.has(key)) { fill='rgba(255,235,0,0.12)'; stroke='rgba(255,235,0,0.4)'; sw='0.9'; }
       if(abilityTargetSet.has(key) && hxs.mode === 'ability') {
-        fill = isHealAbility ? 'rgba(46,213,115,0.28)' : isSummonAbility ? 'rgba(162,155,254,0.3)' : 'rgba(255,140,0,0.28)';
-        stroke = isHealAbility ? '#2ed573' : isSummonAbility ? '#a29bfe' : '#ff8c00';
-        sw = '1.5';
+        fill = isHealAbility ? 'rgba(0,255,120,0.45)' : isSummonAbility ? 'rgba(180,100,255,0.45)' : 'rgba(255,235,0,0.55)';
+        stroke = isHealAbility ? '#00ff88' : isSummonAbility ? '#cc66ff' : '#ffee00';
+        sw = '2';
       }
       // AoE splash preview overlay (over ability target highlight)
       if(aoePreviewSet.has(key) && hxs.mode === 'ability') {
-        fill = 'rgba(230,126,34,0.3)';
-        stroke = '#e67e22'; sw = '1.5';
+        fill = 'rgba(255,140,0,0.5)';
+        stroke = '#ff9900'; sw = '2';
       }
       const poly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
       poly.setAttribute('points', hexPoints(x,y));
