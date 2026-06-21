@@ -281,8 +281,9 @@
   .cg-detail-term-def { font-size:0.75rem; color:var(--tg-theme-hint-color,#bbb); margin-top:1px; }
   .cg-log { font-size: 0.8rem; padding: 8px 10px; background: rgba(0,0,0,0.2); border-radius: 8px; min-height: 34px; line-height: 1.5; color: var(--tg-theme-hint-color,#aaa); }
   .cg-hand-label { font-size: 0.7rem; color: var(--tg-theme-hint-color,#aaa); }
-  .cg-hand { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 8px; min-height: 130px; align-items: flex-end; -webkit-overflow-scrolling: touch; }
-  .cg-hand::-webkit-scrollbar { display: none; }
+  .cg-hand-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-top: 14px; }
+  .cg-hand-wrap::-webkit-scrollbar { display: none; }
+  .cg-hand { display: flex; gap: 6px; padding: 0 4px 8px; min-height: 120px; align-items: flex-end; min-width: max-content; }
   .cg-card { flex-shrink:0; width:88px; min-height:120px; border-radius:10px; background:rgba(20,20,40,0.95); border:2px solid rgba(255,255,255,0.12); padding:8px 6px 6px; cursor:pointer; display:flex; flex-direction:column; gap:3px; position:relative; transition:transform 0.15s, border-color 0.15s; user-select:none; -webkit-tap-highlight-color:transparent; }
   .cg-card[data-type="attack"] { border-color:rgba(231,76,60,0.45); }
   .cg-card[data-type="defense"] { border-color:rgba(52,152,219,0.45); }
@@ -491,7 +492,7 @@
     </div>
     <div class="cg-log" id="cg-log">Ход 1. Тяни и играй карты!</div>
     <div class="cg-hand-label" id="cg-hand-label">Рука (0)</div>
-    <div class="cg-hand" id="cg-hand"></div>
+    <div class="cg-hand-wrap"><div class="cg-hand" id="cg-hand"></div></div>
     <div class="cg-piles" id="cg-piles">
       <div class="cg-pile-btn" onclick="cgShowPile('deck')">
         <div class="cg-pile-icon">🂠</div>
@@ -2469,7 +2470,8 @@ function cgShowPile(type){
       const el=document.createElement('div'); el.className='cg-ov-card'; el.dataset.type=card.type;
       const icon=card.type==='attack'?'⚔️':card.type==='defense'?'🛡':'✨';
       const typeName=card.type==='attack'?'Атака':card.type==='defense'?'Защита':'Умение';
-      el.innerHTML=`<div class="cg-ov-name">${icon} ${card.name} <span class="cg-ov-meta">${typeName}${card.rarity==='rare'?' ★':''} · ${card.cost}⚡</span></div><div class="cg-ov-desc">${card.description}</div>`;
+      el.innerHTML=`<div class="cg-ov-name">${icon} ${card.name} <span class="cg-ov-meta">${typeName}${card.rarity==='rare'?' ★':''} · ${card.cost}⚡</span></div><div class="cg-ov-desc">${card.description}</div><div class="cg-ov-meta" style="margin-top:4px;font-size:0.62rem">Тап — подробнее</div>`;
+      el.onclick=()=>{ document.getElementById('cg-overlay').style.display='none'; cgShowCardDetail(card); };
       list.appendChild(el);
     });
   }
