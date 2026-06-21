@@ -2759,11 +2759,19 @@ const HEX_COLS = 8, HEX_ROWS = 5;
 const HEX_SIZE = 24;
 
 const HEX_UNIT_DEFS = {
-  warrior:  {name:'Воин',    emoji:'🗡', hp:25, atk:8,  moveRange:2, atkRange:1, special:{name:'Оборона',      desc:'Щит 10 HP до след. хода', id:'shield'}},
-  archer:   {name:'Лучник',  emoji:'🏹', hp:18, atk:6,  moveRange:2, atkRange:2, special:{name:'Прицел',       desc:'Следующая атака ×2 урона', id:'aim'}},
-  cavalry:  {name:'Всадник', emoji:'⚔',  hp:20, atk:9,  moveRange:4, atkRange:1, special:{name:'Натиск',       desc:'15 урона + сдвиг цели', id:'charge'}},
-  mage:     {name:'Маг',     emoji:'🔥', hp:14, atk:7,  moveRange:2, atkRange:2, special:{name:'Огненный шар', desc:'12 ур. цели + 6 соседям', id:'fireball'}},
-  healer:   {name:'Лекарь',  emoji:'💚', hp:16, atk:4,  moveRange:2, atkRange:2, special:{name:'Исцеление',    desc:'+10 HP союзнику', id:'heal'}},
+  warrior:      {name:'Воин',        emoji:'🗡', hp:25, atk:8,  moveRange:2, atkRange:1, special:{name:'Оборона',         desc:'Щит 10 HP до след. хода', id:'shield'}},
+  archer:       {name:'Лучник',      emoji:'🏹', hp:18, atk:6,  moveRange:2, atkRange:2, special:{name:'Прицел',          desc:'Следующая атака ×2 урона', id:'aim'}},
+  cavalry:      {name:'Всадник',     emoji:'⚔',  hp:20, atk:9,  moveRange:4, atkRange:1, special:{name:'Натиск',          desc:'15 урона + сдвиг цели', id:'charge'}},
+  wizard:       {name:'Волшебник',   emoji:'🔮', hp:14, atk:7,  moveRange:2, atkRange:2, special:{name:'Молния',          desc:'12 ур. + цепь 6 ближайшему врагу', id:'lightning'}},
+  druid:        {name:'Друид',       emoji:'🌿', hp:16, atk:4,  moveRange:2, atkRange:2, special:{name:'Токи жизни',      desc:'Исцелить соседнего союзника +10 HP', id:'lifeflow'}},
+  incenser:     {name:'Кадильщик',   emoji:'💨', hp:15, atk:5,  moveRange:2, atkRange:2, special:{name:'Дымовое облако',  desc:'−3 атк всем врагам в радиусе 2 на 1 ход', id:'smoke'}},
+  demonologist: {name:'Демонолог',   emoji:'👁', hp:14, atk:6,  moveRange:2, atkRange:2, special:{name:'Вызов Тени',      desc:'Призвать Тень (10 HP, 4 атк) на соседний гекс', id:'summon_shadow'}},
+  necromancer:  {name:'Некромант',   emoji:'💀', hp:16, atk:5,  moveRange:2, atkRange:2, special:{name:'Поднять кадавр', desc:'Поднять павшего врага кадавром (12 HP, 5 атк)', id:'raise_cadaver'}},
+  shadow:       {name:'Тень',        emoji:'👤', hp:10, atk:4,  moveRange:3, atkRange:1, special:{name:'—', desc:'', id:'none'}},
+  cadaver:      {name:'Кадавр',      emoji:'💀', hp:12, atk:5,  moveRange:1, atkRange:1, special:{name:'—', desc:'', id:'none'}},
+  // Legacy aliases
+  mage:         {name:'Маг',         emoji:'🔥', hp:14, atk:7,  moveRange:2, atkRange:2, special:{name:'Огненный шар',   desc:'12 ур. цели + 6 соседям', id:'fireball'}},
+  healer:       {name:'Лекарь',      emoji:'💚', hp:16, atk:4,  moveRange:2, atkRange:2, special:{name:'Исцеление',      desc:'+10 HP союзнику', id:'heal'}},
 };
 
 let hxs = {
@@ -2832,7 +2840,8 @@ function hexAttackable(unit) {
 }
 
 function hexAttack(attacker, target) {
-  let dmg = attacker.atk;
+  let dmg = attacker.atk - (attacker.atkDebuff || 0);
+  if(dmg < 0) dmg = 0;
   if(attacker.aimBonus) { dmg *= 2; attacker.aimBonus = false; }
   const blocked = Math.min(dmg, target.block);
   target.block = Math.max(0, target.block - blocked);
@@ -2848,17 +2857,19 @@ function hexStartPositions(count, col) {
 }
 
 function hexCheckEnd() {
-  const playerAlive = hxs.units.some(u=>u.team==='player'&&u.hp>0);
-  const enemyAlive  = hxs.units.some(u=>u.team==='enemy'&&u.hp>0);
-  if(!enemyAlive) hexEnd(true);
+  const enemyStillFighting = hxs.units.some(u => u.originalTeam==='enemy' && u.team==='enemy' && u.hp>0);
+  const playerAlive = hxs.units.some(u => (u.originalTeam==='player' || u.originalTeam==='enemy' && u.team==='player') && u.hp>0);
+  if(!enemyStillFighting) hexEnd(true);
   else if(!playerAlive) hexEnd(false);
 }
 
 function hexEnd(won) {
   hxs.ended = true;
   document.getElementById('hx-end-btn').disabled = true;
-  const playerUnitsAlive = hxs.units.filter(u=>u.team==='player'&&u.hp>0).length;
-  const totalPlayer = hxs.units.filter(u=>u.team==='player').length;
+  const playerUnitsAlive = hxs.units.filter(u=>u.originalTeam==='player'&&u.hp>0).length;
+  const totalPlayer = hxs.units.filter(u=>u.originalTeam==='player').length;
+  const enemies_defeated = hxs.units.filter(u=>u.originalTeam==='enemy'&&(u.hp<=0||u.team==='player')).length;
+  const enemies_total = hxs.units.filter(u=>u.originalTeam==='enemy').length;
   hxs.log = won ? '🏆 Победа! Все враги повержены.' : '💀 Поражение...';
   hxRender();
   setTimeout(() => sendResultToBot({
@@ -2867,8 +2878,8 @@ function hexEnd(won) {
     turns: hxs.turnNum,
     player_units_alive: playerUnitsAlive,
     player_units_total: totalPlayer,
-    enemies_defeated: hxs.units.filter(u=>u.team==='enemy'&&u.hp<=0).length,
-    enemies_total: hxs.units.filter(u=>u.team==='enemy').length,
+    enemies_defeated,
+    enemies_total,
   }), 1200);
 }
 
@@ -2890,6 +2901,21 @@ function hexEnemyTurn() {
       } else if(sid === 'aim' && !enemy.attacked && players.length > 0) {
         enemy.aimBonus = true; enemy.specialUsed = true;
         hxs.log = `${enemy.name} прицеливается!`;
+      } else if(sid === 'lightning') {
+        // use lightning if any player in range 2
+        const inRange2 = players.filter(p => hexDist(enemy.col,enemy.row,p.col,p.row) <= 2);
+        if(inRange2.length > 0) {
+          const target = inRange2[0];
+          let dmg = Math.max(0, 12 - Math.min(12, target.block));
+          target.block = Math.max(0, target.block - 12);
+          target.hp = Math.max(0, target.hp - dmg);
+          const chainT = players.filter(p=>p.hp>0&&p.id!==target.id).sort((a,b2)=>hexDist(target.col,target.row,a.col,a.row)-hexDist(target.col,target.row,b2.col,b2.row))[0];
+          if(chainT) { chainT.hp = Math.max(0, chainT.hp - 6); }
+          enemy.specialUsed = true; enemy.attacked = true;
+          hxs.log = `${enemy.name} — Молния! ${dmg} урона ${target.name}${chainT?` + цепь → ${chainT.name}`:''}!`;
+          hexCheckEnd(); if(hxs.ended) return;
+          continue;
+        }
       } else if(sid === 'fireball') {
         // use fireball if 2+ player units nearby
         const adj2 = players.filter(p => {
@@ -2908,6 +2934,15 @@ function hexEnemyTurn() {
           hexCheckEnd(); if(hxs.ended) return;
           continue;
         }
+      } else if(sid === 'lifeflow') {
+        const adjWounded = enemies.filter(e => e.hp>0 && e.hp/e.maxHp < 0.6 && e.id!==enemy.id && hexDist(enemy.col,enemy.row,e.col,e.row)===1);
+        if(adjWounded.length > 0) {
+          const t = adjWounded.reduce((a,b) => a.hp<=b.hp ? a : b);
+          t.hp = Math.min(t.maxHp, t.hp + 10);
+          enemy.specialUsed = true; enemy.attacked = true;
+          hxs.log = `${enemy.name} — Токи жизни: ${t.name} +10 HP!`;
+          continue;
+        }
       } else if(sid === 'heal') {
         const wounded = enemies.filter(e => e.hp>0 && e.hp/e.maxHp < 0.5 && e.id!==enemy.id);
         if(wounded.length > 0) {
@@ -2915,6 +2950,52 @@ function hexEnemyTurn() {
           t.hp = Math.min(t.maxHp, t.hp + 10);
           enemy.specialUsed = true; enemy.attacked = true;
           hxs.log = `${enemy.name} исцеляет ${t.name} на 10 HP!`;
+          continue;
+        }
+      } else if(sid === 'smoke') {
+        // Use smoke if 2+ player units within range 2
+        const nearPlayers = players.filter(p => hexDist(enemy.col,enemy.row,p.col,p.row) <= 2);
+        if(nearPlayers.length >= 2) {
+          nearPlayers.forEach(u => { u.atkDebuff = (u.atkDebuff||0)+3; });
+          enemy.specialUsed = true; enemy.attacked = true;
+          hxs.log = `${enemy.name} — Дымовое облако! Игроки −3 к атаке.`;
+          continue;
+        }
+      } else if(sid === 'summon_shadow') {
+        // Use shadow summon if outnumbered (player units > enemy units)
+        const playerCount = players.length;
+        const enemyCount = enemies.filter(e=>e.hp>0).length;
+        if(playerCount > enemyCount) {
+          const nbrs = hexNeighbors(enemy.col, enemy.row);
+          const occupied = new Set(hxs.units.filter(u=>u.hp>0).map(u=>`${u.col},${u.row}`));
+          const emptyAdj = nbrs.filter(([c,r])=>!occupied.has(`${c},${r}`));
+          if(emptyAdj.length > 0) {
+            const [sc,sr] = emptyAdj[0];
+            hxs.units.push({
+              id: hxs.units.length, type:'shadow',
+              name:'Тень', team:'enemy', originalTeam:'enemy',
+              col:sc, row:sr,
+              hp:10, maxHp:10, atk:4, moveRange:3, atkRange:1,
+              block:0, aimBonus:false, moved:false, attacked:false, specialUsed:true,
+              emoji:'👤', special:{name:'—', desc:'', id:'none'},
+            });
+            enemy.specialUsed = true; enemy.attacked = true;
+            hxs.log = `${enemy.name} призывает Тень!`;
+            continue;
+          }
+        }
+      } else if(sid === 'raise_cadaver') {
+        // Raise a dead player unit as a cadaver (enemy team)
+        const deadPlayer = hxs.units.filter(u=>u.originalTeam==='player'&&u.hp<=0&&u.team==='player');
+        if(deadPlayer.length > 0) {
+          const corpse = deadPlayer[0];
+          corpse.team='enemy'; corpse.type='cadaver'; corpse.name='Кадавр';
+          corpse.hp=12; corpse.maxHp=12; corpse.atk=5; corpse.moveRange=1; corpse.atkRange=1;
+          corpse.block=0; corpse.moved=false; corpse.attacked=false; corpse.specialUsed=true;
+          corpse.emoji='💀'; corpse.special={name:'—', desc:'', id:'none'};
+          enemy.specialUsed = true; enemy.attacked = true;
+          hxs.log = `${enemy.name} поднимает кадавр из павшего!`;
+          hexCheckEnd(); if(hxs.ended) return;
           continue;
         }
       }
@@ -2962,8 +3043,8 @@ function hexEnemyTurn() {
     }
   }
 
-  // Reset for next player turn
-  hxs.units.forEach(u => { u.moved = false; u.attacked = false; });
+  // Reset for next player turn — clear debuffs
+  hxs.units.forEach(u => { u.moved = false; u.attacked = false; u.atkDebuff = 0; });
   hxs.turnNum++;
   hxs.turn = 'player';
   hxs.selected = null;
@@ -2998,10 +3079,10 @@ function hxRender() {
       if(specSet.has(key)) {
         const unit = hxs.units.find(u=>u.col===col&&u.row===row&&u.hp>0);
         if(unit) {
-          fill = hxs.mode==='special'&&hxs.units.find(u=>u.id===hxs.selected)?.special?.id==='heal'
-            ? 'rgba(46,213,115,0.28)' : 'rgba(255,165,0,0.28)';
-          stroke = hxs.mode==='special'&&hxs.units.find(u=>u.id===hxs.selected)?.special?.id==='heal'
-            ? '#2ed573' : '#ffa500';
+          const selUnit = hxs.units.find(u=>u.id===hxs.selected);
+          const isHeal = selUnit?.special?.id==='heal' || selUnit?.special?.id==='lifeflow';
+          fill = hxs.mode==='special' && isHeal ? 'rgba(46,213,115,0.28)' : 'rgba(255,165,0,0.28)';
+          stroke = hxs.mode==='special' && isHeal ? '#2ed573' : '#ffa500';
           sw = '1.5';
         }
       }
@@ -3189,11 +3270,25 @@ function hxUseSpecial() {
     hxs.log=`${unit.name} — Натиск! ${dmg} урона ${t.name}!`;
     hxs.reachable=[]; hxs.attackable=[];
     hxRender(); hexUpdateInfo(); hexCheckEnd();
+  } else if(sid==='lightning') {
+    // Enter special target mode — pick enemy
+    const targets = hxs.units.filter(u=>u.team==='enemy'&&u.hp>0);
+    if(!targets.length) { hxs.log='Нет цели для Молнии!'; hxRender(); return; }
+    hxs.specialTarget=targets; hxs.mode='special';
+    hxs.log='Выбери цель для Молнии!';
+    hxRender(); hexUpdateInfo();
   } else if(sid==='fireball') {
     // Enter special target mode — pick enemy
     const targets = hxs.units.filter(u=>u.team==='enemy'&&u.hp>0);
     hxs.specialTarget=targets; hxs.mode='special';
     hxs.log='Выбери цель для Огненного шара!';
+    hxRender(); hexUpdateInfo();
+  } else if(sid==='lifeflow') {
+    // Enter special target mode — pick adjacent ally (hexDist=1)
+    const targets = hxs.units.filter(u=>u.team==='player'&&u.hp>0&&u.id!==unit.id&&hexDist(unit.col,unit.row,u.col,u.row)===1);
+    if(!targets.length) { hxs.log='Нет соседнего союзника для исцеления!'; hxRender(); return; }
+    hxs.specialTarget=targets; hxs.mode='special';
+    hxs.log='Выбери соседнего союзника для Токов жизни!';
     hxRender(); hexUpdateInfo();
   } else if(sid==='heal') {
     // Enter special target mode — pick ally
@@ -3201,12 +3296,64 @@ function hxUseSpecial() {
     hxs.specialTarget=targets; hxs.mode='special';
     hxs.log='Выбери союзника для Исцеления!';
     hxRender(); hexUpdateInfo();
+  } else if(sid==='smoke') {
+    // Apply atkDebuff -3 to all enemies within range 2
+    const affected = hxs.units.filter(u=>u.team==='enemy'&&u.hp>0&&hexDist(unit.col,unit.row,u.col,u.row)<=2);
+    affected.forEach(u=>{u.atkDebuff=(u.atkDebuff||0)+3;});
+    unit.specialUsed=true; unit.attacked=true;
+    hxs.log=`Кадильщик развешивает дым — враги −3 к атаке на этот ход (${affected.length} цел.).`;
+    hxs.reachable=[]; hxs.attackable=[];
+    hxRender(); hexUpdateInfo();
+  } else if(sid==='summon_shadow') {
+    // Find empty adjacent hex
+    const neighbors = hexNeighbors(unit.col, unit.row);
+    const occupied = new Set(hxs.units.filter(u=>u.hp>0).map(u=>`${u.col},${u.row}`));
+    const emptyAdj = neighbors.filter(([c,r])=>!occupied.has(`${c},${r}`));
+    if(!emptyAdj.length) { hxs.log='Нет места для Тени!'; hxRender(); return; }
+    const [sc,sr] = emptyAdj[0];
+    hxs.units.push({
+      id: hxs.units.length, type:'shadow',
+      name:'Тень', team:'player', originalTeam:'player',
+      col:sc, row:sr,
+      hp:10, maxHp:10, atk:4, moveRange:3, atkRange:1,
+      block:0, aimBonus:false, moved:false, attacked:false, specialUsed:true,
+      emoji:'👤', special:{name:'—', desc:'', id:'none'},
+    });
+    unit.specialUsed=true; unit.attacked=true;
+    hxs.log='Демонолог призывает Тень!';
+    hxs.reachable=[]; hxs.attackable=[];
+    hxRender(); hexUpdateInfo();
+  } else if(sid==='raise_cadaver') {
+    // Find first dead enemy
+    const dead = hxs.units.filter(u=>u.originalTeam==='enemy'&&u.hp<=0&&u.team==='enemy');
+    if(!dead.length) { hxs.log='Нет павших врагов для подъёма!'; hxRender(); return; }
+    const corpse = dead[0];
+    corpse.team='player'; corpse.type='cadaver'; corpse.name='Кадавр';
+    corpse.hp=12; corpse.maxHp=12; corpse.atk=5; corpse.moveRange=1; corpse.atkRange=1;
+    corpse.block=0; corpse.moved=false; corpse.attacked=false; corpse.specialUsed=true;
+    corpse.emoji='💀'; corpse.special={name:'—', desc:'', id:'none'};
+    unit.specialUsed=true; unit.attacked=true;
+    hxs.log='Некромант поднимает кадавр!';
+    hxs.reachable=[]; hxs.attackable=[];
+    hexCheckEnd(); if(hxs.ended) return;
+    hxRender(); hexUpdateInfo();
   }
 }
 
 function hxApplySpecialOnTarget(caster, target) {
   const sid = caster.special.id;
-  if(sid==='fireball') {
+  if(sid==='lightning') {
+    const b = Math.min(12, target.block);
+    target.block=Math.max(0,target.block-b);
+    const dmg=12-b; target.hp=Math.max(0,target.hp-dmg);
+    // Chain 6 dmg to nearest enemy unit (not the primary target)
+    const chainTarget = hxs.units.filter(u=>u.team==='enemy'&&u.hp>0&&u.id!==target.id)
+      .sort((a,b2)=>hexDist(target.col,target.row,a.col,a.row)-hexDist(target.col,target.row,b2.col,b2.row))[0];
+    if(chainTarget) { chainTarget.hp=Math.max(0,chainTarget.hp-6); }
+    caster.specialUsed=true; caster.attacked=true;
+    hxs.log=`${caster.name}: Молния! ${dmg} урона ${target.name}${chainTarget?` + 6 цепью → ${chainTarget.name}`:''}!`;
+    hexCheckEnd();
+  } else if(sid==='fireball') {
     const b = Math.min(12, target.block);
     target.block=Math.max(0,target.block-b);
     const dmg=12-b; target.hp=Math.max(0,target.hp-dmg);
@@ -3215,6 +3362,10 @@ function hxApplySpecialOnTarget(caster, target) {
     caster.specialUsed=true; caster.attacked=true;
     hxs.log=`${caster.name}: Огненный шар! ${dmg} урона ${target.name}${adj.length?` + 6 соседям`:''}!`;
     hexCheckEnd();
+  } else if(sid==='lifeflow') {
+    target.hp=Math.min(target.maxHp, target.hp+10);
+    caster.specialUsed=true; caster.attacked=true;
+    hxs.log=`${caster.name} — Токи жизни: ${target.name} +10 HP!`;
   } else if(sid==='heal') {
     target.hp=Math.min(target.maxHp, target.hp+10);
     caster.specialUsed=true; caster.attacked=true;
@@ -3243,7 +3394,7 @@ function initHex() {
     const base = HEX_UNIT_DEFS[def.type] || HEX_UNIT_DEFS.warrior;
     hxs.units.push({
       id: idCtr++, type: def.type||'warrior',
-      name: def.name || base.name, team:'player',
+      name: def.name || base.name, team:'player', originalTeam:'player',
       col: pPositions[i].col, row: pPositions[i].row,
       hp: base.hp, maxHp: base.hp, atk: base.atk,
       moveRange: base.moveRange, atkRange: base.atkRange,
@@ -3257,7 +3408,7 @@ function initHex() {
     const base = HEX_UNIT_DEFS[def.type] || HEX_UNIT_DEFS.warrior;
     hxs.units.push({
       id: idCtr++, type: def.type||'warrior',
-      name: def.name || base.name, team:'enemy',
+      name: def.name || base.name, team:'enemy', originalTeam:'enemy',
       col: ePositions[i].col, row: ePositions[i].row,
       hp: base.hp, maxHp: base.hp, atk: base.atk,
       moveRange: base.moveRange, atkRange: base.atkRange,
