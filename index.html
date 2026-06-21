@@ -364,17 +364,48 @@
   .hx-log-heal   { color: #2ecc71; }
   .hx-log-special{ color: #9b59b6; }
   .hx-log-info   { color: rgba(255,255,255,0.7); }
-  .hx-info { min-height: 54px; background: rgba(255,255,255,0.06); border-radius: 8px; padding: 6px 10px; font-size: 0.82rem; margin-bottom: 6px; display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+  .hx-info { min-height: 44px; background: rgba(255,255,255,0.06); border-radius: 8px; padding: 6px 10px; font-size: 0.82rem; margin-bottom: 4px; }
   .hx-info-main { flex:1; }
   .hx-info-flavor { font-size:0.72rem; color:rgba(162,155,254,0.8); font-style:italic; margin-top:2px; }
-  .hx-spec-btn { padding: 4px 12px; border-radius: 8px; border: none; background: #9b59b6; color: #fff; font-size: 0.8rem; cursor: pointer; white-space:nowrap; flex-shrink:0; }
-  .hx-spec-btn:disabled { opacity: 0.35; }
   .hx-actions { display:flex; gap:8px; margin-top:6px; }
   .hx-end-btn { flex:1; padding: 10px; border-radius: 10px; border:none; background: #e74c3c; color:#fff; font-size:0.9rem; font-weight:700; cursor:pointer; }
+  .hx-skip-btn { padding: 10px 16px; border-radius: 10px; border:none; background: rgba(255,255,255,0.1); color:#fff; font-size:0.85rem; font-weight:600; cursor:pointer; }
+  .hx-skip-btn:disabled { opacity:0.35; cursor:default; }
   .hx-turn-label { text-align:center; font-size:0.85rem; font-weight:700; padding:4px; color:#f39c12; margin-bottom:4px; }
   .hx-turn-label.player-turn { color: #2ecc71; }
   .hx-turn-label.enemy-turn  { color: #e74c3c; }
   #hx-summary { text-align:center; font-size:0.78rem; color:rgba(255,255,255,0.6); margin-bottom:4px; }
+
+  /* FFT ABILITY PANEL */
+  #hx-ability-panel { display:none; overflow-x:auto; -webkit-overflow-scrolling:touch; margin-bottom:4px; padding-bottom:2px; }
+  #hx-ability-panel::-webkit-scrollbar { height:3px; }
+  #hx-ability-panel::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.2); border-radius:2px; }
+  .hx-ability-row { display:flex; gap:5px; padding:2px 0; min-width:max-content; }
+  .hx-ability-btn {
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:5px 7px; border-radius:9px; border:1.5px solid rgba(255,255,255,0.15);
+    background:rgba(255,255,255,0.06); color:#fff; font-size:0.72rem; cursor:pointer;
+    min-width:52px; max-width:70px; text-align:center; gap:1px; transition:all 0.15s;
+    -webkit-tap-highlight-color:transparent; user-select:none; line-height:1.2;
+  }
+  .hx-ability-btn:active:not(:disabled) { transform:scale(0.93); }
+  .hx-ability-btn:disabled { opacity:0.35; cursor:default; }
+  .hx-ability-btn.active { border-color:#f39c12; background:rgba(243,156,18,0.2); }
+  .hx-ability-btn.move-btn { border-color:#3498db; background:rgba(52,152,219,0.1); }
+  .hx-ability-btn.move-btn.active { background:rgba(52,152,219,0.3); }
+  .hx-ability-icon { font-size:1.1rem; line-height:1; }
+  .hx-ability-name { font-size:0.6rem; color:rgba(255,255,255,0.8); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; }
+  .hx-ability-cd { font-size:0.58rem; color:#e74c3c; font-weight:700; }
+  .hx-ability-cd.ready { color:#2ecc71; }
+  .hx-ability-type-melee  { border-color:rgba(231,76,60,0.4); }
+  .hx-ability-type-ranged { border-color:rgba(52,152,219,0.4); }
+  .hx-ability-type-magic  { border-color:rgba(162,155,254,0.45); }
+  .hx-ability-type-heal   { border-color:rgba(0,184,148,0.45); }
+  .hx-ability-type-summon { border-color:rgba(155,89,182,0.5); }
+  .hx-ability-type-debuff { border-color:rgba(243,156,18,0.4); }
+
+  @keyframes hxFlash { 0%{fill-opacity:0.9} 50%{fill-opacity:0.15} 100%{fill-opacity:0} }
+  @keyframes hxPulse { 0%,100%{r:16} 50%{r:20} }
 </style>
 </head>
 <body>
@@ -581,18 +612,15 @@
   </div>
   <div class="hx-log" id="hx-log">Выбери юнит и действуй!</div>
   <div class="hx-info" id="hx-info">
-    <div id="hx-info-main" style="flex:1; min-width:0;">
-      <div id="hx-info-name" style="font-weight:700; font-size:0.85rem;"></div>
-      <div id="hx-info-stats" style="font-size:0.75rem; color:rgba(255,255,255,0.7); margin-top:2px;"></div>
-      <div id="hx-info-spec" style="font-size:0.72rem; color:#9b59b6; margin-top:2px;"></div>
-      <div id="hx-info-flavor" style="font-size:0.65rem; color:rgba(255,255,255,0.45); font-style:italic; margin-top:1px;"></div>
-      <div id="hx-info-status" style="font-size:0.7rem; margin-top:2px;"></div>
-    </div>
-    <div style="display:flex; flex-direction:column; gap:4px; margin-left:6px;">
-      <button class="hx-spec-btn" id="hx-spec-btn" onclick="hxUseSpecial()" disabled>Спец</button>
-    </div>
+    <div id="hx-info-name" style="font-weight:700; font-size:0.85rem;"></div>
+    <div id="hx-info-stats" style="font-size:0.75rem; color:rgba(255,255,255,0.7); margin-top:2px;"></div>
+    <div id="hx-info-status" style="font-size:0.7rem; margin-top:2px; color:#a29bfe;"></div>
+  </div>
+  <div id="hx-ability-panel">
+    <div class="hx-ability-row" id="hx-ability-row"></div>
   </div>
   <div class="hx-actions">
+    <button class="hx-skip-btn" id="hx-skip-btn" onclick="hxSkipUnit()" disabled>Пропустить</button>
     <button class="hx-end-btn" id="hx-end-btn" onclick="hxEndTurn()">Конец хода</button>
   </div>
 </div>
@@ -2838,39 +2866,201 @@ function cgShowBanner(text){
 
 function cgLog(msg){ document.getElementById('cg-log').textContent=msg; }
 
-// ---- HEX GAME ----
+// ---- HEX GAME (FFT-style) ----
 const HEX_COLS = 8, HEX_ROWS = 5;
 const HEX_SIZE = 24;
 
-const HEX_UNIT_DEFS = {
-  warrior:      {name:'Воин',        emoji:'🗡', hp:25, atk:8,  moveRange:2, atkRange:1, special:{name:'Оборона',         desc:'Щит 10 HP до след. хода',                         id:'shield',        flavor:'Средний приём: именованная техника клинка'}},
-  archer:       {name:'Лучник',      emoji:'🏹', hp:18, atk:6,  moveRange:2, atkRange:2, special:{name:'Прицел',          desc:'Следующая атака ×2 урона',                         id:'aim',           flavor:'Средний приём: прицельный выстрел'}},
-  cavalry:      {name:'Всадник',     emoji:'⚔',  hp:20, atk:9,  moveRange:4, atkRange:1, special:{name:'Натиск',          desc:'15 урона + сдвиг цели',                            id:'charge',        flavor:'Средний приём: помет из седла — удар на скаку'}},
-  wizard:       {name:'Волшебник',   emoji:'🔮', hp:14, atk:7,  moveRange:2, atkRange:2, special:{name:'Молния',          desc:'12 ур. + цепь 6 ближайшему врагу',                 id:'lightning',     flavor:'Сильное мерцание: телекинетический разряд молнии'}},
-  druid:        {name:'Друид',       emoji:'🌿', hp:16, atk:4,  moveRange:2, atkRange:1, special:{name:'Токи жизни',      desc:'Исцелить соседнего союзника +10 HP (контакт)',     id:'lifeflow',      flavor:'Сильное мерцание: токи жизни через ладонь'}},
-  incenser:     {name:'Кадильщик',   emoji:'💨', hp:15, atk:5,  moveRange:2, atkRange:2, special:{name:'Дымовое облако',  desc:'−3 атк всем врагам в радиусе 2 на 1 ход',         id:'smoke',         flavor:'Сильное мерцание: концентрированное облако дыма'}},
-  demonologist: {name:'Демонолог',   emoji:'👁', hp:14, atk:6,  moveRange:2, atkRange:2, special:{name:'Вызов Тени',      desc:'Призвать Тень (10 HP, 4 атк) на соседний гекс',   id:'summon_shadow', flavor:'Сильное мерцание: призыв слабейшего духа'}},
-  necromancer:  {name:'Некромант',   emoji:'💀', hp:16, atk:5,  moveRange:2, atkRange:2, special:{name:'Поднять кадавр', desc:'Поднять павшего врага кадавром (12 HP, 5 атк)',    id:'raise_cadaver', flavor:'Сильное мерцание: одушевление мёртвой ткани'}},
-  adept:        {name:'Адепт',       emoji:'✝',  hp:17, atk:5,  moveRange:2, atkRange:2, special:{name:'Слово Культа',   desc:'Слово Света: 10 ур. или Слово Тепла: +8 HP союзнику', id:'cult_word', flavor:'Слово культа через канал покровителя — удар или исцеление'}},
-  elementalist: {name:'Элементалист',emoji:'🌊', hp:14, atk:8,  moveRange:2, atkRange:2, special:{name:'Взрыв стихии',   desc:'15 ур. цели + 7 всем соседним врагам',             id:'elemental_burst', flavor:'Сильное мерцание: выброс сущности элемента в точку'}},
-  shadow:       {name:'Тень',        emoji:'👤', hp:10, atk:4,  moveRange:3, atkRange:1, special:{name:'—', desc:'', id:'none', flavor:''}},
-  cadaver:      {name:'Кадавр',      emoji:'💀', hp:12, atk:5,  moveRange:1, atkRange:1, special:{name:'—', desc:'', id:'none', flavor:''}},
-  // Legacy aliases
-  mage:         {name:'Маг',         emoji:'🔥', hp:14, atk:7,  moveRange:2, atkRange:2, special:{name:'Огненный шар',   desc:'12 ур. цели + 6 соседям',                          id:'fireball',      flavor:'Сильное мерцание: выброс огненного шара'}},
-  healer:       {name:'Лекарь',      emoji:'💚', hp:16, atk:4,  moveRange:2, atkRange:2, special:{name:'Исцеление',      desc:'+10 HP союзнику',                                  id:'heal',          flavor:'Слабое мерцание: лечебный касательный импульс'}},
+// ---- ABILITY LIBRARY ----
+// Weapon ability sets
+const HX_WEAPON_ABILITIES = {
+  sword: [
+    {id:'sword_strike',   name:'Удар',          icon:'⚔️', type:'melee',  range:1, aoe:0, damage:'atk',    effect:null,                         maxCooldown:0},
+    {id:'sword_heavy',    name:'Мощный удар',   icon:'🗡️', type:'melee',  range:1, aoe:0, damage:'atk*1.5',effect:null,                         maxCooldown:2},
+    {id:'sword_stun',     name:'Оглушение',     icon:'🥊', type:'melee',  range:1, aoe:0, damage:'atk*0.5',effect:{type:'stun',turns:1},         maxCooldown:3},
+  ],
+  axe: [
+    {id:'axe_strike',     name:'Рубящий удар',  icon:'🪓', type:'melee',  range:1, aoe:0, damage:'atk+2',  effect:null,                         maxCooldown:0},
+    {id:'axe_whirl',      name:'Вихрь',         icon:'🌀', type:'melee',  range:1, aoe:1, damage:'atk*0.7',effect:null,                         maxCooldown:3},
+    {id:'axe_cleave',     name:'Раскол',        icon:'💥', type:'melee',  range:1, aoe:0, damage:'atk*1.3',effect:null,                         maxCooldown:2},
+  ],
+  ranged: [
+    {id:'ranged_shot',    name:'Выстрел',       icon:'🏹', type:'ranged', range:3, aoe:0, damage:'atk',    effect:null,                         maxCooldown:0},
+    {id:'ranged_aim',     name:'Прицельный',    icon:'🎯', type:'ranged', range:3, aoe:0, damage:'atk*1.5',effect:null,                         maxCooldown:2},
+    {id:'ranged_pierce',  name:'Прострел',      icon:'➡️', type:'ranged', range:4, aoe:0, damage:'atk',    effect:null,                         maxCooldown:3},
+  ],
+  heavy: [
+    {id:'heavy_strike',   name:'Дробящий',      icon:'🔨', type:'melee',  range:1, aoe:0, damage:'atk+3',  effect:null,                         maxCooldown:0},
+    {id:'heavy_quake',    name:'Сотрясение',    icon:'💫', type:'melee',  range:1, aoe:0, damage:'atk',    effect:{type:'stun',turns:1},         maxCooldown:3},
+    {id:'heavy_death',    name:'Смерть молотом',icon:'💀', type:'melee',  range:1, aoe:0, damage:'atk*2',  effect:null,                         maxCooldown:4},
+  ],
+  dual: [
+    {id:'dual_double',    name:'Двойной удар',  icon:'⚔️', type:'melee',  range:1, aoe:0, damage:'atk*1.4',effect:null,                         maxCooldown:0},
+    {id:'dual_whirl',     name:'Вихрь клинков', icon:'🌀', type:'melee',  range:1, aoe:1, damage:'atk*0.5',effect:null,                         maxCooldown:3},
+    {id:'dual_swift',     name:'Выпад молнией', icon:'⚡', type:'melee',  range:2, aoe:0, damage:'atk*1.2',effect:null,                         maxCooldown:2},
+  ],
+  shield: [
+    {id:'shield_bash',    name:'Удар щитом',    icon:'🛡️', type:'melee',  range:1, aoe:0, damage:'atk',    effect:null,                         maxCooldown:0},
+    {id:'shield_ward',    name:'Оборона',       icon:'🔰', type:'melee',  range:0, aoe:0, damage:0,        effect:{type:'block',value:10},       maxCooldown:2},
+    {id:'shield_push',    name:'Отбросить',     icon:'🏋️', type:'melee',  range:1, aoe:0, damage:'atk*0.5',effect:{type:'knockback'},            maxCooldown:2},
+  ],
+  unarmed: [
+    {id:'unarmed_punch',  name:'Кулак',         icon:'👊', type:'melee',  range:1, aoe:0, damage:'atk',    effect:null,                         maxCooldown:0},
+    {id:'unarmed_grab',   name:'Захват',        icon:'🤼', type:'melee',  range:1, aoe:0, damage:'atk*0.5',effect:{type:'stun',turns:1},         maxCooldown:2},
+    {id:'unarmed_crush',  name:'Сокрушение',    icon:'💢', type:'melee',  range:1, aoe:0, damage:'atk*1.8',effect:null,                         maxCooldown:4},
+  ],
+  polearm: [
+    {id:'polearm_thrust', name:'Копейный удар', icon:'🔱', type:'melee',  range:2, aoe:0, damage:'atk',    effect:null,                         maxCooldown:0},
+    {id:'polearm_lunge',  name:'Выпад',         icon:'➡️', type:'melee',  range:2, aoe:0, damage:'atk*1.3',effect:null,                         maxCooldown:2},
+    {id:'polearm_sweep',  name:'Круговой замах',icon:'🌀', type:'melee',  range:1, aoe:1, damage:'atk*0.6',effect:null,                         maxCooldown:3},
+  ],
+  chain: [
+    {id:'chain_whip',     name:'Хлыст',         icon:'⛓️', type:'melee',  range:2, aoe:0, damage:'atk',    effect:null,                         maxCooldown:0},
+    {id:'chain_pull',     name:'Захват цепью',  icon:'🪝', type:'melee',  range:2, aoe:0, damage:'atk*0.5',effect:{type:'pull'},                 maxCooldown:3},
+    {id:'chain_net',      name:'Сети',          icon:'🕸️', type:'debuff', range:2, aoe:0, damage:0,        effect:{type:'stun',turns:2},         maxCooldown:4},
+  ],
 };
+
+// Magic ability sets
+const HX_MAGIC_ABILITIES = {
+  wizard: [
+    {id:'wiz_lightning',  name:'Молния',        icon:'⚡', type:'magic',  range:3, aoe:0, damage:8,        effect:{type:'chain',value:6},        maxCooldown:0},
+    {id:'wiz_fireball',   name:'Огненный шар',  icon:'🔥', type:'magic',  range:3, aoe:1, damage:10,       effect:null,                         maxCooldown:3},
+    {id:'wiz_ice',        name:'Ледяной взрыв', icon:'❄️', type:'magic',  range:3, aoe:1, damage:7,        effect:{type:'stun',turns:1},         maxCooldown:4},
+  ],
+  druid: [
+    {id:'druid_heal',     name:'Токи жизни',    icon:'🌿', type:'heal',   range:1, aoe:0, damage:0,        effect:{type:'heal',value:10},        maxCooldown:0},
+    {id:'druid_roots',    name:'Корни',         icon:'🌱', type:'debuff', range:2, aoe:0, damage:0,        effect:{type:'stun',turns:2},         maxCooldown:3},
+    {id:'druid_thorns',   name:'Шипы',          icon:'🌵', type:'magic',  range:2, aoe:1, damage:6,        effect:null,                         maxCooldown:3},
+  ],
+  elementalist: [
+    {id:'elem_burst',     name:'Взрыв стихии',  icon:'🌊', type:'magic',  range:3, aoe:1, damage:12,       effect:null,                         maxCooldown:0},
+    {id:'elem_wall',      name:'Стена огня',    icon:'🔥', type:'magic',  range:2, aoe:2, damage:8,        effect:null,                         maxCooldown:4},
+    {id:'elem_thunder',   name:'Призыв молнии', icon:'⚡', type:'magic',  range:4, aoe:0, damage:15,       effect:null,                         maxCooldown:5},
+  ],
+  necro: [
+    {id:'necro_raise',    name:'Поднять кадавр',icon:'💀', type:'summon', range:2, aoe:0, damage:0,        effect:{type:'summon',unitType:'cadaver'}, maxCooldown:4},
+    {id:'necro_wave',     name:'Волна смерти',  icon:'🌑', type:'magic',  range:2, aoe:1, damage:8,        effect:null,                         maxCooldown:3},
+    {id:'necro_drain',    name:'Иссушение',     icon:'🩸', type:'magic',  range:2, aoe:0, damage:5,        effect:{type:'lifesteal',value:3},    maxCooldown:2},
+  ],
+  demon: [
+    {id:'demon_shadow',   name:'Призвать Тень', icon:'👁️', type:'summon', range:2, aoe:0, damage:0,        effect:{type:'summon',unitType:'shadow'}, maxCooldown:4},
+    {id:'demon_fist',     name:'Тёмный кулак',  icon:'🖤', type:'magic',  range:2, aoe:0, damage:10,       effect:null,                         maxCooldown:2},
+    {id:'demon_curse',    name:'Порча',         icon:'☠️', type:'debuff', range:2, aoe:0, damage:0,        effect:{type:'debuff',stat:'atk',value:4,turns:2}, maxCooldown:3},
+  ],
+  incenser: [
+    {id:'inc_smoke',      name:'Дымовое облако',icon:'💨', type:'debuff', range:2, aoe:2, damage:0,        effect:{type:'debuff',stat:'atk',value:3,turns:1}, maxCooldown:0},
+    {id:'inc_poison',     name:'Ядовитый дым',  icon:'☠️', type:'magic',  range:2, aoe:1, damage:5,        effect:null,                         maxCooldown:3},
+    {id:'inc_blind',      name:'Слепота',       icon:'🙈', type:'debuff', range:2, aoe:0, damage:0,        effect:{type:'debuff',stat:'atk',value:5,turns:2}, maxCooldown:4},
+  ],
+  adept: [
+    {id:'adept_warmth',   name:'Слово Тепла',   icon:'✝️', type:'heal',   range:2, aoe:0, damage:0,        effect:{type:'heal',value:8},         maxCooldown:0},
+    {id:'adept_light',    name:'Слово Света',   icon:'🌟', type:'magic',  range:2, aoe:0, damage:10,       effect:null,                         maxCooldown:2},
+    {id:'adept_bless',    name:'Благословение', icon:'💫', type:'debuff', range:2, aoe:0, damage:0,        effect:{type:'buff',stat:'atk',value:3,turns:2}, maxCooldown:3},
+  ],
+};
+
+// Enemy unit definitions (FFT style with abilities array)
+const HEX_UNIT_DEFS = {
+  warrior:      {name:'Воин',        emoji:'🗡', hp:25, atk:8,  moveRange:2, atkRange:1,
+    abilities:[
+      {id:'e_sword_strike',name:'Удар',icon:'⚔️',type:'melee',range:1,aoe:0,damage:'atk',effect:null,cooldown:0,maxCooldown:0},
+      {id:'e_shield_ward', name:'Оборона',icon:'🛡️',type:'melee',range:0,aoe:0,damage:0,effect:{type:'block',value:10},cooldown:0,maxCooldown:2},
+    ]},
+  archer:       {name:'Лучник',      emoji:'🏹', hp:18, atk:6,  moveRange:2, atkRange:3,
+    abilities:[
+      {id:'e_ranged_shot', name:'Выстрел',icon:'🏹',type:'ranged',range:3,aoe:0,damage:'atk',effect:null,cooldown:0,maxCooldown:0},
+      {id:'e_ranged_aim',  name:'Прицел', icon:'🎯',type:'ranged',range:3,aoe:0,damage:'atk*1.5',effect:null,cooldown:0,maxCooldown:2},
+    ]},
+  cavalry:      {name:'Всадник',     emoji:'⚔',  hp:20, atk:9,  moveRange:4, atkRange:1,
+    abilities:[
+      {id:'e_charge',      name:'Натиск',icon:'🐴',type:'melee',range:1,aoe:0,damage:15,effect:{type:'knockback'},cooldown:0,maxCooldown:3},
+      {id:'e_sword_strike',name:'Удар',icon:'⚔️',type:'melee',range:1,aoe:0,damage:'atk',effect:null,cooldown:0,maxCooldown:0},
+    ]},
+  wizard:       {name:'Волшебник',   emoji:'🔮', hp:14, atk:7,  moveRange:2, atkRange:3,
+    abilities:[
+      {id:'e_wiz_lightning',name:'Молния',icon:'⚡',type:'magic',range:3,aoe:0,damage:8,effect:{type:'chain',value:6},cooldown:0,maxCooldown:0},
+      {id:'e_wiz_fireball', name:'Огненный шар',icon:'🔥',type:'magic',range:3,aoe:1,damage:10,effect:null,cooldown:0,maxCooldown:3},
+    ]},
+  druid:        {name:'Друид',       emoji:'🌿', hp:16, atk:4,  moveRange:2, atkRange:2,
+    abilities:[
+      {id:'e_druid_heal',  name:'Исцеление',icon:'🌿',type:'heal',range:1,aoe:0,damage:0,effect:{type:'heal',value:10},cooldown:0,maxCooldown:0},
+      {id:'e_druid_roots', name:'Корни',icon:'🌱',type:'debuff',range:2,aoe:0,damage:0,effect:{type:'stun',turns:2},cooldown:0,maxCooldown:3},
+    ]},
+  incenser:     {name:'Кадильщик',   emoji:'💨', hp:15, atk:5,  moveRange:2, atkRange:2,
+    abilities:[
+      {id:'e_inc_smoke',   name:'Дымовое облако',icon:'💨',type:'debuff',range:2,aoe:2,damage:0,effect:{type:'debuff',stat:'atk',value:3,turns:1},cooldown:0,maxCooldown:0},
+      {id:'e_inc_poison',  name:'Ядовитый дым',icon:'☠️',type:'magic',range:2,aoe:1,damage:5,effect:null,cooldown:0,maxCooldown:3},
+    ]},
+  demonologist: {name:'Демонолог',   emoji:'👁', hp:14, atk:6,  moveRange:2, atkRange:2,
+    abilities:[
+      {id:'e_demon_shadow',name:'Призвать Тень',icon:'👁️',type:'summon',range:2,aoe:0,damage:0,effect:{type:'summon',unitType:'shadow'},cooldown:0,maxCooldown:4},
+      {id:'e_demon_fist',  name:'Тёмный кулак',icon:'🖤',type:'magic',range:2,aoe:0,damage:10,effect:null,cooldown:0,maxCooldown:2},
+    ]},
+  necromancer:  {name:'Некромант',   emoji:'💀', hp:16, atk:5,  moveRange:2, atkRange:2,
+    abilities:[
+      {id:'e_necro_raise', name:'Поднять кадавр',icon:'💀',type:'summon',range:2,aoe:0,damage:0,effect:{type:'summon',unitType:'cadaver'},cooldown:0,maxCooldown:4},
+      {id:'e_necro_drain', name:'Иссушение',icon:'🩸',type:'magic',range:2,aoe:0,damage:5,effect:{type:'lifesteal',value:3},cooldown:0,maxCooldown:2},
+    ]},
+  adept:        {name:'Адепт',       emoji:'✝',  hp:17, atk:5,  moveRange:2, atkRange:2,
+    abilities:[
+      {id:'e_adept_warmth',name:'Слово Тепла',icon:'✝️',type:'heal',range:2,aoe:0,damage:0,effect:{type:'heal',value:8},cooldown:0,maxCooldown:0},
+      {id:'e_adept_light', name:'Слово Света',icon:'🌟',type:'magic',range:2,aoe:0,damage:10,effect:null,cooldown:0,maxCooldown:2},
+    ]},
+  elementalist: {name:'Элементалист',emoji:'🌊', hp:14, atk:8,  moveRange:2, atkRange:3,
+    abilities:[
+      {id:'e_elem_burst',  name:'Взрыв стихии',icon:'🌊',type:'magic',range:3,aoe:1,damage:12,effect:null,cooldown:0,maxCooldown:0},
+      {id:'e_elem_thunder',name:'Молния',icon:'⚡',type:'magic',range:4,aoe:0,damage:15,effect:null,cooldown:0,maxCooldown:4},
+    ]},
+  shadow:       {name:'Тень',        emoji:'👤', hp:10, atk:4,  moveRange:3, atkRange:1,
+    abilities:[
+      {id:'e_shadow_strike',name:'Удар тьмы',icon:'👤',type:'melee',range:1,aoe:0,damage:'atk',effect:null,cooldown:0,maxCooldown:0},
+    ]},
+  cadaver:      {name:'Кадавр',      emoji:'💀', hp:12, atk:5,  moveRange:1, atkRange:1,
+    abilities:[
+      {id:'e_cadaver_bite', name:'Укус',icon:'💀',type:'melee',range:1,aoe:0,damage:'atk',effect:null,cooldown:0,maxCooldown:0},
+    ]},
+  // Legacy aliases
+  mage:         {name:'Маг',         emoji:'🔥', hp:14, atk:7,  moveRange:2, atkRange:3,
+    abilities:[
+      {id:'e_wiz_lightning',name:'Молния',icon:'⚡',type:'magic',range:3,aoe:0,damage:8,effect:{type:'chain',value:6},cooldown:0,maxCooldown:0},
+      {id:'e_wiz_fireball', name:'Огненный шар',icon:'🔥',type:'magic',range:3,aoe:1,damage:10,effect:null,cooldown:0,maxCooldown:3},
+    ]},
+  healer:       {name:'Лекарь',      emoji:'💚', hp:16, atk:4,  moveRange:2, atkRange:2,
+    abilities:[
+      {id:'e_druid_heal',  name:'Исцеление',icon:'🌿',type:'heal',range:1,aoe:0,damage:0,effect:{type:'heal',value:10},cooldown:0,maxCooldown:0},
+      {id:'e_adept_warmth',name:'Слово Тепла',icon:'✝️',type:'heal',range:2,aoe:0,damage:0,effect:{type:'heal',value:8},cooldown:0,maxCooldown:2},
+    ]},
+};
+
+// Compute actual damage value for an ability given unit's atk
+function hxAbilityDamage(ability, unit) {
+  if(!ability.damage || ability.damage === 0) return 0;
+  const atk = unit.atk - (unit.atkDebuff||0);
+  if(typeof ability.damage === 'number') return ability.damage;
+  const expr = String(ability.damage).replace(/atk/g, String(atk));
+  try { return Math.round(eval(expr)); } catch(e) { return atk; }
+}
+
+// Build ability array for a hero unit from weapon + magic params
+function hxBuildHeroAbilities(weapon, magic) {
+  const wArr = (HX_WEAPON_ABILITIES[weapon] || HX_WEAPON_ABILITIES.sword).map(a => ({...a, cooldown:0}));
+  const mArr = magic ? (HX_MAGIC_ABILITIES[magic] || []).map(a => ({...a, cooldown:0})) : [];
+  return [...wArr, ...mArr];
+}
 
 let hxs = {
   units: [], turn: 'player', selected: null,
-  reachable: [], attackable: [], specialTarget: [],
-  mode: 'select', log: '', logs: [], turnNum: 1, ended: false,
-  specialTargetMode: 'attack', // 'attack' or 'heal' — for cult_word
-  rifts: [], // [[col,row], ...]
-  forests: [], // [[col,row], ...] — forest hexes (+2 block per turn start)
-  heights: [], // [[col,row], ...] — high-ground hexes (+2 atk for ranged attackers)
-  obstacles: [], // [[col,row], ...] — impassable terrain (blocks movement, not ranged attacks)
-  objective: null, // {col, row, controlled:'none'|'player'|'enemy'} — visual objective hex
-  enemyIntents: {}, // {enemyId: {action:'attack'|'move'|'special'|'idle', targetId?}}
+  reachable: [], attackable: [],
+  abilityTargets: [], // targets for selected ability
+  activeAbilityIdx: null, // index into selected unit's abilities (null = none)
+  mode: 'select', // 'select' | 'move' | 'ability'
+  log: '', logs: [], turnNum: 1, ended: false,
+  rifts: [],
+  forests: [],
+  heights: [],
+  obstacles: [],
+  objective: null,
+  enemyIntents: {},
   totalDamageDealt: 0,
   totalDamageTaken: 0,
 };
@@ -2937,19 +3127,27 @@ function hexAttackable(unit) {
     && hexDist(unit.col, unit.row, u.col, u.row) <= unit.atkRange);
 }
 
-// PASS D: мерцание type labels in combat log
-const _mercFlavorMap = {
-  wizard: 'Слабое мерцание',
-  elementalist: 'Слабое мерцание',
-  druid: 'Слабое мерцание (контакт)',
-  demonologist: 'Слабое мерцание',
-  necromancer: 'Слабое мерцание',
-  incenser: 'Слабое мерцание',
-  adept: 'Слабое мерцание',
-  mage: 'Слабое мерцание',
-  healer: 'Слабое мерцание',
-};
-const _weaponTypes = new Set(['warrior','archer','cavalry']);
+// Get targets for a specific ability from a unit position
+function hxAbilityTargets(unit, ability) {
+  if(!ability || ability.range === 0) return [];
+  if(ability.type === 'heal') {
+    return hxs.units.filter(u => u.team === unit.team && u.hp > 0
+      && hexDist(unit.col, unit.row, u.col, u.row) <= ability.range);
+  }
+  if(ability.type === 'summon') {
+    // return empty neighbor hexes as pseudo-targets
+    const occupied = new Set(hxs.units.filter(u=>u.hp>0).map(u=>`${u.col},${u.row}`));
+    const nbrs = hexNeighbors(unit.col, unit.row);
+    return nbrs.filter(([c,r])=>!occupied.has(`${c},${r}`)).map(([c,r])=>({isFreeHex:true,col:c,row:r,id:`free_${c}_${r}`,team:'free',hp:1}));
+  }
+  if(ability.type === 'debuff' && ability.effect?.stat) {
+    // targets enemies
+    return hxs.units.filter(u => u.team !== unit.team && u.hp > 0
+      && hexDist(unit.col, unit.row, u.col, u.row) <= ability.range);
+  }
+  return hxs.units.filter(u => u.team !== unit.team && u.hp > 0
+    && hexDist(unit.col, unit.row, u.col, u.row) <= ability.range);
+}
 
 function hexApplyMorale(deadUnit) {
   const allies = hxs.units.filter(u => u.team === deadUnit.team && u.hp > 0);
@@ -2959,50 +3157,225 @@ function hexApplyMorale(deadUnit) {
   hxLog(`💔 Гибель ${deadUnit.name} подрывает боевой дух — соседние союзники −2 атк`, 'attack');
 }
 
-function hexAttack(attacker, target, allowCounter) {
-  if(allowCounter === undefined) allowCounter = true;
-  let dmg = attacker.atk - (attacker.atkDebuff || 0);
-  if(dmg < 0) dmg = 0;
-  if(attacker.aimBonus) { dmg *= 2; attacker.aimBonus = false; }
-  // Возвышенность — +2 atk for ranged attackers ON high-ground hex
-  if(attacker.atkRange >= 2 && hxs.heights.some(([hc,hr])=>hc===attacker.col&&hr===attacker.row)) {
-    dmg += 2;
-    hxLog(`⛰ Возвышенность: +2 к удару (${attacker.name})`, 'info');
+// Apply an ability effect from caster on primary target (handles AoE automatically)
+function hxApplyAbility(caster, ability, primaryTarget) {
+  const dmg = hxAbilityDamage(ability, caster);
+  const eff = ability.effect;
+  const isRanged = ability.type === 'ranged' || ability.type === 'magic';
+
+  // Возвышенность бонус для дальних атак
+  let bonusDmg = 0;
+  if(isRanged && hxs.heights.some(([hc,hr])=>hc===caster.col&&hr===caster.row)) {
+    bonusDmg = 2;
   }
-  const blocked = Math.min(dmg, target.block);
-  target.block = Math.max(0, target.block - blocked);
+
+  // --- BLOCK self-buff ---
+  if(eff?.type === 'block') {
+    caster.block = (caster.block||0) + eff.value;
+    hxLog(`${caster.icon||''} ${caster.name} — ${ability.name}: +${eff.value} блок!`, 'special');
+    caster.acted = true;
+    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    return;
+  }
+
+  // --- ATK BUFF for ally ---
+  if(eff?.type === 'buff' && eff.stat === 'atk') {
+    primaryTarget.atkBuff = (primaryTarget.atkBuff||0) + eff.value;
+    primaryTarget.atkBuffTurns = eff.turns||2;
+    hxLog(`${caster.name} — ${ability.name}: ${primaryTarget.name} +${eff.value} атк на ${eff.turns} хода!`, 'heal');
+    caster.acted = true;
+    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    return;
+  }
+
+  // --- SUMMON ---
+  if(eff?.type === 'summon') {
+    const sc = primaryTarget.col, sr = primaryTarget.row;
+    const unitType = eff.unitType || 'shadow';
+    const def = HEX_UNIT_DEFS[unitType] || HEX_UNIT_DEFS.shadow;
+    const nearRift = hxs.rifts.some(([rc,rr]) => hexDist(caster.col,caster.row,rc,rr) <= 1);
+    const sHp = nearRift ? Math.round(def.hp * 1.3) : def.hp;
+    const newUnit = {
+      id: hxs.units.length, type: unitType,
+      name: def.name, team: caster.team, originalTeam: caster.originalTeam||caster.team,
+      col: sc, row: sr,
+      hp: sHp, maxHp: sHp, atk: def.atk, moveRange: def.moveRange, atkRange: def.atkRange,
+      block: 0, moved: false, acted: true, atkDebuff:0, stunnedTurns:0,
+      emoji: def.emoji,
+      abilities: (def.abilities||[]).map(a=>({...a,cooldown:0})),
+    };
+    hxs.units.push(newUnit);
+    caster.acted = true;
+    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    hxLog(`${caster.name} — ${ability.name}: призвана ${def.name}${nearRift?' (Разлом +)':''}!`, 'special');
+    return;
+  }
+
+  // --- HEAL ---
+  if(ability.type === 'heal' && eff?.type === 'heal') {
+    const heal = eff.value || 0;
+    primaryTarget.hp = Math.min(primaryTarget.maxHp, primaryTarget.hp + heal);
+    hxLog(`${caster.name} — ${ability.name}: ${primaryTarget.name} +${heal} HP!`, 'heal');
+    hxFlashHex(primaryTarget.col, primaryTarget.row, 'rgba(46,213,115,0.7)');
+    caster.acted = true;
+    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    return;
+  }
+
+  // --- STUN-only (debuff, no damage) ---
+  if(eff?.type === 'stun' && dmg === 0) {
+    primaryTarget.stunnedTurns = (primaryTarget.stunnedTurns||0) + eff.turns;
+    hxLog(`${caster.name} — ${ability.name}: ${primaryTarget.name} оглушён на ${eff.turns} ход(а)!`, 'special');
+    hxFlashHex(primaryTarget.col, primaryTarget.row, 'rgba(243,156,18,0.7)');
+    caster.acted = true;
+    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    return;
+  }
+
+  // --- ATK DEBUFF (smoke etc.) ---
+  if(eff?.type === 'debuff' && eff.stat === 'atk') {
+    const targets = ability.aoe > 0
+      ? hxs.units.filter(u=>u.team!==caster.team&&u.hp>0&&hexDist(primaryTarget.col,primaryTarget.row,u.col,u.row)<=ability.aoe)
+      : [primaryTarget];
+    targets.forEach(t => { t.atkDebuff = (t.atkDebuff||0) + eff.value; });
+    hxLog(`${caster.name} — ${ability.name}: ${targets.length} цел. −${eff.value} атк!`, 'special');
+    caster.acted = true;
+    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    return;
+  }
+
+  // --- DAMAGE-DEALING ability ---
+  if(dmg > 0) {
+    const totalDmg = dmg + bonusDmg;
+    const doHit = (target, hitDmg) => {
+      const prevHp = target.hp;
+      const blocked = Math.min(hitDmg, target.block||0);
+      target.block = Math.max(0, (target.block||0) - blocked);
+      const actual = Math.max(0, hitDmg - blocked);
+      target.hp = Math.max(0, target.hp - actual);
+      if(caster.team === 'player') hxs.totalDamageDealt += actual;
+      else hxs.totalDamageTaken += actual;
+      if(target.hp <= 0 && prevHp > 0) hexApplyMorale(target);
+      return actual;
+    };
+
+    const actualDmg = doHit(primaryTarget, totalDmg);
+    let logMsg = `${caster.name} — ${ability.icon||''} ${ability.name}: ${actualDmg} урона → ${primaryTarget.name} (${primaryTarget.hp}/${primaryTarget.maxHp})`;
+    if(bonusDmg > 0) logMsg += ` [⛰+${bonusDmg}]`;
+
+    hxFlashHex(primaryTarget.col, primaryTarget.row, 'rgba(231,76,60,0.75)');
+
+    // AoE splash
+    if(ability.aoe > 0) {
+      const splashTargets = hxs.units.filter(u=>u.team!==caster.team&&u.hp>0&&u.id!==primaryTarget.id&&hexDist(primaryTarget.col,primaryTarget.row,u.col,u.row)<=ability.aoe);
+      splashTargets.forEach(t => {
+        const sd = doHit(t, Math.round(totalDmg*0.6));
+        logMsg += `, ${sd}→${t.name}`;
+        hxFlashHex(t.col, t.row, 'rgba(231,76,60,0.5)');
+      });
+    }
+
+    // Chain (lightning)
+    if(eff?.type === 'chain') {
+      const chainT = hxs.units.filter(u=>u.team!==caster.team&&u.hp>0&&u.id!==primaryTarget.id)
+        .sort((a,b)=>hexDist(primaryTarget.col,primaryTarget.row,a.col,a.row)-hexDist(primaryTarget.col,primaryTarget.row,b.col,b.row))[0];
+      if(chainT) {
+        const cd = doHit(chainT, eff.value);
+        logMsg += ` ⚡ цепь ${cd}→${chainT.name}`;
+        hxFlashHex(chainT.col, chainT.row, 'rgba(162,155,254,0.7)');
+      }
+    }
+
+    // Lifesteal
+    if(eff?.type === 'lifesteal') {
+      caster.hp = Math.min(caster.maxHp, caster.hp + eff.value);
+      logMsg += ` (лечит ${caster.name} +${eff.value})`;
+    }
+
+    // Knockback
+    if(eff?.type === 'knockback') {
+      const dc = primaryTarget.col - caster.col;
+      const dr = primaryTarget.row - caster.row;
+      const nc = primaryTarget.col + Math.sign(dc);
+      const nr = primaryTarget.row + Math.sign(dr);
+      if(nc>=0&&nc<HEX_COLS&&nr>=0&&nr<HEX_ROWS&&!hxs.units.find(u=>u.col===nc&&u.row===nr&&u.hp>0)) {
+        primaryTarget.col = nc; primaryTarget.row = nr;
+        logMsg += ' [отбросил]';
+      }
+    }
+
+    // Post-damage stun
+    if(eff?.type === 'stun' && dmg > 0 && primaryTarget.hp > 0) {
+      primaryTarget.stunnedTurns = (primaryTarget.stunnedTurns||0) + eff.turns;
+      logMsg += ` [оглушён ${eff.turns}ход]`;
+    }
+
+    // Warrior counter-attack when attacked at melee range
+    if(primaryTarget.hp > 0 && primaryTarget.type === 'warrior' && hexDist(caster.col,caster.row,primaryTarget.col,primaryTarget.row) === 1 && caster.team === 'player') {
+      const counterDmg = Math.max(0, Math.floor(primaryTarget.atk * 0.4) - (caster.block||0));
+      caster.block = Math.max(0, (caster.block||0) - Math.floor(primaryTarget.atk * 0.4));
+      const prevHpA = caster.hp;
+      caster.hp = Math.max(0, caster.hp - counterDmg);
+      hxLog(`🗡 ${primaryTarget.name} контратакует: ${counterDmg} урона → ${caster.name}`, 'special');
+      if(caster.hp <= 0 && prevHpA > 0) hexApplyMorale(caster);
+    }
+
+    hxLog(logMsg, ability.type === 'heal' ? 'heal' : 'attack');
+    caster.acted = true;
+    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    hexCheckEnd();
+  }
+}
+
+// Basic attack (fallback for enemies without abilities at range)
+function hexAttack(attacker, target) {
+  const baseDmg = Math.max(0, attacker.atk - (attacker.atkDebuff||0));
+  const isRanged = attacker.atkRange >= 2;
+  let dmg = baseDmg;
+  if(isRanged && hxs.heights.some(([hc,hr])=>hc===attacker.col&&hr===attacker.row)) dmg += 2;
+  const blocked = Math.min(dmg, target.block||0);
+  target.block = Math.max(0, (target.block||0) - blocked);
   dmg -= blocked;
   const prevHp = target.hp;
   target.hp = Math.max(0, target.hp - dmg);
-  // Track damage
   if(attacker.team === 'player') hxs.totalDamageDealt += dmg;
   else hxs.totalDamageTaken += dmg;
-  // Prefix label for log
-  const prefix = _weaponTypes.has(attacker.type) ? '[Оружие] ' : (_mercFlavorMap[attacker.type] ? `[${_mercFlavorMap[attacker.type]}] ` : '');
-  hxLog(`${prefix}${attacker.name} атакует ${target.name}: ${dmg} урона. HP ${target.hp}/${target.maxHp}`, 'attack');
-  attacker.attacked = true;
-  // Morale penalty on killing blow
-  if(target.hp <= 0 && prevHp > 0) {
-    hexApplyMorale(target);
-  }
-  // Bidirectional warrior counter-attack (PASS B):
-  // When a player attacks an enemy warrior at distance 1, the warrior counter-attacks
-  if(allowCounter && target.hp > 0 && target.type === 'warrior' && hexDist(attacker.col, attacker.row, target.col, target.row) === 1) {
-    const counterDmg = Math.max(0, Math.floor(target.atk * 0.4) - (attacker.block || 0));
-    attacker.block = Math.max(0, (attacker.block || 0) - Math.floor(target.atk * 0.4));
+  hxLog(`${attacker.name} атакует ${target.name}: ${dmg} урона (${target.hp}/${target.maxHp})`, 'attack');
+  hxFlashHex(target.col, target.row, 'rgba(231,76,60,0.75)');
+  attacker.acted = true;
+  if(target.hp <= 0 && prevHp > 0) hexApplyMorale(target);
+  if(target.hp > 0 && target.type === 'warrior' && hexDist(attacker.col,attacker.row,target.col,target.row) === 1) {
+    const counterDmg = Math.max(0, Math.floor(target.atk * 0.4) - (attacker.block||0));
+    attacker.block = Math.max(0, (attacker.block||0) - Math.floor(target.atk * 0.4));
     const prevHpA = attacker.hp;
     attacker.hp = Math.max(0, attacker.hp - counterDmg);
-    hxLog(`🗡 ${target.name} контратакует ${attacker.name}: ${counterDmg} урона`, 'special');
-    // Morale on attacker dying from counter-attack
-    if(attacker.hp <= 0 && prevHpA > 0) {
-      hexApplyMorale(attacker);
-    }
+    hxLog(`🗡 ${target.name} контратакует: ${counterDmg} урона → ${attacker.name}`, 'special');
+    if(attacker.hp <= 0 && prevHpA > 0) hexApplyMorale(attacker);
   }
+  hexCheckEnd();
 }
 
 function hexStartPositions(count, col) {
   const startRow = Math.floor((HEX_ROWS - count) / 2);
   return Array.from({length: count}, (_, i) => ({col, row: startRow + i}));
+}
+
+// Flash a hex with a color briefly (ability animation)
+function hxFlashHex(col, row, color) {
+  const svg = document.getElementById('hx-svg');
+  if(!svg) return;
+  const {x,y} = hexToPixel(col, row);
+  const flash = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  flash.setAttribute('cx', x); flash.setAttribute('cy', y); flash.setAttribute('r', '18');
+  flash.setAttribute('fill', color); flash.setAttribute('pointer-events','none');
+  flash.setAttribute('opacity','0.9');
+  svg.appendChild(flash);
+  const anim = document.createElementNS('http://www.w3.org/2000/svg','animate');
+  anim.setAttribute('attributeName','opacity');
+  anim.setAttribute('from','0.9'); anim.setAttribute('to','0');
+  anim.setAttribute('dur','0.45s'); anim.setAttribute('fill','freeze');
+  flash.appendChild(anim);
+  setTimeout(() => { try { svg.removeChild(flash); } catch(e){} }, 500);
 }
 
 function hexCheckEnd() {
@@ -3017,6 +3390,7 @@ function hexCheckEnd() {
 function hexEnd(won) {
   hxs.ended = true;
   document.getElementById('hx-end-btn').disabled = true;
+  document.getElementById('hx-skip-btn').disabled = true;
   const playerUnitsAlive = hxs.units.filter(u=>u.originalTeam==='player'&&u.hp>0).length;
   const totalPlayer = hxs.units.filter(u=>u.originalTeam==='player').length;
   const enemies_defeated = hxs.units.filter(u=>u.originalTeam==='enemy'&&(u.hp<=0||u.team==='player')).length;
@@ -3055,332 +3429,192 @@ function hexEnd(won) {
   }), 1200);
 }
 
-// PASS C: focus fire helper
+// Focus fire: target weakest HP%
 function hexFindBestTarget(unit, candidates) {
   if(!candidates.length) return null;
   return candidates.slice().sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp))[0];
 }
 
-// ---- Enemy Intent Pre-computation (PASS A) ----
+// Pick best enemy ability (not on cooldown, highest potential damage)
+function hxPickEnemyAbility(enemy, players, allies) {
+  const abs = enemy.abilities || [];
+  if(!abs.length) return null;
+  // Heal ability if HP < 50% and allies wounded
+  const healAbs = abs.filter(a=>a.type==='heal'&&a.cooldown===0);
+  if(healAbs.length && enemy.hp/enemy.maxHp < 0.5) {
+    const woundedAlly = allies.filter(a=>a.hp<a.maxHp&&a.id!==enemy.id&&hexDist(enemy.col,enemy.row,a.col,a.row)<=healAbs[0].range);
+    if(woundedAlly.length) return {ability:healAbs[0], target:woundedAlly.reduce((a,b)=>a.hp<=b.hp?a:b)};
+  }
+  // Summon if outnumbered
+  const summonAbs = abs.filter(a=>a.type==='summon'&&a.cooldown===0);
+  if(summonAbs.length && players.length > allies.filter(a=>a.hp>0).length) {
+    const nbrs = hexNeighbors(enemy.col, enemy.row);
+    const occupied = new Set(hxs.units.filter(u=>u.hp>0).map(u=>`${u.col},${u.row}`));
+    const emptyAdj = nbrs.filter(([c,r])=>!occupied.has(`${c},${r}`));
+    if(emptyAdj.length) {
+      const [sc,sr] = emptyAdj[0];
+      return {ability:summonAbs[0], target:{isFreeHex:true,col:sc,row:sr,id:`free_${sc}_${sr}`,team:'free',hp:1}};
+    }
+  }
+  // Debuff if 2+ players in range
+  const debuffAbs = abs.filter(a=>a.type==='debuff'&&a.cooldown===0);
+  for(const ab of debuffAbs) {
+    const inRange = players.filter(p=>hexDist(enemy.col,enemy.row,p.col,p.row)<=ab.range);
+    if(inRange.length >= 2) return {ability:ab, target:inRange[0]};
+  }
+  // Best damage ability
+  const dmgAbs = abs.filter(a=>a.cooldown===0&&a.type!=='heal'&&a.type!=='summon'&&(hxAbilityDamage(a,enemy)>0||a.effect?.type==='stun'));
+  if(dmgAbs.length) {
+    const best = dmgAbs.slice().sort((a,b)=>hxAbilityDamage(b,enemy)-hxAbilityDamage(a,enemy))[0];
+    const inRange = players.filter(p=>hexDist(enemy.col,enemy.row,p.col,p.row)<=best.range);
+    if(inRange.length) return {ability:best, target:hexFindBestTarget(enemy,inRange)||inRange[0]};
+  }
+  return null;
+}
+
+// ---- Enemy Intent Pre-computation ----
 function hexComputeEnemyIntents() {
   hxs.enemyIntents = {};
   hxs.units.filter(u=>u.team==='enemy'&&u.hp>0).forEach(enemy=>{
-    const living = hxs.units.filter(u=>u.originalTeam==='player'&&u.hp>0);
+    const living = hxs.units.filter(u=>u.team==='player'&&u.hp>0);
     if(!living.length) { hxs.enemyIntents[enemy.id]={action:'idle'}; return; }
-    // Check if enemy might use special this turn
-    if(!enemy.specialUsed) {
-      const sid = enemy.special.id;
-      const specialCasters = new Set(['mage','wizard','elementalist','incenser','demonologist','necromancer','adept','druid','healer']);
-      if(specialCasters.has(enemy.type)) {
-        const attackable = hexAttackable(enemy);
-        // Simplified: if special caster and has targets, may use special
-        if(attackable.length >= 1 || sid==='shield'||sid==='summon_shadow'||sid==='raise_cadaver') {
-          hxs.enemyIntents[enemy.id]={action:'special'}; return;
-        }
-      }
+    const allies = hxs.units.filter(u=>u.team==='enemy'&&u.hp>0);
+    const pick = hxPickEnemyAbility(enemy, living, allies);
+    if(pick) {
+      hxs.enemyIntents[enemy.id] = {action:'ability', abilityId:pick.ability.id, targetId:pick.target.id};
+      return;
     }
-    // Check if can attack
     const attackable = hexAttackable(enemy);
     const bestTarget = hexFindBestTarget(enemy, attackable);
     if(bestTarget) {
-      hxs.enemyIntents[enemy.id]={action:'attack', targetId:bestTarget.id}; return;
+      hxs.enemyIntents[enemy.id] = {action:'attack', targetId:bestTarget.id}; return;
     }
-    // Will move
     const target = hexFindBestTarget(enemy, living);
-    hxs.enemyIntents[enemy.id]={action:'move', targetId:target?.id};
+    hxs.enemyIntents[enemy.id] = {action:'move', targetId:target?.id};
   });
 }
 
-// ---- Enemy AI ----
+// Advance cooldowns for a unit
+function hxTickCooldowns(unit) {
+  (unit.abilities||[]).forEach(a=>{ if(a.cooldown > 0) a.cooldown--; });
+}
+
+// ---- Enemy AI (FFT-style) ----
 function hexEnemyTurn() {
   const _turnLabel = document.getElementById('hx-turn-label');
   _turnLabel.className = 'hx-turn-label enemy-turn';
   _turnLabel.textContent = 'Ход ' + hxs.turnNum + ' — ход врага...';
   document.getElementById('hx-end-btn').disabled = true;
+  document.getElementById('hx-skip-btn').disabled = true;
 
-  // PASS B: Archer free strike — at start of enemy turn, before enemies act
-  hxs.units.filter(u=>u.team==='player'&&u.type==='archer'&&u.hp>0&&!u.attacked).forEach(archer=>{
+  // Archer free strike (ranged unit next to enemy triggers free shot)
+  hxs.units.filter(u=>u.team==='player'&&u.type==='archer'&&u.hp>0&&!u.acted).forEach(archer=>{
     const adj = hxs.units.filter(e=>e.team==='enemy'&&e.hp>0&&hexDist(archer.col,archer.row,e.col,e.row)===1);
-    if(adj.length>0){
-      const target = adj[0];
-      hxLog(`🏹 ${archer.name} — свободный выстрел по ${target.name}!`, 'special');
-      hexAttack(archer, target);
-      archer.attacked = true;
+    if(adj.length > 0) {
+      hxLog(`🏹 ${archer.name} — свободный выстрел!`, 'special');
+      hexAttack(archer, adj[0]);
       hexCheckEnd(); if(hxs.ended) return;
     }
   });
   if(hxs.ended) return;
 
-  // PASS B: Necromancer cadaver aura for ENEMY necromancers
+  // Necromancer cadaver aura for enemy necromancers
   hxs.units.filter(u=>u.team==='enemy'&&u.type==='necromancer'&&u.hp>0).forEach(necro=>{
-    const adjCadaversE = hxs.units.filter(u=>u.type==='cadaver'&&u.team==='enemy'&&u.hp>0&&hexDist(necro.col,necro.row,u.col,u.row)===1);
-    adjCadaversE.forEach(cad=>{ cad.hp = Math.min(cad.maxHp, cad.hp+2); });
+    hxs.units.filter(u=>u.type==='cadaver'&&u.team==='enemy'&&u.hp>0&&hexDist(necro.col,necro.row,u.col,u.row)===1)
+      .forEach(cad=>{ cad.hp = Math.min(cad.maxHp, cad.hp+2); });
   });
 
   const enemies = hxs.units.filter(u=>u.team==='enemy'&&u.hp>0);
   for(const enemy of enemies) {
-    const players = hxs.units.filter(u=>u.team==='player'&&u.hp>0);
-    if(!players.length) break;
-    // PASS C: focus fire — target weakest HP% instead of nearest
-    const nearest = hexFindBestTarget(enemy, players) || players[0];
-
-    // Try special first
-    if(!enemy.specialUsed) {
-      const sid = enemy.special.id;
-      if(sid === 'shield' && enemy.hp/enemy.maxHp < 0.4) {
-        enemy.block += 10; enemy.specialUsed = true;
-        hxLog(`${enemy.name} использует Оборону — щит 10 HP!`, 'special');
-      } else if(sid === 'aim' && !enemy.attacked && players.length > 0) {
-        enemy.aimBonus = true; enemy.specialUsed = true;
-        hxLog(`${enemy.name} прицеливается!`, 'special');
-      } else if(sid === 'lightning') {
-        // use lightning if any player in range 2
-        const inRange2 = players.filter(p => hexDist(enemy.col,enemy.row,p.col,p.row) <= 2);
-        if(inRange2.length > 0) {
-          const target = inRange2[0];
-          let dmg = Math.max(0, 12 - Math.min(12, target.block));
-          target.block = Math.max(0, target.block - 12);
-          target.hp = Math.max(0, target.hp - dmg);
-          const chainT = players.filter(p=>p.hp>0&&p.id!==target.id).sort((a,b2)=>hexDist(target.col,target.row,a.col,a.row)-hexDist(target.col,target.row,b2.col,b2.row))[0];
-          if(chainT) { chainT.hp = Math.max(0, chainT.hp - 6); }
-          enemy.specialUsed = true; enemy.attacked = true;
-          hxLog(`${enemy.name} — Молния! ${dmg} урона ${target.name}${chainT?` + цепь → ${chainT.name}`:''}!`, 'special');
-          hexCheckEnd(); if(hxs.ended) return;
-          continue;
-        }
-      } else if(sid === 'fireball') {
-        // use fireball if 2+ player units nearby
-        const adj2 = players.filter(p => {
-          const nebs = hexNeighbors(p.col,p.row);
-          return players.some(p2 => p2.id!==p.id && nebs.some(([c,r])=>c===p2.col&&r===p2.row));
-        });
-        if(adj2.length >= 2) {
-          const target = adj2[0];
-          let dmg = Math.max(0, 12 - Math.min(12, target.block));
-          target.block = Math.max(0, target.block - 12);
-          target.hp = Math.max(0, target.hp - dmg);
-          const adjEnemies = hexNeighbors(target.col,target.row).map(([c,r])=>hxs.units.find(u=>u.col===c&&u.row===r&&u.hp>0&&u.team==='player')).filter(Boolean);
-          adjEnemies.forEach(ae => { ae.hp = Math.max(0, ae.hp - 6); });
-          enemy.specialUsed = true; enemy.attacked = true;
-          hxLog(`${enemy.name} бросает Огненный шар — ${dmg} урона ${target.name}!`, 'special');
-          hexCheckEnd(); if(hxs.ended) return;
-          continue;
-        }
-      } else if(sid === 'lifeflow') {
-        const adjWounded = enemies.filter(e => e.hp>0 && e.hp/e.maxHp < 0.6 && e.id!==enemy.id && hexDist(enemy.col,enemy.row,e.col,e.row)===1);
-        if(adjWounded.length > 0) {
-          const t = adjWounded.reduce((a,b) => a.hp<=b.hp ? a : b);
-          t.hp = Math.min(t.maxHp, t.hp + 10);
-          enemy.specialUsed = true; enemy.attacked = true;
-          hxLog(`${enemy.name} — Токи жизни: ${t.name} +10 HP!`, 'heal');
-          continue;
-        }
-      } else if(sid === 'heal') {
-        const wounded = enemies.filter(e => e.hp>0 && e.hp/e.maxHp < 0.5 && e.id!==enemy.id);
-        if(wounded.length > 0) {
-          const t = wounded.reduce((a,b) => a.hp<=b.hp ? a : b);
-          t.hp = Math.min(t.maxHp, t.hp + 10);
-          enemy.specialUsed = true; enemy.attacked = true;
-          hxLog(`${enemy.name} исцеляет ${t.name} на 10 HP!`, 'heal');
-          continue;
-        }
-      } else if(sid === 'smoke') {
-        // Use smoke if 2+ player units within range 2
-        const nearPlayers = players.filter(p => hexDist(enemy.col,enemy.row,p.col,p.row) <= 2);
-        if(nearPlayers.length >= 2) {
-          nearPlayers.forEach(u => { u.atkDebuff = (u.atkDebuff||0)+3; });
-          enemy.specialUsed = true; enemy.attacked = true;
-          hxLog(`${enemy.name} — Дымовое облако! Игроки −3 к атаке.`, 'special');
-          continue;
-        }
-      } else if(sid === 'summon_shadow') {
-        // Use shadow summon if outnumbered (player units > enemy units)
-        const playerCount = players.length;
-        const enemyCount = enemies.filter(e=>e.hp>0).length;
-        if(playerCount > enemyCount) {
-          const nbrs = hexNeighbors(enemy.col, enemy.row);
-          const occupied = new Set(hxs.units.filter(u=>u.hp>0).map(u=>`${u.col},${u.row}`));
-          const emptyAdj = nbrs.filter(([c,r])=>!occupied.has(`${c},${r}`));
-          if(emptyAdj.length > 0) {
-            const [sc,sr] = emptyAdj[0];
-            const nearRiftE = hxs.rifts.some(([rc,rr])=>hexDist(enemy.col,enemy.row,rc,rr)<=1);
-            const sHp = nearRiftE ? 15 : 10;
-            hxs.units.push({
-              id: hxs.units.length, type:'shadow',
-              name:'Тень', team:'enemy', originalTeam:'enemy',
-              col:sc, row:sr,
-              hp:sHp, maxHp:sHp, atk:4, moveRange:3, atkRange:1,
-              block:0, aimBonus:false, moved:false, attacked:false, specialUsed:true,
-              emoji:'👤', special:{name:'—', desc:'', id:'none', flavor:''},
-            });
-            enemy.specialUsed = true; enemy.attacked = true;
-            hxLog(`${enemy.name} призывает Тень${nearRiftE?' (Разлом усиливает призыв!)':''}!`, 'special');
-            continue;
-          }
-        }
-      } else if(sid === 'raise_cadaver') {
-        // Raise a dead player unit as a cadaver (enemy team)
-        const deadPlayer = hxs.units.filter(u=>u.originalTeam==='player'&&u.hp<=0&&u.team==='player');
-        if(deadPlayer.length > 0) {
-          const corpse = deadPlayer[0];
-          corpse.team='enemy'; corpse.type='cadaver'; corpse.name='Кадавр';
-          corpse.hp=12; corpse.maxHp=12; corpse.atk=5; corpse.moveRange=1; corpse.atkRange=1;
-          corpse.block=0; corpse.moved=false; corpse.attacked=false; corpse.specialUsed=true;
-          corpse.emoji='💀'; corpse.special={name:'—', desc:'', id:'none', flavor:''};
-          enemy.specialUsed = true; enemy.attacked = true;
-          hxLog(`${enemy.name} поднимает кадавр из павшего!`, 'special');
-          hexCheckEnd(); if(hxs.ended) return;
-          continue;
-        }
-      } else if(sid === 'cult_word') {
-        // Heal lowest-HP ally below 70%, else attack nearest player
-        const woundedAllies = enemies.filter(e=>e.hp>0&&e.hp/e.maxHp<0.7&&e.id!==enemy.id&&hexDist(enemy.col,enemy.row,e.col,e.row)<=2);
-        if(woundedAllies.length > 0) {
-          const t = woundedAllies.reduce((a,b)=>a.hp<=b.hp?a:b);
-          t.hp = Math.min(t.maxHp, t.hp+8);
-          enemy.specialUsed=true; enemy.attacked=true;
-          hxLog(`${enemy.name}: Слово Тепла — ${t.name} +8 HP!`, 'heal');
-          continue;
-        } else if(players.filter(p=>hexDist(enemy.col,enemy.row,p.col,p.row)<=2).length>0) {
-          const tgt = players.filter(p=>hexDist(enemy.col,enemy.row,p.col,p.row)<=2)[0];
-          const b2=Math.min(10,tgt.block); tgt.block=Math.max(0,tgt.block-b2);
-          const dmg2=10-b2; tgt.hp=Math.max(0,tgt.hp-dmg2);
-          enemy.specialUsed=true; enemy.attacked=true;
-          hxLog(`${enemy.name}: Слово Света — ${dmg2} урона ${tgt.name}!`, 'special');
-          hexCheckEnd(); if(hxs.ended) return;
-          continue;
-        }
-      } else if(sid === 'elemental_burst') {
-        // Use burst if 2+ player units within 1 hex of a target player
-        const burstTarget = players.find(p => {
-          const nebs = hexNeighbors(p.col,p.row);
-          return players.some(p2=>p2.id!==p.id&&nebs.some(([c,r])=>c===p2.col&&r===p2.row));
-        });
-        if(burstTarget && hexDist(enemy.col,enemy.row,burstTarget.col,burstTarget.row)<=2) {
-          const b3=Math.min(15,burstTarget.block); burstTarget.block=Math.max(0,burstTarget.block-b3);
-          const dmg3=15-b3; burstTarget.hp=Math.max(0,burstTarget.hp-dmg3);
-          const adjFoes3=hexNeighbors(burstTarget.col,burstTarget.row).map(([c,r])=>hxs.units.find(u=>u.col===c&&u.row===r&&u.hp>0&&u.team==='player')).filter(u=>u&&u.id!==burstTarget.id);
-          adjFoes3.forEach(u=>{u.hp=Math.max(0,u.hp-7);});
-          enemy.specialUsed=true; enemy.attacked=true;
-          hxLog(`${enemy.name} взрывает сущность стихии! ${dmg3} урона ${burstTarget.name}${adjFoes3.length?` + 7 соседям`:''}!`, 'special');
-          hexCheckEnd(); if(hxs.ended) return;
-          continue;
-        }
-      }
-    }
-
-    // PASS C: demonologist moves toward rift to charge up
-    let demoRiftTarget = null;
-    if(enemy.type==='demonologist' && !enemy.specialUsed && hxs.rifts.length > 0) {
-      const nearestRift = hxs.rifts.reduce((a,b) => hexDist(enemy.col,enemy.row,a[0],a[1]) <= hexDist(enemy.col,enemy.row,b[0],b[1]) ? a : b);
-      const riftDist = hexDist(enemy.col,enemy.row,nearestRift[0],nearestRift[1]);
-      const playerDist = hexDist(enemy.col,enemy.row,nearest.col,nearest.row);
-      if(riftDist < playerDist && riftDist > 1) demoRiftTarget = nearestRift;
-    }
-
-    const inRange = hexDist(enemy.col,enemy.row,nearest.col,nearest.row) <= enemy.atkRange;
-
-    // Cavalry charge
-    if(!enemy.specialUsed && enemy.special.id==='charge' && inRange) {
-      let dmg = Math.max(0, 15 - Math.min(15, nearest.block));
-      nearest.block = Math.max(0, nearest.block - 15);
-      nearest.hp = Math.max(0, nearest.hp - dmg);
-      // push target 1 hex away
-      const dc = nearest.col - enemy.col;
-      const dr = nearest.row - enemy.row;
-      const nc2 = nearest.col + Math.sign(dc);
-      const nr2 = nearest.row + Math.sign(dr);
-      if(nc2>=0&&nc2<HEX_COLS&&nr2>=0&&nr2<HEX_ROWS && !hxs.units.find(u=>u.col===nc2&&u.row===nr2&&u.hp>0)) {
-        nearest.col = nc2; nearest.row = nr2;
-      }
-      enemy.specialUsed = true; enemy.attacked = true; enemy.moved = true;
-      hxLog(`${enemy.name} — Натиск! ${dmg} урона ${nearest.name}!`, 'special');
-      hexCheckEnd(); if(hxs.ended) return;
+    if(hxs.ended) break;
+    if(enemy.stunnedTurns > 0) {
+      hxLog(`${enemy.name} оглушён — пропускает ход.`, 'info');
+      enemy.stunnedTurns--;
       continue;
     }
+    const players = hxs.units.filter(u=>u.team==='player'&&u.hp>0);
+    if(!players.length) break;
+    const allies = hxs.units.filter(u=>u.team==='enemy'&&u.hp>0);
+    const nearest = hexFindBestTarget(enemy, players) || players[0];
 
-    if(inRange && !enemy.attacked) {
-      hexAttack(enemy, nearest); // allowCounter=true by default → warrior counter-attack handled in hexAttack
-      hexCheckEnd(); if(hxs.ended) return;
-    } else if(!enemy.moved) {
-      // Find reachable hex closest to nearest enemy, in atkRange
-      const reach = hexReachable(enemy);
-
-      // PASS C: Demonologist moves toward rift first if applicable
-      if(demoRiftTarget && !enemy.attacked) {
-        if(reach.length > 0) {
-          const best = reach.reduce((a,b) => hexDist(a[0],a[1],demoRiftTarget[0],demoRiftTarget[1]) <= hexDist(b[0],b[1],demoRiftTarget[0],demoRiftTarget[1]) ? a : b);
-          enemy.col = best[0]; enemy.row = best[1]; enemy.moved = true;
-          hxLog(`${enemy.name} движется к Разлому.`, 'info');
-          continue;
+    // Try best ability first
+    const pick = hxPickEnemyAbility(enemy, players, allies);
+    if(pick) {
+      // Move toward target if needed
+      if(!enemy.moved) {
+        const reach = hexReachable(enemy);
+        if(reach.length > 0 && hexDist(enemy.col,enemy.row,pick.target.col,pick.target.row) > pick.ability.range) {
+          const spots = reach.filter(([c,r])=>hexDist(c,r,pick.target.col,pick.target.row)<=pick.ability.range);
+          const mv = spots.length ? spots.reduce((a,b)=>hexDist(a[0],a[1],pick.target.col,pick.target.row)<=hexDist(b[0],b[1],pick.target.col,pick.target.row)?a:b) : null;
+          if(mv) { enemy.col=mv[0]; enemy.row=mv[1]; enemy.moved=true; }
         }
       }
+      // Apply ability if in range
+      if(hexDist(enemy.col,enemy.row,pick.target.col,pick.target.row) <= pick.ability.range) {
+        hxApplyAbility(enemy, pick.ability, pick.target);
+        if(hxs.ended) break;
+        continue;
+      }
+    }
 
-      // PASS C: Druid/healer prioritizes healing — moves toward wounded ally
-      if((enemy.type==='druid'||enemy.type==='healer') && !enemy.attacked) {
-        const woundedAllies = hxs.units.filter(u=>u.team==='enemy'&&u.hp>0&&u.id!==enemy.id&&u.hp/u.maxHp<0.6);
-        if(woundedAllies.length > 0 && reach.length > 0) {
-          const healTarget = woundedAllies.reduce((a,b)=>a.hp<=b.hp?a:b);
-          const alreadyAdj = hexDist(enemy.col,enemy.row,healTarget.col,healTarget.row)===1;
-          if(!alreadyAdj) {
-            const best = reach.reduce((a,b) => hexDist(a[0],a[1],healTarget.col,healTarget.row) <= hexDist(b[0],b[1],healTarget.col,healTarget.row) ? a : b);
-            enemy.col = best[0]; enemy.row = best[1]; enemy.moved = true;
+    // No ability or ability out of range — move+basic attack
+    const inRange = hexDist(enemy.col,enemy.row,nearest.col,nearest.row) <= enemy.atkRange;
+    if(inRange && !enemy.acted) {
+      hexAttack(enemy, nearest);
+      if(hxs.ended) break;
+    } else if(!enemy.moved) {
+      const reach = hexReachable(enemy);
+      // Druid/healer moves toward wounded ally first
+      if((enemy.type==='druid'||enemy.type==='healer') && !enemy.acted) {
+        const woundedAllies = allies.filter(a=>a.hp<a.maxHp&&a.id!==enemy.id);
+        if(woundedAllies.length && reach.length) {
+          const healT = woundedAllies.reduce((a,b)=>a.hp<=b.hp?a:b);
+          if(hexDist(enemy.col,enemy.row,healT.col,healT.row) > 1) {
+            const mv = reach.reduce((a,b)=>hexDist(a[0],a[1],healT.col,healT.row)<=hexDist(b[0],b[1],healT.col,healT.row)?a:b);
+            enemy.col=mv[0]; enemy.row=mv[1]; enemy.moved=true;
             hxLog(`${enemy.name} движется к раненому союзнику.`, 'info');
             continue;
           }
         }
       }
-
-      // PASS C: Necromancer moves toward low-HP enemy to raise cadaver
-      if(enemy.type==='necromancer' && !enemy.specialUsed && !enemy.attacked) {
-        const dyingPlayers = players.filter(p=>p.hp/p.maxHp < 0.3);
-        if(dyingPlayers.length > 0 && reach.length > 0) {
-          const dyingT = hexFindBestTarget(enemy, dyingPlayers);
-          const best = reach.reduce((a,b) => hexDist(a[0],a[1],dyingT.col,dyingT.row) <= hexDist(b[0],b[1],dyingT.col,dyingT.row) ? a : b);
-          enemy.col = best[0]; enemy.row = best[1]; enemy.moved = true;
-          hxLog(`${enemy.name} движется к слабому противнику.`, 'info');
-          continue;
-        }
-      }
-
-      // First try to find a hex from which we can attack (focus on weakest target)
-      const atkSpots = reach.filter(([c,r]) => hexDist(c,r,nearest.col,nearest.row) <= enemy.atkRange);
-      if(atkSpots.length > 0) {
-        const best = atkSpots.reduce((a,b) => hexDist(a[0],a[1],nearest.col,nearest.row) <= hexDist(b[0],b[1],nearest.col,nearest.row) ? a : b);
-        enemy.col = best[0]; enemy.row = best[1]; enemy.moved = true;
-        if(!enemy.attacked) {
-          hexAttack(enemy, nearest); // warrior counter-attack handled in hexAttack
-          hexCheckEnd(); if(hxs.ended) return;
-        }
-      } else if(reach.length > 0) {
-        // Move toward nearest (weakest target)
-        const best = reach.reduce((a,b) => hexDist(a[0],a[1],nearest.col,nearest.row) <= hexDist(b[0],b[1],nearest.col,nearest.row) ? a : b);
-        enemy.col = best[0]; enemy.row = best[1]; enemy.moved = true;
+      const atkSpots = reach.filter(([c,r])=>hexDist(c,r,nearest.col,nearest.row)<=enemy.atkRange);
+      if(atkSpots.length) {
+        const best = atkSpots.reduce((a,b)=>hexDist(a[0],a[1],nearest.col,nearest.row)<=hexDist(b[0],b[1],nearest.col,nearest.row)?a:b);
+        enemy.col=best[0]; enemy.row=best[1]; enemy.moved=true;
+        if(!enemy.acted) { hexAttack(enemy, nearest); if(hxs.ended) break; }
+      } else if(reach.length) {
+        const best = reach.reduce((a,b)=>hexDist(a[0],a[1],nearest.col,nearest.row)<=hexDist(b[0],b[1],nearest.col,nearest.row)?a:b);
+        enemy.col=best[0]; enemy.row=best[1]; enemy.moved=true;
         hxLog(`${enemy.name} движется к ${nearest.name}.`, 'info');
       }
     }
   }
 
-  // Reset for next player turn — clear debuffs
-  hxs.units.forEach(u => { u.moved = false; u.attacked = false; u.atkDebuff = 0; });
+  // Reset for next player turn
+  hxs.units.forEach(u => {
+    u.moved = false; u.acted = false; u.atkDebuff = 0;
+    // Tick buff durations
+    if(u.atkBuffTurns > 0) { u.atkBuffTurns--; if(u.atkBuffTurns <= 0) u.atkBuff = 0; }
+    // Tick ability cooldowns
+    hxTickCooldowns(u);
+  });
 
-  // PASS A: Forest block — apply +2 block to units in forest hexes at start of player turn
+  // Forest block at start of player turn
   const forestSet = new Set(hxs.forests.map(([fc,fr])=>`${fc},${fr}`));
   hxs.units.filter(u=>u.hp>0&&forestSet.has(`${u.col},${u.row}`)).forEach(u=>{
-    const prevBlock = u.block || 0;
-    u.block = prevBlock + 2;
+    u.block = (u.block||0) + 2;
     hxLog(`🌲 ${u.name} укрылся в лесу (+2 блок)`, 'info');
   });
 
-  // PASS B: Necromancer cadaver aura — at start of player turn for player necromancers
+  // Necromancer cadaver aura for player necromancers
   hxs.units.filter(u=>u.team==='player'&&u.type==='necromancer'&&u.hp>0).forEach(necro=>{
-    const adjCadavers = hxs.units.filter(u=>u.type==='cadaver'&&u.team==='player'&&u.hp>0&&hexDist(necro.col,necro.row,u.col,u.row)===1);
-    adjCadavers.forEach(cad=>{ cad.hp = Math.min(cad.maxHp, cad.hp+2); hxLog(`💀 ${necro.name} поддерживает кадавр (+2 HP)`, 'heal'); });
+    hxs.units.filter(u=>u.type==='cadaver'&&u.team==='player'&&u.hp>0&&hexDist(necro.col,necro.row,u.col,u.row)===1)
+      .forEach(cad=>{ cad.hp=Math.min(cad.maxHp,cad.hp+2); hxLog(`💀 ${necro.name} поддерживает кадавр (+2 HP)`, 'heal'); });
   });
 
-  // Objective hex turn tracking
+  // Objective hex tracking
   if(hxs.objective) {
-    const onObj = hxs.units.find(u => u.hp>0 && u.col===hxs.objective.col && u.row===hxs.objective.row);
+    const onObj = hxs.units.find(u=>u.hp>0&&u.col===hxs.objective.col&&u.row===hxs.objective.row);
     if(onObj?.team === 'player') hxs.objective.playerTurns = (hxs.objective.playerTurns||0) + 1;
     else if(onObj?.team === 'enemy') hxs.objective.enemyTurns = (hxs.objective.enemyTurns||0) + 1;
   }
@@ -3390,14 +3624,15 @@ function hexEnemyTurn() {
   hxs.selected = null;
   hxs.reachable = [];
   hxs.attackable = [];
-  hxs.specialTarget = [];
+  hxs.abilityTargets = [];
+  hxs.activeAbilityIdx = null;
   hxs.mode = 'select';
   if(!hxs.ended) hxLog(`Ход ${hxs.turnNum}. Твой ход!`, 'info');
   const _pLabel = document.getElementById('hx-turn-label');
   _pLabel.className = 'hx-turn-label player-turn';
   _pLabel.textContent = `Ход ${hxs.turnNum} — твой ход`;
   document.getElementById('hx-end-btn').disabled = false;
-  // Pre-compute enemy intents for player to see before acting
+  document.getElementById('hx-skip-btn').disabled = false;
   hexComputeEnemyIntents();
   hxRender();
   hexUpdateInfo();
@@ -3418,8 +3653,13 @@ function hxRender() {
   const svg = document.getElementById('hx-svg');
   svg.innerHTML = '';
   const reachSet = new Set(hxs.reachable.map(([c,r])=>`${c},${r}`));
-  const atkSet = new Set(hxs.attackable.map(u=>`${u.col},${u.row}`));
-  const specSet = new Set(hxs.specialTarget.map(u=>`${u.col},${u.row}`));
+  // abilityTargets can contain units or free hexes
+  const abilityTargetSet = new Set(hxs.abilityTargets.map(t=>`${t.col},${t.row}`));
+  // Active ability info for coloring
+  const selUnit = hxs.selected !== null ? hxs.units.find(u=>u.id===hxs.selected) : null;
+  const activeAbility = (selUnit && hxs.activeAbilityIdx !== null) ? selUnit.abilities?.[hxs.activeAbilityIdx] : null;
+  const isHealAbility = activeAbility?.type === 'heal';
+  const isSummonAbility = activeAbility?.type === 'summon';
 
   // Draw hexes
   const riftSet = new Set(hxs.rifts.map(([c,r])=>`${c},${r}`));
@@ -3432,17 +3672,11 @@ function hxRender() {
       let fill = riftSet.has(key) ? 'rgba(138,43,226,0.25)' : forestSet2.has(key) ? 'rgba(34,139,34,0.3)' : heightSet.has(key) ? 'rgba(139,90,43,0.35)' : 'rgba(255,255,255,0.04)';
       let stroke = riftSet.has(key) ? '#9b59b6' : forestSet2.has(key) ? '#27ae60' : heightSet.has(key) ? '#8B5E3C' : '#444';
       let sw = (riftSet.has(key)||forestSet2.has(key)||heightSet.has(key)) ? '1.2' : '0.8';
-      if(reachSet.has(key))  { fill='rgba(52,152,219,0.28)';  stroke='#3498db'; sw='1.2'; }
-      if(atkSet.has(key))    { fill='rgba(231,76,60,0.22)';   stroke='#e74c3c'; sw='1.2'; }
-      if(specSet.has(key)) {
-        const unit = hxs.units.find(u=>u.col===col&&u.row===row&&u.hp>0);
-        if(unit) {
-          const selUnit = hxs.units.find(u=>u.id===hxs.selected);
-          const isHeal = selUnit?.special?.id==='heal' || selUnit?.special?.id==='lifeflow' || selUnit?.special?.id==='cult_word';
-          fill = hxs.mode==='special' && isHeal && hxs.specialTargetMode==='heal' ? 'rgba(46,213,115,0.28)' : 'rgba(255,165,0,0.28)';
-          stroke = hxs.mode==='special' && isHeal && hxs.specialTargetMode==='heal' ? '#2ed573' : '#ffa500';
-          sw = '1.5';
-        }
+      if(reachSet.has(key) && hxs.mode === 'move') { fill='rgba(52,152,219,0.28)'; stroke='#3498db'; sw='1.2'; }
+      if(abilityTargetSet.has(key) && hxs.mode === 'ability') {
+        fill = isHealAbility ? 'rgba(46,213,115,0.28)' : isSummonAbility ? 'rgba(162,155,254,0.3)' : 'rgba(255,140,0,0.28)';
+        stroke = isHealAbility ? '#2ed573' : isSummonAbility ? '#a29bfe' : '#ff8c00';
+        sw = '1.5';
       }
       const poly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
       poly.setAttribute('points', hexPoints(x,y));
@@ -3488,7 +3722,7 @@ function hxRender() {
     if(unit.hp <= 0) return;
     const {x,y} = hexToPixel(unit.col, unit.row);
     const isSelected = unit.id === hxs.selected;
-    const isDone = unit.moved && unit.attacked;
+    const isDone = unit.moved && unit.acted;
     const isPlayer = unit.team === 'player';
 
     // Unit circle
@@ -3551,15 +3785,7 @@ function hxRender() {
       svg.appendChild(deb);
       statusOffset += 11;
     }
-    if(unit.aimBonus) {
-      const aim = document.createElementNS('http://www.w3.org/2000/svg','text');
-      aim.setAttribute('x', x+12+statusOffset); aim.setAttribute('y', y-14);
-      aim.setAttribute('font-size','9'); aim.setAttribute('fill','#f39c12');
-      aim.setAttribute('text-anchor','middle'); aim.setAttribute('dominant-baseline','middle');
-      aim.setAttribute('pointer-events','none');
-      aim.textContent = '🎯';
-      svg.appendChild(aim);
-    }
+    // (aimBonus removed — old ranged system replaced by FFT abilities)
 
     // Animated selection ring for selected unit
     if(unit.id === hxs.selected) {
@@ -3577,7 +3803,7 @@ function hxRender() {
     }
 
     // Done-turn checkmark
-    if(unit.team==='player' && unit.moved && unit.attacked) {
+    if(unit.team==='player' && unit.moved && unit.acted) {
       const check = document.createElementNS('http://www.w3.org/2000/svg','text');
       check.setAttribute('x', x+14); check.setAttribute('y', y-14);
       check.setAttribute('font-size','11'); check.setAttribute('fill','#2ecc71');
@@ -3643,9 +3869,9 @@ function hxRender() {
       const intent = hxs.enemyIntents[enemy.id];
       if(!intent || intent.action === 'idle') return;
       const {x:cx, y:cy} = hexToPixel(enemy.col, enemy.row);
-      const intentEmoji = intent.action==='attack' ? '⚔' : intent.action==='special' ? '✨' : intent.action==='move' ? '→' : '·';
+      const intentEmoji = intent.action==='attack' ? '⚔' : intent.action==='ability' ? '✨' : intent.action==='move' ? '→' : '·';
       // Draw dashed attack line from enemy to intended target
-      if(intent.action==='attack' && intent.targetId !== undefined) {
+      if((intent.action==='attack'||intent.action==='ability') && intent.targetId !== undefined) {
         const target = hxs.units.find(u=>u.id===intent.targetId);
         if(target) {
           const {x:tx, y:ty} = hexToPixel(target.col, target.row);
@@ -3702,337 +3928,272 @@ function hexUpdateInfo(unit) {
   if(!unit && hxs.selected !== null) unit = hxs.units.find(u=>u.id===hxs.selected);
   const nameEl   = document.getElementById('hx-info-name');
   const statsEl  = document.getElementById('hx-info-stats');
-  const specEl   = document.getElementById('hx-info-spec');
-  const flavorEl = document.getElementById('hx-info-flavor');
   const statusEl = document.getElementById('hx-info-status');
-  const specBtn  = document.getElementById('hx-spec-btn');
+  const skipBtn  = document.getElementById('hx-skip-btn');
+
+  const panel = document.getElementById('hx-ability-panel');
+  const row   = document.getElementById('hx-ability-row');
+
   if(!unit || unit.hp <= 0) {
-    if(nameEl)   nameEl.textContent  = unit ? '—' : 'Выбери отряд';
+    if(nameEl)   nameEl.textContent  = 'Выбери персонажа';
     if(statsEl)  statsEl.textContent  = '';
-    if(specEl)   specEl.textContent   = '';
-    if(flavorEl) flavorEl.textContent = '';
     if(statusEl) statusEl.textContent = '';
-    specBtn.disabled  = true;
-    specBtn.textContent = 'Спец';
+    if(panel)    panel.style.display  = 'none';
+    if(skipBtn)  skipBtn.disabled = true;
     return;
   }
-  const def = HEX_UNIT_DEFS[unit.type] || {};
-  const done = unit.moved && unit.attacked;
-  if(nameEl) nameEl.textContent = `${unit.emoji||def.emoji||'?'} ${unit.name}${done?' ✓':''}`;
-  // Stats line
+  const done = unit.moved && unit.acted;
+  if(nameEl) nameEl.textContent = `${unit.emoji||'?'} ${unit.name}${done?' ✓':''}`;
   const hpPct = Math.round(unit.hp/unit.maxHp*100);
-  let statsLine = `❤ ${unit.hp}/${unit.maxHp} (${hpPct}%)  ⚔ ${unit.atk}  👣 ${unit.moveRange}  🎯 ${unit.atkRange}`;
-  if(statsEl) statsEl.textContent = statsLine;
-  // Special
-  const sp = unit.special || def.special;
-  if(specEl) {
-    if(sp && sp.name && sp.name !== '—') {
-      specEl.textContent = unit.specialUsed ? `[использовано] ${sp.name}` : `${sp.name}: ${sp.desc}`;
-    } else { specEl.textContent = ''; }
-  }
-  if(flavorEl) flavorEl.textContent = (sp && sp.flavor) ? sp.flavor : '';
-  // Status effects
+  const atkEff = Math.max(0, unit.atk + (unit.atkBuff||0) - (unit.atkDebuff||0));
+  if(statsEl) statsEl.textContent = `❤ ${unit.hp}/${unit.maxHp} (${hpPct}%)  ⚔ ${atkEff}  👣 ${unit.moveRange}`;
   const statuses = [];
   if(unit.block > 0) statuses.push(`🛡 ${unit.block}`);
   if(unit.atkDebuff > 0) statuses.push(`💨 −${unit.atkDebuff}`);
-  if(unit.aimBonus) statuses.push('🎯×2');
+  if(unit.atkBuff > 0) statuses.push(`✨ +${unit.atkBuff}`);
+  if(unit.stunnedTurns > 0) statuses.push(`⚡ оглушён ${unit.stunnedTurns}`);
   if(statusEl) statusEl.textContent = statuses.join('  ');
-  // Spec button
-  const inSpecialMode = hxs.mode === 'special';
-  specBtn.textContent = inSpecialMode ? 'Отмена' : (sp && sp.name && sp.name !== '—' ? 'Спец' : 'Спец');
-  specBtn.disabled = unit.team !== 'player' || unit.specialUsed || hxs.turn !== 'player' || hxs.ended || (!inSpecialMode && !sp?.name);
+
+  // Show skip button only for player units
+  if(skipBtn) skipBtn.disabled = unit.team !== 'player' || hxs.turn !== 'player' || hxs.ended || done;
+
+  // Build ability panel (only for player units)
+  if(!panel || !row) return;
+  if(unit.team !== 'player' || hxs.turn !== 'player' || hxs.ended) {
+    panel.style.display = 'none'; return;
+  }
+  panel.style.display = '';
+  row.innerHTML = '';
+
+  // Move button
+  const moveBtn = document.createElement('button');
+  moveBtn.className = 'hx-ability-btn move-btn' + (hxs.mode === 'move' ? ' active' : '');
+  moveBtn.disabled = unit.moved;
+  moveBtn.innerHTML = `<span class="hx-ability-icon">🚶</span><span class="hx-ability-name">Движение</span>`;
+  moveBtn.onclick = () => hxSelectMoveMode();
+  row.appendChild(moveBtn);
+
+  // Ability buttons
+  (unit.abilities || []).forEach((ab, idx) => {
+    const btn = document.createElement('button');
+    const isActive = hxs.activeAbilityIdx === idx && hxs.mode === 'ability';
+    const onCd = ab.cooldown > 0;
+    const cantAct = unit.acted;
+    btn.className = `hx-ability-btn hx-ability-type-${ab.type}${isActive ? ' active' : ''}`;
+    btn.disabled = onCd || cantAct;
+    const cdText = onCd ? `<span class="hx-ability-cd">⏳${ab.cooldown}</span>` : `<span class="hx-ability-cd ready">✓</span>`;
+    btn.innerHTML = `<span class="hx-ability-icon">${ab.icon||'?'}</span><span class="hx-ability-name">${ab.name}</span>${cdText}`;
+    btn.onclick = () => hxSelectAbility(idx);
+    row.appendChild(btn);
+  });
 }
 
 // ---- Click handlers ----
+function hxSelectMoveMode() {
+  if(hxs.ended || hxs.turn!=='player' || hxs.selected===null) return;
+  const unit = hxs.units.find(u=>u.id===hxs.selected);
+  if(!unit||unit.hp<=0||unit.moved) return;
+  if(hxs.mode === 'move') {
+    // Cancel move mode
+    hxs.mode = 'select'; hxs.reachable = []; hxs.abilityTargets = []; hxs.activeAbilityIdx = null;
+    hxRender(); hexUpdateInfo(); return;
+  }
+  hxs.mode = 'move';
+  hxs.reachable = hexReachable(unit);
+  hxs.abilityTargets = [];
+  hxs.activeAbilityIdx = null;
+  hxLog('Выбери гекс для перемещения.', 'info');
+  hxRender(); hexUpdateInfo();
+}
+
+function hxSelectAbility(idx) {
+  if(hxs.ended || hxs.turn!=='player' || hxs.selected===null) return;
+  const unit = hxs.units.find(u=>u.id===hxs.selected);
+  if(!unit||unit.hp<=0||unit.acted) return;
+  const ab = unit.abilities?.[idx];
+  if(!ab || ab.cooldown > 0) return;
+  // Toggle off if already selected
+  if(hxs.mode === 'ability' && hxs.activeAbilityIdx === idx) {
+    hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null;
+    hxRender(); hexUpdateInfo(); return;
+  }
+  hxs.mode = 'ability';
+  hxs.activeAbilityIdx = idx;
+  hxs.reachable = [];
+  hxs.abilityTargets = hxAbilityTargets(unit, ab);
+  if(hxs.abilityTargets.length === 0 && ab.range > 0) {
+    hxLog(`${ab.name}: нет целей в радиусе ${ab.range}.`, 'info');
+    hxs.mode = 'select'; hxs.activeAbilityIdx = null;
+    hxRender(); hexUpdateInfo(); return;
+  }
+  // Block ability with range=0 (self-buff): apply immediately
+  if(ab.range === 0) {
+    hxApplyAbility(unit, ab, unit);
+    hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null;
+    // auto end unit if both done
+    if(unit.moved && unit.acted) { hxs.selected = null; hxs.reachable = []; }
+    hxRender(); hexUpdateInfo(); return;
+  }
+  hxLog(`${ab.icon||''} ${ab.name}: выбери цель (дальность ${ab.range}${ab.aoe > 0 ? `, AoE ${ab.aoe}` : ''}).`, 'special');
+  hxRender(); hexUpdateInfo();
+}
+
 function hxClickUnit(unitId) {
   if(hxs.ended || hxs.turn!=='player') return;
   const unit = hxs.units.find(u=>u.id===unitId);
   if(!unit||unit.hp<=0) return;
 
-  // If in special target mode, handle special
-  if(hxs.mode==='special' && hxs.selected!==null) {
+  // In ability targeting mode — click on target
+  if(hxs.mode === 'ability' && hxs.selected !== null) {
     const sel = hxs.units.find(u=>u.id===hxs.selected);
-    if(sel && hxs.specialTarget.some(t=>t.id===unitId)) {
-      hxApplySpecialOnTarget(sel, unit);
-      hxs.mode='select'; hxs.specialTarget=[]; hxs.selected=null;
-      hxs.reachable=[]; hxs.attackable=[];
-      hxRender(); hexUpdateInfo(); return;
-    }
-  }
-
-  // Attacking enemy unit
-  if(unit.team==='enemy' && hxs.selected!==null) {
-    const sel = hxs.units.find(u=>u.id===hxs.selected);
-    if(sel && sel.team==='player' && !sel.attacked && hxs.attackable.some(a=>a.id===unitId)) {
-      hexAttack(sel, unit);
-      hxs.reachable=[]; hxs.attackable=[];
-      hxRender(); hexUpdateInfo();
-      hexCheckEnd();
+    if(sel && hxs.abilityTargets.some(t=>t.id===unitId)) {
+      const ab = sel.abilities?.[hxs.activeAbilityIdx];
+      if(ab) {
+        hxApplyAbility(sel, ab, unit);
+        hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null;
+        hxs.reachable = [];
+        // Auto-deselect if unit fully done
+        if(sel.moved && sel.acted) { hxs.selected = null; }
+        hxRender(); hexUpdateInfo();
+      }
       return;
     }
   }
 
-  // Select own unit
-  if(unit.team==='player') {
-    if(hxs.selected===unitId) {
-      // Deselect
-      hxs.selected=null; hxs.reachable=[]; hxs.attackable=[]; hxs.mode='select';
+  // Select own player unit
+  if(unit.team === 'player') {
+    if(hxs.selected === unitId) {
+      hxs.selected = null; hxs.reachable = []; hxs.abilityTargets = [];
+      hxs.mode = 'select'; hxs.activeAbilityIdx = null;
       hxRender(); hexUpdateInfo(); return;
     }
-    hxs.selected=unitId; hxs.mode='select';
-    hxs.reachable = unit.moved ? [] : hexReachable(unit);
-    hxs.attackable = unit.attacked ? [] : hexAttackable(unit);
-    hxs.specialTarget=[];
+    hxs.selected = unitId;
+    hxs.mode = 'select';
+    hxs.reachable = [];
+    hxs.abilityTargets = [];
+    hxs.activeAbilityIdx = null;
     hxRender(); hexUpdateInfo();
   }
+  // Click on enemy while in select mode — nothing (must choose ability first)
 }
 
 function hxClickHex(col, row) {
-  if(hxs.ended || hxs.turn!=='player' || hxs.selected===null) return;
+  if(hxs.ended || hxs.turn !== 'player' || hxs.selected === null) return;
   const unit = hxs.units.find(u=>u.id===hxs.selected);
-  if(!unit||unit.hp<=0||unit.moved) return;
+  if(!unit || unit.hp <= 0) return;
 
-  // Check if it's a reachable hex
-  if(hxs.reachable.some(([c,r])=>c===col&&r===row)) {
-    unit.col=col; unit.row=row; unit.moved=true;
-    // Recompute attackable from new position
-    hxs.reachable=[];
-    hxs.attackable = unit.attacked ? [] : hexAttackable(unit);
+  // Move mode: click on reachable hex
+  if(hxs.mode === 'move' && hxs.reachable.some(([c,r])=>c===col&&r===row)) {
+    unit.col = col; unit.row = row; unit.moved = true;
+    hxs.mode = 'select'; hxs.reachable = [];
+    // Check if done (ability already used)
+    if(unit.moved && unit.acted) { hxs.selected = null; }
     hxRender(); hexUpdateInfo();
+    return;
+  }
+
+  // Ability mode: click on free hex (summon target)
+  if(hxs.mode === 'ability') {
+    const freeTarget = hxs.abilityTargets.find(t=>t.isFreeHex&&t.col===col&&t.row===row);
+    if(freeTarget) {
+      const ab = unit.abilities?.[hxs.activeAbilityIdx];
+      if(ab) {
+        hxApplyAbility(unit, ab, freeTarget);
+        hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null; hxs.reachable = [];
+        if(unit.moved && unit.acted) { hxs.selected = null; }
+        hxRender(); hexUpdateInfo();
+      }
+    }
   }
 }
 
-function hxUseSpecial() {
+function hxSkipUnit() {
   if(hxs.ended || hxs.turn!=='player' || hxs.selected===null) return;
   const unit = hxs.units.find(u=>u.id===hxs.selected);
   if(!unit||unit.hp<=0) return;
-  // Cancel special targeting mode
-  if(hxs.mode === 'special') {
-    hxs.mode = 'select';
-    hxs.specialTarget = [];
-    hxs.reachable = unit.moved ? [] : hexReachable(unit);
-    hxs.attackable = unit.attacked ? [] : hexAttackable(unit);
-    hxLog('Спец-действие отменено.', 'info');
-    hxRender(); hexUpdateInfo(); return;
-  }
-  if(unit.specialUsed) return;
-  const sid = unit.special.id;
-
-  if(sid==='shield') {
-    unit.block += 10; unit.specialUsed=true;
-    hxLog(`${unit.name} принимает оборону — щит 10 HP!`, 'special');
-    hxs.reachable=[]; hxs.attackable=[];
-    hxRender(); hexUpdateInfo();
-  } else if(sid==='aim') {
-    unit.aimBonus=true; unit.specialUsed=true;
-    hxLog(`${unit.name} прицеливается — следующая атака ×2!`, 'special');
-    hxs.reachable=[];
-    hxs.attackable = unit.attacked ? [] : hexAttackable(unit);
-    hxRender(); hexUpdateInfo();
-  } else if(sid==='charge') {
-    const targets = hexAttackable(unit);
-    if(!targets.length) { hxLog('Нет цели для Натиска!', 'info'); hxRender(); return; }
-    const t = targets[0];
-    let dmg = 15;
-    const blocked = Math.min(dmg, t.block);
-    t.block = Math.max(0, t.block-blocked); dmg-=blocked;
-    t.hp=Math.max(0,t.hp-dmg);
-    // push
-    const dc=t.col-unit.col; const dr=t.row-unit.row;
-    const nc2=t.col+Math.sign(dc); const nr2=t.row+Math.sign(dr);
-    if(nc2>=0&&nc2<HEX_COLS&&nr2>=0&&nr2<HEX_ROWS&&!hxs.units.find(u2=>u2.col===nc2&&u2.row===nr2&&u2.hp>0)) {
-      t.col=nc2; t.row=nr2;
-    }
-    unit.specialUsed=true; unit.attacked=true;
-    hxLog(`${unit.name} — Натиск! ${dmg} урона ${t.name}!`, 'attack');
-    hxs.reachable=[]; hxs.attackable=[];
-    hxRender(); hexUpdateInfo(); hexCheckEnd();
-  } else if(sid==='lightning') {
-    // Enter special target mode — pick enemy
-    const targets = hxs.units.filter(u=>u.team==='enemy'&&u.hp>0);
-    if(!targets.length) { hxLog('Нет цели для Молнии!', 'info'); hxRender(); return; }
-    hxs.specialTarget=targets; hxs.mode='special'; hxs.specialTargetMode='attack';
-    hxLog('Выбери цель для Молнии!', 'special');
-    hxRender(); hexUpdateInfo();
-  } else if(sid==='fireball') {
-    // Enter special target mode — pick enemy
-    const targets = hxs.units.filter(u=>u.team==='enemy'&&u.hp>0);
-    hxs.specialTarget=targets; hxs.mode='special'; hxs.specialTargetMode='attack';
-    hxLog('Выбери цель для Огненного шара!', 'special');
-    hxRender(); hexUpdateInfo();
-  } else if(sid==='lifeflow') {
-    // Enter special target mode — pick adjacent ally (hexDist=1, contact-only)
-    const targets = hxs.units.filter(u=>u.team==='player'&&u.hp>0&&u.id!==unit.id&&hexDist(unit.col,unit.row,u.col,u.row)===1);
-    if(!targets.length) { hxLog('Нет соседнего союзника для исцеления!', 'info'); hxRender(); return; }
-    hxs.specialTarget=targets; hxs.mode='special'; hxs.specialTargetMode='heal';
-    hxLog('Выбери соседнего союзника для Токов жизни!', 'heal');
-    hxRender(); hexUpdateInfo();
-  } else if(sid==='heal') {
-    // Enter special target mode — pick ally
-    const targets = hxs.units.filter(u=>u.team==='player'&&u.hp>0);
-    hxs.specialTarget=targets; hxs.mode='special'; hxs.specialTargetMode='heal';
-    hxLog('Выбери союзника для Исцеления!', 'heal');
-    hxRender(); hexUpdateInfo();
-  } else if(sid==='smoke') {
-    // Apply atkDebuff -3 to all enemies within range 2
-    const affected = hxs.units.filter(u=>u.team==='enemy'&&u.hp>0&&hexDist(unit.col,unit.row,u.col,u.row)<=2);
-    affected.forEach(u=>{u.atkDebuff=(u.atkDebuff||0)+3;});
-    unit.specialUsed=true; unit.attacked=true;
-    hxLog(`Кадильщик развешивает дым — враги −3 к атаке на этот ход (${affected.length} цел.).`, 'special');
-    hxs.reachable=[]; hxs.attackable=[];
-    hxRender(); hexUpdateInfo();
-  } else if(sid==='summon_shadow') {
-    // Find empty adjacent hex
-    const neighbors = hexNeighbors(unit.col, unit.row);
-    const occupied = new Set(hxs.units.filter(u=>u.hp>0).map(u=>`${u.col},${u.row}`));
-    const emptyAdj = neighbors.filter(([c,r])=>!occupied.has(`${c},${r}`));
-    if(!emptyAdj.length) { hxLog('Нет места для Тени!', 'info'); hxRender(); return; }
-    const [sc,sr] = emptyAdj[0];
-    // Check rift proximity for bonus
-    const nearRift = hxs.rifts.some(([rc,rr]) => hexDist(unit.col,unit.row,rc,rr) <= 1);
-    const shadowHp = nearRift ? 15 : 10;
-    hxs.units.push({
-      id: hxs.units.length, type:'shadow',
-      name:'Тень', team:'player', originalTeam:'player',
-      col:sc, row:sr,
-      hp:shadowHp, maxHp:shadowHp, atk:4, moveRange:3, atkRange:1,
-      block:0, aimBonus:false, moved:false, attacked:false, specialUsed:true,
-      emoji:'👤', special:{name:'—', desc:'', id:'none', flavor:''},
-    });
-    unit.specialUsed=true; unit.attacked=true;
-    hxLog(`Демонолог призывает Тень!`, 'special');
-    if(nearRift) hxLog(`⌖ Разлом усиливает призыв! Тень +5 HP`, 'special');
-    hxs.reachable=[]; hxs.attackable=[];
-    hxRender(); hexUpdateInfo();
-  } else if(sid==='raise_cadaver') {
-    // Find first dead enemy
-    const dead = hxs.units.filter(u=>u.originalTeam==='enemy'&&u.hp<=0&&u.team==='enemy');
-    if(!dead.length) { hxLog('Нет павших врагов для подъёма!', 'info'); hxRender(); return; }
-    const corpse = dead[0];
-    corpse.team='player'; corpse.type='cadaver'; corpse.name='Кадавр';
-    corpse.hp=12; corpse.maxHp=12; corpse.atk=5; corpse.moveRange=1; corpse.atkRange=1;
-    corpse.block=0; corpse.moved=false; corpse.attacked=false; corpse.specialUsed=true;
-    corpse.emoji='💀'; corpse.special={name:'—', desc:'', id:'none', flavor:''};
-    unit.specialUsed=true; unit.attacked=true;
-    hxLog('Некромант поднимает кадавр!', 'special');
-    hxs.reachable=[]; hxs.attackable=[];
-    hexCheckEnd(); if(hxs.ended) return;
-    hxRender(); hexUpdateInfo();
-  } else if(sid==='cult_word') {
-    // Dual mode: heal ally if any needs it, else attack enemy
-    const needsHeal = hxs.units.filter(u=>u.team==='player'&&u.hp>0&&u.hp<u.maxHp&&u.id!==unit.id&&hexDist(unit.col,unit.row,u.col,u.row)<=2);
-    if(needsHeal.length > 0) {
-      hxs.mode = 'special'; hxs.specialTargetMode = 'heal';
-      hxs.specialTarget = needsHeal;
-      hxLog('Адепт произносит Слово Тепла — выбери союзника!', 'heal');
-    } else {
-      const atkTargets = hexAttackable(unit);
-      if(!atkTargets.length) { hxLog('Нет целей для Слова Культа!', 'info'); hxRender(); return; }
-      hxs.mode = 'special'; hxs.specialTargetMode = 'attack';
-      hxs.specialTarget = atkTargets;
-      hxLog('Адепт произносит Слово Света — выбери врага!', 'special');
-    }
-    hxRender(); hexUpdateInfo();
-  } else if(sid==='elemental_burst') {
-    // Enter special target mode — pick enemy target
-    const targets = hxs.units.filter(u=>u.team==='enemy'&&u.hp>0);
-    if(!targets.length) { hxLog('Нет цели для Взрыва стихии!', 'info'); hxRender(); return; }
-    hxs.specialTarget=targets; hxs.mode='special'; hxs.specialTargetMode='attack';
-    hxLog('Элементалист заряжает Взрыв стихии — выбери цель!', 'special');
-    hxRender(); hexUpdateInfo();
-  }
-}
-
-function hxApplySpecialOnTarget(caster, target) {
-  const sid = caster.special.id;
-  if(sid==='lightning') {
-    const b = Math.min(12, target.block);
-    target.block=Math.max(0,target.block-b);
-    const dmg=12-b; target.hp=Math.max(0,target.hp-dmg);
-    // Chain 6 dmg to nearest enemy unit (not the primary target)
-    const chainTarget = hxs.units.filter(u=>u.team==='enemy'&&u.hp>0&&u.id!==target.id)
-      .sort((a,b2)=>hexDist(target.col,target.row,a.col,a.row)-hexDist(target.col,target.row,b2.col,b2.row))[0];
-    if(chainTarget) { chainTarget.hp=Math.max(0,chainTarget.hp-6); }
-    caster.specialUsed=true; caster.attacked=true;
-    hxLog(`${caster.name}: Молния! ${dmg} урона ${target.name}${chainTarget?` + 6 цепью → ${chainTarget.name}`:''}!`, 'special');
-    hexCheckEnd();
-  } else if(sid==='fireball') {
-    const b = Math.min(12, target.block);
-    target.block=Math.max(0,target.block-b);
-    const dmg=12-b; target.hp=Math.max(0,target.hp-dmg);
-    const adj=hexNeighbors(target.col,target.row).map(([c,r])=>hxs.units.find(u=>u.col===c&&u.row===r&&u.hp>0&&u.team==='enemy')).filter(Boolean);
-    adj.forEach(a=>{a.hp=Math.max(0,a.hp-6);});
-    caster.specialUsed=true; caster.attacked=true;
-    hxLog(`${caster.name}: Огненный шар! ${dmg} урона ${target.name}${adj.length?` + 6 соседям`:''}!`, 'special');
-    hexCheckEnd();
-  } else if(sid==='lifeflow') {
-    // Contact-only: must be adjacent (hexDist=1)
-    if(hexDist(caster.col,caster.row,target.col,target.row) > 1) {
-      hxLog('Друид должен касаться союзника (соседний гекс)!', 'info');
-      return;
-    }
-    target.hp=Math.min(target.maxHp, target.hp+10);
-    caster.specialUsed=true; caster.attacked=true;
-    hxLog(`${caster.name} — Токи жизни: ${target.name} +10 HP!`, 'heal');
-  } else if(sid==='heal') {
-    target.hp=Math.min(target.maxHp, target.hp+10);
-    caster.specialUsed=true; caster.attacked=true;
-    hxLog(`${caster.name} исцеляет ${target.name} на 10 HP!`, 'heal');
-  } else if(sid==='cult_word') {
-    if(hxs.specialTargetMode === 'heal') {
-      target.hp=Math.min(target.maxHp, target.hp+8);
-      caster.specialUsed=true; caster.attacked=true;
-      hxLog(`Адепт: Слово Тепла — ${target.name} +8 HP!`, 'heal');
-    } else {
-      const b = Math.min(10, target.block);
-      target.block=Math.max(0,target.block-b);
-      const dmg=10-b; target.hp=Math.max(0,target.hp-dmg);
-      caster.specialUsed=true; caster.attacked=true;
-      hxLog(`Адепт: Слово Света — ${dmg} урона ${target.name}!`, 'special');
-      hexCheckEnd();
-    }
-  } else if(sid==='elemental_burst') {
-    const b = Math.min(15, target.block);
-    target.block=Math.max(0,target.block-b);
-    const dmg=15-b; target.hp=Math.max(0,target.hp-dmg);
-    const adjFoes = hexNeighbors(target.col,target.row)
-      .map(([c,r])=>hxs.units.find(u=>u.col===c&&u.row===r&&u.hp>0&&u.team==='enemy'))
-      .filter(u=>u&&u.id!==target.id);
-    adjFoes.forEach(u=>{u.hp=Math.max(0,u.hp-7);});
-    caster.specialUsed=true; caster.attacked=true;
-    hxLog(`Элементалист взрывает сущность стихии! ${dmg} урона ${target.name}${adjFoes.length?` + 7 соседям (${adjFoes.length} цел.)`:''}!`, 'special');
-    hexCheckEnd();
-  }
+  unit.moved = true; unit.acted = true;
+  hxLog(`${unit.name} пропускает ход.`, 'info');
+  hxs.selected = null; hxs.reachable = []; hxs.abilityTargets = [];
+  hxs.mode = 'select'; hxs.activeAbilityIdx = null;
+  hxRender(); hexUpdateInfo();
 }
 
 function hxEndTurn() {
   if(hxs.ended || hxs.turn!=='player') return;
-  hxs.selected=null; hxs.reachable=[]; hxs.attackable=[]; hxs.specialTarget=[]; hxs.mode='select';
-  hxs.turn='enemy';
+  hxs.selected = null; hxs.reachable = []; hxs.abilityTargets = [];
+  hxs.mode = 'select'; hxs.activeAbilityIdx = null;
+  hxs.turn = 'enemy';
+  document.getElementById('hx-skip-btn').disabled = true;
   hxRender(); hexUpdateInfo();
   setTimeout(hexEnemyTurn, 300);
 }
 
 function initHex() {
   document.getElementById('hx-battle').style.display='';
-  const playerDefs = Array.isArray(gameData.player_units) ? gameData.player_units : [{type:'warrior',name:'Воин'}];
+
+  // Support hero param: {name, hp, atk, weapon, magic, level, emoji}
+  const heroDef = gameData.hero || null;
+  const companionDefs = Array.isArray(gameData.companions) ? gameData.companions : [];
+  // Fall back to player_units if no hero
+  const playerDefs = heroDef ? null : (Array.isArray(gameData.player_units) ? gameData.player_units : [{type:'warrior',name:'Воин'}]);
   const enemyDefs  = Array.isArray(gameData.enemy_units)  ? gameData.enemy_units  : [{type:'warrior',name:'Страж'}];
 
-  hxs = {units:[], turn:'player', selected:null, reachable:[], attackable:[], specialTarget:[], mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, ended:false, specialTargetMode:'attack', rifts:[], forests:[], heights:[], obstacles:[], objective:null, enemyIntents:{}, totalDamageDealt:0, totalDamageTaken:0};
+  hxs = {units:[], turn:'player', selected:null, reachable:[], attackable:[], abilityTargets:[], activeAbilityIdx:null, mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, ended:false, rifts:[], forests:[], heights:[], obstacles:[], objective:null, enemyIntents:{}, totalDamageDealt:0, totalDamageTaken:0};
 
   let idCtr = 0;
-  const pPositions = hexStartPositions(playerDefs.length, 0);
-  playerDefs.forEach((def, i) => {
-    const base = HEX_UNIT_DEFS[def.type] || HEX_UNIT_DEFS.warrior;
-    hxs.units.push({
-      id: idCtr++, type: def.type||'warrior',
-      name: def.name || base.name, team:'player', originalTeam:'player',
-      col: pPositions[i].col, row: pPositions[i].row,
-      hp: base.hp, maxHp: base.hp, atk: base.atk,
-      moveRange: base.moveRange, atkRange: base.atkRange,
-      block: 0, aimBonus: false, moved: false, attacked: false, specialUsed: false,
-      emoji: base.emoji, special: {...base.special},
-    });
+
+  // Build player-side units
+  const allPlayerDefs = heroDef
+    ? [{_heroData: heroDef}, ...companionDefs.map(c => ({_companionData: c}))]
+    : playerDefs;
+
+  const pPositions = hexStartPositions(allPlayerDefs.length, 0);
+  allPlayerDefs.forEach((def, i) => {
+    let unit;
+    if(def._heroData) {
+      // FFT hero from data.hero
+      const h = def._heroData;
+      const baseHp  = h.hp  || 30;
+      const baseAtk = h.atk || 8 + Math.floor((h.level||1) * 0.5);
+      unit = {
+        id: idCtr++, type: 'hero',
+        name: h.name || 'Герой', team:'player', originalTeam:'player',
+        col: pPositions[i].col, row: pPositions[i].row,
+        hp: baseHp, maxHp: baseHp, atk: baseAtk,
+        moveRange: 3, atkRange: 1,
+        block: 0, moved: false, acted: false,
+        emoji: h.emoji || '🧙',
+        abilities: hxBuildHeroAbilities(h.weapon || 'sword', h.magic || null),
+      };
+    } else if(def._companionData) {
+      // Companion unit
+      const c = def._companionData;
+      const base = HEX_UNIT_DEFS[c.type] || HEX_UNIT_DEFS.warrior;
+      unit = {
+        id: idCtr++, type: c.type||'warrior',
+        name: c.name || base.name, team:'player', originalTeam:'player',
+        col: pPositions[i].col, row: pPositions[i].row,
+        hp: c.hp||base.hp, maxHp: c.hp||base.hp, atk: c.atk||base.atk,
+        moveRange: base.moveRange, atkRange: base.atkRange,
+        block: 0, moved: false, acted: false,
+        emoji: base.emoji,
+        abilities: (base.abilities||[]).map(a=>({...a, cooldown:0})),
+      };
+    } else {
+      // Legacy player_units mode
+      const base = HEX_UNIT_DEFS[def.type] || HEX_UNIT_DEFS.warrior;
+      unit = {
+        id: idCtr++, type: def.type||'warrior',
+        name: def.name || base.name, team:'player', originalTeam:'player',
+        col: pPositions[i].col, row: pPositions[i].row,
+        hp: base.hp, maxHp: base.hp, atk: base.atk,
+        moveRange: base.moveRange, atkRange: base.atkRange,
+        block: 0, moved: false, acted: false,
+        emoji: base.emoji,
+        abilities: (base.abilities||[]).map(a=>({...a, cooldown:0})),
+      };
+    }
+    hxs.units.push(unit);
   });
 
   const ePositions = hexStartPositions(enemyDefs.length, HEX_COLS-1);
@@ -4044,8 +4205,9 @@ function initHex() {
       col: ePositions[i].col, row: ePositions[i].row,
       hp: base.hp, maxHp: base.hp, atk: base.atk,
       moveRange: base.moveRange, atkRange: base.atkRange,
-      block: 0, aimBonus: false, moved: false, attacked: false, specialUsed: false,
-      emoji: base.emoji, special: {...base.special},
+      block: 0, moved: false, acted: false,
+      emoji: base.emoji,
+      abilities: (base.abilities||[]).map(a=>({...a, cooldown:0})),
     });
   });
 
