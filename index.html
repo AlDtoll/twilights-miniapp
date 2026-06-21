@@ -349,6 +349,17 @@
   .cg-ov-meta { font-size:0.65rem; font-weight:400; color:var(--tg-theme-hint-color,#aaa); }
   .cg-ov-desc { font-size:0.75rem; color:var(--tg-theme-hint-color,#bbb); margin-top:3px; }
   .cg-ov-empty { text-align:center; color:var(--tg-theme-hint-color,#aaa); padding:40px 0; font-size:0.9rem; }
+
+  /* HEX GAME */
+  #hx-battle { padding: 8px; width: 100%; max-width: 440px; }
+  #hx-svg { display: block; width: 100%; touch-action: manipulation; }
+  .hx-log { min-height: 36px; font-size: 0.8rem; color: rgba(255,255,255,0.75); padding: 4px 8px; background: rgba(0,0,0,0.3); border-radius: 6px; margin: 6px 0; }
+  .hx-info { min-height: 44px; background: rgba(255,255,255,0.06); border-radius: 8px; padding: 6px 10px; font-size: 0.82rem; margin-bottom: 6px; display:flex; align-items:center; justify-content:space-between; }
+  .hx-spec-btn { padding: 4px 12px; border-radius: 8px; border: none; background: #9b59b6; color: #fff; font-size: 0.8rem; cursor: pointer; }
+  .hx-spec-btn:disabled { opacity: 0.35; }
+  .hx-actions { display:flex; gap:8px; margin-top:6px; }
+  .hx-end-btn { flex:1; padding: 10px; border-radius: 10px; border:none; background: #e74c3c; color:#fff; font-size:0.9rem; font-weight:700; cursor:pointer; }
+  .hx-turn-label { text-align:center; font-size:0.85rem; font-weight:700; padding:4px; color:#f39c12; margin-bottom:4px; }
 </style>
 </head>
 <body>
@@ -542,6 +553,19 @@
   </div>
 </div>
 
+<div id="hx-battle" style="display:none">
+  <div class="hx-turn-label" id="hx-turn-label">Ход игрока</div>
+  <svg id="hx-svg" viewBox="0 0 408 222" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div class="hx-log" id="hx-log">Выбери юнит и действуй!</div>
+  <div class="hx-info" id="hx-info">
+    <span id="hx-info-text">Тапни своего юнита</span>
+    <button class="hx-spec-btn" id="hx-spec-btn" onclick="hxUseSpecial()" disabled>Спец</button>
+  </div>
+  <div class="hx-actions">
+    <button class="hx-end-btn" id="hx-end-btn" onclick="hxEndTurn()">Конец хода</button>
+  </div>
+</div>
+
 <div id="choice-game" style="display:none">
   <div class="choice-prompt" id="choice-prompt"></div>
   <div class="choice-buttons" id="choice-buttons"></div>
@@ -672,7 +696,7 @@ if (_gameKey && localStorage.getItem(_gameKey)) {
 if (_gameKey) { try { localStorage.setItem(_gameKey, '1'); } catch(e) {} }
 
 const game = gameData.game || 'choice';
-const _subtitles={blackjack:'Игра в 21',timing:'Тайминг',compare:'Сравнение',findall:'Найди все',memory:'Пары',oddone:'Лишний',reaction:'Реакция',sorting:'Порядок',estimate:'Оцени число',card:'Карточный бой'};
+const _subtitles={blackjack:'Игра в 21',timing:'Тайминг',compare:'Сравнение',findall:'Найди все',memory:'Пары',oddone:'Лишний',reaction:'Реакция',sorting:'Порядок',estimate:'Оцени число',card:'Карточный бой',hex:'Тактический бой'};
 document.getElementById('subtitle').textContent=_subtitles[game]||'Выбор';
 
 // ---- CHOICE ----
@@ -2357,6 +2381,8 @@ if (game === 'blackjack') {
   initCombat();
 } else if (game === 'card') {
   setTimeout(initCard, 0);
+} else if (game === 'hex') {
+  setTimeout(initHex, 0);
 } else { initChoice(); }
 
 // ---- CARD GAME ----
@@ -2725,6 +2751,524 @@ function cgShowBanner(text){
 }
 
 function cgLog(msg){ document.getElementById('cg-log').textContent=msg; }
+
+// ---- HEX GAME ----
+const HEX_COLS = 8, HEX_ROWS = 5;
+const HEX_SIZE = 24;
+
+const HEX_UNIT_DEFS = {
+  warrior:  {name:'Воин',    emoji:'🗡', hp:25, atk:8,  moveRange:2, atkRange:1, special:{name:'Оборона',      desc:'Щит 10 HP до след. хода', id:'shield'}},
+  archer:   {name:'Лучник',  emoji:'🏹', hp:18, atk:6,  moveRange:2, atkRange:2, special:{name:'Прицел',       desc:'Следующая атака ×2 урона', id:'aim'}},
+  cavalry:  {name:'Всадник', emoji:'⚔',  hp:20, atk:9,  moveRange:4, atkRange:1, special:{name:'Натиск',       desc:'15 урона + сдвиг цели', id:'charge'}},
+  mage:     {name:'Маг',     emoji:'🔥', hp:14, atk:7,  moveRange:2, atkRange:2, special:{name:'Огненный шар', desc:'12 ур. цели + 6 соседям', id:'fireball'}},
+  healer:   {name:'Лекарь',  emoji:'💚', hp:16, atk:4,  moveRange:2, atkRange:2, special:{name:'Исцеление',    desc:'+10 HP союзнику', id:'heal'}},
+};
+
+let hxs = {
+  units: [], turn: 'player', selected: null,
+  reachable: [], attackable: [], specialTarget: [],
+  mode: 'select', log: '', turnNum: 1, ended: false,
+};
+
+function hexToPixel(col, row) {
+  const w = Math.sqrt(3) * HEX_SIZE;
+  const h = 2 * HEX_SIZE;
+  const x = 4 + w/2 + col * w + (row % 2 === 1 ? w/2 : 0);
+  const y = 4 + HEX_SIZE + row * (h * 3/4);
+  return {x, y};
+}
+
+function hexPoints(cx, cy) {
+  const pts = [];
+  for(let i = 0; i < 6; i++) {
+    const angle = Math.PI / 180 * (60*i - 30);
+    pts.push(`${(cx + HEX_SIZE * Math.cos(angle)).toFixed(1)},${(cy + HEX_SIZE * Math.sin(angle)).toFixed(1)}`);
+  }
+  return pts.join(' ');
+}
+
+function toCube(col, row) {
+  const x = col - (row - (row & 1)) / 2;
+  const z = row;
+  return {x, y: -x-z, z};
+}
+
+function hexDist(c1, r1, c2, r2) {
+  const a = toCube(c1, r1), b = toCube(c2, r2);
+  return Math.max(Math.abs(a.x-b.x), Math.abs(a.y-b.y), Math.abs(a.z-b.z));
+}
+
+function hexNeighbors(col, row) {
+  const even = [[1,0],[-1,0],[0,-1],[0,1],[-1,-1],[-1,1]];
+  const odd  = [[1,0],[-1,0],[0,-1],[0,1],[1,-1],[1,1]];
+  const dirs = row % 2 === 0 ? even : odd;
+  return dirs.map(([dc,dr]) => [col+dc, row+dr])
+    .filter(([c,r]) => c>=0 && c<HEX_COLS && r>=0 && r<HEX_ROWS);
+}
+
+function hexReachable(unit) {
+  const blocked = new Set(hxs.units.filter(u=>u.id!==unit.id&&u.hp>0).map(u=>`${u.col},${u.row}`));
+  const visited = new Map([[`${unit.col},${unit.row}`, 0]]);
+  const queue = [[unit.col, unit.row, 0]];
+  const result = [];
+  while(queue.length) {
+    const [c, r, d] = queue.shift();
+    if(d > 0 && !blocked.has(`${c},${r}`)) result.push([c, r]);
+    if(d < unit.moveRange && !blocked.has(`${c},${r}`)) {
+      for(const [nc, nr] of hexNeighbors(c, r)) {
+        const key = `${nc},${nr}`;
+        if(!visited.has(key)) { visited.set(key, d+1); queue.push([nc, nr, d+1]); }
+      }
+    }
+  }
+  return result;
+}
+
+function hexAttackable(unit) {
+  return hxs.units.filter(u => u.team !== unit.team && u.hp > 0
+    && hexDist(unit.col, unit.row, u.col, u.row) <= unit.atkRange);
+}
+
+function hexAttack(attacker, target) {
+  let dmg = attacker.atk;
+  if(attacker.aimBonus) { dmg *= 2; attacker.aimBonus = false; }
+  const blocked = Math.min(dmg, target.block);
+  target.block = Math.max(0, target.block - blocked);
+  dmg -= blocked;
+  target.hp = Math.max(0, target.hp - dmg);
+  hxs.log = `${attacker.name} атакует ${target.name}: ${dmg} урона. HP ${target.hp}/${target.maxHp}`;
+  attacker.attacked = true;
+}
+
+function hexStartPositions(count, col) {
+  const startRow = Math.floor((HEX_ROWS - count) / 2);
+  return Array.from({length: count}, (_, i) => ({col, row: startRow + i}));
+}
+
+function hexCheckEnd() {
+  const playerAlive = hxs.units.some(u=>u.team==='player'&&u.hp>0);
+  const enemyAlive  = hxs.units.some(u=>u.team==='enemy'&&u.hp>0);
+  if(!enemyAlive) hexEnd(true);
+  else if(!playerAlive) hexEnd(false);
+}
+
+function hexEnd(won) {
+  hxs.ended = true;
+  document.getElementById('hx-end-btn').disabled = true;
+  const playerUnitsAlive = hxs.units.filter(u=>u.team==='player'&&u.hp>0).length;
+  const totalPlayer = hxs.units.filter(u=>u.team==='player').length;
+  hxs.log = won ? '🏆 Победа! Все враги повержены.' : '💀 Поражение...';
+  hxRender();
+  setTimeout(() => sendResultToBot({
+    game:'hex', win:won,
+    outcome: won ? 'Победа' : 'Поражение',
+    turns: hxs.turnNum,
+    player_units_alive: playerUnitsAlive,
+    player_units_total: totalPlayer,
+    enemies_defeated: hxs.units.filter(u=>u.team==='enemy'&&u.hp<=0).length,
+    enemies_total: hxs.units.filter(u=>u.team==='enemy').length,
+  }), 1200);
+}
+
+// ---- Enemy AI ----
+function hexEnemyTurn() {
+  document.getElementById('hx-turn-label').textContent = 'Ход противника...';
+  const enemies = hxs.units.filter(u=>u.team==='enemy'&&u.hp>0);
+  for(const enemy of enemies) {
+    const players = hxs.units.filter(u=>u.team==='player'&&u.hp>0);
+    if(!players.length) break;
+    const nearest = players.reduce((a,b) => hexDist(enemy.col,enemy.row,a.col,a.row) <= hexDist(enemy.col,enemy.row,b.col,b.row) ? a : b);
+
+    // Try special first
+    if(!enemy.specialUsed) {
+      const sid = enemy.special.id;
+      if(sid === 'shield' && enemy.hp/enemy.maxHp < 0.4) {
+        enemy.block += 10; enemy.specialUsed = true;
+        hxs.log = `${enemy.name} использует Оборону — щит 10 HP!`;
+      } else if(sid === 'aim' && !enemy.attacked && players.length > 0) {
+        enemy.aimBonus = true; enemy.specialUsed = true;
+        hxs.log = `${enemy.name} прицеливается!`;
+      } else if(sid === 'fireball') {
+        // use fireball if 2+ player units nearby
+        const adj2 = players.filter(p => {
+          const nebs = hexNeighbors(p.col,p.row);
+          return players.some(p2 => p2.id!==p.id && nebs.some(([c,r])=>c===p2.col&&r===p2.row));
+        });
+        if(adj2.length >= 2) {
+          const target = adj2[0];
+          let dmg = Math.max(0, 12 - Math.min(12, target.block));
+          target.block = Math.max(0, target.block - 12);
+          target.hp = Math.max(0, target.hp - dmg);
+          const adjEnemies = hexNeighbors(target.col,target.row).map(([c,r])=>hxs.units.find(u=>u.col===c&&u.row===r&&u.hp>0&&u.team==='player')).filter(Boolean);
+          adjEnemies.forEach(ae => { ae.hp = Math.max(0, ae.hp - 6); });
+          enemy.specialUsed = true; enemy.attacked = true;
+          hxs.log = `${enemy.name} бросает Огненный шар — ${dmg} урона ${target.name}!`;
+          hexCheckEnd(); if(hxs.ended) return;
+          continue;
+        }
+      } else if(sid === 'heal') {
+        const wounded = enemies.filter(e => e.hp>0 && e.hp/e.maxHp < 0.5 && e.id!==enemy.id);
+        if(wounded.length > 0) {
+          const t = wounded.reduce((a,b) => a.hp<=b.hp ? a : b);
+          t.hp = Math.min(t.maxHp, t.hp + 10);
+          enemy.specialUsed = true; enemy.attacked = true;
+          hxs.log = `${enemy.name} исцеляет ${t.name} на 10 HP!`;
+          continue;
+        }
+      }
+    }
+
+    const inRange = hexDist(enemy.col,enemy.row,nearest.col,nearest.row) <= enemy.atkRange;
+
+    // Cavalry charge
+    if(!enemy.specialUsed && enemy.special.id==='charge' && inRange) {
+      let dmg = Math.max(0, 15 - Math.min(15, nearest.block));
+      nearest.block = Math.max(0, nearest.block - 15);
+      nearest.hp = Math.max(0, nearest.hp - dmg);
+      // push target 1 hex away
+      const dc = nearest.col - enemy.col;
+      const dr = nearest.row - enemy.row;
+      const nc2 = nearest.col + Math.sign(dc);
+      const nr2 = nearest.row + Math.sign(dr);
+      if(nc2>=0&&nc2<HEX_COLS&&nr2>=0&&nr2<HEX_ROWS && !hxs.units.find(u=>u.col===nc2&&u.row===nr2&&u.hp>0)) {
+        nearest.col = nc2; nearest.row = nr2;
+      }
+      enemy.specialUsed = true; enemy.attacked = true; enemy.moved = true;
+      hxs.log = `${enemy.name} — Натиск! ${dmg} урона ${nearest.name}!`;
+      hexCheckEnd(); if(hxs.ended) return;
+      continue;
+    }
+
+    if(inRange && !enemy.attacked) {
+      hexAttack(enemy, nearest);
+      hexCheckEnd(); if(hxs.ended) return;
+    } else if(!enemy.moved) {
+      // Find reachable hex closest to nearest enemy, in atkRange
+      const reach = hexReachable(enemy);
+      // First try to find a hex from which we can attack
+      const atkSpots = reach.filter(([c,r]) => hexDist(c,r,nearest.col,nearest.row) <= enemy.atkRange);
+      if(atkSpots.length > 0) {
+        const best = atkSpots.reduce((a,b) => hexDist(a[0],a[1],nearest.col,nearest.row) <= hexDist(b[0],b[1],nearest.col,nearest.row) ? a : b);
+        enemy.col = best[0]; enemy.row = best[1]; enemy.moved = true;
+        if(!enemy.attacked) { hexAttack(enemy, nearest); hexCheckEnd(); if(hxs.ended) return; }
+      } else if(reach.length > 0) {
+        // Move toward nearest
+        const best = reach.reduce((a,b) => hexDist(a[0],a[1],nearest.col,nearest.row) <= hexDist(b[0],b[1],nearest.col,nearest.row) ? a : b);
+        enemy.col = best[0]; enemy.row = best[1]; enemy.moved = true;
+        hxs.log = `${enemy.name} движется к ${nearest.name}.`;
+      }
+    }
+  }
+
+  // Reset for next player turn
+  hxs.units.forEach(u => { u.moved = false; u.attacked = false; });
+  hxs.turnNum++;
+  hxs.turn = 'player';
+  hxs.selected = null;
+  hxs.reachable = [];
+  hxs.attackable = [];
+  hxs.specialTarget = [];
+  hxs.mode = 'select';
+  if(!hxs.ended) hxs.log = `Ход ${hxs.turnNum}. Твой ход!`;
+  document.getElementById('hx-turn-label').textContent = `Ход игрока (${hxs.turnNum})`;
+  hxRender();
+  hexUpdateInfo();
+}
+
+// ---- Rendering ----
+function hxRender() {
+  const svg = document.getElementById('hx-svg');
+  svg.innerHTML = '';
+  const reachSet = new Set(hxs.reachable.map(([c,r])=>`${c},${r}`));
+  const atkSet = new Set(hxs.attackable.map(u=>`${u.col},${u.row}`));
+  const specSet = new Set(hxs.specialTarget.map(u=>`${u.col},${u.row}`));
+
+  // Draw hexes
+  for(let row=0; row<HEX_ROWS; row++) {
+    for(let col=0; col<HEX_COLS; col++) {
+      const {x,y} = hexToPixel(col,row);
+      const key = `${col},${row}`;
+      let fill = 'rgba(255,255,255,0.04)';
+      let stroke = '#444';
+      let sw = '0.8';
+      if(reachSet.has(key))  { fill='rgba(52,152,219,0.28)';  stroke='#3498db'; sw='1.2'; }
+      if(atkSet.has(key))    { fill='rgba(231,76,60,0.22)';   stroke='#e74c3c'; sw='1.2'; }
+      if(specSet.has(key)) {
+        const unit = hxs.units.find(u=>u.col===col&&u.row===row&&u.hp>0);
+        if(unit) {
+          fill = hxs.mode==='special'&&hxs.units.find(u=>u.id===hxs.selected)?.special?.id==='heal'
+            ? 'rgba(46,213,115,0.28)' : 'rgba(255,165,0,0.28)';
+          stroke = hxs.mode==='special'&&hxs.units.find(u=>u.id===hxs.selected)?.special?.id==='heal'
+            ? '#2ed573' : '#ffa500';
+          sw = '1.5';
+        }
+      }
+      const poly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+      poly.setAttribute('points', hexPoints(x,y));
+      poly.setAttribute('fill', fill);
+      poly.setAttribute('stroke', stroke);
+      poly.setAttribute('stroke-width', sw);
+      poly.setAttribute('style', 'pointer-events:all;cursor:pointer;');
+      poly.addEventListener('click', () => hxClickHex(col,row));
+      svg.appendChild(poly);
+    }
+  }
+
+  // Draw units
+  hxs.units.forEach(unit => {
+    if(unit.hp <= 0) return;
+    const {x,y} = hexToPixel(unit.col, unit.row);
+    const isSelected = unit.id === hxs.selected;
+    const isDone = unit.moved && unit.attacked;
+    const isPlayer = unit.team === 'player';
+
+    // Unit circle
+    const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    circle.setAttribute('cx', x); circle.setAttribute('cy', y); circle.setAttribute('r', 15);
+    circle.setAttribute('fill', isPlayer ? (isDone ? '#1a5276' : '#2980b9') : (isDone ? '#7b241c' : '#c0392b'));
+    circle.setAttribute('stroke', isSelected ? '#f1c40f' : (isPlayer ? '#3498db' : '#e74c3c'));
+    circle.setAttribute('stroke-width', isSelected ? '3' : '1.5');
+    circle.setAttribute('opacity', isDone ? '0.6' : '1');
+    circle.setAttribute('style', 'pointer-events:all;cursor:pointer;');
+    circle.addEventListener('click', () => hxClickUnit(unit.id));
+    svg.appendChild(circle);
+
+    // Emoji/letter label
+    const label = document.createElementNS('http://www.w3.org/2000/svg','text');
+    label.setAttribute('x', x); label.setAttribute('y', y+1);
+    label.setAttribute('text-anchor','middle'); label.setAttribute('dominant-baseline','middle');
+    label.setAttribute('font-size','11'); label.setAttribute('fill','#fff');
+    label.setAttribute('pointer-events','none');
+    label.textContent = unit.name.charAt(0);
+    svg.appendChild(label);
+
+    // HP bar
+    const barW = 26, barH = 4;
+    const bx = x - barW/2, by = y + 17;
+    const bgRect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    bgRect.setAttribute('x',bx); bgRect.setAttribute('y',by);
+    bgRect.setAttribute('width',barW); bgRect.setAttribute('height',barH);
+    bgRect.setAttribute('rx','2'); bgRect.setAttribute('fill','rgba(0,0,0,0.5)');
+    bgRect.setAttribute('pointer-events','none');
+    svg.appendChild(bgRect);
+    const hpFill = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    const hpPct = Math.max(0, unit.hp/unit.maxHp);
+    hpFill.setAttribute('x',bx); hpFill.setAttribute('y',by);
+    hpFill.setAttribute('width', (barW*hpPct).toFixed(1)); hpFill.setAttribute('height',barH);
+    hpFill.setAttribute('rx','2');
+    hpFill.setAttribute('fill', hpPct>0.5 ? '#2ecc71' : hpPct>0.25 ? '#f39c12' : '#e74c3c');
+    hpFill.setAttribute('pointer-events','none');
+    svg.appendChild(hpFill);
+
+    // Block indicator
+    if(unit.block > 0) {
+      const sh = document.createElementNS('http://www.w3.org/2000/svg','text');
+      sh.setAttribute('x', x+12); sh.setAttribute('y', y-12);
+      sh.setAttribute('font-size','9'); sh.setAttribute('fill','#74b9ff');
+      sh.setAttribute('text-anchor','middle'); sh.setAttribute('dominant-baseline','middle');
+      sh.setAttribute('pointer-events','none');
+      sh.textContent = '🛡';
+      svg.appendChild(sh);
+    }
+  });
+
+  // Log
+  document.getElementById('hx-log').textContent = hxs.log || 'Выбери юнит.';
+}
+
+function hexUpdateInfo() {
+  const infoEl = document.getElementById('hx-info-text');
+  const specBtn = document.getElementById('hx-spec-btn');
+  if(hxs.selected === null) {
+    infoEl.textContent = 'Тапни своего юнита';
+    specBtn.disabled = true;
+    specBtn.textContent = 'Спец';
+    return;
+  }
+  const unit = hxs.units.find(u=>u.id===hxs.selected);
+  if(!unit||unit.hp<=0) { infoEl.textContent='—'; specBtn.disabled=true; return; }
+  const done = unit.moved && unit.attacked;
+  infoEl.textContent = `${unit.name} HP ${unit.hp}/${unit.maxHp}${unit.block>0?' 🛡'+unit.block:''}${done?' [готово]':''}`;
+  specBtn.textContent = unit.special.name;
+  specBtn.disabled = unit.specialUsed || hxs.turn!=='player' || hxs.ended;
+}
+
+// ---- Click handlers ----
+function hxClickUnit(unitId) {
+  if(hxs.ended || hxs.turn!=='player') return;
+  const unit = hxs.units.find(u=>u.id===unitId);
+  if(!unit||unit.hp<=0) return;
+
+  // If in special target mode, handle special
+  if(hxs.mode==='special' && hxs.selected!==null) {
+    const sel = hxs.units.find(u=>u.id===hxs.selected);
+    if(sel && hxs.specialTarget.some(t=>t.id===unitId)) {
+      hxApplySpecialOnTarget(sel, unit);
+      hxs.mode='select'; hxs.specialTarget=[]; hxs.selected=null;
+      hxs.reachable=[]; hxs.attackable=[];
+      hxRender(); hexUpdateInfo(); return;
+    }
+  }
+
+  // Attacking enemy unit
+  if(unit.team==='enemy' && hxs.selected!==null) {
+    const sel = hxs.units.find(u=>u.id===hxs.selected);
+    if(sel && sel.team==='player' && !sel.attacked && hxs.attackable.some(a=>a.id===unitId)) {
+      hexAttack(sel, unit);
+      hxs.reachable=[]; hxs.attackable=[];
+      hxRender(); hexUpdateInfo();
+      hexCheckEnd();
+      return;
+    }
+  }
+
+  // Select own unit
+  if(unit.team==='player') {
+    if(hxs.selected===unitId) {
+      // Deselect
+      hxs.selected=null; hxs.reachable=[]; hxs.attackable=[]; hxs.mode='select';
+      hxRender(); hexUpdateInfo(); return;
+    }
+    hxs.selected=unitId; hxs.mode='select';
+    hxs.reachable = unit.moved ? [] : hexReachable(unit);
+    hxs.attackable = unit.attacked ? [] : hexAttackable(unit);
+    hxs.specialTarget=[];
+    hxRender(); hexUpdateInfo();
+  }
+}
+
+function hxClickHex(col, row) {
+  if(hxs.ended || hxs.turn!=='player' || hxs.selected===null) return;
+  const unit = hxs.units.find(u=>u.id===hxs.selected);
+  if(!unit||unit.hp<=0||unit.moved) return;
+
+  // Check if it's a reachable hex
+  if(hxs.reachable.some(([c,r])=>c===col&&r===row)) {
+    unit.col=col; unit.row=row; unit.moved=true;
+    // Recompute attackable from new position
+    hxs.reachable=[];
+    hxs.attackable = unit.attacked ? [] : hexAttackable(unit);
+    hxRender(); hexUpdateInfo();
+  }
+}
+
+function hxUseSpecial() {
+  if(hxs.ended || hxs.turn!=='player' || hxs.selected===null) return;
+  const unit = hxs.units.find(u=>u.id===hxs.selected);
+  if(!unit||unit.hp<=0||unit.specialUsed) return;
+  const sid = unit.special.id;
+
+  if(sid==='shield') {
+    unit.block += 10; unit.specialUsed=true;
+    hxs.log=`${unit.name} принимает оборону — щит 10 HP!`;
+    hxs.reachable=[]; hxs.attackable=[];
+    hxRender(); hexUpdateInfo();
+  } else if(sid==='aim') {
+    unit.aimBonus=true; unit.specialUsed=true;
+    hxs.log=`${unit.name} прицеливается — следующая атака ×2!`;
+    hxs.reachable=[];
+    hxs.attackable = unit.attacked ? [] : hexAttackable(unit);
+    hxRender(); hexUpdateInfo();
+  } else if(sid==='charge') {
+    const targets = hexAttackable(unit);
+    if(!targets.length) { hxs.log='Нет цели для Натиска!'; hxRender(); return; }
+    const t = targets[0];
+    let dmg = 15;
+    const blocked = Math.min(dmg, t.block);
+    t.block = Math.max(0, t.block-blocked); dmg-=blocked;
+    t.hp=Math.max(0,t.hp-dmg);
+    // push
+    const dc=t.col-unit.col; const dr=t.row-unit.row;
+    const nc2=t.col+Math.sign(dc); const nr2=t.row+Math.sign(dr);
+    if(nc2>=0&&nc2<HEX_COLS&&nr2>=0&&nr2<HEX_ROWS&&!hxs.units.find(u2=>u2.col===nc2&&u2.row===nr2&&u2.hp>0)) {
+      t.col=nc2; t.row=nr2;
+    }
+    unit.specialUsed=true; unit.attacked=true;
+    hxs.log=`${unit.name} — Натиск! ${dmg} урона ${t.name}!`;
+    hxs.reachable=[]; hxs.attackable=[];
+    hxRender(); hexUpdateInfo(); hexCheckEnd();
+  } else if(sid==='fireball') {
+    // Enter special target mode — pick enemy
+    const targets = hxs.units.filter(u=>u.team==='enemy'&&u.hp>0);
+    hxs.specialTarget=targets; hxs.mode='special';
+    hxs.log='Выбери цель для Огненного шара!';
+    hxRender(); hexUpdateInfo();
+  } else if(sid==='heal') {
+    // Enter special target mode — pick ally
+    const targets = hxs.units.filter(u=>u.team==='player'&&u.hp>0);
+    hxs.specialTarget=targets; hxs.mode='special';
+    hxs.log='Выбери союзника для Исцеления!';
+    hxRender(); hexUpdateInfo();
+  }
+}
+
+function hxApplySpecialOnTarget(caster, target) {
+  const sid = caster.special.id;
+  if(sid==='fireball') {
+    const b = Math.min(12, target.block);
+    target.block=Math.max(0,target.block-b);
+    const dmg=12-b; target.hp=Math.max(0,target.hp-dmg);
+    const adj=hexNeighbors(target.col,target.row).map(([c,r])=>hxs.units.find(u=>u.col===c&&u.row===r&&u.hp>0&&u.team==='enemy')).filter(Boolean);
+    adj.forEach(a=>{a.hp=Math.max(0,a.hp-6);});
+    caster.specialUsed=true; caster.attacked=true;
+    hxs.log=`${caster.name}: Огненный шар! ${dmg} урона ${target.name}${adj.length?` + 6 соседям`:''}!`;
+    hexCheckEnd();
+  } else if(sid==='heal') {
+    target.hp=Math.min(target.maxHp, target.hp+10);
+    caster.specialUsed=true; caster.attacked=true;
+    hxs.log=`${caster.name} исцеляет ${target.name} на 10 HP!`;
+  }
+}
+
+function hxEndTurn() {
+  if(hxs.ended || hxs.turn!=='player') return;
+  hxs.selected=null; hxs.reachable=[]; hxs.attackable=[]; hxs.specialTarget=[]; hxs.mode='select';
+  hxs.turn='enemy';
+  hxRender(); hexUpdateInfo();
+  setTimeout(hexEnemyTurn, 300);
+}
+
+function initHex() {
+  document.getElementById('hx-battle').style.display='';
+  const playerDefs = Array.isArray(gameData.player_units) ? gameData.player_units : [{type:'warrior',name:'Воин'}];
+  const enemyDefs  = Array.isArray(gameData.enemy_units)  ? gameData.enemy_units  : [{type:'warrior',name:'Страж'}];
+
+  hxs = {units:[], turn:'player', selected:null, reachable:[], attackable:[], specialTarget:[], mode:'select', log:'Ход 1. Твой ход!', turnNum:1, ended:false};
+
+  let idCtr = 0;
+  const pPositions = hexStartPositions(playerDefs.length, 0);
+  playerDefs.forEach((def, i) => {
+    const base = HEX_UNIT_DEFS[def.type] || HEX_UNIT_DEFS.warrior;
+    hxs.units.push({
+      id: idCtr++, type: def.type||'warrior',
+      name: def.name || base.name, team:'player',
+      col: pPositions[i].col, row: pPositions[i].row,
+      hp: base.hp, maxHp: base.hp, atk: base.atk,
+      moveRange: base.moveRange, atkRange: base.atkRange,
+      block: 0, aimBonus: false, moved: false, attacked: false, specialUsed: false,
+      emoji: base.emoji, special: {...base.special},
+    });
+  });
+
+  const ePositions = hexStartPositions(enemyDefs.length, HEX_COLS-1);
+  enemyDefs.forEach((def, i) => {
+    const base = HEX_UNIT_DEFS[def.type] || HEX_UNIT_DEFS.warrior;
+    hxs.units.push({
+      id: idCtr++, type: def.type||'warrior',
+      name: def.name || base.name, team:'enemy',
+      col: ePositions[i].col, row: ePositions[i].row,
+      hp: base.hp, maxHp: base.hp, atk: base.atk,
+      moveRange: base.moveRange, atkRange: base.atkRange,
+      block: 0, aimBonus: false, moved: false, attacked: false, specialUsed: false,
+      emoji: base.emoji, special: {...base.special},
+    });
+  });
+
+  document.getElementById('hx-turn-label').textContent = 'Ход игрока (1)';
+  document.getElementById('hx-end-btn').disabled = false;
+  hxRender();
+  hexUpdateInfo();
+}
 </script>
 </body>
 </html>
