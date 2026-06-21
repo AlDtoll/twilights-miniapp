@@ -648,7 +648,7 @@
     <button onclick="hxZoomAdjust(0.15)" style="padding:1px 8px;border-radius:6px;border:none;background:rgba(255,255,255,0.12);color:#fff;font-size:0.9rem;cursor:pointer;">+</button>
   </div>
   <div id="hx-svg-wrap" style="overflow:auto;width:100%;max-height:55vh;">
-    <svg id="hx-svg" xmlns="http://www.w3.org/2000/svg" style="display:block;touch-action:pan-x pan-y;"></svg>
+    <svg id="hx-svg" xmlns="http://www.w3.org/2000/svg" style="display:block;touch-action:manipulation;"></svg>
   </div>
   <div id="hx-legend" style="font-size:0.65rem; color:rgba(255,255,255,0.4); text-align:center; padding:2px 4px; line-height:1.6;">
     🌳 Дерево +2 блок  🗿 Камни +2 атк (дальн.)  🌿 Кусты: -2 урон (дальн.)  ⌖ Разлом  🧱 Стена  ⭐ Цель
@@ -3360,23 +3360,16 @@ function hxConfirmApply(unit, ab, col, row) {
       hxs.confirming = null; hxRender(); hexUpdateInfo(); return;
     }
     hxApplyAbility(unit, ab, unitOnTarget);
-  } else if(!ab.aoe && primaryTarget.isFreeHex) {
-    // Single-target on empty hex: check obstacle first, then enemy
-    if(obstOnTarget) {
+  } else {
+    // For free hex: pass to hxApplyAbility — it handles isBurnable, isObstacle, or empty
+    if(!ab.aoe && obstOnTarget) {
       hxDamageObstacle(obstOnTarget, dmgForObst());
       hxMarkActed(unit, ab);
       if(ab.maxCooldown > 0) ab.cooldown = ab.maxCooldown;
       hexCheckEnd();
     } else {
-      const enemyInRange = hxs.units.find(u=>u.team!==unit.team&&u.hp>0&&u.col===col&&u.row===row);
-      if(!enemyInRange) {
-        hxLog(`${ab.name}: нет цели на этом гексе.`, 'info');
-        hxs.confirming = null; hxRender(); hexUpdateInfo(); return;
-      }
-      hxApplyAbility(unit, ab, enemyInRange);
+      hxApplyAbility(unit, ab, primaryTarget);
     }
-  } else {
-    hxApplyAbility(unit, ab, primaryTarget);
   }
 
   hxs.confirming = null;
@@ -3544,6 +3537,19 @@ function hxApplyAbility(caster, ability, primaryTarget) {
     if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
     hxRender(); hexUpdateInfo();
     return;
+  }
+
+  // --- EMPTY HEX (no unit, no obstacle, not burnable) ---
+  if(primaryTarget.isFreeHex && !primaryTarget.isBurnable && !primaryTarget.isObstacle && !(primaryTarget.hp > 0)) {
+    if((ability.aoe||0) > 0) {
+      // AoE on empty hex — splash damage around it (fall through to damage block below)
+    } else {
+      hxLog(`${caster.icon||''} ${caster.name} — ${ability.icon||''} ${ability.name}: удар в пустоту`, 'info');
+      hxMarkActed(caster, ability);
+      if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+      hxRender(); hexUpdateInfo();
+      return;
+    }
   }
 
   // --- HIT CHANCE CHECK (ranged / magic vs enemy) ---
@@ -5058,28 +5064,27 @@ let _hxPinchDist0 = null, _hxPinchLevel0 = 1.0, _hxPinchInited = false;
 function hxInitPinchZoom() {
   if(_hxPinchInited) return;
   _hxPinchInited = true;
-  const svg = document.getElementById('hx-svg');
-  if(!svg) return;
-  // touch-action:pan-x pan-y is set in HTML — browser handles 1-finger scroll,
-  // we handle 2-finger pinch via touch events (passive — no conflict with scroll)
+  // Listeners on document so SVG touch-action:manipulation is unaffected (scroll works)
   const tDist = (t) => Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY);
-  svg.addEventListener('touchstart', (e) => {
-    if(e.touches.length === 2) {
+  const onSvg = (e) => { const s = document.getElementById('hx-svg'); return s && s.contains(e.target); };
+  document.addEventListener('touchstart', (e) => {
+    if(e.touches.length === 2 && onSvg(e)) {
       _hxPinchDist0 = tDist(e.touches);
       _hxPinchLevel0 = _hxZoomLevel;
     }
   }, {passive: true});
-  svg.addEventListener('touchmove', (e) => {
-    if(e.touches.length === 2 && _hxPinchDist0 !== null) {
+  document.addEventListener('touchmove', (e) => {
+    if(e.touches.length === 2 && _hxPinchDist0 !== null && onSvg(e)) {
       _hxZoomLevel = Math.max(1.0, Math.min(3.0, _hxPinchLevel0 * tDist(e.touches) / _hxPinchDist0));
       const vw = Math.round(HEX_SVG_W / _hxZoomLevel);
       const vh = Math.round(HEX_SVG_H / _hxZoomLevel);
       const vx = Math.max(0, Math.round((HEX_SVG_W - vw) / 2));
       const vy = Math.max(0, Math.round((HEX_SVG_H - vh) / 2));
-      svg.setAttribute('viewBox', `${vx} ${vy} ${vw} ${vh}`);
+      const svg = document.getElementById('hx-svg');
+      if(svg) svg.setAttribute('viewBox', `${vx} ${vy} ${vw} ${vh}`);
     }
   }, {passive: true});
-  svg.addEventListener('touchend', (e) => { if(e.touches.length < 2) _hxPinchDist0 = null; }, {passive: true});
+  document.addEventListener('touchend', (e) => { if(e.touches.length < 2) _hxPinchDist0 = null; }, {passive: true});
 }
 
 function hxEndTurn() {
