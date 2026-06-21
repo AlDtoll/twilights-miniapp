@@ -435,6 +435,18 @@
     font-size: 0.72rem; color: rgba(255,255,255,0.75); padding: 3px 8px 2px;
     min-height: 1.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
+
+  /* ARKANOID */
+  #arkanoid-game { width: 100%; max-width: 360px; margin: 0 auto; text-align: center; }
+  .ark-stats { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 0 4px; font-size: 0.9rem; }
+  .ark-stat-label { font-size: 0.7rem; color: var(--tg-theme-hint-color, #aaa); text-transform: uppercase; letter-spacing: 0.5px; }
+  .ark-stat-val { font-size: 1.15rem; font-weight: 700; }
+  .ark-lives { font-size: 1.1rem; letter-spacing: 2px; }
+  #ark-canvas { width: 100%; display: block; border-radius: 16px; background: rgba(255,255,255,0.04); border: 2px solid rgba(255,255,255,0.08); touch-action: none; cursor: pointer; }
+  .ark-hint { font-size: 0.8rem; color: var(--tg-theme-hint-color, #aaa); margin-top: 10px; }
+  #ark-result { display: none; margin-top: 14px; }
+  #ark-result .ark-result-title { font-size: 1.4rem; font-weight: 700; margin-bottom: 6px; }
+  #ark-result .ark-result-sub { font-size: 1rem; color: var(--tg-theme-hint-color, #aaa); }
 </style>
 </head>
 <body>
@@ -653,7 +665,7 @@
     </div>
   </div>
   <div id="hx-legend" style="font-size:0.65rem; color:rgba(255,255,255,0.4); text-align:center; padding:2px 4px; line-height:1.6;">
-    🌳 Дерево +2 блок  🗿 Камни +2 атк (дальн.)  🌿 Кусты: -2 урон (дальн.)  ⌖ Разлом  🧱 Стена  ⭐ Цель
+    🌳 Дерево +2 блок  🗿 Камни +2 атк (дальн.)  🌿 Кусты: -2 урон (дальн.)  ⌖ Разлом  🧱 Стена  〰 Мелководье (2 ОД)  🌊 Глубокая вода (нет атаки)
   </div>
   <div class="hx-log" id="hx-log">Выбери юнит и действуй!</div>
   <div class="hx-info" id="hx-info">
@@ -775,9 +787,43 @@
   <button class="confirm-btn" id="bj-confirm" onclick="confirmBJ()" disabled>Отправить результат</button>
 </div>
 
+<div id="arkanoid-game" style="display:none">
+  <div id="ark-ready">
+    <div class="seq-ready-title" id="ark-ready-title">🧱 Арканоид</div>
+    <div class="seq-ready-info" id="ark-ready-info">Разбей все блоки мячом. Двигай платформу пальцем.</div>
+    <button class="confirm-btn" onclick="arkStart()">Начать</button>
+  </div>
+  <div id="ark-play" style="display:none">
+    <div class="ark-stats">
+      <div>
+        <div class="ark-stat-label">Очки</div>
+        <div class="ark-stat-val" id="ark-score">0</div>
+      </div>
+      <div>
+        <div class="ark-stat-label">Уровень</div>
+        <div class="ark-stat-val" id="ark-level">1</div>
+      </div>
+      <div>
+        <div class="ark-stat-label">Жизни</div>
+        <div class="ark-lives" id="ark-lives">❤️❤️❤️</div>
+      </div>
+    </div>
+    <canvas id="ark-canvas" width="320" height="420" onclick="arkLaunch()"></canvas>
+    <div class="ark-hint" id="ark-hint">Тапни, чтобы запустить мяч</div>
+    <div id="ark-result">
+      <div class="ark-result-title" id="ark-result-title"></div>
+      <div class="ark-result-sub" id="ark-result-sub"></div>
+    </div>
+  </div>
+</div>
+
 <script>
 const tg = window.Telegram.WebApp;
 tg.ready(); tg.expand();
+
+// Block browser-level pinch zoom — Telegram WebView ignores user-scalable=no
+document.addEventListener('touchstart', (e) => { if(e.touches.length > 1) e.preventDefault(); }, {passive:false});
+document.addEventListener('touchmove', (e) => { if(e.touches.length > 1) e.preventDefault(); }, {passive:false});
 
 let gameData = {};
 let _gameKey = null;
@@ -801,7 +847,7 @@ if (_gameKey && localStorage.getItem(_gameKey)) {
 if (_gameKey) { try { localStorage.setItem(_gameKey, '1'); } catch(e) {} }
 
 const game = gameData.game || 'choice';
-const _subtitles={blackjack:'Игра в 21',timing:'Тайминг',compare:'Сравнение',findall:'Найди все',memory:'Пары',oddone:'Лишний',reaction:'Реакция',sorting:'Порядок',estimate:'Оцени число',card:'Карточный бой',hex:'Тактический бой'};
+const _subtitles={blackjack:'Игра в 21',timing:'Тайминг',compare:'Сравнение',findall:'Найди все',memory:'Пары',oddone:'Лишний',reaction:'Реакция',sorting:'Порядок',estimate:'Оцени число',card:'Карточный бой',hex:'Тактический бой',arkanoid:'Арканоид'};
 document.getElementById('subtitle').textContent=_subtitles[game]||'Выбор';
 
 // ---- CHOICE ----
@@ -2488,6 +2534,8 @@ if (game === 'blackjack') {
   setTimeout(initCard, 0);
 } else if (game === 'hex') {
   setTimeout(initHex, 0);
+} else if (game === 'arkanoid') {
+  initArkanoid();
 } else { initChoice(); }
 
 // ---- CARD GAME ----
@@ -3230,12 +3278,12 @@ function hexReachable(unit) {
   const blocked = new Set([
     ...hxs.units.filter(u=>u.id!==unit.id&&u.hp>0).map(u=>`${u.col},${u.row}`),
     ...(hxs.obstacles||[]).map(ob=>`${ob.col},${ob.row}`),
-    ...(hxs.waters||[]).map(([c,r])=>`${c},${r}`),
-    ...(hxs.deep_waters||[]).map(([c,r])=>`${c},${r}`),
+    // waters is legacy empty array; deep_water and shallow_water are passable
   ]);
   const swampSet = new Set((hxs.swamps||[]).map(([c,r])=>`${c},${r}`));
   const shallowSet = new Set((hxs.shallow_waters||[]).map(([c,r])=>`${c},${r}`));
-  // Dijkstra with move-cost: swamp/shallow_water costs 2, everything else 1
+  const deepWaterSet = new Set((hxs.deep_waters||[]).map(([c,r])=>`${c},${r}`));
+  // Dijkstra with move-cost: swamp/shallow_water/deep_water costs 2, everything else 1
   const visited = new Map([[`${unit.col},${unit.row}`, 0]]);
   const queue = [[0, unit.col, unit.row]]; // [cost, c, r]
   const result = [];
@@ -3245,7 +3293,7 @@ function hexReachable(unit) {
     if(d > 0 && !blocked.has(`${c},${r}`)) result.push([c, r]);
     if(d < range && !blocked.has(`${c},${r}`)) {
       for(const [nc, nr] of hexNeighbors(c, r)) {
-        const stepCost = (swampSet.has(`${nc},${nr}`) || shallowSet.has(`${nc},${nr}`)) ? 2 : 1;
+        const stepCost = (swampSet.has(`${nc},${nr}`) || shallowSet.has(`${nc},${nr}`) || deepWaterSet.has(`${nc},${nr}`)) ? 2 : 1;
         const newCost = d + stepCost;
         const key = `${nc},${nr}`;
         if(newCost <= range && (!visited.has(key) || visited.get(key) > newCost)) {
@@ -5439,18 +5487,18 @@ function initHex() {
   }
   hxs.swamps.forEach(([c,r])=>_allBlocked.add(`${c},${r}_passable`)); // mark as occupied by terrain (not blocked)
 
-  // PASS G: Place water hexes (impassable) — 2-3 connected hexes in the middle
+  // PASS G: Place deep_water hexes (passable, no attack) — 2-3 connected hexes in the middle
+  hxs.waters = []; // legacy, kept empty
   const _waterCandidates = [];
   for(let r=4;r<HEX_ROWS-3;r++) for(let c=3;c<HEX_COLS-3;c++) {
     if(!_allBlocked.has(`${c},${r}`) && !hxs.swamps.some(([sc,sr])=>sc===c&&sr===r)) _waterCandidates.push([c,r]);
   }
-  hxs.waters = [];
   if(_waterCandidates.length >= 2) {
     const idx=Math.floor(Math.random()*_waterCandidates.length);
     const [wc,wr]=_waterCandidates.splice(idx,1)[0];
-    hxs.waters.push([wc,wr]); _allBlocked.add(`${wc},${wr}`);
+    hxs.deep_waters = hxs.deep_waters||[]; hxs.deep_waters.push([wc,wr]); _allBlocked.add(`${wc},${wr}_passable`);
     const adj=hexNeighbors(wc,wr).filter(([c,r])=>!_allBlocked.has(`${c},${r}`));
-    if(adj.length) { const [nc,nr]=adj[Math.floor(Math.random()*adj.length)]; hxs.waters.push([nc,nr]); _allBlocked.add(`${nc},${nr}`); }
+    if(adj.length) { const [nc,nr]=adj[Math.floor(Math.random()*adj.length)]; hxs.deep_waters.push([nc,nr]); _allBlocked.add(`${nc},${nr}_passable`); }
   }
 
   // Place shallow_water (passable, costs 2 AP) — adjacent to impassable water or standalone
