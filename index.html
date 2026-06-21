@@ -2507,16 +2507,23 @@ function cgRenderHand(){
 
 
 function cgTapCard(idx,card){
-  if(cgs.targeting&&cgs.sel===idx){
-    // Deselect / cancel targeting
+  const hint=document.getElementById('cg-target-hint');
+  const pb=document.getElementById('cg-play-btn');
+  if(cgs.sel===idx){
     cgs.sel=null; cgs.targeting=false;
-    document.getElementById('cg-target-hint').style.visibility='hidden';
-    document.getElementById('cg-play-btn').disabled=true;
+    hint.style.visibility='hidden'; pb.disabled=true; pb.textContent='Сыграть';
     cgRenderEnemies(); cgRenderHand(); return;
   }
-  cgs.sel=idx; cgs.targeting=false;
-  document.getElementById('cg-target-hint').style.visibility='hidden';
-  document.getElementById('cg-play-btn').disabled=false;
+  cgs.sel=idx;
+  const living=cgs.enemies.filter(e=>e.hp>0);
+  const needsTarget=card.type==='attack'&&!card.effect?.all_enemies&&living.length>1;
+  if(needsTarget){
+    cgs.targeting=true;
+    hint.style.visibility='visible'; pb.disabled=true; pb.textContent='Сыграть';
+  } else {
+    cgs.targeting=false;
+    hint.style.visibility='hidden'; pb.disabled=false; pb.textContent='Сыграть';
+  }
   cgRenderEnemies(); cgRenderHand();
 }
 
@@ -2525,15 +2532,7 @@ function cgPlayButton(){
   const card=cgs.hand[cgs.sel];
   if(card.cost>cgs.energy) return;
   const living=cgs.enemies.filter(e=>e.hp>0);
-  if(card.type==='attack'&&!card.effect?.all_enemies&&living.length>1){
-    // Enter targeting mode
-    cgs.targeting=true;
-    document.getElementById('cg-play-btn').textContent='→ цель';
-    document.getElementById('cg-target-hint').style.visibility='visible';
-    cgRenderEnemies();
-  } else {
-    cgPlayCard(cgs.sel, card.effect?.all_enemies?null:(living[0]||null));
-  }
+  cgPlayCard(cgs.sel, card.effect?.all_enemies?null:(living[0]||null));
 }
 
 function cgTargetEnemy(enemy){
