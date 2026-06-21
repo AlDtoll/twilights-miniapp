@@ -628,7 +628,14 @@
   </div>
 </div>
 
-<div id="hx-battle" style="display:none">
+<div id="hx-battle" style="display:none;position:relative;">
+  <div id="hx-intro-overlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.88);z-index:50;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:10px;text-align:center;">
+    <div id="hx-intro-hero" style="font-size:2.2rem;"></div>
+    <div id="hx-intro-name" style="font-size:1.2rem;font-weight:700;"></div>
+    <div id="hx-intro-stats" style="font-size:0.85rem;color:rgba(255,255,255,0.65);"></div>
+    <div id="hx-intro-abilities" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%;max-width:280px;margin-top:4px;"></div>
+    <button id="hx-intro-btn" onclick="document.getElementById('hx-intro-overlay').style.display='none'" style="margin-top:8px;padding:10px 28px;border-radius:20px;border:none;background:var(--tg-theme-button-color,#6c5ce7);color:var(--tg-theme-button-text-color,#fff);font-size:1rem;font-weight:700;cursor:pointer;">В бой!</button>
+  </div>
   <div class="hx-turn-label" id="hx-turn-label">Ход игрока</div>
   <div id="hx-summary"></div>
   <svg id="hx-svg" viewBox="0 0 408 222" xmlns="http://www.w3.org/2000/svg"></svg>
@@ -3100,6 +3107,8 @@ let hxs = {
   totalDamageDealt: 0,
   totalDamageTaken: 0,
   aoeHover: null, // {col, row} — hex hovered in AoE ability mode
+  abilitiesUsed: {}, // FFT: ability usage counter for hero
+  hero: null, // FFT hero definition reference
 };
 
 function hexToPixel(col, row) {
@@ -3196,6 +3205,11 @@ function hexApplyMorale(deadUnit) {
 
 // Apply an ability effect from caster on primary target (handles AoE automatically)
 function hxApplyAbility(caster, ability, primaryTarget) {
+  // PASS D: Track ability usage for FFT hero
+  if(caster.isHero && ability.id) {
+    hxs.abilitiesUsed[ability.id] = (hxs.abilitiesUsed[ability.id] || 0) + 1;
+  }
+
   const dmg = hxAbilityDamage(ability, caster);
   const eff = ability.effect;
   const isRanged = ability.type === 'ranged' || ability.type === 'magic';
@@ -3462,6 +3476,17 @@ function hexEnd(won) {
   txt.setAttribute('fill', won ? '#2ecc71' : '#e74c3c');
   txt.textContent = objWon ? '⭐ ЗАХВАТ ЦЕЛИ' : won ? '⚔ ПОБЕДА' : '💀 ПОРАЖЕНИЕ';
   svg.appendChild(txt);
+  // PASS D: Build FFT result extras if hero mode
+  const _heroUnit = hxs.units.find(u => u.isHero);
+  const _fftExtras = _heroUnit ? {
+    mode: 'fft',
+    hero_name: _heroUnit.name,
+    hero_hp_remaining: Math.max(0, _heroUnit.hp),
+    hero_hp_max: _heroUnit.maxHp,
+    abilities_used: hxs.abilitiesUsed,
+    total_damage_dealt: hxs.totalDamageDealt,
+    total_damage_taken: hxs.totalDamageTaken,
+  } : {};
   setTimeout(() => sendResultToBot({
     game:'hex', win:won,
     outcome: won ? 'Победа' : 'Поражение',
@@ -3476,6 +3501,7 @@ function hexEnd(won) {
     objective_player_turns: hxs.objective?.playerTurns || 0,
     objective_enemy_turns: hxs.objective?.enemyTurns || 0,
     objective_won: (hxs.objective?.playerTurns||0) >= 3,
+    ..._fftExtras,
   }), 1200);
 }
 
@@ -4452,7 +4478,7 @@ function initHex() {
   const playerDefs = heroDef ? null : (Array.isArray(gameData.player_units) ? gameData.player_units : [{type:'warrior',name:'Воин'}]);
   const enemyDefs  = Array.isArray(gameData.enemy_units)  ? gameData.enemy_units  : [{type:'warrior',name:'Страж'}];
 
-  hxs = {units:[], turn:'player', selected:null, reachable:[], attackable:[], abilityTargets:[], activeAbilityIdx:null, mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, ended:false, rifts:[], forests:[], heights:[], obstacles:[], objective:null, enemyIntents:{}, totalDamageDealt:0, totalDamageTaken:0, aoeHover:null};
+  hxs = {units:[], turn:'player', selected:null, reachable:[], attackable:[], abilityTargets:[], activeAbilityIdx:null, mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, ended:false, rifts:[], forests:[], heights:[], obstacles:[], objective:null, enemyIntents:{}, totalDamageDealt:0, totalDamageTaken:0, aoeHover:null, abilitiesUsed:{}, hero: heroDef};
 
   let idCtr = 0;
 
@@ -4478,6 +4504,7 @@ function initHex() {
         block: 0, moved: false, acted: false,
         emoji: h.emoji || '🧙',
         abilities: hxBuildHeroAbilities(h.weapon || 'sword', h.magic || null),
+        isHero: true,
       };
     } else if(def._companionData) {
       // Companion unit
@@ -4610,6 +4637,28 @@ function initHex() {
   hexComputeEnemyIntents();
   hxRender();
   hexUpdateInfo();
+
+  // PASS A: FFT Intro overlay
+  if(heroDef) {
+    const heroUnit = hxs.units.find(u => u.isHero);
+    if(heroUnit) {
+      const overlay = document.getElementById('hx-intro-overlay');
+      document.getElementById('hx-intro-hero').textContent = heroUnit.emoji || '🧙';
+      document.getElementById('hx-intro-name').textContent = heroUnit.name;
+      document.getElementById('hx-intro-stats').textContent = `HP: ${heroUnit.hp}  Атк: ${heroUnit.atk}`;
+      const abPanel = document.getElementById('hx-intro-abilities');
+      abPanel.innerHTML = '';
+      (heroUnit.abilities || []).forEach(ab => {
+        const el = document.createElement('div');
+        el.style.cssText = 'padding:5px 8px;background:rgba(255,255,255,0.07);border-radius:8px;font-size:0.75rem;display:flex;align-items:center;gap:4px;';
+        el.innerHTML = `<span style="font-size:1rem;">${ab.icon||'✦'}</span><span>${ab.name}</span>`;
+        abPanel.appendChild(el);
+      });
+      overlay.style.display = 'flex';
+      // Auto-hide after 2.5 seconds
+      setTimeout(() => { overlay.style.display = 'none'; }, 2500);
+    }
+  }
 }
 </script>
 <div id="hx-ability-tooltip"></div>
