@@ -269,9 +269,16 @@
   .cg-status-row { display: flex; gap: 8px; align-items: flex-start; }
   .cg-player-panel { flex: 1; }
   .cg-player-label { font-size: 0.8rem; margin-bottom: 3px; }
-  .cg-energy-row { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
-  .cg-energy-pip { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #f39c12; transition: background 0.2s; }
-  .cg-energy-pip.active { background: #f39c12; }
+  .cg-energy-counter { font-size:0.95rem; font-weight:700; padding:4px 10px; background:rgba(243,156,18,0.15); border-radius:8px; color:#f39c12; white-space:nowrap; }
+  .cg-detail-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:101; display:flex; align-items:flex-end; }
+  .cg-detail-box { width:100%; background:#1a1a2e; border-radius:18px 18px 0 0; padding:20px 18px 32px; }
+  .cg-detail-name { font-size:1.1rem; font-weight:700; margin-bottom:4px; }
+  .cg-detail-meta { font-size:0.78rem; color:var(--tg-theme-hint-color,#aaa); margin-bottom:10px; }
+  .cg-detail-desc { font-size:0.9rem; line-height:1.5; margin-bottom:14px; }
+  .cg-detail-glossary { display:flex; flex-direction:column; gap:6px; }
+  .cg-detail-term { background:rgba(255,255,255,0.05); border-radius:8px; padding:7px 10px; }
+  .cg-detail-term-name { font-size:0.78rem; font-weight:700; color:#f39c12; }
+  .cg-detail-term-def { font-size:0.75rem; color:var(--tg-theme-hint-color,#bbb); margin-top:1px; }
   .cg-log { font-size: 0.8rem; padding: 8px 10px; background: rgba(0,0,0,0.2); border-radius: 8px; min-height: 34px; line-height: 1.5; color: var(--tg-theme-hint-color,#aaa); }
   .cg-hand-label { font-size: 0.7rem; color: var(--tg-theme-hint-color,#aaa); }
   .cg-hand { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 8px; min-height: 130px; align-items: flex-end; -webkit-overflow-scrolling: touch; }
@@ -480,10 +487,7 @@
         <div class="cg-player-label" id="cg-player-label">Герой</div>
         <div class="cg-hp-bar"><div class="cg-hp-fill player" id="cg-player-hp-fill" style="width:100%"></div></div>
       </div>
-      <div style="text-align:center">
-        <div style="font-size:0.7rem;color:var(--tg-theme-hint-color,#aaa);margin-bottom:3px">⚡</div>
-        <div class="cg-energy-row" id="cg-energy-pips"></div>
-      </div>
+      <div class="cg-energy-counter" id="cg-energy-counter">⚡ 3/3</div>
     </div>
     <div class="cg-log" id="cg-log">Ход 1. Тяни и играй карты!</div>
     <div class="cg-hand-label" id="cg-hand-label">Рука (0)</div>
@@ -513,6 +517,14 @@
   <div id="cg-result" style="display:none" class="cg-result">
     <div class="cg-result-title" id="cg-result-title"></div>
     <div class="cg-result-sub" id="cg-result-sub"></div>
+  </div>
+  <div id="cg-detail-overlay" style="display:none" class="cg-detail-overlay" onclick="this.style.display='none'">
+    <div class="cg-detail-box" onclick="event.stopPropagation()">
+      <div class="cg-detail-name" id="cg-detail-name"></div>
+      <div class="cg-detail-meta" id="cg-detail-meta"></div>
+      <div class="cg-detail-desc" id="cg-detail-desc"></div>
+      <div class="cg-detail-glossary" id="cg-detail-glossary"></div>
+    </div>
   </div>
   <div id="cg-overlay" style="display:none" class="cg-overlay">
     <div class="cg-overlay-hdr">
@@ -2388,7 +2400,7 @@ function initCard() {
     enemyFlavor:enemy.flavor||[],flavorShown:{},
     enemyVulnerable:0,enemyWeak:0,
     energy:3,maxEnergy:3,sel:null,turn:1,played:0,
-    lowestHp:ph,damageTaken:0};
+    lowestHp:ph,damageTaken:0,lastDrawn:0};
   // ready screen
   document.getElementById('cg-ready-title').textContent=gameData.prompt||'Карточный бой';
   document.getElementById('cg-ready-sub').textContent=
@@ -2405,30 +2417,40 @@ function cgStart(){
 }
 
 function cgDraw(n){
+  let drawn=0;
   for(let i=0;i<n;i++){
     if(cgs.deck.length===0){
       if(cgs.discard.length===0) break;
       cgs.deck=cgShuffle(cgs.discard); cgs.discard=[]; cgLog('Колода перемешана.');
     }
     if(cgs.hand.length>=10) break;
-    cgs.hand.push(cgs.deck.shift());
+    cgs.hand.push(cgs.deck.shift()); drawn++;
   }
+  cgs.lastDrawn=drawn;
   cgRenderHand(); cgUpdateUI();
 }
 
+let _cgLpTimer=null;
 function cgRenderHand(){
   const h=document.getElementById('cg-hand'); h.innerHTML='';
+  const newStart=cgs.hand.length-(cgs.lastDrawn||0);
   cgs.hand.forEach((card,idx)=>{
     const el=document.createElement('div');
-    el.className='cg-card dealing'+(cgs.sel===idx?' selected':'')+(card.cost>cgs.energy?' unaffordable':'');
-    el.style.animationDelay=(idx*80)+'ms';
+    const isNew=idx>=newStart;
+    el.className='cg-card'+(isNew?' dealing':'')+(cgs.sel===idx?' selected':'')+(card.cost>cgs.energy?' unaffordable':'');
+    if(isNew) el.style.animationDelay=((idx-newStart)*80)+'ms';
     el.dataset.type=card.type; el.onclick=()=>cgSelect(idx);
+    // long press → card detail
+    el.addEventListener('touchstart',()=>{_cgLpTimer=setTimeout(()=>{_cgLpTimer=null;cgShowCardDetail(card);},500);},{passive:true});
+    el.addEventListener('touchend',()=>{if(_cgLpTimer){clearTimeout(_cgLpTimer);_cgLpTimer=null;}},{passive:true});
+    el.addEventListener('touchmove',()=>{if(_cgLpTimer){clearTimeout(_cgLpTimer);_cgLpTimer=null;}},{passive:true});
     const icon=card.type==='attack'?'⚔️':card.type==='defense'?'🛡':'✨';
     const typeName=card.type==='attack'?'Атака':card.type==='defense'?'Защита':'Умение';
     el.innerHTML=`<div class="cg-cost${card.cost===0?' free':''}">${card.cost}</div><div class="cg-card-name">${card.name}</div><div class="cg-card-type">${icon} ${typeName}</div><div class="cg-card-desc">${card.description}</div>${card.rarity==='rare'?'<div class="cg-card-rarity">★</div>':''}`;
     h.appendChild(el);
   });
   document.getElementById('cg-hand-label').textContent='Рука ('+cgs.hand.length+')';
+  cgs.lastDrawn=0;
 }
 
 function cgUpdatePiles(){
@@ -2533,9 +2555,38 @@ function cgUpdateUI(){
   const pLabel='Герой HP '+s.playerHp+'/'+s.playerMaxHp+(s.playerBlock>0?' <span class="cg-status-tag cg-block-tag">🛡'+s.playerBlock+'</span>':'');
   document.getElementById('cg-player-label').innerHTML=pLabel;
   document.getElementById('cg-player-hp-fill').style.width=Math.max(0,s.playerHp/s.playerMaxHp*100)+'%';
-  const ep=document.getElementById('cg-energy-pips'); ep.innerHTML='';
-  for(let i=0;i<s.maxEnergy;i++){const p=document.createElement('div');p.className='cg-energy-pip'+(i<s.energy?' active':'');ep.appendChild(p);}
+  document.getElementById('cg-energy-counter').textContent='⚡ '+s.energy+'/'+s.maxEnergy;
   cgUpdatePiles();
+}
+
+const CG_GLOSSARY=[
+  {key:'vulnerable',term:'Уязвимость',def:'Цель получает +50% урона в течение 2 ходов'},
+  {key:'weak',term:'Слабость',def:'Цель атакует на −30% слабее в течение 2 ходов'},
+  {key:'exhaust',term:'Истощение',def:'Карта удаляется из игры после использования (не в сброс)'},
+  {key:'lifesteal',term:'Вампиризм',def:'Часть нанесённого урона восстанавливает HP героя'},
+  {key:'heal',term:'Исцеление',def:'Восстанавливает HP напрямую, вне зависимости от урона'},
+  {key:'energy',term:'Восстановление маны',def:'Немедленно возвращает ⚡ в этот же ход'},
+  {key:'draw',term:'Добор карт',def:'Немедленно тянешь дополнительные карты из колоды'},
+  {key:'block',term:'Блок',def:'Поглощает входящий урон до конца хода, потом сбрасывается'},
+];
+
+function cgShowCardDetail(card){
+  const icon=card.type==='attack'?'⚔️':card.type==='defense'?'🛡':'✨';
+  const typeName=card.type==='attack'?'Атака':card.type==='defense'?'Защита':'Умение';
+  document.getElementById('cg-detail-name').textContent=card.name+(card.rarity==='rare'?' ★':'');
+  document.getElementById('cg-detail-meta').textContent=icon+' '+typeName+' · ⚡'+card.cost+(card.rarity==='rare'?' · Редкая':'');
+  document.getElementById('cg-detail-desc').textContent=card.description;
+  const gl=document.getElementById('cg-detail-glossary'); gl.innerHTML='';
+  if(card.effect){
+    CG_GLOSSARY.forEach(g=>{
+      if(card.effect[g.key]){
+        const d=document.createElement('div'); d.className='cg-detail-term';
+        d.innerHTML='<div class="cg-detail-term-name">'+g.term+'</div><div class="cg-detail-term-def">'+g.def+'</div>';
+        gl.appendChild(d);
+      }
+    });
+  }
+  document.getElementById('cg-detail-overlay').style.display='';
 }
 
 function cgCheckFlavor(){
