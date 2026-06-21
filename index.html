@@ -3900,7 +3900,7 @@ function hexEnemyTurn() {
 
   // Reset for next player turn
   hxs.units.forEach(u => {
-    u.moved = false; u.acted = false; u.atkDebuff = 0; u.remainingMove = u.moveRange;
+    u.moved = false; u.acted = false; u.atkDebuff = 0; u.remainingMove = u.moveRange; u.freeMoveDone = false;
     // Tick buff durations
     if(u.atkBuffTurns > 0) { u.atkBuffTurns--; if(u.atkBuffTurns <= 0) u.atkBuff = 0; }
     // Tick ability cooldowns
@@ -4401,8 +4401,8 @@ function hxUpdateStatusBar(unit) {
   let apLine = '';
   if(unit.isHero) {
     const ap = hxs.heroAP || 0;
-    const dots = '◉'.repeat(ap) + '○'.repeat(Math.max(0, 4 - ap));
-    apLine = `  AP: ${dots} (${ap}/4)`;
+    const maxAp = hxs.heroMaxAP || 4;
+    apLine = `  AP: ${ap}/${maxAp}`;
   }
   el.textContent = `${unit.emoji||'?'} ${unit.name} | HP: ${unit.hp}/${unit.maxHp}${cdParts.length?' | '+cdParts.join(' | '):''}${apLine}`;
 }
@@ -4468,8 +4468,10 @@ function hexUpdateInfo(unit) {
   const moveBtn = document.createElement('button');
   moveBtn.className = 'hx-ability-btn move-btn' + (hxs.mode === 'move' ? ' active' : '');
   const remMove = unit.remainingMove ?? unit.moveRange;
-  moveBtn.disabled = remMove === 0;
-  moveBtn.innerHTML = `<span class="hx-ability-icon">🚶</span><span class="hx-ability-name">Движение${remMove > 0 && remMove < unit.moveRange ? ' '+remMove : ''}</span>`;
+  const moveBlocked = remMove === 0 || (unit.isHero && unit.freeMoveDone && hxs.heroAP <= 0);
+  moveBtn.disabled = moveBlocked;
+  const moveApHint = unit.isHero && unit.freeMoveDone ? '<span class="hx-ab-ap">1ap/гекс</span>' : '<span class="hx-ab-ap">бесплатно</span>';
+  moveBtn.innerHTML = `<span class="hx-ability-icon">🚶</span><span class="hx-ability-name">Движение</span>${moveApHint}`;
   moveBtn.onclick = () => hxSelectMoveMode();
   row.appendChild(moveBtn);
 
@@ -4623,11 +4625,24 @@ function hxClickHex(col, row) {
   if(hxs.mode === 'move') {
     if(hxs.reachable.some(([c,r])=>c===col&&r===row)) {
       const dist = hexDist(unit.col, unit.row, col, row);
+      // First 1 hex is free; additional hexes cost 1 AP each (hero only)
+      if(unit.isHero) {
+        const freeLeft = unit.freeMoveDone ? 0 : 1;
+        const paidHexes = Math.max(0, dist - freeLeft);
+        if(paidHexes > 0 && hxs.heroAP < paidHexes) {
+          // Not enough AP — move only as far as AP allows
+          hxLog(`Недостаточно AP для движения.`, 'info');
+          hxRender(); hexUpdateInfo(); return;
+        }
+        if(!unit.freeMoveDone) unit.freeMoveDone = true;
+        hxs.heroAP = Math.max(0, hxs.heroAP - paidHexes);
+      }
       unit.col = col; unit.row = row;
       unit.remainingMove = Math.max(0, (unit.remainingMove ?? unit.moveRange) - dist);
       unit.moved = unit.remainingMove === 0;
-      // Stay in move mode if remaining moves left, else switch to select
-      if(unit.remainingMove > 0) {
+      // Stay in move mode if remaining moves left AND hero has AP, else switch to select
+      const canKeepMoving = unit.remainingMove > 0 && (!unit.isHero || hxs.heroAP > 0 || !unit.freeMoveDone);
+      if(canKeepMoving) {
         hxs.reachable = hexReachable(unit);
         hxs.mode = 'move';
       } else {
@@ -4740,7 +4755,7 @@ function initHex() {
   const playerDefs = heroDef ? null : (Array.isArray(gameData.player_units) ? gameData.player_units : [{type:'warrior',name:'Воин'}]);
   const enemyDefs  = Array.isArray(gameData.enemy_units)  ? gameData.enemy_units  : [{type:'warrior',name:'Страж'}];
 
-  hxs = {units:[], turn:'player', selected:null, inspecting:null, reachable:[], attackable:[], abilityTargets:[], activeAbilityIdx:null, mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, ended:false, rifts:[], forests:[], heights:[], obstacles:[], bushes:[], objective:null, enemyIntents:{}, totalDamageDealt:0, totalDamageTaken:0, aoeHover:null, abilitiesUsed:{}, hero: heroDef, heroAP: 4, confirming: null};
+  hxs = {units:[], turn:'player', selected:null, inspecting:null, reachable:[], attackable:[], abilityTargets:[], activeAbilityIdx:null, mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, ended:false, rifts:[], forests:[], heights:[], obstacles:[], bushes:[], objective:null, enemyIntents:{}, totalDamageDealt:0, totalDamageTaken:0, aoeHover:null, abilitiesUsed:{}, hero: heroDef, heroAP: 4, heroMaxAP: 4, confirming: null};
 
   let idCtr = 0;
 
