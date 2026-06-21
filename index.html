@@ -312,6 +312,27 @@
   .cg-vuln { background:rgba(231,76,60,0.25); color:#e74c3c; }
   .cg-weak { background:rgba(243,156,18,0.25); color:#f39c12; }
   .cg-block-tag { background:rgba(52,152,219,0.25); color:#3498db; }
+  @keyframes cgDeal { from{opacity:0;transform:translateY(40px) scale(0.85)} to{opacity:1;transform:translateY(0) scale(1)} }
+  .cg-card.dealing { animation:cgDeal 0.22s ease-out both; }
+  .cg-piles { display:flex; gap:8px; justify-content:center; padding:4px 0; }
+  .cg-pile-btn { display:flex; flex-direction:column; align-items:center; padding:4px 12px; border-radius:8px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); cursor:pointer; user-select:none; -webkit-tap-highlight-color:transparent; }
+  .cg-pile-btn:active { background:rgba(255,255,255,0.14); }
+  .cg-pile-icon { font-size:0.9rem; }
+  .cg-pile-count { font-size:0.8rem; font-weight:700; color:#fff; }
+  .cg-pile-label { font-size:0.55rem; color:var(--tg-theme-hint-color,#aaa); }
+  .cg-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:100; display:flex; flex-direction:column; }
+  .cg-overlay-hdr { display:flex; align-items:center; justify-content:space-between; padding:16px 16px 8px; border-bottom:1px solid rgba(255,255,255,0.08); }
+  .cg-overlay-title { font-size:1rem; font-weight:700; }
+  .cg-overlay-close { width:32px; height:32px; border-radius:50%; background:rgba(255,255,255,0.1); border:none; color:#fff; font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .cg-overlay-list { flex:1; overflow-y:auto; padding:10px 14px 24px; display:flex; flex-direction:column; gap:8px; }
+  .cg-ov-card { background:rgba(255,255,255,0.06); border-radius:10px; padding:10px 12px; border-left:3px solid rgba(255,255,255,0.2); }
+  .cg-ov-card[data-type="attack"] { border-left-color:#e74c3c; }
+  .cg-ov-card[data-type="defense"] { border-left-color:#3498db; }
+  .cg-ov-card[data-type="skill"] { border-left-color:#9b59b6; }
+  .cg-ov-name { font-weight:700; font-size:0.85rem; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .cg-ov-meta { font-size:0.65rem; font-weight:400; color:var(--tg-theme-hint-color,#aaa); }
+  .cg-ov-desc { font-size:0.75rem; color:var(--tg-theme-hint-color,#bbb); margin-top:3px; }
+  .cg-ov-empty { text-align:center; color:var(--tg-theme-hint-color,#aaa); padding:40px 0; font-size:0.9rem; }
 </style>
 </head>
 <body>
@@ -467,6 +488,23 @@
     <div class="cg-log" id="cg-log">Ход 1. Тяни и играй карты!</div>
     <div class="cg-hand-label" id="cg-hand-label">Рука (0)</div>
     <div class="cg-hand" id="cg-hand"></div>
+    <div class="cg-piles" id="cg-piles">
+      <div class="cg-pile-btn" onclick="cgShowPile('deck')">
+        <div class="cg-pile-icon">🂠</div>
+        <div class="cg-pile-count" id="cg-pile-deck">0</div>
+        <div class="cg-pile-label">Колода</div>
+      </div>
+      <div class="cg-pile-btn" onclick="cgShowPile('discard')">
+        <div class="cg-pile-icon">🗑</div>
+        <div class="cg-pile-count" id="cg-pile-discard">0</div>
+        <div class="cg-pile-label">Сброс</div>
+      </div>
+      <div class="cg-pile-btn" onclick="cgShowPile('exhaust')">
+        <div class="cg-pile-icon">✗</div>
+        <div class="cg-pile-count" id="cg-pile-exhaust">0</div>
+        <div class="cg-pile-label">Выбыло</div>
+      </div>
+    </div>
     <div class="cg-actions">
       <button class="cg-btn cg-play-btn" id="cg-play-btn" onclick="cgPlaySelected()" disabled>Сыграть</button>
       <button class="cg-btn cg-end-btn" onclick="cgEndTurn()">Конец хода →</button>
@@ -475,6 +513,13 @@
   <div id="cg-result" style="display:none" class="cg-result">
     <div class="cg-result-title" id="cg-result-title"></div>
     <div class="cg-result-sub" id="cg-result-sub"></div>
+  </div>
+  <div id="cg-overlay" style="display:none" class="cg-overlay">
+    <div class="cg-overlay-hdr">
+      <div class="cg-overlay-title" id="cg-overlay-title">Колода</div>
+      <button class="cg-overlay-close" onclick="document.getElementById('cg-overlay').style.display='none'">✕</button>
+    </div>
+    <div class="cg-overlay-list" id="cg-overlay-list"></div>
   </div>
 </div>
 
@@ -2375,7 +2420,8 @@ function cgRenderHand(){
   const h=document.getElementById('cg-hand'); h.innerHTML='';
   cgs.hand.forEach((card,idx)=>{
     const el=document.createElement('div');
-    el.className='cg-card'+(cgs.sel===idx?' selected':'')+(card.cost>cgs.energy?' unaffordable':'');
+    el.className='cg-card dealing'+(cgs.sel===idx?' selected':'')+(card.cost>cgs.energy?' unaffordable':'');
+    el.style.animationDelay=(idx*80)+'ms';
     el.dataset.type=card.type; el.onclick=()=>cgSelect(idx);
     const icon=card.type==='attack'?'⚔️':card.type==='defense'?'🛡':'✨';
     const typeName=card.type==='attack'?'Атака':card.type==='defense'?'Защита':'Умение';
@@ -2383,6 +2429,29 @@ function cgRenderHand(){
     h.appendChild(el);
   });
   document.getElementById('cg-hand-label').textContent='Рука ('+cgs.hand.length+')';
+}
+
+function cgUpdatePiles(){
+  document.getElementById('cg-pile-deck').textContent=cgs.deck.length;
+  document.getElementById('cg-pile-discard').textContent=cgs.discard.length;
+  document.getElementById('cg-pile-exhaust').textContent=cgs.exhaust.length;
+}
+
+function cgShowPile(type){
+  const titles={deck:'Колода',discard:'Сброс',exhaust:'Выбыло'};
+  const cards=type==='deck'?[...cgs.deck]:type==='discard'?[...cgs.discard]:[...cgs.exhaust];
+  document.getElementById('cg-overlay-title').textContent=titles[type]+' ('+cards.length+')';
+  const list=document.getElementById('cg-overlay-list'); list.innerHTML='';
+  if(!cards.length){list.innerHTML='<div class="cg-ov-empty">Пусто</div>';} else {
+    cards.forEach(card=>{
+      const el=document.createElement('div'); el.className='cg-ov-card'; el.dataset.type=card.type;
+      const icon=card.type==='attack'?'⚔️':card.type==='defense'?'🛡':'✨';
+      const typeName=card.type==='attack'?'Атака':card.type==='defense'?'Защита':'Умение';
+      el.innerHTML=`<div class="cg-ov-name">${icon} ${card.name} <span class="cg-ov-meta">${typeName}${card.rarity==='rare'?' ★':''} · ${card.cost}⚡</span></div><div class="cg-ov-desc">${card.description}</div>`;
+      list.appendChild(el);
+    });
+  }
+  document.getElementById('cg-overlay').style.display='';
 }
 
 function cgSelect(idx){
@@ -2466,6 +2535,7 @@ function cgUpdateUI(){
   document.getElementById('cg-player-hp-fill').style.width=Math.max(0,s.playerHp/s.playerMaxHp*100)+'%';
   const ep=document.getElementById('cg-energy-pips'); ep.innerHTML='';
   for(let i=0;i<s.maxEnergy;i++){const p=document.createElement('div');p.className='cg-energy-pip'+(i<s.energy?' active':'');ep.appendChild(p);}
+  cgUpdatePiles();
 }
 
 function cgCheckFlavor(){
