@@ -3280,20 +3280,14 @@ function hxAbilityTargets(unit, ability) {
       for(let r=0;r<HEX_ROWS;r++) for(let c=0;c<HEX_COLS;c++) {
         if(inRange(c,r) && !occupied.has(`${c},${r}`)) result.push({col:c,row:r,isFreeHex:true});
       }
-    } else if(isRangedMagic) {
-      // Ranged/magic: all hexes in range with LoS (free-aim, terrain reacts)
+    } else {
+      // All abilities: free-aim any hex in range, LoS for ranged/magic
       for(let r=0;r<HEX_ROWS;r++) for(let c=0;c<HEX_COLS;c++) {
         const d = hexDist(unit.col,unit.row,c,r);
         if(d === 0 || d > ability.range) continue;
-        if(hxLoSBlocked(unit.col,unit.row,c,r)) continue;
+        if(isRangedMagic && hxLoSBlocked(unit.col,unit.row,c,r)) continue;
         result.push({col:c,row:r,isFreeHex:true});
       }
-    } else {
-      // Melee: enemies and obstacles only
-      hxs.units.filter(u=>u.team!==unit.team&&u.hp>0&&inRange(u.col,u.row))
-               .forEach(u=>result.push({col:u.col,row:u.row,isFreeHex:false}));
-      (hxs.obstacles||[]).filter(ob=>hexDist(unit.col,unit.row,ob.col,ob.row)<=(ability.range||1))
-               .forEach(ob=>result.push({col:ob.col,row:ob.row,isFreeHex:true,isObstacle:true}));
     }
     return result;
   }
@@ -3725,6 +3719,116 @@ function hexStartPositions(count, col) {
 }
 
 // Flash a hex with a color briefly (ability animation)
+// ---- Animation utilities ----
+function hxDelay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function hxAnimateMove(unit, fromCol, fromRow, toCol, toRow) {
+  const svg = document.getElementById('hx-svg');
+  if(!svg || (fromCol===toCol && fromRow===toRow)) return;
+  const from = hexToPixel(fromCol, fromRow);
+  const to = hexToPixel(toCol, toRow);
+  const dur = 260, t0 = performance.now();
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  const circ = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  circ.setAttribute('r', String(HEX_SIZE * 0.58));
+  circ.setAttribute('fill', unit.team==='enemy' ? 'rgba(192,57,43,0.92)' : 'rgba(41,128,185,0.92)');
+  circ.setAttribute('stroke', '#fff3'); circ.setAttribute('stroke-width', '1');
+  const lbl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  lbl.setAttribute('text-anchor', 'middle'); lbl.setAttribute('dominant-baseline', 'central');
+  lbl.setAttribute('font-size', String(Math.round(HEX_SIZE * 0.9)));
+  lbl.textContent = unit.emoji || unit.name.charAt(0);
+  g.appendChild(circ); g.appendChild(lbl); g.style.pointerEvents = 'none';
+  svg.appendChild(g);
+  unit._animating = true; hxRender();
+  await new Promise(resolve => {
+    const frame = (now) => {
+      const t = Math.min(1,(now-t0)/dur), e = t<.5?2*t*t:-1+(4-2*t)*t;
+      g.setAttribute('transform',`translate(${from.x+(to.x-from.x)*e},${from.y+(to.y-from.y)*e})`);
+      t<1 ? requestAnimationFrame(frame) : resolve();
+    };
+    requestAnimationFrame(frame);
+  });
+  g.remove(); delete unit._animating;
+}
+
+async function hxAnimateProjectile(fromCol, fromRow, toCol, toRow, color) {
+  const svg = document.getElementById('hx-svg');
+  if(!svg) return;
+  const from = hexToPixel(fromCol, fromRow), to = hexToPixel(toCol, toRow);
+  const dur = 175, t0 = performance.now();
+  const circ = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  circ.setAttribute('r','5'); circ.setAttribute('fill', color||'#f1c40f');
+  circ.style.pointerEvents = 'none'; svg.appendChild(circ);
+  await new Promise(resolve => {
+    const frame = (now) => {
+      const t = Math.min(1,(now-t0)/dur);
+      circ.setAttribute('cx',String(from.x+(to.x-from.x)*t));
+      circ.setAttribute('cy',String(from.y+(to.y-from.y)*t));
+      t<1 ? requestAnimationFrame(frame) : resolve();
+    };
+    requestAnimationFrame(frame);
+  });
+  circ.remove();
+}
+
+async function hxAnimateMelee(unit, targetCol, targetRow) {
+  const svg = document.getElementById('hx-svg');
+  if(!svg) return;
+  const from = hexToPixel(unit.col, unit.row), to = hexToPixel(targetCol, targetRow);
+  const mid = {x:from.x+(to.x-from.x)*0.4, y:from.y+(to.y-from.y)*0.4};
+  const dur = 220, t0 = performance.now();
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  const circ = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  circ.setAttribute('r', String(HEX_SIZE * 0.55));
+  circ.setAttribute('fill', unit.team==='enemy' ? 'rgba(192,57,43,0.92)' : 'rgba(41,128,185,0.92)');
+  circ.setAttribute('stroke', '#fff3'); circ.setAttribute('stroke-width', '1');
+  const lbl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  lbl.setAttribute('text-anchor', 'middle'); lbl.setAttribute('dominant-baseline', 'central');
+  lbl.setAttribute('font-size', String(Math.round(HEX_SIZE * 0.9)));
+  lbl.textContent = unit.emoji || unit.name.charAt(0);
+  g.appendChild(circ); g.appendChild(lbl); g.style.pointerEvents = 'none'; svg.appendChild(g);
+  unit._animating = true; hxRender();
+  await new Promise(resolve => {
+    const frame = (now) => {
+      const el = now-t0;
+      let pos;
+      if(el < dur*.45){const t=el/(dur*.45),e=t<.5?2*t*t:-1+(4-2*t)*t;pos={x:from.x+(mid.x-from.x)*e,y:from.y+(mid.y-from.y)*e};}
+      else{const t=Math.min(1,(el-dur*.45)/(dur*.55));pos={x:mid.x+(from.x-mid.x)*t,y:mid.y+(from.y-mid.y)*t};}
+      g.setAttribute('transform',`translate(${pos.x},${pos.y})`);
+      el<dur ? requestAnimationFrame(frame) : resolve();
+    };
+    requestAnimationFrame(frame);
+  });
+  g.remove(); delete unit._animating;
+}
+
+async function hxMoveUnit(unit, toCol, toRow) {
+  const fromCol=unit.col, fromRow=unit.row;
+  unit.col=toCol; unit.row=toRow; unit.moved=true;
+  await hxAnimateMove(unit, fromCol, fromRow, toCol, toRow);
+  hxRender();
+}
+
+async function hxEnemyBasicAtk(enemy, target) {
+  const isRanged = enemy.atkRange>1 || ['archer','wizard','elementalist','incenser'].includes(enemy.type);
+  if(isRanged) await hxAnimateProjectile(enemy.col,enemy.row,target.col,target.row,'#3498db');
+  else await hxAnimateMelee(enemy, target.col, target.row);
+  hexAttack(enemy, target);
+  await hxDelay(80);
+}
+
+async function hxEnemyUseAb(enemy, ability, target) {
+  const isRanged = ability.type==='ranged'||ability.type==='magic';
+  if(isRanged && target.col!==undefined) {
+    const colors={pyromancer:'#e74c3c',wizard:'#9b59b6',elementalist:'#e67e22',ranged:'#3498db'};
+    await hxAnimateProjectile(enemy.col,enemy.row,target.col,target.row,colors[ability.school]||'#f1c40f');
+  } else if(ability.type==='melee'&&target.col!==undefined) {
+    await hxAnimateMelee(enemy, target.col, target.row);
+  }
+  hxApplyAbility(enemy, ability, target);
+  await hxDelay(80);
+}
+
 function hxFlashHex(col, row, color) {
   const svg = document.getElementById('hx-svg');
   if(!svg) return;
@@ -3933,7 +4037,7 @@ function hxTickCooldowns(unit) {
 }
 
 // ---- Enemy AI (FFT-style) ----
-function hexEnemyTurn() {
+async function hexEnemyTurn() {
   const _turnLabel = document.getElementById('hx-turn-label');
   _turnLabel.className = 'hx-turn-label enemy-turn';
   _turnLabel.textContent = 'Ход ' + hxs.turnNum + ' — ход врага...';
@@ -3963,6 +4067,8 @@ function hexEnemyTurn() {
     if(enemy.stunnedTurns > 0) {
       hxLog(`${enemy.name} оглушён — пропускает ход.`, 'info');
       enemy.stunnedTurns--;
+      hxRender(); hexUpdateInfo();
+      await hxDelay(200);
       continue;
     }
     const players = hxs.units.filter(u=>u.team==='player'&&u.hp>0);
@@ -3970,150 +4076,127 @@ function hexEnemyTurn() {
     const allies = hxs.units.filter(u=>u.team==='enemy'&&u.hp>0);
     const nearest = hexFindBestTarget(enemy, players) || players[0];
 
-    // Try best ability first
     const pick = hxPickEnemyAbility(enemy, players, allies);
     if(pick) {
-      // Move toward target if needed
       if(!enemy.moved) {
         const reach = hexReachable(enemy);
         if(reach.length > 0 && hexDist(enemy.col,enemy.row,pick.target.col,pick.target.row) > pick.ability.range) {
           const spots = reach.filter(([c,r])=>hexDist(c,r,pick.target.col,pick.target.row)<=pick.ability.range);
           const mv = spots.length ? spots.reduce((a,b)=>hexDist(a[0],a[1],pick.target.col,pick.target.row)<=hexDist(b[0],b[1],pick.target.col,pick.target.row)?a:b) : null;
-          if(mv) { enemy.col=mv[0]; enemy.row=mv[1]; enemy.moved=true; }
+          if(mv) await hxMoveUnit(enemy, mv[0], mv[1]);
         }
       }
-      // Apply ability if in range
       if(hexDist(enemy.col,enemy.row,pick.target.col,pick.target.row) <= pick.ability.range) {
-        hxApplyAbility(enemy, pick.ability, pick.target);
+        await hxEnemyUseAb(enemy, pick.ability, pick.target);
         if(hxs.ended) break;
         continue;
       }
     }
 
-    // No ability or ability out of range — move+basic attack
     const inRange = hexDist(enemy.col,enemy.row,nearest.col,nearest.row) <= enemy.atkRange;
     const isRangedUnit = ['archer','wizard','elementalist','incenser'].includes(enemy.type);
-    const isTankUnit   = ['warrior','cavalry'].includes(enemy.type);
     const isSummonerUnit = ['demonologist','necromancer'].includes(enemy.type);
     const isHealerUnit = ['druid','adept','healer'].includes(enemy.type);
 
     if(inRange && !enemy.acted && !isRangedUnit) {
-      // Ranged units skip basic attack at melee — handled below with retreat
-      hexAttack(enemy, nearest);
+      await hxEnemyBasicAtk(enemy, nearest);
       if(hxs.ended) break;
     } else if(!enemy.moved) {
       const reach = hexReachable(enemy);
 
-      // Healer/druid — move toward most wounded ally first
       if(isHealerUnit && !enemy.acted) {
         const woundedAllies = allies.filter(a=>a.hp<a.maxHp&&a.id!==enemy.id);
         if(woundedAllies.length && reach.length) {
           const healT = woundedAllies.reduce((a,b)=>a.hp<=b.hp?a:b);
           if(hexDist(enemy.col,enemy.row,healT.col,healT.row) > 1) {
             const mv = reach.reduce((a,b)=>hexDist(a[0],a[1],healT.col,healT.row)<=hexDist(b[0],b[1],healT.col,healT.row)?a:b);
-            enemy.col=mv[0]; enemy.row=mv[1]; enemy.moved=true;
+            await hxMoveUnit(enemy, mv[0], mv[1]);
             hxLog(`${enemy.name} движется к раненому союзнику.`, 'info');
             continue;
           }
         }
       }
 
-      // Ranged units — retreat if player is adjacent (dist <= 1), then attack from distance
       if(isRangedUnit) {
         const tooClose = players.filter(p=>hexDist(enemy.col,enemy.row,p.col,p.row)<=1);
         if(tooClose.length && reach.length) {
-          // BFS retreat: move to hex that maximizes distance from nearest foe
           const safeSpot = reach.filter(([c,r])=>players.every(p=>hexDist(c,r,p.col,p.row)>1));
           if(safeSpot.length) {
             const retreatTo = safeSpot.reduce((a,b)=>{
-              const dA = players.reduce((m,p)=>Math.min(m,hexDist(a[0],a[1],p.col,p.row)),99);
-              const dB = players.reduce((m,p)=>Math.min(m,hexDist(b[0],b[1],p.col,p.row)),99);
+              const dA=players.reduce((m,p)=>Math.min(m,hexDist(a[0],a[1],p.col,p.row)),99);
+              const dB=players.reduce((m,p)=>Math.min(m,hexDist(b[0],b[1],p.col,p.row)),99);
               return dA>=dB?a:b;
             });
-            enemy.col=retreatTo[0]; enemy.row=retreatTo[1]; enemy.moved=true;
+            await hxMoveUnit(enemy, retreatTo[0], retreatTo[1]);
             hxLog(`${enemy.name} отступает, сохраняя дистанцию.`, 'info');
-            // After retreating, try to attack from new position
             const newPick = hxPickEnemyAbility(enemy, players, allies);
             if(newPick && hexDist(enemy.col,enemy.row,newPick.target.col,newPick.target.row)<=newPick.ability.range) {
-              hxApplyAbility(enemy, newPick.ability, newPick.target);
+              await hxEnemyUseAb(enemy, newPick.ability, newPick.target);
               if(hxs.ended) break;
             } else if(hexDist(enemy.col,enemy.row,nearest.col,nearest.row)<=enemy.atkRange && !enemy.acted) {
-              hexAttack(enemy, nearest);
+              await hxEnemyBasicAtk(enemy, nearest);
               if(hxs.ended) break;
             }
             continue;
           }
         }
-        // Not too close — move to position with attack range (prefer max distance)
         if(!enemy.moved) {
           const atkSpots = reach.filter(([c,r])=>hexDist(c,r,nearest.col,nearest.row)<=enemy.atkRange);
           if(atkSpots.length) {
-            // Prefer spot that keeps distance > 1 from all players
             const safeAtk = atkSpots.filter(([c,r])=>players.every(p=>hexDist(c,r,p.col,p.row)>1));
             const pool = safeAtk.length ? safeAtk : atkSpots;
-            // Among pool, pick one farthest from foes
             const best = pool.reduce((a,b)=>{
-              const dA = players.reduce((m,p)=>Math.min(m,hexDist(a[0],a[1],p.col,p.row)),99);
-              const dB = players.reduce((m,p)=>Math.min(m,hexDist(b[0],b[1],p.col,p.row)),99);
+              const dA=players.reduce((m,p)=>Math.min(m,hexDist(a[0],a[1],p.col,p.row)),99);
+              const dB=players.reduce((m,p)=>Math.min(m,hexDist(b[0],b[1],p.col,p.row)),99);
               return dA>=dB?a:b;
             });
-            enemy.col=best[0]; enemy.row=best[1]; enemy.moved=true;
+            await hxMoveUnit(enemy, best[0], best[1]);
             if(!enemy.acted) {
               const newPick = hxPickEnemyAbility(enemy, players, allies);
               if(newPick && hexDist(enemy.col,enemy.row,newPick.target.col,newPick.target.row)<=newPick.ability.range) {
-                hxApplyAbility(enemy, newPick.ability, newPick.target);
+                await hxEnemyUseAb(enemy, newPick.ability, newPick.target);
                 if(hxs.ended) break;
-              } else { hexAttack(enemy, nearest); if(hxs.ended) break; }
+              } else { await hxEnemyBasicAtk(enemy, nearest); if(hxs.ended) break; }
             }
           } else if(reach.length) {
             const best = reach.reduce((a,b)=>hexDist(a[0],a[1],nearest.col,nearest.row)<=hexDist(b[0],b[1],nearest.col,nearest.row)?a:b);
-            enemy.col=best[0]; enemy.row=best[1]; enemy.moved=true;
+            await hxMoveUnit(enemy, best[0], best[1]);
             hxLog(`${enemy.name} движется к ${nearest.name}.`, 'info');
           }
         }
         continue;
       }
 
-      // Summoner movement — necromancer toward dead players, demonologist toward rift
       if(isSummonerUnit && !enemy.acted && reach.length) {
         let summonerTarget = null;
         if(enemy.type==='necromancer') {
-          // Move toward a dead enemy position or nearest rift
           const deadPlayers = hxs.units.filter(u=>u.originalTeam==='player'&&u.hp<=0);
-          if(deadPlayers.length) {
-            summonerTarget = deadPlayers.reduce((a,b)=>hexDist(enemy.col,enemy.row,a.col,a.row)<=hexDist(enemy.col,enemy.row,b.col,b.row)?a:b);
-          }
+          if(deadPlayers.length) summonerTarget = deadPlayers.reduce((a,b)=>hexDist(enemy.col,enemy.row,a.col,a.row)<=hexDist(enemy.col,enemy.row,b.col,b.row)?a:b);
         } else if(enemy.type==='demonologist') {
-          // Move toward nearest rift
-          if(hxs.rifts.length) {
-            const nearRift = hxs.rifts.reduce((a,b)=>hexDist(enemy.col,enemy.row,a[0],a[1])<=hexDist(enemy.col,enemy.row,b[0],b[1])?a:b);
-            summonerTarget = {col:nearRift[0], row:nearRift[1]};
-          }
+          if(hxs.rifts.length) { const r=hxs.rifts.reduce((a,b)=>hexDist(enemy.col,enemy.row,a[0],a[1])<=hexDist(enemy.col,enemy.row,b[0],b[1])?a:b); summonerTarget={col:r[0],row:r[1]}; }
         }
         if(summonerTarget) {
           const mv = reach.reduce((a,b)=>hexDist(a[0],a[1],summonerTarget.col,summonerTarget.row)<=hexDist(b[0],b[1],summonerTarget.col,summonerTarget.row)?a:b);
-          enemy.col=mv[0]; enemy.row=mv[1]; enemy.moved=true;
+          await hxMoveUnit(enemy, mv[0], mv[1]);
           hxLog(`${enemy.name} движется к позиции для призыва.`, 'info');
           continue;
         }
       }
 
-      // Default movement — move toward nearest enemy to attack
       const atkSpots = reach.filter(([c,r])=>hexDist(c,r,nearest.col,nearest.row)<=enemy.atkRange);
       if(atkSpots.length) {
         const best = atkSpots.reduce((a,b)=>hexDist(a[0],a[1],nearest.col,nearest.row)<=hexDist(b[0],b[1],nearest.col,nearest.row)?a:b);
-        enemy.col=best[0]; enemy.row=best[1]; enemy.moved=true;
-        if(!enemy.acted) { hexAttack(enemy, nearest); if(hxs.ended) break; }
+        await hxMoveUnit(enemy, best[0], best[1]);
+        if(!enemy.acted) { await hxEnemyBasicAtk(enemy, nearest); if(hxs.ended) break; }
       } else if(reach.length) {
         const best = reach.reduce((a,b)=>hexDist(a[0],a[1],nearest.col,nearest.row)<=hexDist(b[0],b[1],nearest.col,nearest.row)?a:b);
-        enemy.col=best[0]; enemy.row=best[1]; enemy.moved=true;
+        await hxMoveUnit(enemy, best[0], best[1]);
         hxLog(`${enemy.name} движется к ${nearest.name}.`, 'info');
       }
     }
 
-    // Ranged units at melee range without retreat option — attack anyway
     if(isRangedUnit && inRange && !enemy.acted && !enemy.moved) {
-      hexAttack(enemy, nearest);
+      await hxEnemyBasicAtk(enemy, nearest);
       if(hxs.ended) break;
     }
   }
@@ -4322,6 +4405,7 @@ function hxRender() {
   // Draw units
   hxs.units.forEach(unit => {
     if(unit.hp <= 0) return;
+    if(unit._animating) return; // skip — animation overlay draws this unit
     const {x,y} = hexToPixel(unit.col, unit.row);
     const isSelected = unit.id === hxs.selected;
     const isDone = unit.moved && unit.acted;
@@ -4639,11 +4723,15 @@ let _hxTooltipTimer = null;
 function hxShowAbilityTooltip(btn, ab) {
   const tip = document.getElementById('hx-ability-tooltip');
   if(!tip) return;
+  const schoolNames = {sword:'Меч',ranged:'Дальний бой',shield:'Щит',unarmed:'Рукопашный',polearm:'Древковое',chain:'Хлыст',pyromancer:'Пиромант',wizard:'Волшебник',elementalist:'Элементалист',summon:'Призыв',healer:'Целитель',incenser:'Инквизитор',adept:'Адепт',demon:'Демонолог'};
   const typeNames = {melee:'Ближний бой',ranged:'Дальний бой',magic:'Магия',heal:'Лечение',summon:'Призыв',debuff:'Дебафф'};
+  const magicTier = (ab.maxCooldown||0) >= 3 ? 'Сильное мерцание' : 'Слабое мерцание';
+  const schoolLabel = ab.school ? (schoolNames[ab.school]||ab.school) : null;
+  const typeLabel = ab.type==='magic' ? `${schoolLabel||'Магия'} — ${magicTier}` : (schoolLabel||(typeNames[ab.type]||ab.type));
   let html = `<div class="tip-name">${ab.icon||''} ${ab.name}</div>`;
   const dmgVal = ab.damage && ab.damage !== 0 ? (typeof ab.damage==='string'?ab.damage:ab.damage) : 0;
   if(dmgVal && dmgVal !== 0) html += `<div class="tip-row">Урон: ${dmgVal}</div>`;
-  html += `<div class="tip-row">Тип: ${typeNames[ab.type]||ab.type}</div>`;
+  html += `<div class="tip-row">Тип: ${typeLabel}</div>`;
   if(ab.range > 0) html += `<div class="tip-row">Дальность: ${ab.range} гекс.</div>`;
   if((ab.aoe||0) > 0) html += `<div class="tip-row">Радиус AoE: ${ab.aoe}</div>`;
   if(ab.effect?.type==='stun') html += `<div class="tip-effect">Эффект: Оглушение ${ab.effect.turns} хода</div>`;
@@ -5075,22 +5163,39 @@ let _hxPinchDist0 = null, _hxPinchLevel0 = 1.0, _hxPinchInited = false;
 function hxInitPinchZoom() {
   if(_hxPinchInited) return;
   _hxPinchInited = true;
-  // Listeners on document so SVG touch-action:manipulation is unaffected (scroll works)
+  const svg = document.getElementById('hx-svg');
+  const wrap = document.getElementById('hx-svg-wrap');
+  if(!svg || !wrap) return;
   const tDist = (t) => Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY);
-  const onSvg = (e) => { const s = document.getElementById('hx-svg'); return s && s.contains(e.target); };
-  document.addEventListener('touchstart', (e) => {
-    if(e.touches.length === 2 && onSvg(e)) {
-      _hxPinchDist0 = tDist(e.touches);
-      _hxPinchLevel0 = _hxZoomLevel;
+  let _panStart = null, _panActive = false;
+
+  svg.addEventListener('touchstart', (e) => {
+    if(e.touches.length === 2) {
+      e.preventDefault();
+      _hxPinchDist0 = tDist(e.touches); _hxPinchLevel0 = _hxZoomLevel; _panStart = null;
+    } else if(e.touches.length === 1) {
+      _panStart = {x:e.touches[0].clientX, y:e.touches[0].clientY, sl:wrap.scrollLeft, st:wrap.scrollTop};
+      _panActive = false;
     }
-  }, {passive: true});
-  document.addEventListener('touchmove', (e) => {
-    if(e.touches.length === 2 && _hxPinchDist0 !== null && onSvg(e)) {
+  }, {passive:false});
+
+  svg.addEventListener('touchmove', (e) => {
+    if(e.touches.length === 2 && _hxPinchDist0 !== null) {
+      e.preventDefault();
       _hxZoomLevel = Math.max(1.0, Math.min(3.0, _hxPinchLevel0 * tDist(e.touches) / _hxPinchDist0));
       _hxApplyZoom();
+    } else if(e.touches.length === 1 && _panStart && _hxZoomLevel > 1.0) {
+      const dx = _panStart.x - e.touches[0].clientX, dy = _panStart.y - e.touches[0].clientY;
+      if(!_panActive && (Math.abs(dx)>6 || Math.abs(dy)>6)) _panActive = true;
+      if(_panActive) { e.preventDefault(); wrap.scrollLeft = _panStart.sl+dx; wrap.scrollTop = _panStart.st+dy; }
     }
-  }, {passive: true});
-  document.addEventListener('touchend', (e) => { if(e.touches.length < 2) _hxPinchDist0 = null; }, {passive: true});
+  }, {passive:false});
+
+  svg.addEventListener('touchend', (e) => {
+    if(e.touches.length < 2) _hxPinchDist0 = null;
+    if(_panActive) { e.preventDefault(); _panActive = false; }
+    _panStart = null;
+  }, {passive:false});
 }
 
 function hxEndTurn() {
