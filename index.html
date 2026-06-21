@@ -5061,6 +5061,38 @@ function hxZoomAdjust(delta) {
   svg.setAttribute('viewBox', `${vx} ${vy} ${vw} ${vh}`);
 }
 
+let _hxPinchDist0 = null, _hxPinchLevel0 = 1.0, _hxPinchInited = false;
+function hxInitPinchZoom() {
+  if(_hxPinchInited) return;
+  _hxPinchInited = true;
+  const svg = document.getElementById('hx-svg');
+  if(!svg) return;
+  const dist = (t) => {
+    const dx = t[0].clientX - t[1].clientX, dy = t[0].clientY - t[1].clientY;
+    return Math.sqrt(dx*dx + dy*dy);
+  };
+  svg.addEventListener('touchstart', (e) => {
+    if(e.touches.length === 2) {
+      _hxPinchDist0 = dist(e.touches);
+      _hxPinchLevel0 = _hxZoomLevel;
+      e.preventDefault();
+    }
+  }, {passive: false});
+  svg.addEventListener('touchmove', (e) => {
+    if(e.touches.length === 2 && _hxPinchDist0 !== null) {
+      const scale = dist(e.touches) / _hxPinchDist0;
+      _hxZoomLevel = Math.max(0.4, Math.min(3.0, _hxPinchLevel0 * scale));
+      const vw = Math.round(HEX_SVG_W / _hxZoomLevel);
+      const vh = Math.round(HEX_SVG_H / _hxZoomLevel);
+      const vx = Math.max(0, Math.round((HEX_SVG_W - vw) / 2));
+      const vy = Math.max(0, Math.round((HEX_SVG_H - vh) / 2));
+      svg.setAttribute('viewBox', `${vx} ${vy} ${vw} ${vh}`);
+      e.preventDefault();
+    }
+  }, {passive: false});
+  svg.addEventListener('touchend', () => { if(event.touches.length < 2) _hxPinchDist0 = null; });
+}
+
 function hxEndTurn() {
   if(hxs.ended || hxs.turn!=='player') return;
   hxs.selected = null; hxs.reachable = []; hxs.abilityTargets = [];
@@ -5091,6 +5123,7 @@ function initHex() {
     _initSvg.style.width = '100%';
     _initSvg.style.height = 'auto';
   }
+  hxInitPinchZoom();
 
   let idCtr = 0;
 
