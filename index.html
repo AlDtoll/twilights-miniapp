@@ -648,7 +648,7 @@
     <button onclick="hxZoomAdjust(0.15)" style="padding:1px 8px;border-radius:6px;border:none;background:rgba(255,255,255,0.12);color:#fff;font-size:0.9rem;cursor:pointer;">+</button>
   </div>
   <div id="hx-svg-wrap" style="overflow:auto;width:100%;max-height:55vh;">
-    <svg id="hx-svg" xmlns="http://www.w3.org/2000/svg" style="display:block;touch-action:manipulation;"></svg>
+    <svg id="hx-svg" xmlns="http://www.w3.org/2000/svg" style="display:block;touch-action:pan-x pan-y;"></svg>
   </div>
   <div id="hx-legend" style="font-size:0.65rem; color:rgba(255,255,255,0.4); text-align:center; padding:2px 4px; line-height:1.6;">
     🌳 Дерево +2 блок  🗿 Камни +2 атк (дальн.)  🌿 Кусты: -2 урон (дальн.)  ⌖ Разлом  🧱 Стена  ⭐ Цель
@@ -3278,26 +3278,15 @@ function hxAbilityTargets(unit, ability) {
       for(let r=0;r<HEX_ROWS;r++) for(let c=0;c<HEX_COLS;c++) {
         if(inRange(c,r) && !occupied.has(`${c},${r}`)) result.push({col:c,row:r,isFreeHex:true});
       }
-    } else if((ability.aoe||0) > 0) {
-      for(let r=0;r<HEX_ROWS;r++) for(let c=0;c<HEX_COLS;c++) {
-        if(hexDist(unit.col,unit.row,c,r) <= ability.range &&
-           !(isRangedMagic && hxLoSBlocked(unit.col,unit.row,c,r)))
-          result.push({col:c,row:r,isFreeHex:true});
-      }
-    } else if(ability.effect?.type === 'ignite' && (ability.aoe||0) === 0) {
-      // Ignite single: enemies in range + burnable terrain hexes (direct fire placement)
-      hxs.units.filter(u=>u.team!==unit.team&&u.hp>0&&inRange(u.col,u.row))
-               .forEach(u=>result.push({col:u.col,row:u.row,isFreeHex:false}));
-      (hxs.burnable||[]).filter(([c,r])=>inRange(c,r)&&!(hxs.fires||[]).some(f=>f.col===c&&f.row===r))
-               .forEach(([c,r])=>result.push({col:c,row:r,isFreeHex:true,isBurnable:true}));
     } else {
-      // Single-target: enemies + obstacle hexes in range
-      hxs.units.filter(u=>u.team!==unit.team&&u.hp>0&&inRange(u.col,u.row))
-               .forEach(u=>result.push({col:u.col,row:u.row,isFreeHex:false}));
-      // Obstacles are also valid targets
-      (hxs.obstacles||[]).filter(ob=>hexDist(unit.col,unit.row,ob.col,ob.row)<=ability.range &&
-               !(isRangedMagic && hxLoSBlocked(unit.col,unit.row,ob.col,ob.row)))
-               .forEach(ob=>result.push({col:ob.col,row:ob.row,isFreeHex:true,isObstacle:true}));
+      // All hexes in range — target resolution in hxConfirmApply decides what happens
+      for(let r=0;r<HEX_ROWS;r++) for(let c=0;c<HEX_COLS;c++) {
+        const d = hexDist(unit.col,unit.row,c,r);
+        if(d === 0 || d > ability.range) continue;
+        if(isRangedMagic && hxLoSBlocked(unit.col,unit.row,c,r)) continue;
+        // Walls block passage but are valid targets
+        result.push({col:c,row:r,isFreeHex:true});
+      }
     }
     return result;
   }
@@ -3347,8 +3336,11 @@ function hxConfirmApplyBtn() {
 function hxConfirmApply(unit, ab, col, row) {
   const unitOnTarget = hxs.units.find(u=>u.hp>0&&u.col===col&&u.row===row);
   const obstOnTarget = hxObstAt(col, row);
-  const abTarget = hxs.abilityTargets.find(t=>t.col===col&&t.row===row);
-  const primaryTarget = unitOnTarget || abTarget || {col, row, isFreeHex:true};
+  const primaryTarget = unitOnTarget
+    ? unitOnTarget
+    : obstOnTarget
+      ? {col:obstOnTarget.col, row:obstOnTarget.row, isFreeHex:true, isObstacle:true}
+      : {col, row, isFreeHex:true, isBurnable:!!(hxs.burnable||[]).find(([c,r])=>c===col&&r===row)};
 
   const dmgForObst = () => {
     const d = hxAbilityDamage(ab, unit);
@@ -5052,7 +5044,7 @@ function hxSkipUnit() {
 
 let _hxZoomLevel = 1.0;
 function hxZoomAdjust(delta) {
-  _hxZoomLevel = Math.max(0.4, Math.min(3.0, _hxZoomLevel + delta));
+  _hxZoomLevel = Math.max(1.0, Math.min(3.0, _hxZoomLevel + delta));
   const svg = document.getElementById('hx-svg');
   if(!svg) return;
   const vw = Math.round(HEX_SVG_W / _hxZoomLevel);
@@ -5063,35 +5055,31 @@ function hxZoomAdjust(delta) {
 }
 
 let _hxPinchDist0 = null, _hxPinchLevel0 = 1.0, _hxPinchInited = false;
-const _hxPtrs = new Map();
 function hxInitPinchZoom() {
   if(_hxPinchInited) return;
   _hxPinchInited = true;
   const svg = document.getElementById('hx-svg');
   if(!svg) return;
-  svg.style.touchAction = 'pan-x pan-y'; // 1-finger scroll works, browser won't do native pinch-zoom
-  const pDist = () => {
-    const pts = [..._hxPtrs.values()];
-    return Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-  };
-  svg.addEventListener('pointerdown', (e) => {
-    _hxPtrs.set(e.pointerId, {x: e.clientX, y: e.clientY});
-    if(_hxPtrs.size === 2) { _hxPinchDist0 = pDist(); _hxPinchLevel0 = _hxZoomLevel; }
-  });
-  svg.addEventListener('pointermove', (e) => {
-    if(!_hxPtrs.has(e.pointerId)) return;
-    _hxPtrs.set(e.pointerId, {x: e.clientX, y: e.clientY});
-    if(_hxPtrs.size === 2 && _hxPinchDist0) {
-      _hxZoomLevel = Math.max(0.4, Math.min(3.0, _hxPinchLevel0 * pDist() / _hxPinchDist0));
+  // touch-action:pan-x pan-y is set in HTML — browser handles 1-finger scroll,
+  // we handle 2-finger pinch via touch events (passive — no conflict with scroll)
+  const tDist = (t) => Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY);
+  svg.addEventListener('touchstart', (e) => {
+    if(e.touches.length === 2) {
+      _hxPinchDist0 = tDist(e.touches);
+      _hxPinchLevel0 = _hxZoomLevel;
+    }
+  }, {passive: true});
+  svg.addEventListener('touchmove', (e) => {
+    if(e.touches.length === 2 && _hxPinchDist0 !== null) {
+      _hxZoomLevel = Math.max(1.0, Math.min(3.0, _hxPinchLevel0 * tDist(e.touches) / _hxPinchDist0));
       const vw = Math.round(HEX_SVG_W / _hxZoomLevel);
       const vh = Math.round(HEX_SVG_H / _hxZoomLevel);
       const vx = Math.max(0, Math.round((HEX_SVG_W - vw) / 2));
       const vy = Math.max(0, Math.round((HEX_SVG_H - vh) / 2));
       svg.setAttribute('viewBox', `${vx} ${vy} ${vw} ${vh}`);
     }
-  });
-  svg.addEventListener('pointerup', (e) => { _hxPtrs.delete(e.pointerId); if(_hxPtrs.size < 2) _hxPinchDist0 = null; });
-  svg.addEventListener('pointercancel', (e) => { _hxPtrs.delete(e.pointerId); _hxPinchDist0 = null; });
+  }, {passive: true});
+  svg.addEventListener('touchend', (e) => { if(e.touches.length < 2) _hxPinchDist0 = null; }, {passive: true});
 }
 
 function hxEndTurn() {
