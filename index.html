@@ -397,6 +397,8 @@
   .hx-ability-name { font-size:0.6rem; color:rgba(255,255,255,0.8); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; }
   .hx-ability-cd { font-size:0.58rem; color:#e74c3c; font-weight:700; }
   .hx-ability-cd.ready { color:#2ecc71; }
+  .hx-ability-btn { position:relative; }
+  .cd-badge { position:absolute; top:-4px; right:-4px; font-size:10px; background:#e74c3c; border-radius:8px; padding:0 3px; color:#fff; line-height:1.4; pointer-events:none; }
   .hx-ability-type-melee  { border-color:rgba(231,76,60,0.4); }
   .hx-ability-type-ranged { border-color:rgba(52,152,219,0.4); }
   .hx-ability-type-magic  { border-color:rgba(162,155,254,0.45); }
@@ -3035,10 +3037,20 @@ const HEX_UNIT_DEFS = {
 // Compute actual damage value for an ability given unit's atk
 function hxAbilityDamage(ability, unit) {
   if(!ability.damage || ability.damage === 0) return 0;
-  const atk = unit.atk - (unit.atkDebuff||0);
+  const atk = Math.max(0, (unit.atk||0) - (unit.atkDebuff||0));
   if(typeof ability.damage === 'number') return ability.damage;
-  const expr = String(ability.damage).replace(/atk/g, String(atk));
-  try { return Math.round(eval(expr)); } catch(e) { return atk; }
+  // Safe parser for expressions like 'atk', 'atk*1.5', 'atk+2', 'atk*0.5'
+  const s = String(ability.damage).trim();
+  const mMul = s.match(/^atk\*(\d+(?:\.\d+)?)$/);
+  if(mMul) return Math.round(atk * parseFloat(mMul[1]));
+  const mAdd = s.match(/^atk\+(\d+(?:\.\d+)?)$/);
+  if(mAdd) return Math.round(atk + parseFloat(mAdd[1]));
+  const mSub = s.match(/^atk-(\d+(?:\.\d+)?)$/);
+  if(mSub) return Math.round(atk - parseFloat(mSub[1]));
+  if(s === 'atk') return atk;
+  const mNum = s.match(/^(\d+(?:\.\d+)?)$/);
+  if(mNum) return Math.round(parseFloat(mNum[1]));
+  return atk; // fallback
 }
 
 // Build ability array for a hero unit from weapon + magic params
@@ -3063,6 +3075,7 @@ let hxs = {
   enemyIntents: {},
   totalDamageDealt: 0,
   totalDamageTaken: 0,
+  aoeHover: null, // {col, row} — hex hovered in AoE ability mode
 };
 
 function hexToPixel(col, row) {
@@ -3292,15 +3305,28 @@ function hxApplyAbility(caster, ability, primaryTarget) {
       logMsg += ` (лечит ${caster.name} +${eff.value})`;
     }
 
-    // Knockback
+    // Knockback — push target 1 hex away from caster
     if(eff?.type === 'knockback') {
       const dc = primaryTarget.col - caster.col;
       const dr = primaryTarget.row - caster.row;
       const nc = primaryTarget.col + Math.sign(dc);
       const nr = primaryTarget.row + Math.sign(dr);
-      if(nc>=0&&nc<HEX_COLS&&nr>=0&&nr<HEX_ROWS&&!hxs.units.find(u=>u.col===nc&&u.row===nr&&u.hp>0)) {
+      if(nc>=0&&nc<HEX_COLS&&nr>=0&&nr<HEX_ROWS&&!hxs.units.find(u=>u.col===nc&&u.row===nr&&u.hp>0)&&!hxs.obstacles.some(([oc,or])=>oc===nc&&or===nr)) {
         primaryTarget.col = nc; primaryTarget.row = nr;
         logMsg += ' [отбросил]';
+      }
+    }
+
+    // Pull — drag target 1 hex toward caster
+    if(eff?.type === 'pull') {
+      const dc = caster.col - primaryTarget.col;
+      const dr = caster.row - primaryTarget.row;
+      const nc = primaryTarget.col + Math.sign(dc);
+      const nr = primaryTarget.row + Math.sign(dr);
+      const occupied = hxs.units.find(u=>u.id!==primaryTarget.id&&u.col===nc&&u.row===nr&&u.hp>0);
+      if(nc>=0&&nc<HEX_COLS&&nr>=0&&nr<HEX_ROWS&&!occupied&&!hxs.obstacles.some(([oc,or])=>oc===nc&&or===nr)) {
+        primaryTarget.col = nc; primaryTarget.row = nr;
+        logMsg += ' [притянул]';
       }
     }
 
@@ -3627,6 +3653,13 @@ function hexEnemyTurn() {
   hxs.abilityTargets = [];
   hxs.activeAbilityIdx = null;
   hxs.mode = 'select';
+  hxs.aoeHover = null;
+  // Handle stunned player units — mark them as done so they skip this turn
+  hxs.units.filter(u=>u.team==='player'&&u.hp>0&&(u.stunnedTurns||0)>0).forEach(u=>{
+    hxLog(`${u.name} оглушён — пропускает ход.`, 'info');
+    u.stunnedTurns--;
+    u.moved = true; u.acted = true;
+  });
   if(!hxs.ended) hxLog(`Ход ${hxs.turnNum}. Твой ход!`, 'info');
   const _pLabel = document.getElementById('hx-turn-label');
   _pLabel.className = 'hx-turn-label player-turn';
@@ -3661,6 +3694,15 @@ function hxRender() {
   const isHealAbility = activeAbility?.type === 'heal';
   const isSummonAbility = activeAbility?.type === 'summon';
 
+  // Compute AoE preview set
+  const activeAoe = (activeAbility && (activeAbility.aoe||0) > 0 && hxs.aoeHover) ? activeAbility.aoe : 0;
+  const aoePreviewSet = new Set();
+  if(activeAoe > 0 && hxs.aoeHover) {
+    for(let r=0;r<HEX_ROWS;r++) for(let c=0;c<HEX_COLS;c++) {
+      if(hexDist(hxs.aoeHover.col, hxs.aoeHover.row, c, r) <= activeAoe) aoePreviewSet.add(`${c},${r}`);
+    }
+  }
+
   // Draw hexes
   const riftSet = new Set(hxs.rifts.map(([c,r])=>`${c},${r}`));
   const forestSet2 = new Set(hxs.forests.map(([c,r])=>`${c},${r}`));
@@ -3678,6 +3720,11 @@ function hxRender() {
         stroke = isHealAbility ? '#2ed573' : isSummonAbility ? '#a29bfe' : '#ff8c00';
         sw = '1.5';
       }
+      // AoE splash preview overlay (over ability target highlight)
+      if(aoePreviewSet.has(key) && hxs.mode === 'ability') {
+        fill = 'rgba(230,126,34,0.3)';
+        stroke = '#e67e22'; sw = '1.5';
+      }
       const poly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
       poly.setAttribute('points', hexPoints(x,y));
       poly.setAttribute('fill', fill);
@@ -3685,6 +3732,13 @@ function hxRender() {
       poly.setAttribute('stroke-width', sw);
       poly.setAttribute('style', 'pointer-events:all;cursor:pointer;');
       poly.addEventListener('click', () => hxClickHex(col,row));
+      // AoE hover tracking for mouse
+      if(hxs.mode === 'ability' && activeAbility && (activeAbility.aoe||0) > 0) {
+        const _c = col, _r = row;
+        poly.addEventListener('mouseover', () => { hxs.aoeHover = {col:_c, row:_r}; hxRender(); });
+        poly.addEventListener('mouseleave', () => { hxs.aoeHover = null; hxRender(); });
+        poly.addEventListener('touchstart', () => { hxs.aoeHover = {col:_c, row:_r}; hxRender(); }, {passive:true});
+      }
       svg.appendChild(poly);
       // Terrain labels
       if(riftSet.has(key)) {
@@ -3982,7 +4036,8 @@ function hexUpdateInfo(unit) {
     btn.className = `hx-ability-btn hx-ability-type-${ab.type}${isActive ? ' active' : ''}`;
     btn.disabled = onCd || cantAct;
     const cdText = onCd ? `<span class="hx-ability-cd">⏳${ab.cooldown}</span>` : `<span class="hx-ability-cd ready">✓</span>`;
-    btn.innerHTML = `<span class="hx-ability-icon">${ab.icon||'?'}</span><span class="hx-ability-name">${ab.name}</span>${cdText}`;
+    const cdBadge = onCd ? `<span class="cd-badge">⏳${ab.cooldown}</span>` : '';
+    btn.innerHTML = `${cdBadge}<span class="hx-ability-icon">${ab.icon||'?'}</span><span class="hx-ability-name">${ab.name}</span>${cdText}`;
     btn.onclick = () => hxSelectAbility(idx);
     row.appendChild(btn);
   });
@@ -4014,7 +4069,7 @@ function hxSelectAbility(idx) {
   if(!ab || ab.cooldown > 0) return;
   // Toggle off if already selected
   if(hxs.mode === 'ability' && hxs.activeAbilityIdx === idx) {
-    hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null;
+    hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null; hxs.aoeHover = null;
     hxRender(); hexUpdateInfo(); return;
   }
   hxs.mode = 'ability';
@@ -4051,7 +4106,7 @@ function hxClickUnit(unitId) {
       if(ab) {
         hxApplyAbility(sel, ab, unit);
         hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null;
-        hxs.reachable = [];
+        hxs.reachable = []; hxs.aoeHover = null;
         // Auto-deselect if unit fully done
         if(sel.moved && sel.acted) { hxs.selected = null; }
         hxRender(); hexUpdateInfo();
@@ -4099,7 +4154,7 @@ function hxClickHex(col, row) {
       const ab = unit.abilities?.[hxs.activeAbilityIdx];
       if(ab) {
         hxApplyAbility(unit, ab, freeTarget);
-        hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null; hxs.reachable = [];
+        hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null; hxs.reachable = []; hxs.aoeHover = null;
         if(unit.moved && unit.acted) { hxs.selected = null; }
         hxRender(); hexUpdateInfo();
       }
@@ -4121,7 +4176,7 @@ function hxSkipUnit() {
 function hxEndTurn() {
   if(hxs.ended || hxs.turn!=='player') return;
   hxs.selected = null; hxs.reachable = []; hxs.abilityTargets = [];
-  hxs.mode = 'select'; hxs.activeAbilityIdx = null;
+  hxs.mode = 'select'; hxs.activeAbilityIdx = null; hxs.aoeHover = null;
   hxs.turn = 'enemy';
   document.getElementById('hx-skip-btn').disabled = true;
   hxRender(); hexUpdateInfo();
@@ -4138,7 +4193,7 @@ function initHex() {
   const playerDefs = heroDef ? null : (Array.isArray(gameData.player_units) ? gameData.player_units : [{type:'warrior',name:'Воин'}]);
   const enemyDefs  = Array.isArray(gameData.enemy_units)  ? gameData.enemy_units  : [{type:'warrior',name:'Страж'}];
 
-  hxs = {units:[], turn:'player', selected:null, reachable:[], attackable:[], abilityTargets:[], activeAbilityIdx:null, mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, ended:false, rifts:[], forests:[], heights:[], obstacles:[], objective:null, enemyIntents:{}, totalDamageDealt:0, totalDamageTaken:0};
+  hxs = {units:[], turn:'player', selected:null, reachable:[], attackable:[], abilityTargets:[], activeAbilityIdx:null, mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, ended:false, rifts:[], forests:[], heights:[], obstacles:[], objective:null, enemyIntents:{}, totalDamageDealt:0, totalDamageTaken:0, aoeHover:null};
 
   let idCtr = 0;
 
