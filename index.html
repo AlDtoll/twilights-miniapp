@@ -275,7 +275,7 @@
   .cg-minions-row { display:flex; gap:5px; flex-wrap:wrap; margin-top:4px; }
   .cg-minion-chip { padding:2px 7px; border-radius:6px; font-size:0.68rem; background:rgba(52,152,219,0.12); border:1px solid rgba(52,152,219,0.5); color:#3498db; }
   .cg-minion-chip.dead { opacity:0.35; border-color:rgba(255,255,255,0.15); color:var(--tg-theme-hint-color,#aaa); }
-  .cg-target-hint { text-align:center; padding:3px; font-size:0.82rem; color:#e74c3c; font-weight:700; animation:cgPulse 1s ease-in-out infinite; }
+  .cg-target-hint { text-align:center; padding:3px; font-size:0.82rem; color:#e74c3c; font-weight:700; animation:cgPulse 1s ease-in-out infinite; visibility:hidden; }
   @keyframes cgPulse { 0%,100%{opacity:1} 50%{opacity:0.45} }
   .cg-energy-counter { font-size:0.95rem; font-weight:700; padding:4px 10px; background:rgba(243,156,18,0.15); border-radius:8px; color:#f39c12; white-space:nowrap; }
   .cg-detail-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:101; display:flex; align-items:flex-end; }
@@ -495,7 +495,7 @@
       </div>
       <div class="cg-energy-counter" id="cg-energy-counter">⚡ 3/3</div>
     </div>
-    <div class="cg-target-hint" id="cg-target-hint" style="display:none">⬆ Выбери цель</div>
+    <div class="cg-target-hint" id="cg-target-hint">⬆ Выбери цель</div>
     <div class="cg-log" id="cg-log">Ход 1. Тяни и играй карты!</div>
     <div class="cg-hand-label" id="cg-hand-label">Рука (0)</div>
     <div class="cg-hand-wrap"><div class="cg-hand" id="cg-hand"></div></div>
@@ -539,7 +539,6 @@
     </div>
     <div class="cg-overlay-list" id="cg-overlay-list"></div>
   </div>
-  <div id="cg-drag-ghost" style="display:none;position:fixed;pointer-events:none;z-index:200;width:88px;min-height:120px;border-radius:10px;background:rgba(20,20,40,0.95);padding:8px 6px 6px;opacity:0.9;box-shadow:0 8px 24px rgba(0,0,0,0.5);"></div>
 </div>
 
 <div id="choice-game" style="display:none">
@@ -2380,7 +2379,6 @@ const CG_BASE = [
 ];
 
 let cgs = {};
-let _drag = {active:false, cardIdx:null, touchStartTime:0, startX:0, startY:0};
 
 function cgShuffle(a) {
   const r=[...a]; for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]];} return r;
@@ -2475,24 +2473,16 @@ function cgRenderHand(){
     if(isNew) el.style.animationDelay=((idx-newStart)*80)+'ms';
     el.dataset.type=card.type;
     let lpTimer=null;
-    el.addEventListener('touchstart',(ev)=>{
-      _drag.touchStartTime=Date.now(); _drag.startX=ev.touches[0].clientX; _drag.startY=ev.touches[0].clientY;
+    el.addEventListener('touchstart',()=>{
       lpTimer=setTimeout(()=>{lpTimer=null;cgShowCardDetail(card);},500);
     },{passive:true});
-    el.addEventListener('touchmove',(ev)=>{
+    el.addEventListener('touchmove',()=>{if(lpTimer){clearTimeout(lpTimer);lpTimer=null;}},{passive:true});
+    el.addEventListener('touchend',()=>{
       if(lpTimer){clearTimeout(lpTimer);lpTimer=null;}
-      const t=ev.touches[0];
-      const dx=t.clientX-_drag.startX,dy=t.clientY-_drag.startY;
-      if(!_drag.active&&Math.sqrt(dx*dx+dy*dy)>12&&card.cost<=cgs.energy) cgStartDrag(idx,t);
-      if(_drag.active) cgMoveDrag(t);
-    },{passive:true});
-    el.addEventListener('touchend',(ev)=>{
-      if(lpTimer){clearTimeout(lpTimer);lpTimer=null;}
-      if(_drag.active){cgEndDrag(ev.changedTouches[0]);return;}
       if(card.cost>cgs.energy) return;
       cgTapCard(idx,card);
     });
-    el.addEventListener('touchcancel',()=>{if(lpTimer){clearTimeout(lpTimer);lpTimer=null;} cgCancelDrag();});
+    el.addEventListener('touchcancel',()=>{if(lpTimer){clearTimeout(lpTimer);lpTimer=null;}});
     el.onclick=()=>{if(card.cost>cgs.energy)return; cgTapCard(idx,card);};
     const icon=card.type==='attack'?'⚔️':card.type==='defense'?'🛡':'✨';
     const typeName=card.type==='attack'?'Атака':card.type==='defense'?'Защита':'Умение';
@@ -2507,67 +2497,17 @@ function cgRenderHand(){
   cgs.lastDrawn=0;
 }
 
-function cgStartDrag(idx,touch){
-  _drag.active=true; _drag.cardIdx=idx;
-  const card=cgs.hand[idx];
-  const g=document.getElementById('cg-drag-ghost');
-  const icon=card.type==='attack'?'⚔️':card.type==='defense'?'🛡':'✨';
-  const bc=card.type==='attack'?'#e74c3c':card.type==='defense'?'#3498db':'#9b59b6';
-  g.style.cssText='display:block;position:fixed;pointer-events:none;z-index:200;width:88px;min-height:120px;border-radius:10px;background:rgba(20,20,40,0.95);border:2px solid '+bc+';padding:8px 6px 6px;opacity:0.9;box-shadow:0 8px 24px rgba(0,0,0,0.5);left:'+(touch.clientX-44)+'px;top:'+(touch.clientY-80)+'px;';
-  g.innerHTML='<div class="cg-cost'+(card.cost===0?' free':'')+'">'+card.cost+'</div>'
-    +'<div class="cg-card-name">'+card.name+'</div>'
-    +'<div class="cg-card-type">'+icon+'</div>'
-    +'<div class="cg-card-desc">'+card.description+'</div>';
-  if(card.type==='attack'&&!card.effect?.all_enemies){
-    cgs.targeting=true; document.getElementById('cg-target-hint').style.display='';
-    cgRenderEnemies();
-  }
-}
-
-function cgMoveDrag(touch){
-  if(!_drag.active) return;
-  const g=document.getElementById('cg-drag-ghost');
-  g.style.left=(touch.clientX-44)+'px'; g.style.top=(touch.clientY-80)+'px';
-}
-
-function cgEndDrag(touch){
-  if(!_drag.active) return;
-  document.getElementById('cg-drag-ghost').style.display='none';
-  _drag.active=false;
-  const card=cgs.hand[_drag.cardIdx];
-  const el=document.elementFromPoint(touch.clientX,touch.clientY);
-  const ep=el&&el.closest('.cg-enemy-panel');
-  if(ep&&!card.effect?.all_enemies){
-    const eid=parseInt(ep.dataset.enemyId);
-    const enemy=cgs.enemies.find(e=>e.id===eid);
-    if(enemy&&enemy.hp>0){
-      cgs.targeting=false; document.getElementById('cg-target-hint').style.display='none';
-      cgPlayCard(_drag.cardIdx,enemy); return;
-    }
-  }
-  cgs.targeting=false; document.getElementById('cg-target-hint').style.display='none';
-  if(card.type!=='attack'||card.effect?.all_enemies) cgPlayCard(_drag.cardIdx,null);
-  else cgRenderEnemies();
-}
-
-function cgCancelDrag(){
-  if(!_drag.active) return;
-  document.getElementById('cg-drag-ghost').style.display='none';
-  _drag.active=false; cgs.targeting=false;
-  document.getElementById('cg-target-hint').style.display='none';
-  cgRenderEnemies();
-}
 
 function cgTapCard(idx,card){
   const living=cgs.enemies.filter(e=>e.hp>0);
   if(cgs.targeting){
-    if(cgs.sel===idx){cgs.sel=null;cgs.targeting=false;document.getElementById('cg-target-hint').style.display='none';cgRenderEnemies();cgRenderHand();}
+    if(cgs.sel===idx){cgs.sel=null;cgs.targeting=false;document.getElementById('cg-target-hint').style.visibility='hidden';cgRenderEnemies();cgRenderHand();}
     else{cgs.sel=idx;cgRenderHand();}
     return;
   }
   if(card.type==='attack'&&!card.effect?.all_enemies&&living.length>1){
     cgs.sel=idx; cgs.targeting=true;
-    document.getElementById('cg-target-hint').style.display='';
+    document.getElementById('cg-target-hint').style.visibility='visible';
     cgRenderEnemies(); cgRenderHand();
   } else {
     cgPlayCard(idx,card.effect?.all_enemies?null:(living[0]||null));
@@ -2576,7 +2516,7 @@ function cgTapCard(idx,card){
 
 function cgTargetEnemy(enemy){
   if(cgs.sel===null||!cgs.targeting) return;
-  cgs.targeting=false; document.getElementById('cg-target-hint').style.display='none';
+  cgs.targeting=false; document.getElementById('cg-target-hint').style.visibility='hidden';
   cgPlayCard(cgs.sel,enemy);
 }
 
@@ -2636,7 +2576,7 @@ function cgPlayCard(cardIdx,targetEnemy){
 function cgEndTurn(){
   if(cgs.enemies.every(e=>e.hp<=0)||cgs.playerHp<=0) return;
   cgs.discard.push(...cgs.hand); cgs.hand=[]; cgs.sel=null; cgs.targeting=false;
-  document.getElementById('cg-target-hint').style.display='none';
+  document.getElementById('cg-target-hint').style.visibility='hidden';
   cgLog('— Конец хода '+cgs.turn+' —');
   cgs.enemies.forEach(enemy=>{
     if(enemy.hp<=0) return;
