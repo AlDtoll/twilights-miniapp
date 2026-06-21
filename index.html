@@ -2932,7 +2932,7 @@ function hexAttack(attacker, target, allowCounter) {
   // Возвышенность — +2 atk for ranged attackers ON high-ground hex
   if(attacker.atkRange >= 2 && hxs.heights.some(([hc,hr])=>hc===attacker.col&&hr===attacker.row)) {
     dmg += 2;
-    hxLog(`⛰ Возвышенность: +2 к удару`, 'info');
+    hxLog(`⛰ Возвышенность: +2 к удару (${attacker.name})`, 'info');
   }
   const blocked = Math.min(dmg, target.block);
   target.block = Math.max(0, target.block - blocked);
@@ -3315,7 +3315,11 @@ function hexEnemyTurn() {
 
   // PASS A: Forest block — apply +2 block to units in forest hexes at start of player turn
   const forestSet = new Set(hxs.forests.map(([fc,fr])=>`${fc},${fr}`));
-  hxs.units.filter(u=>u.hp>0&&forestSet.has(`${u.col},${u.row}`)).forEach(u=>{ u.block = (u.block||0) + 2; });
+  hxs.units.filter(u=>u.hp>0&&forestSet.has(`${u.col},${u.row}`)).forEach(u=>{
+    const prevBlock = u.block || 0;
+    u.block = prevBlock + 2;
+    hxLog(`🌲 ${u.name} укрылся в лесу (+2 блок)`, 'info');
+  });
 
   // PASS B: Necromancer cadaver aura — at start of player turn for player necromancers
   hxs.units.filter(u=>u.team==='player'&&u.type==='necromancer'&&u.hp>0).forEach(necro=>{
@@ -3602,14 +3606,12 @@ function hxRender() {
   if(logEl && hxs.logs.length > 0) logEl.innerHTML = hxs.logs.join('<br>');
   else if(logEl && hxs.logs.length === 0) logEl.innerHTML = '<span class="hx-log-info">Выбери юнит.</span>';
 
-  // Update battle summary
+  // Update battle summary — emoji per unit, faded if dead
   const sumEl = document.getElementById('hx-summary');
   if(sumEl) {
-    const pAlive = hxs.units.filter(u=>u.originalTeam==='player'&&u.hp>0).length;
-    const pTotal = hxs.units.filter(u=>u.originalTeam==='player').length;
-    const eAlive = hxs.units.filter(u=>u.originalTeam==='enemy'&&u.hp>0).length;
-    const eTotal = hxs.units.filter(u=>u.originalTeam==='enemy').length;
-    sumEl.textContent = `🟦 ${pAlive}/${pTotal}  🟥 ${eAlive}/${eTotal}`;
+    const playerEmojis = hxs.units.filter(u=>u.originalTeam==='player').map(u=>`<span style="opacity:${u.hp>0?1:0.3}">${u.emoji||'?'}</span>`).join('');
+    const enemyEmojis = hxs.units.filter(u=>u.originalTeam==='enemy').map(u=>`<span style="opacity:${u.hp>0?1:0.3}">${u.emoji||'?'}</span>`).join('');
+    sumEl.innerHTML = playerEmojis + ' <span style="opacity:0.4">vs</span> ' + enemyEmojis;
   }
 }
 
@@ -3815,7 +3817,8 @@ function hxUseSpecial() {
       emoji:'👤', special:{name:'—', desc:'', id:'none', flavor:''},
     });
     unit.specialUsed=true; unit.attacked=true;
-    hxLog(`Демонолог призывает Тень${nearRift?' (Разлом усиливает призыв! +5 HP)':''}!`, 'special');
+    hxLog(`Демонолог призывает Тень!`, 'special');
+    if(nearRift) hxLog(`⌖ Разлом усиливает призыв! Тень +5 HP`, 'special');
     hxs.reachable=[]; hxs.attackable=[];
     hxRender(); hexUpdateInfo();
   } else if(sid==='raise_cadaver') {
