@@ -379,7 +379,7 @@
   #hx-summary { text-align:center; font-size:0.78rem; color:rgba(255,255,255,0.6); margin-bottom:4px; }
 
   /* FFT ABILITY PANEL */
-  #hx-ability-panel { display:none; overflow-x:auto; -webkit-overflow-scrolling:touch; margin-bottom:4px; padding-bottom:2px; min-height:58px; }
+  #hx-ability-panel { display:none; overflow-x:auto; -webkit-overflow-scrolling:touch; margin-bottom:4px; padding-bottom:2px; min-height:86px; }
   #hx-ability-panel::-webkit-scrollbar { height:3px; }
   #hx-ability-panel::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.2); border-radius:2px; }
   .hx-ability-row { display:flex; gap:5px; padding:2px 0; min-width:max-content; }
@@ -3151,6 +3151,7 @@ function hexNeighbors(col, row) {
 }
 
 function hexReachable(unit) {
+  const range = unit.remainingMove !== undefined ? unit.remainingMove : unit.moveRange;
   const blocked = new Set([
     ...hxs.units.filter(u=>u.id!==unit.id&&u.hp>0).map(u=>`${u.col},${u.row}`),
     ...(hxs.obstacles||[]).map(([c,r])=>`${c},${r}`),
@@ -3161,7 +3162,7 @@ function hexReachable(unit) {
   while(queue.length) {
     const [c, r, d] = queue.shift();
     if(d > 0 && !blocked.has(`${c},${r}`)) result.push([c, r]);
-    if(d < unit.moveRange && !blocked.has(`${c},${r}`)) {
+    if(d < range && !blocked.has(`${c},${r}`)) {
       for(const [nc, nr] of hexNeighbors(c, r)) {
         const key = `${nc},${nr}`;
         if(!visited.has(key)) { visited.set(key, d+1); queue.push([nc, nr, d+1]); }
@@ -3826,7 +3827,7 @@ function hexEnemyTurn() {
 
   // Reset for next player turn
   hxs.units.forEach(u => {
-    u.moved = false; u.acted = false; u.atkDebuff = 0;
+    u.moved = false; u.acted = false; u.atkDebuff = 0; u.remainingMove = u.moveRange;
     // Tick buff durations
     if(u.atkBuffTurns > 0) { u.atkBuffTurns--; if(u.atkBuffTurns <= 0) u.atkBuff = 0; }
     // Tick ability cooldowns
@@ -3905,6 +3906,14 @@ function hxRender() {
   const isHealAbility = activeAbility?.type === 'heal';
   const isSummonAbility = activeAbility?.type === 'summon';
 
+  // Compute ability range set (all hexes within range of caster, shown as light tint)
+  const abilityRangeSet = new Set();
+  if(activeAbility && selUnit && hxs.mode === 'ability') {
+    for(let r=0;r<HEX_ROWS;r++) for(let c=0;c<HEX_COLS;c++) {
+      if(hexDist(selUnit.col,selUnit.row,c,r) <= activeAbility.range) abilityRangeSet.add(`${c},${r}`);
+    }
+  }
+
   // Compute AoE preview set
   const activeAoe = (activeAbility && (activeAbility.aoe||0) > 0 && hxs.aoeHover) ? activeAbility.aoe : 0;
   const aoePreviewSet = new Set();
@@ -3927,6 +3936,7 @@ function hxRender() {
       let stroke = riftSet.has(key) ? '#9b59b6' : forestSet2.has(key) ? '#27ae60' : heightSet.has(key) ? '#777' : bushSet.has(key) ? '#3d8b40' : '#444';
       let sw = (riftSet.has(key)||forestSet2.has(key)||heightSet.has(key)||bushSet.has(key)) ? '1.2' : '0.8';
       if(reachSet.has(key) && hxs.mode === 'move') { fill='rgba(52,152,219,0.28)'; stroke='#3498db'; sw='1.2'; }
+      if(abilityRangeSet.has(key) && hxs.mode === 'ability' && !abilityTargetSet.has(key)) { fill='rgba(255,100,0,0.1)'; stroke='rgba(255,100,0,0.35)'; sw='0.8'; }
       if(abilityTargetSet.has(key) && hxs.mode === 'ability') {
         fill = isHealAbility ? 'rgba(46,213,115,0.28)' : isSummonAbility ? 'rgba(162,155,254,0.3)' : 'rgba(255,140,0,0.28)';
         stroke = isHealAbility ? '#2ed573' : isSummonAbility ? '#a29bfe' : '#ff8c00';
@@ -4264,6 +4274,7 @@ function hxUpdateStatusBar(unit) {
 }
 
 function hexUpdateInfo(unit) {
+  if(!unit && hxs.inspecting != null) unit = hxs.units.find(u=>u.id===hxs.inspecting&&u.hp>0);
   if(!unit && hxs.selected !== null) unit = hxs.units.find(u=>u.id===hxs.selected);
   const nameEl   = document.getElementById('hx-info-name');
   const statsEl  = document.getElementById('hx-info-stats');
@@ -4297,11 +4308,22 @@ function hexUpdateInfo(unit) {
   // Show skip button only for player units
   if(skipBtn) skipBtn.disabled = unit.team !== 'player' || hxs.turn !== 'player' || hxs.ended || done;
 
-  // Build ability panel (only for player units)
+  // Build ability panel (only for player units; show enemy abilities as read-only if inspecting)
   if(!panel || !row) return;
   if(unit.team !== 'player' || hxs.turn !== 'player' || hxs.ended) {
     panel.style.display = 'block';
     row.innerHTML = '';
+    // Show enemy ability list as read-only
+    if(unit.team === 'enemy' && unit.abilities?.length) {
+      unit.abilities.forEach(ab => {
+        const btn = document.createElement('button');
+        btn.className = `hx-ability-btn hx-ability-type-${ab.type}`;
+        btn.disabled = true;
+        const tier = ab.maxCooldown===0?'':ab.maxCooldown<=2?'<span class="hx-ab-tier mid">◆</span>':'<span class="hx-ab-tier strong">★</span>';
+        btn.innerHTML = `<span class="hx-ability-icon">${ab.icon||'?'}</span><span class="hx-ability-name">${ab.name}${tier}</span><span class="hx-ability-cd" style="color:#aaa">rng:${ab.range}</span>`;
+        row.appendChild(btn);
+      });
+    }
     return;
   }
   panel.style.display = 'block';
@@ -4310,8 +4332,9 @@ function hexUpdateInfo(unit) {
   // Move button
   const moveBtn = document.createElement('button');
   moveBtn.className = 'hx-ability-btn move-btn' + (hxs.mode === 'move' ? ' active' : '');
-  moveBtn.disabled = unit.moved;
-  moveBtn.innerHTML = `<span class="hx-ability-icon">🚶</span><span class="hx-ability-name">Движение</span>`;
+  const remMove = unit.remainingMove ?? unit.moveRange;
+  moveBtn.disabled = remMove === 0;
+  moveBtn.innerHTML = `<span class="hx-ability-icon">🚶</span><span class="hx-ability-name">Движение${remMove > 0 && remMove < unit.moveRange ? ' '+remMove : ''}</span>`;
   moveBtn.onclick = () => hxSelectMoveMode();
   row.appendChild(moveBtn);
 
@@ -4407,16 +4430,25 @@ function hxClickUnit(unitId) {
     }
   }
 
+  // Tap enemy unit — show its info
+  if(unit.team === 'enemy') {
+    hxs.inspecting = unitId;
+    hexUpdateInfo(unit);
+    return;
+  }
+
   // Select own player unit
   if(unit.team === 'player') {
+    hxs.inspecting = null;
     if(hxs.selected === unitId) {
       hxs.selected = null; hxs.reachable = []; hxs.abilityTargets = [];
       hxs.mode = 'select'; hxs.activeAbilityIdx = null;
       hxRender(); hexUpdateInfo(); return;
     }
     hxs.selected = unitId;
-    hxs.mode = 'move';
-    hxs.reachable = unit.moved ? [] : hexReachable(unit);
+    const canMove = (unit.remainingMove ?? unit.moveRange) > 0;
+    hxs.mode = canMove ? 'move' : 'select';
+    hxs.reachable = canMove ? hexReachable(unit) : [];
     hxs.abilityTargets = [];
     hxs.activeAbilityIdx = null;
     hxRender(); hexUpdateInfo();
@@ -4432,8 +4464,17 @@ function hxClickHex(col, row) {
   // Move mode: click on reachable hex
   if(hxs.mode === 'move') {
     if(hxs.reachable.some(([c,r])=>c===col&&r===row)) {
-      unit.col = col; unit.row = row; unit.moved = true;
-      hxs.mode = 'select'; hxs.reachable = [];
+      const dist = hexDist(unit.col, unit.row, col, row);
+      unit.col = col; unit.row = row;
+      unit.remainingMove = Math.max(0, (unit.remainingMove ?? unit.moveRange) - dist);
+      unit.moved = unit.remainingMove === 0;
+      // Stay in move mode if remaining moves left, else switch to select
+      if(unit.remainingMove > 0) {
+        hxs.reachable = hexReachable(unit);
+        hxs.mode = 'move';
+      } else {
+        hxs.mode = 'select'; hxs.reachable = [];
+      }
       if(unit.moved && unit.acted) { hxs.selected = null; }
       hxRender(); hexUpdateInfo();
     } else {
@@ -4464,6 +4505,28 @@ function hxClickHex(col, row) {
       hxRender(); hexUpdateInfo();
     }
     return;
+  }
+
+  // Click on empty hex in select mode — show terrain info
+  if(hxs.mode === 'select') {
+    const key = `${col},${row}`;
+    const nameEl = document.getElementById('hx-info-name');
+    const statsEl = document.getElementById('hx-info-stats');
+    if(nameEl && statsEl) {
+      if((hxs.rifts||[]).some(([c,r])=>c===col&&r===row)) {
+        nameEl.textContent = '⌖ Разлом'; statsEl.textContent = 'Демонолог рядом: +5HP к Тени';
+      } else if((hxs.forests||[]).some(([c,r])=>c===col&&r===row)) {
+        nameEl.textContent = '🌳 Дерево'; statsEl.textContent = '+2 блок в начале хода';
+      } else if((hxs.bushes||[]).some(([c,r])=>c===col&&r===row)) {
+        nameEl.textContent = '🌿 Кусты'; statsEl.textContent = 'Укрытие: −2 урон от дальних атак';
+      } else if((hxs.heights||[]).some(([c,r])=>c===col&&r===row)) {
+        nameEl.textContent = '🗿 Камни'; statsEl.textContent = '+2 атк дальнобойным юнитам';
+      } else if((hxs.obstacles||[]).some(([c,r])=>c===col&&r===row)) {
+        nameEl.textContent = '🧱 Стена'; statsEl.textContent = 'Непроходимо';
+      } else if(hxs.objective&&hxs.objective.col===col&&hxs.objective.row===row) {
+        nameEl.textContent = '⭐ Цель'; statsEl.textContent = `Захват: ${hxs.objective.playerTurns||0}/3 ходов`;
+      }
+    }
   }
 }
 
@@ -4498,7 +4561,7 @@ function initHex() {
   const playerDefs = heroDef ? null : (Array.isArray(gameData.player_units) ? gameData.player_units : [{type:'warrior',name:'Воин'}]);
   const enemyDefs  = Array.isArray(gameData.enemy_units)  ? gameData.enemy_units  : [{type:'warrior',name:'Страж'}];
 
-  hxs = {units:[], turn:'player', selected:null, reachable:[], attackable:[], abilityTargets:[], activeAbilityIdx:null, mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, ended:false, rifts:[], forests:[], heights:[], obstacles:[], bushes:[], objective:null, enemyIntents:{}, totalDamageDealt:0, totalDamageTaken:0, aoeHover:null, abilitiesUsed:{}, hero: heroDef};
+  hxs = {units:[], turn:'player', selected:null, inspecting:null, reachable:[], attackable:[], abilityTargets:[], activeAbilityIdx:null, mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, ended:false, rifts:[], forests:[], heights:[], obstacles:[], bushes:[], objective:null, enemyIntents:{}, totalDamageDealt:0, totalDamageTaken:0, aoeHover:null, abilitiesUsed:{}, hero: heroDef};
 
   let idCtr = 0;
 
