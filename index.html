@@ -647,8 +647,10 @@
     <button onclick="hxZoomAdjust(-0.15)" style="padding:1px 8px;border-radius:6px;border:none;background:rgba(255,255,255,0.12);color:#fff;font-size:0.9rem;cursor:pointer;">−</button>
     <button onclick="hxZoomAdjust(0.15)" style="padding:1px 8px;border-radius:6px;border:none;background:rgba(255,255,255,0.12);color:#fff;font-size:0.9rem;cursor:pointer;">+</button>
   </div>
-  <div id="hx-svg-wrap" style="overflow:auto;width:100%;max-height:55vh;">
-    <svg id="hx-svg" xmlns="http://www.w3.org/2000/svg" style="display:block;touch-action:manipulation;"></svg>
+  <div style="width:100%;overflow:hidden;">
+    <div id="hx-svg-wrap" style="width:100%;max-height:55vh;overflow:auto;">
+      <svg id="hx-svg" xmlns="http://www.w3.org/2000/svg" style="display:block;touch-action:manipulation;"></svg>
+    </div>
   </div>
   <div id="hx-legend" style="font-size:0.65rem; color:rgba(255,255,255,0.4); text-align:center; padding:2px 4px; line-height:1.6;">
     🌳 Дерево +2 блок  🗿 Камни +2 атк (дальн.)  🌿 Кусты: -2 урон (дальн.)  ⌖ Разлом  🧱 Стена  ⭐ Цель
@@ -3278,15 +3280,20 @@ function hxAbilityTargets(unit, ability) {
       for(let r=0;r<HEX_ROWS;r++) for(let c=0;c<HEX_COLS;c++) {
         if(inRange(c,r) && !occupied.has(`${c},${r}`)) result.push({col:c,row:r,isFreeHex:true});
       }
-    } else {
-      // All hexes in range — target resolution in hxConfirmApply decides what happens
+    } else if(isRangedMagic) {
+      // Ranged/magic: all hexes in range with LoS (free-aim, terrain reacts)
       for(let r=0;r<HEX_ROWS;r++) for(let c=0;c<HEX_COLS;c++) {
         const d = hexDist(unit.col,unit.row,c,r);
         if(d === 0 || d > ability.range) continue;
-        if(isRangedMagic && hxLoSBlocked(unit.col,unit.row,c,r)) continue;
-        // Walls block passage but are valid targets
+        if(hxLoSBlocked(unit.col,unit.row,c,r)) continue;
         result.push({col:c,row:r,isFreeHex:true});
       }
+    } else {
+      // Melee: enemies and obstacles only
+      hxs.units.filter(u=>u.team!==unit.team&&u.hp>0&&inRange(u.col,u.row))
+               .forEach(u=>result.push({col:u.col,row:u.row,isFreeHex:false}));
+      (hxs.obstacles||[]).filter(ob=>hexDist(unit.col,unit.row,ob.col,ob.row)<=(ability.range||1))
+               .forEach(ob=>result.push({col:ob.col,row:ob.row,isFreeHex:true,isObstacle:true}));
     }
     return result;
   }
@@ -5049,15 +5056,19 @@ function hxSkipUnit() {
 }
 
 let _hxZoomLevel = 1.0;
-function hxZoomAdjust(delta) {
-  _hxZoomLevel = Math.max(1.0, Math.min(3.0, _hxZoomLevel + delta));
+function _hxApplyZoom() {
   const svg = document.getElementById('hx-svg');
   if(!svg) return;
-  const vw = Math.round(HEX_SVG_W / _hxZoomLevel);
-  const vh = Math.round(HEX_SVG_H / _hxZoomLevel);
-  const vx = Math.max(0, Math.round((HEX_SVG_W - vw) / 2));
-  const vy = Math.max(0, Math.round((HEX_SVG_H - vh) / 2));
-  svg.setAttribute('viewBox', `${vx} ${vy} ${vw} ${vh}`);
+  if(_hxZoomLevel <= 1.0) {
+    svg.style.width = '100%'; svg.style.height = 'auto';
+  } else {
+    svg.style.width = Math.round(HEX_SVG_W * _hxZoomLevel) + 'px';
+    svg.style.height = Math.round(HEX_SVG_H * _hxZoomLevel) + 'px';
+  }
+}
+function hxZoomAdjust(delta) {
+  _hxZoomLevel = Math.max(1.0, Math.min(3.0, _hxZoomLevel + delta));
+  _hxApplyZoom();
 }
 
 let _hxPinchDist0 = null, _hxPinchLevel0 = 1.0, _hxPinchInited = false;
@@ -5076,12 +5087,7 @@ function hxInitPinchZoom() {
   document.addEventListener('touchmove', (e) => {
     if(e.touches.length === 2 && _hxPinchDist0 !== null && onSvg(e)) {
       _hxZoomLevel = Math.max(1.0, Math.min(3.0, _hxPinchLevel0 * tDist(e.touches) / _hxPinchDist0));
-      const vw = Math.round(HEX_SVG_W / _hxZoomLevel);
-      const vh = Math.round(HEX_SVG_H / _hxZoomLevel);
-      const vx = Math.max(0, Math.round((HEX_SVG_W - vw) / 2));
-      const vy = Math.max(0, Math.round((HEX_SVG_H - vh) / 2));
-      const svg = document.getElementById('hx-svg');
-      if(svg) svg.setAttribute('viewBox', `${vx} ${vy} ${vw} ${vh}`);
+      _hxApplyZoom();
     }
   }, {passive: true});
   document.addEventListener('touchend', (e) => { if(e.touches.length < 2) _hxPinchDist0 = null; }, {passive: true});
@@ -5114,8 +5120,7 @@ function initHex() {
   const _initSvg = document.getElementById('hx-svg');
   if(_initSvg) {
     _initSvg.setAttribute('viewBox', `0 0 ${HEX_SVG_W} ${HEX_SVG_H}`);
-    _initSvg.style.width = '100%';
-    _initSvg.style.height = 'auto';
+    _hxApplyZoom();
   }
   hxInitPinchZoom();
 
