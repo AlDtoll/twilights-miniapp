@@ -358,7 +358,7 @@
 
   /* HEX GAME */
   #hx-battle { padding: 8px; width: 100%; max-width: 440px; }
-  #hx-svg { display: block; width: 100%; touch-action: manipulation; }
+  #hx-svg { display: block; width: 100%; touch-action: manipulation; transition: width 0.2s; }
   .hx-log { max-height: 80px; overflow-y: auto; font-size: 0.8rem; padding: 4px 8px; background: rgba(0,0,0,0.3); border-radius: 6px; margin: 6px 0; line-height: 1.6; scroll-behavior: smooth; }
   .hx-log::-webkit-scrollbar { width: 3px; }
   .hx-log::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
@@ -642,7 +642,14 @@
   </div>
   <div class="hx-turn-label" id="hx-turn-label">Ход игрока</div>
   <div id="hx-summary"></div>
-  <svg id="hx-svg" viewBox="0 0 262 272" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:2px 6px;">
+    <span style="font-size:0.65rem;color:rgba(255,255,255,0.4);">Масштаб:</span>
+    <button onclick="hxZoomAdjust(-0.15)" style="padding:1px 8px;border-radius:6px;border:none;background:rgba(255,255,255,0.12);color:#fff;font-size:0.9rem;cursor:pointer;">−</button>
+    <button onclick="hxZoomAdjust(0.15)" style="padding:1px 8px;border-radius:6px;border:none;background:rgba(255,255,255,0.12);color:#fff;font-size:0.9rem;cursor:pointer;">+</button>
+  </div>
+  <div id="hx-svg-wrap" style="overflow:auto;width:100%;">
+    <svg id="hx-svg" viewBox="0 0 390 335" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;min-width:300px;touch-action:manipulation;"></svg>
+  </div>
   <div id="hx-legend" style="font-size:0.65rem; color:rgba(255,255,255,0.4); text-align:center; padding:2px 4px; line-height:1.6;">
     🌳 Дерево +2 блок  🗿 Камни +2 атк (дальн.)  🌿 Кусты: -2 урон (дальн.)  ⌖ Разлом  🧱 Стена  ⭐ Цель
   </div>
@@ -2904,95 +2911,121 @@ function cgShowBanner(text){
 function cgLog(msg){ document.getElementById('cg-log').textContent=msg; }
 
 // ---- HEX GAME (FFT-style) ----
-const HEX_COLS = 7, HEX_ROWS = 8;
+const HEX_COLS = 11, HEX_ROWS = 11;
 const HEX_SIZE = 20;
 
 // ---- ABILITY LIBRARY ----
 // Weapon ability sets
+// school field groups abilities for shared cooldown ticking
 const HX_WEAPON_ABILITIES = {
   sword: [
-    {id:'sword_strike',   name:'Удар',          icon:'⚔️', type:'melee',  range:1, aoe:0, damage:'atk',    effect:null,                         maxCooldown:0},
-    {id:'sword_heavy',    name:'Мощный удар',   icon:'🗡️', type:'melee',  range:1, aoe:0, damage:'atk*1.5',effect:null,                         maxCooldown:2},
-    {id:'sword_stun',     name:'Оглушение',     icon:'🥊', type:'melee',  range:1, aoe:0, damage:'atk*0.5',effect:{type:'stun',turns:1},         maxCooldown:3},
+    {id:'sword_strike',   name:'Удар',          icon:'⚔️', type:'melee',  range:1, aoe:0, damage:'atk',    effect:null,                         maxCooldown:0, school:'sword'},
+    {id:'sword_heavy',    name:'Мощный удар',   icon:'🗡️', type:'melee',  range:1, aoe:0, damage:'atk*1.5',effect:null,                         maxCooldown:2, school:'sword'},
+    {id:'sword_stun',     name:'Оглушение',     icon:'🥊', type:'melee',  range:1, aoe:0, damage:'atk*0.5',effect:{type:'stun',turns:1},         maxCooldown:3, school:'sword'},
   ],
   axe: [
-    {id:'axe_strike',     name:'Рубящий удар',  icon:'🪓', type:'melee',  range:1, aoe:0, damage:'atk+2',  effect:null,                         maxCooldown:0},
-    {id:'axe_whirl',      name:'Вихрь',         icon:'🌀', type:'melee',  range:1, aoe:1, damage:'atk*0.7',effect:null,                         maxCooldown:3},
-    {id:'axe_cleave',     name:'Раскол',        icon:'💥', type:'melee',  range:1, aoe:0, damage:'atk*1.3',effect:null,                         maxCooldown:2},
+    {id:'axe_strike',     name:'Рубящий удар',  icon:'🪓', type:'melee',  range:1, aoe:0, damage:'atk+2',  effect:null,                         maxCooldown:0, school:'axe'},
+    {id:'axe_whirl',      name:'Вихрь',         icon:'🌀', type:'melee',  range:1, aoe:1, damage:'atk*0.7',effect:null,                         maxCooldown:3, school:'axe'},
+    {id:'axe_cleave',     name:'Раскол',        icon:'💥', type:'melee',  range:1, aoe:0, damage:'atk*1.3',effect:null,                         maxCooldown:2, school:'axe'},
   ],
   ranged: [
-    {id:'ranged_shot',    name:'Выстрел',       icon:'🏹', type:'ranged', range:3, aoe:0, damage:'atk',    effect:null,                         maxCooldown:0},
-    {id:'ranged_aim',     name:'Прицельный',    icon:'🎯', type:'ranged', range:3, aoe:0, damage:'atk*1.5',effect:null,                         maxCooldown:2},
-    {id:'ranged_pierce',  name:'Прострел',      icon:'➡️', type:'ranged', range:4, aoe:0, damage:'atk',    effect:null,                         maxCooldown:3},
+    {id:'ranged_shot',    name:'Выстрел',       icon:'🏹', type:'ranged', range:4, aoe:0, damage:'atk',    effect:null,                         maxCooldown:0, school:'ranged'},
+    {id:'ranged_aim',     name:'Прицельный',    icon:'🎯', type:'ranged', range:4, aoe:0, damage:'atk*1.5',effect:null,                         maxCooldown:2, school:'ranged'},
+    {id:'ranged_pierce',  name:'Прострел',      icon:'➡️', type:'ranged', range:5, aoe:0, damage:'atk',    effect:null,                         maxCooldown:3, school:'ranged'},
   ],
   heavy: [
-    {id:'heavy_strike',   name:'Дробящий',      icon:'🔨', type:'melee',  range:1, aoe:0, damage:'atk+3',  effect:null,                         maxCooldown:0},
-    {id:'heavy_quake',    name:'Сотрясение',    icon:'💫', type:'melee',  range:1, aoe:0, damage:'atk',    effect:{type:'stun',turns:1},         maxCooldown:3},
-    {id:'heavy_death',    name:'Смерть молотом',icon:'💀', type:'melee',  range:1, aoe:0, damage:'atk*2',  effect:null,                         maxCooldown:4},
+    {id:'heavy_strike',   name:'Дробящий',      icon:'🔨', type:'melee',  range:1, aoe:0, damage:'atk+3',  effect:null,                         maxCooldown:0, school:'heavy'},
+    {id:'heavy_quake',    name:'Волновой удар', icon:'💫', type:'melee',  range:1, aoe:1, damage:'atk*0.8',effect:{type:'stun',turns:1},         maxCooldown:3, school:'heavy'},
+    {id:'heavy_death',    name:'Смерть молотом',icon:'💀', type:'melee',  range:1, aoe:0, damage:'atk*2',  effect:null,                         maxCooldown:4, school:'heavy'},
   ],
   dual: [
-    {id:'dual_double',    name:'Двойной удар',  icon:'⚔️', type:'melee',  range:1, aoe:0, damage:'atk*1.4',effect:null,                         maxCooldown:0},
-    {id:'dual_whirl',     name:'Вихрь клинков', icon:'🌀', type:'melee',  range:1, aoe:1, damage:'atk*0.5',effect:null,                         maxCooldown:3},
-    {id:'dual_swift',     name:'Выпад молнией', icon:'⚡', type:'melee',  range:2, aoe:0, damage:'atk*1.2',effect:null,                         maxCooldown:2},
+    {id:'dual_double',    name:'Двойной удар',  icon:'⚔️', type:'melee',  range:1, aoe:0, damage:'atk*1.4',effect:null,                         maxCooldown:0, school:'dual'},
+    {id:'dual_swift',     name:'Скользящий рывок',icon:'⚡',type:'melee', range:2, aoe:0, damage:'atk*1.2',effect:null,                         maxCooldown:2, school:'dual'},
+    {id:'dual_whirl',     name:'Вихрь клинков', icon:'🌀', type:'melee',  range:1, aoe:1, damage:'atk*0.5',effect:null,                         maxCooldown:3, school:'dual'},
   ],
   shield: [
-    {id:'shield_bash',    name:'Удар щитом',    icon:'🛡️', type:'melee',  range:1, aoe:0, damage:'atk',    effect:null,                         maxCooldown:0},
-    {id:'shield_ward',    name:'Оборона',       icon:'🔰', type:'melee',  range:0, aoe:0, damage:0,        effect:{type:'block',value:10},       maxCooldown:2},
-    {id:'shield_push',    name:'Отбросить',     icon:'🏋️', type:'melee',  range:1, aoe:0, damage:'atk*0.5',effect:{type:'knockback'},            maxCooldown:2},
+    {id:'shield_bash',    name:'Удар щитом',    icon:'🛡️', type:'melee',  range:1, aoe:0, damage:'atk',    effect:null,                         maxCooldown:0, school:'shield'},
+    {id:'shield_push',    name:'Отбросить',     icon:'🏋️', type:'melee',  range:1, aoe:0, damage:'atk*0.5',effect:{type:'knockback'},            maxCooldown:2, school:'shield'},
+    {id:'shield_ward',    name:'Перенаправление',icon:'🔰',type:'melee',  range:0, aoe:0, damage:0,        effect:{type:'block',value:12},       maxCooldown:3, school:'shield'},
   ],
   unarmed: [
-    {id:'unarmed_punch',  name:'Кулак',         icon:'👊', type:'melee',  range:1, aoe:0, damage:'atk',    effect:null,                         maxCooldown:0},
-    {id:'unarmed_grab',   name:'Захват',        icon:'🤼', type:'melee',  range:1, aoe:0, damage:'atk*0.5',effect:{type:'stun',turns:1},         maxCooldown:2},
-    {id:'unarmed_crush',  name:'Сокрушение',    icon:'💢', type:'melee',  range:1, aoe:0, damage:'atk*1.8',effect:null,                         maxCooldown:4},
+    {id:'unarmed_punch',  name:'Серия ударов',  icon:'👊', type:'melee',  range:1, aoe:0, damage:'atk',    effect:null,                         maxCooldown:0, school:'unarmed'},
+    {id:'unarmed_grab',   name:'Захват',        icon:'🤼', type:'melee',  range:1, aoe:0, damage:'atk*0.5',effect:{type:'stun',turns:1},         maxCooldown:2, school:'unarmed'},
+    {id:'unarmed_crush',  name:'Зеркальный удар',icon:'💢',type:'melee',  range:1, aoe:0, damage:'atk*1.8',effect:null,                         maxCooldown:4, school:'unarmed'},
   ],
   polearm: [
-    {id:'polearm_thrust', name:'Копейный удар', icon:'🔱', type:'melee',  range:2, aoe:0, damage:'atk',    effect:null,                         maxCooldown:0},
-    {id:'polearm_lunge',  name:'Выпад',         icon:'➡️', type:'melee',  range:2, aoe:0, damage:'atk*1.3',effect:null,                         maxCooldown:2},
-    {id:'polearm_sweep',  name:'Круговой замах',icon:'🌀', type:'melee',  range:1, aoe:1, damage:'atk*0.6',effect:null,                         maxCooldown:3},
+    {id:'polearm_thrust', name:'Копейный удар', icon:'🔱', type:'melee',  range:2, aoe:0, damage:'atk',    effect:null,                         maxCooldown:0, school:'polearm'},
+    {id:'polearm_lunge',  name:'Выпад',         icon:'➡️', type:'melee',  range:2, aoe:0, damage:'atk*1.3',effect:null,                         maxCooldown:2, school:'polearm'},
+    {id:'polearm_sweep',  name:'Тяжёлый замах', icon:'🌀', type:'melee',  range:1, aoe:1, damage:'atk*0.7',effect:{type:'stun',turns:1},         maxCooldown:3, school:'polearm'},
   ],
   chain: [
-    {id:'chain_whip',     name:'Хлыст',         icon:'⛓️', type:'melee',  range:2, aoe:0, damage:'atk',    effect:null,                         maxCooldown:0},
-    {id:'chain_pull',     name:'Захват цепью',  icon:'🪝', type:'melee',  range:2, aoe:0, damage:'atk*0.5',effect:{type:'pull'},                 maxCooldown:3},
-    {id:'chain_net',      name:'Сети',          icon:'🕸️', type:'debuff', range:2, aoe:0, damage:0,        effect:{type:'stun',turns:2},         maxCooldown:4},
+    {id:'chain_whip',     name:'Хлыст',         icon:'⛓️', type:'melee',  range:2, aoe:0, damage:'atk',    effect:null,                         maxCooldown:0, school:'chain'},
+    {id:'chain_pull',     name:'Зацеп и контроль',icon:'🪝',type:'melee', range:2, aoe:0, damage:'atk*0.5',effect:{type:'pull'},                 maxCooldown:2, school:'chain'},
+    {id:'chain_net',      name:'Волна кинетики',icon:'🕸️', type:'melee',  range:2, aoe:0, damage:'atk*1.5',effect:{type:'stun',turns:1},         maxCooldown:4, school:'chain'},
   ],
 };
 
-// Magic ability sets
+// Magic ability sets — correct Twilights lore schools
+// Wizard: arcane energy (wand) — impulses, lightning, TK. NOT fire/ice (those are elementalist)
+// Pyromancer: fire branch of elementalist — flame, ignition, fire wave
+// Geomancer: earth branch — stone, shield, tremor
+// Aeromancer: air branch — gust, blade, hammer
+// Aquamancer: water branch — stream, water fist, sticky
+// Druid: contact life magic (roots/plants/heal)
+// Necromancer: dead-matter telekinesis + cadavers
+// Demonologist: shadows, rifts, chaos zones
+// Incenser: smoke compounds + alchemical effects
+// Adept: divine word of power
 const HX_MAGIC_ABILITIES = {
   wizard: [
-    {id:'wiz_lightning',  name:'Молния',        icon:'⚡', type:'magic',  range:3, aoe:0, damage:8,        effect:{type:'chain',value:6},        maxCooldown:0},
-    {id:'wiz_fireball',   name:'Огненный шар',  icon:'🔥', type:'magic',  range:3, aoe:1, damage:10,       effect:null,                         maxCooldown:3},
-    {id:'wiz_ice',        name:'Ледяной взрыв', icon:'❄️', type:'magic',  range:3, aoe:1, damage:7,        effect:{type:'stun',turns:1},         maxCooldown:4},
+    {id:'wiz_impulse',    name:'Смешанный импульс',icon:'✨',type:'magic', range:4, aoe:0, damage:8,   effect:null,                               maxCooldown:0, school:'wizard'},
+    {id:'wiz_push',       name:'Импульсная волна', icon:'💨',type:'magic', range:2, aoe:1, damage:5,   effect:{type:'knockback'},                 maxCooldown:2, school:'wizard'},
+    {id:'wiz_lightning',  name:'Молния',           icon:'⚡',type:'magic', range:4, aoe:0, damage:12,  effect:{type:'chain',value:7},             maxCooldown:4, school:'wizard'},
+  ],
+  pyromancer: [
+    {id:'pyro_flame',     name:'Сгусток огня',     icon:'🔥',type:'magic', range:4, aoe:0, damage:9,   effect:null,                               maxCooldown:0, school:'pyromancer'},
+    {id:'pyro_ignite',    name:'Возгорание',       icon:'💥',type:'magic', range:3, aoe:0, damage:12,  effect:{type:'ignite'},                    maxCooldown:2, school:'pyromancer'},
+    {id:'pyro_wave',      name:'Волна пламени',    icon:'🌋',type:'magic', range:2, aoe:2, damage:8,   effect:{type:'ignite'},                    maxCooldown:4, school:'pyromancer'},
+  ],
+  geomancer: [
+    {id:'geo_stone',      name:'Метание камня',    icon:'🪨',type:'magic', range:4, aoe:0, damage:9,   effect:null,                               maxCooldown:0, school:'geomancer'},
+    {id:'geo_shield',     name:'Щит земли',        icon:'🏔️',type:'magic', range:0, aoe:0, damage:0,   effect:{type:'block',value:14},            maxCooldown:2, school:'geomancer'},
+    {id:'geo_quake',      name:'Сотрясение',       icon:'🌍',type:'magic', range:1, aoe:1, damage:7,   effect:{type:'stun',turns:1},             maxCooldown:4, school:'geomancer'},
+  ],
+  aeromancer: [
+    {id:'aero_gust',      name:'Воздушный поток',  icon:'🌬️',type:'magic', range:3, aoe:1, damage:4,   effect:{type:'knockback'},                 maxCooldown:0, school:'aeromancer'},
+    {id:'aero_blade',     name:'Лезвие ветра',     icon:'🌪️',type:'magic', range:4, aoe:0, damage:10,  effect:null,                               maxCooldown:2, school:'aeromancer'},
+    {id:'aero_hammer',    name:'Воздушный молот',  icon:'💨',type:'magic', range:3, aoe:0, damage:14,  effect:{type:'stun',turns:1},             maxCooldown:4, school:'aeromancer'},
+  ],
+  aquamancer: [
+    {id:'aqua_stream',    name:'Водный поток',     icon:'🌊',type:'magic', range:3, aoe:0, damage:7,   effect:null,                               maxCooldown:0, school:'aquamancer'},
+    {id:'aqua_fist',      name:'Взрыв воды',       icon:'💧',type:'magic', range:3, aoe:0, damage:11,  effect:{type:'knockback'},                 maxCooldown:2, school:'aquamancer'},
+    {id:'aqua_sticky',    name:'Прилипчая вода',   icon:'🫧',type:'debuff',range:2, aoe:0, damage:0,   effect:{type:'stun',turns:2},             maxCooldown:4, school:'aquamancer'},
   ],
   druid: [
-    {id:'druid_heal',     name:'Токи жизни',    icon:'🌿', type:'heal',   range:1, aoe:0, damage:0,        effect:{type:'heal',value:10},        maxCooldown:0},
-    {id:'druid_roots',    name:'Корни',         icon:'🌱', type:'debuff', range:2, aoe:0, damage:0,        effect:{type:'stun',turns:2},         maxCooldown:3},
-    {id:'druid_thorns',   name:'Шипы',          icon:'🌵', type:'magic',  range:2, aoe:1, damage:6,        effect:null,                         maxCooldown:3},
-  ],
-  elementalist: [
-    {id:'elem_burst',     name:'Взрыв стихии',  icon:'🌊', type:'magic',  range:3, aoe:1, damage:12,       effect:null,                         maxCooldown:0},
-    {id:'elem_wall',      name:'Стена огня',    icon:'🔥', type:'magic',  range:2, aoe:2, damage:8,        effect:null,                         maxCooldown:4},
-    {id:'elem_thunder',   name:'Призыв молнии', icon:'⚡', type:'magic',  range:4, aoe:0, damage:15,       effect:null,                         maxCooldown:5},
+    {id:'druid_heal',     name:'Токи жизни',       icon:'🌿',type:'heal',  range:1, aoe:0, damage:0,   effect:{type:'heal',value:10},             maxCooldown:0, school:'druid'},
+    {id:'druid_thorns',   name:'Шипы',             icon:'🌵',type:'magic', range:2, aoe:1, damage:6,   effect:null,                               maxCooldown:2, school:'druid'},
+    {id:'druid_roots',    name:'Взрывной рост',    icon:'🌱',type:'debuff',range:2, aoe:0, damage:0,   effect:{type:'stun',turns:2},             maxCooldown:4, school:'druid'},
   ],
   necro: [
-    {id:'necro_raise',    name:'Поднять кадавр',icon:'💀', type:'summon', range:2, aoe:0, damage:0,        effect:{type:'summon',unitType:'cadaver'}, maxCooldown:4},
-    {id:'necro_wave',     name:'Волна смерти',  icon:'🌑', type:'magic',  range:2, aoe:1, damage:8,        effect:null,                         maxCooldown:3},
-    {id:'necro_drain',    name:'Иссушение',     icon:'🩸', type:'magic',  range:2, aoe:0, damage:5,        effect:{type:'lifesteal',value:3},    maxCooldown:2},
+    {id:'necro_drain',    name:'Витализм',         icon:'🩸',type:'magic', range:2, aoe:0, damage:5,   effect:{type:'lifesteal',value:4},         maxCooldown:0, school:'necro'},
+    {id:'necro_wave',     name:'Волна смерти',     icon:'🌑',type:'magic', range:2, aoe:1, damage:8,   effect:null,                               maxCooldown:2, school:'necro'},
+    {id:'necro_raise',    name:'Кукловодство',     icon:'💀',type:'summon',range:2, aoe:0, damage:0,   effect:{type:'summon',unitType:'cadaver'}, maxCooldown:4, school:'necro'},
   ],
   demon: [
-    {id:'demon_shadow',   name:'Призвать Тень', icon:'👁️', type:'summon', range:2, aoe:0, damage:0,        effect:{type:'summon',unitType:'shadow'}, maxCooldown:4},
-    {id:'demon_fist',     name:'Тёмный кулак',  icon:'🖤', type:'magic',  range:2, aoe:0, damage:10,       effect:null,                         maxCooldown:2},
-    {id:'demon_curse',    name:'Порча',         icon:'☠️', type:'debuff', range:2, aoe:0, damage:0,        effect:{type:'debuff',stat:'atk',value:4,turns:2}, maxCooldown:3},
+    {id:'demon_fist',     name:'Молот демонов',    icon:'🖤',type:'magic', range:2, aoe:0, damage:10,  effect:null,                               maxCooldown:0, school:'demon'},
+    {id:'demon_curse',    name:'Порча',            icon:'☠️',type:'debuff',range:3, aoe:0, damage:0,   effect:{type:'debuff',stat:'atk',value:4,turns:2}, maxCooldown:2, school:'demon'},
+    {id:'demon_shadow',   name:'Привязать Тень',   icon:'👁️',type:'summon',range:2, aoe:0, damage:0,   effect:{type:'summon',unitType:'shadow'},  maxCooldown:4, school:'demon'},
   ],
   incenser: [
-    {id:'inc_smoke',      name:'Дымовое облако',icon:'💨', type:'debuff', range:2, aoe:2, damage:0,        effect:{type:'debuff',stat:'atk',value:3,turns:1}, maxCooldown:0},
-    {id:'inc_poison',     name:'Ядовитый дым',  icon:'☠️', type:'magic',  range:2, aoe:1, damage:5,        effect:null,                         maxCooldown:3},
-    {id:'inc_blind',      name:'Слепота',       icon:'🙈', type:'debuff', range:2, aoe:0, damage:0,        effect:{type:'debuff',stat:'atk',value:5,turns:2}, maxCooldown:4},
+    {id:'inc_smoke',      name:'Дымовое облако',   icon:'💨',type:'debuff',range:3, aoe:2, damage:0,   effect:{type:'debuff',stat:'atk',value:3,turns:1}, maxCooldown:0, school:'incenser'},
+    {id:'inc_poison',     name:'Ядовитый дым',     icon:'🟢',type:'magic', range:2, aoe:1, damage:5,   effect:null,                               maxCooldown:2, school:'incenser'},
+    {id:'inc_blind',      name:'Слепота',          icon:'🙈',type:'debuff',range:3, aoe:0, damage:0,   effect:{type:'debuff',stat:'atk',value:6,turns:2}, maxCooldown:4, school:'incenser'},
   ],
   adept: [
-    {id:'adept_warmth',   name:'Слово Тепла',   icon:'✝️', type:'heal',   range:2, aoe:0, damage:0,        effect:{type:'heal',value:8},         maxCooldown:0},
-    {id:'adept_light',    name:'Слово Света',   icon:'🌟', type:'magic',  range:2, aoe:0, damage:10,       effect:null,                         maxCooldown:2},
-    {id:'adept_bless',    name:'Благословение', icon:'💫', type:'debuff', range:2, aoe:0, damage:0,        effect:{type:'buff',stat:'atk',value:3,turns:2}, maxCooldown:3},
+    {id:'adept_warmth',   name:'Слово Тепла',      icon:'✝️',type:'heal',  range:2, aoe:0, damage:0,   effect:{type:'heal',value:10},             maxCooldown:0, school:'adept'},
+    {id:'adept_light',    name:'Слово Света',      icon:'🌟',type:'magic', range:3, aoe:0, damage:11,  effect:null,                               maxCooldown:2, school:'adept'},
+    {id:'adept_fortune',  name:'Слово Удачи',      icon:'💫',type:'debuff',range:2, aoe:0, damage:0,   effect:{type:'buff',stat:'atk',value:4,turns:2}, maxCooldown:4, school:'adept'},
   ],
 };
 
@@ -3193,17 +3226,25 @@ function hexReachable(unit) {
   const blocked = new Set([
     ...hxs.units.filter(u=>u.id!==unit.id&&u.hp>0).map(u=>`${u.col},${u.row}`),
     ...(hxs.obstacles||[]).map(ob=>`${ob.col},${ob.row}`),
+    ...(hxs.waters||[]).map(([c,r])=>`${c},${r}`),
   ]);
+  const swampSet = new Set((hxs.swamps||[]).map(([c,r])=>`${c},${r}`));
+  // Dijkstra with move-cost: swamp costs 2, everything else 1
   const visited = new Map([[`${unit.col},${unit.row}`, 0]]);
-  const queue = [[unit.col, unit.row, 0]];
+  const queue = [[0, unit.col, unit.row]]; // [cost, c, r]
   const result = [];
   while(queue.length) {
-    const [c, r, d] = queue.shift();
+    queue.sort((a,b)=>a[0]-b[0]);
+    const [d, c, r] = queue.shift();
     if(d > 0 && !blocked.has(`${c},${r}`)) result.push([c, r]);
     if(d < range && !blocked.has(`${c},${r}`)) {
       for(const [nc, nr] of hexNeighbors(c, r)) {
+        const stepCost = swampSet.has(`${nc},${nr}`) ? 2 : 1;
+        const newCost = d + stepCost;
         const key = `${nc},${nr}`;
-        if(!visited.has(key)) { visited.set(key, d+1); queue.push([nc, nr, d+1]); }
+        if(newCost <= range && (!visited.has(key) || visited.get(key) > newCost)) {
+          visited.set(key, newCost); queue.push([newCost, nc, nr]);
+        }
       }
     }
   }
@@ -3342,6 +3383,21 @@ function hxConfirmApply(unit, ab, col, row) {
   hxRender(); hexUpdateInfo();
 }
 
+// School cooldown: strong ability (★ cd≥3) adds +1 to all abilities of same school.
+// Strong MAGIC ability additionally adds +1 to all other magic abilities across all schools.
+function hxApplySchoolCooldown(caster, usedAbility) {
+  if(!usedAbility.school || usedAbility.maxCooldown < 3) return;
+  const school = usedAbility.school;
+  const isMagicAb = ab => ['magic','heal','summon','debuff'].includes(ab.type);
+  const usedIsMagic = isMagicAb(usedAbility);
+  (caster.abilities||[]).forEach(ab => {
+    if(ab.id === usedAbility.id) return;
+    if(ab.cooldown > 0) return;
+    if(ab.school === school) { ab.cooldown = 1; return; }
+    if(usedIsMagic && isMagicAb(ab)) { ab.cooldown = 1; }
+  });
+}
+
 // PASS A: helper — mark caster acted based on AP (hero) or directly (enemy/ally)
 function hxMarkActed(caster, ability) {
   if(caster.isHero) {
@@ -3351,6 +3407,7 @@ function hxMarkActed(caster, ability) {
   } else {
     caster.acted = true;
   }
+  hxApplySchoolCooldown(caster, ability);
 }
 
 // Apply an ability effect from caster on primary target (handles AoE automatically)
@@ -3489,6 +3546,20 @@ function hxApplyAbility(caster, ability, primaryTarget) {
         logMsg += `, ${od}→${ob.type==='wall'?'🧱':'🪨'}`;
         hxDamageObstacle(ob, od);
       });
+    }
+
+    // Fire ignition: pyromancer ignite abilities set burnable terrain on fire
+    if(ability.effect?.type === 'ignite') {
+      const igniteRange = ability.aoe > 0 ? ability.aoe : 0;
+      for(let dc=-igniteRange;dc<=igniteRange;dc++) for(let dr=-igniteRange;dr<=igniteRange;dr++) {
+        const ic=primaryTarget.col+dc, ir=primaryTarget.row+dr;
+        if(hexDist(primaryTarget.col,primaryTarget.row,ic,ir)>igniteRange) continue;
+        const burnIdx=(hxs.burnable||[]).findIndex(([bc,br])=>bc===ic&&br===ir);
+        if(burnIdx>=0&&!(hxs.fires||[]).some(f=>f.col===ic&&f.row===ir)) {
+          hxs.fires.push({col:ic,row:ir,duration:3});
+          hxLog(`🔥 Трава на (${ic},${ir}) загорелась!`, 'special');
+        }
+      }
     }
 
     // Chain (lightning)
@@ -3701,7 +3772,7 @@ function hxPickEnemyAbility(enemy, players, allies) {
       const summoned = alive.filter(u=>summonedTypes.includes(u.type)&&u.team===enemy.team);
       if(summoned.length < 1) {
         const occupied = new Set(alive.map(u=>`${u.col},${u.row}`));
-        const obst = new Set((hxs.obstacles||[]).map(ob=>`${ob.col},${ob.row}`));
+        const obst = new Set([...(hxs.obstacles||[]).map(ob=>`${ob.col},${ob.row}`),...(hxs.waters||[]).map(([c,r])=>`${c},${r}`)]);
         const freeHex = hexNeighbors(enemy.col,enemy.row).find(([nc,nr])=>!occupied.has(`${nc},${nr}`)&&!obst.has(`${nc},${nr}`));
         if(freeHex) return {ability:summonAb, target:{isFreeHex:true,col:freeHex[0],row:freeHex[1],id:`free_${freeHex[0]}_${freeHex[1]}`,team:'free',hp:1}};
       }
@@ -3990,6 +4061,29 @@ function hexEnemyTurn() {
     if(u.atkBuffTurns > 0) { u.atkBuffTurns--; if(u.atkBuffTurns <= 0) u.atkBuff = 0; }
     // Tick ability cooldowns
     hxTickCooldowns(u);
+  });
+
+  // Fire terrain: deal 2 dmg to units standing on it, reduce duration
+  const _expiredFires = [];
+  (hxs.fires||[]).forEach(fire => {
+    const onFire = hxs.units.filter(u=>u.hp>0&&u.col===fire.col&&u.row===fire.row);
+    onFire.forEach(u => {
+      u.hp = Math.max(0, u.hp - 2);
+      hxLog(`🔥 ${u.name} горит! −2 HP`, 'attack');
+      if(u.hp <= 0) hexApplyMorale(u);
+    });
+    fire.duration--;
+    if(fire.duration <= 0) _expiredFires.push(fire);
+  });
+  if(_expiredFires.length) {
+    hxs.fires = hxs.fires.filter(f=>!_expiredFires.includes(f));
+  }
+
+  // Swamp terrain: deal 1 dmg to units standing in it
+  const _swampSetTick = new Set((hxs.swamps||[]).map(([c,r])=>`${c},${r}`));
+  hxs.units.filter(u=>u.hp>0&&_swampSetTick.has(`${u.col},${u.row}`)).forEach(u=>{
+    u.hp = Math.max(0, u.hp - 1);
+    hxLog(`🟫 ${u.name} в болоте! −1 HP`, 'info');
   });
 
   // Forest block at start of player turn
@@ -4335,6 +4429,55 @@ function hxRender() {
       fg.setAttribute('fill', hpPct > 0.5 ? '#e67e22' : '#e74c3c'); fg.setAttribute('rx','2'); fg.setAttribute('pointer-events','none');
       svg.appendChild(fg);
     }
+  });
+
+  // Draw burnable terrain (light green, passable grass)
+  (hxs.burnable||[]).filter(([bc,br])=>!(hxs.fires||[]).some(f=>f.col===bc&&f.row===br)).forEach(([bc,br]) => {
+    const {x,y} = hexToPixel(bc,br);
+    const p = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    p.setAttribute('points', hexPoints(x,y)); p.setAttribute('fill','rgba(100,180,60,0.18)');
+    p.setAttribute('stroke','rgba(100,180,60,0.3)'); p.setAttribute('stroke-width','0.5'); p.setAttribute('pointer-events','none');
+    svg.appendChild(p);
+    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x',x); t.setAttribute('y',y+6); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('pointer-events','none');
+    t.textContent='🌾'; svg.appendChild(t);
+  });
+
+  // Draw swamp terrain (dark brown, passable but slow + tick dmg)
+  (hxs.swamps||[]).forEach(([sc,sr]) => {
+    const {x,y} = hexToPixel(sc,sr);
+    const p = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    p.setAttribute('points', hexPoints(x,y)); p.setAttribute('fill','rgba(90,60,20,0.4)');
+    p.setAttribute('stroke','#6b4226'); p.setAttribute('stroke-width','1'); p.setAttribute('pointer-events','none');
+    svg.appendChild(p);
+    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x',x); t.setAttribute('y',y+6); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','13'); t.setAttribute('pointer-events','none');
+    t.textContent='🟫'; svg.appendChild(t);
+  });
+
+  // Draw water terrain (blue, impassable)
+  (hxs.waters||[]).forEach(([wc,wr]) => {
+    const {x,y} = hexToPixel(wc,wr);
+    const p = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    p.setAttribute('points', hexPoints(x,y)); p.setAttribute('fill','rgba(30,100,200,0.5)');
+    p.setAttribute('stroke','#1a6cbd'); p.setAttribute('stroke-width','1.5'); p.setAttribute('pointer-events','none');
+    svg.appendChild(p);
+    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x',x); t.setAttribute('y',y+6); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','13'); t.setAttribute('pointer-events','none');
+    t.textContent='💧'; svg.appendChild(t);
+  });
+
+  // Draw fire terrain (orange-red, deals 2 dmg/turn, fades by duration)
+  (hxs.fires||[]).forEach(fire => {
+    const {x,y} = hexToPixel(fire.col,fire.row);
+    const alpha = 0.3 + 0.2*(fire.duration/3);
+    const p = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    p.setAttribute('points', hexPoints(x,y)); p.setAttribute('fill',`rgba(220,80,0,${alpha})`);
+    p.setAttribute('stroke','#ff6600'); p.setAttribute('stroke-width','1.5'); p.setAttribute('pointer-events','none');
+    svg.appendChild(p);
+    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x',x); t.setAttribute('y',y+6); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','13'); t.setAttribute('pointer-events','none');
+    t.textContent='🔥'; svg.appendChild(t);
   });
 
   // Draw objective hex (PASS D) — update control status first
@@ -4804,6 +4947,15 @@ function hxClickHex(col, row) {
         const _ob = hxObstAt(col,row);
         if(_ob.type==='wall') { nameEl.textContent = `🧱 Стена (${_ob.hp}/${_ob.maxHp})`; statsEl.textContent = 'Блокирует движение и дальний обзор'; }
         else { nameEl.textContent = `🪨 Обломки (${_ob.hp}/${_ob.maxHp})`; statsEl.textContent = 'Укрытие: −2 урон от дальних атак; разрушаемо'; }
+      } else if((hxs.swamps||[]).some(([c,r])=>c===col&&r===row)) {
+        nameEl.textContent = '🟫 Болото'; statsEl.textContent = 'Движение стоит 2 ОД; −1 HP в конце хода';
+      } else if((hxs.waters||[]).some(([c,r])=>c===col&&r===row)) {
+        nameEl.textContent = '💧 Вода'; statsEl.textContent = 'Непроходимо';
+      } else if((hxs.fires||[]).some(f=>f.col===col&&f.row===row)) {
+        const _f = hxs.fires.find(f=>f.col===col&&f.row===row);
+        nameEl.textContent = `🔥 Огонь (${_f.duration} хода)`; statsEl.textContent = '−2 HP в конце каждого хода';
+      } else if((hxs.burnable||[]).some(([c,r])=>c===col&&r===row)) {
+        nameEl.textContent = '🌾 Трава'; statsEl.textContent = 'Горючая — поджигается огненными заклинаниями';
       } else if(hxs.objective&&hxs.objective.col===col&&hxs.objective.row===row) {
         nameEl.textContent = '⭐ Цель'; statsEl.textContent = `Захват: ${hxs.objective.playerTurns||0}/3 ходов`;
       }
@@ -4820,6 +4972,13 @@ function hxSkipUnit() {
   hxs.selected = null; hxs.reachable = []; hxs.abilityTargets = [];
   hxs.mode = 'select'; hxs.activeAbilityIdx = null; hxs.confirming = null;
   hxRender(); hexUpdateInfo();
+}
+
+let _hxZoomPct = 100; // percentage width of the SVG
+function hxZoomAdjust(delta) {
+  _hxZoomPct = Math.max(60, Math.min(250, _hxZoomPct + delta * 100));
+  const svg = document.getElementById('hx-svg');
+  if(svg) svg.style.width = Math.round(_hxZoomPct) + '%';
 }
 
 function hxEndTurn() {
@@ -4844,7 +5003,7 @@ function initHex() {
   const playerDefs = heroDef ? null : (Array.isArray(gameData.player_units) ? gameData.player_units : [{type:'warrior',name:'Воин'}]);
   const enemyDefs  = Array.isArray(gameData.enemy_units)  ? gameData.enemy_units  : [{type:'warrior',name:'Страж'}];
 
-  hxs = {units:[], turn:'player', selected:null, inspecting:null, reachable:[], attackable:[], abilityTargets:[], activeAbilityIdx:null, mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, ended:false, rifts:[], forests:[], heights:[], obstacles:[], bushes:[], objective:null, enemyIntents:{}, totalDamageDealt:0, totalDamageTaken:0, aoeHover:null, abilitiesUsed:{}, hero: heroDef, heroAP: 4, heroMaxAP: 4, confirming: null};
+  hxs = {units:[], turn:'player', selected:null, inspecting:null, reachable:[], attackable:[], abilityTargets:[], activeAbilityIdx:null, mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, ended:false, rifts:[], forests:[], heights:[], obstacles:[], bushes:[], swamps:[], waters:[], fires:[], burnable:[], objective:null, enemyIntents:{}, totalDamageDealt:0, totalDamageTaken:0, aoeHover:null, abilitiesUsed:{}, hero: heroDef, heroAP: 4, heroMaxAP: 4, confirming: null};
 
   let idCtr = 0;
 
@@ -4927,7 +5086,7 @@ function initHex() {
   // Place rifts in the center area, not on any unit
   const _occupied = new Set(hxs.units.map(u=>`${u.col},${u.row}`));
   const _riftCandidates = [];
-  for(let r=2; r<=5; r++) for(let c=2; c<=4; c++) {
+  for(let r=3; r<=7; r++) for(let c=4; c<=6; c++) {
     if(!_occupied.has(`${c},${r}`)) _riftCandidates.push([c,r]);
   }
   const _placed = new Set();
@@ -4939,24 +5098,24 @@ function initHex() {
     _occupied.add(`${rc},${rr}`);
   }
 
-  // PASS A: Place forests — col 1, random row; col 5, random row
-  const _forestColCandidates = [[1,0],[1,1],[1,2],[1,3],[1,4],[1,5],[1,6],[1,7],[5,0],[5,1],[5,2],[5,3],[5,4],[5,5],[5,6],[5,7]];
+  // PASS A: Place forests — left flank (col 1-2) and right flank (col 8-9)
+  const _forestColCandidates = [];
+  for(let r=1;r<HEX_ROWS-1;r++) { _forestColCandidates.push([1,r],[2,r],[8,r],[9,r]); }
   const _forestCandidates = _forestColCandidates.filter(([c,r])=>!_occupied.has(`${c},${r}`));
-  // Prefer one from col 1, one from col 5
-  const _fc1 = _forestCandidates.filter(([c])=>c===1);
-  const _fc6 = _forestCandidates.filter(([c])=>c===5);
+  const _fcLeft = _forestCandidates.filter(([c])=>c<=2);
+  const _fcRight = _forestCandidates.filter(([c])=>c>=8);
   let _forestsToPlace = _numForests;
-  if(_fc1.length && _forestsToPlace > 0) {
-    const pick = _fc1[Math.floor(Math.random()*_fc1.length)];
+  if(_fcLeft.length && _forestsToPlace > 0) {
+    const pick = _fcLeft[Math.floor(Math.random()*_fcLeft.length)];
     hxs.forests.push(pick); _occupied.add(`${pick[0]},${pick[1]}`); _forestsToPlace--;
   }
-  if(_fc6.length && _forestsToPlace > 0) {
-    const pick = _fc6[Math.floor(Math.random()*_fc6.length)];
+  if(_fcRight.length && _forestsToPlace > 0) {
+    const pick = _fcRight[Math.floor(Math.random()*_fcRight.length)];
     hxs.forests.push(pick); _occupied.add(`${pick[0]},${pick[1]}`); _forestsToPlace--;
   }
 
-  // PASS A: Place heights — col 2-4, row 0 or row 7
-  const _heightCandidates = [[2,0],[3,0],[4,0],[2,7],[3,7],[4,7]].filter(([c,r])=>!_occupied.has(`${c},${r}`));
+  // PASS A: Place heights — top/bottom rows, middle columns
+  const _heightCandidates = [[3,0],[4,0],[5,0],[6,0],[7,0],[3,HEX_ROWS-1],[4,HEX_ROWS-1],[5,HEX_ROWS-1],[6,HEX_ROWS-1],[7,HEX_ROWS-1]].filter(([c,r])=>!_occupied.has(`${c},${r}`));
   for(let hi=0; hi<_numHeights && _heightCandidates.length; hi++) {
     const idx = Math.floor(Math.random() * _heightCandidates.length);
     const pick = _heightCandidates.splice(idx,1)[0];
@@ -4975,7 +5134,7 @@ function initHex() {
     ...(hxs.heights||[]).map(([c,r])=>`${c},${r}`),
   ]);
   const _obstCandidates = [];
-  for(let r=1;r<HEX_ROWS-1;r++) for(let c=2;c<=4;c++) {
+  for(let r=2;r<HEX_ROWS-2;r++) for(let c=3;c<=7;c++) {
     if(!_allBlocked.has(`${c},${r}`)) _obstCandidates.push([c,r]);
   }
   hxs.obstacles = [];
@@ -4988,7 +5147,7 @@ function initHex() {
   }
   // 2 rubble (from wider area)
   const _rubbleCandidates = [];
-  for(let r=1;r<HEX_ROWS-1;r++) for(let c=1;c<=5;c++) {
+  for(let r=2;r<HEX_ROWS-2;r++) for(let c=2;c<=8;c++) {
     if(!_allBlocked.has(`${c},${r}`)) _rubbleCandidates.push([c,r]);
   }
   for(let i=0;i<2&&_rubbleCandidates.length;i++){
@@ -5002,23 +5161,63 @@ function initHex() {
   const _bushCandidates = [];
   for(let r=1;r<HEX_ROWS-1;r++) {
     if(!_allBlocked.has(`2,${r}`)) _bushCandidates.push([2,r]);
-    if(!_allBlocked.has(`4,${r}`)) _bushCandidates.push([4,r]);
+    if(!_allBlocked.has(`3,${r}`)) _bushCandidates.push([3,r]);
+    if(!_allBlocked.has(`7,${r}`)) _bushCandidates.push([7,r]);
+    if(!_allBlocked.has(`8,${r}`)) _bushCandidates.push([8,r]);
   }
   hxs.bushes = [];
-  for(let i=0; i<2 && _bushCandidates.length; i++) {
+  for(let i=0; i<3 && _bushCandidates.length; i++) {
     const idx = Math.floor(Math.random()*_bushCandidates.length);
     const pick = _bushCandidates.splice(idx,1)[0];
     hxs.bushes.push(pick);
     _allBlocked.add(`${pick[0]},${pick[1]}`);
   }
 
-  // PASS D: Place objective hex in center (col 3 or 4, row 2), avoiding obstacles
-  const _objCandidates = [[3,3],[3,4],[2,3],[4,3],[3,2],[3,5]].filter(([c,r])=>!_allBlocked.has(`${c},${r}`));
+  // PASS D: Place objective hex in center, avoiding obstacles
+  const _objCandidates = [[5,5],[5,4],[4,5],[6,5],[5,6],[4,4],[6,6]].filter(([c,r])=>!_allBlocked.has(`${c},${r}`));
   if(_objCandidates.length > 0) {
     const [oc2,or2] = _objCandidates[0];
     hxs.objective = {col:oc2, row:or2, controlled:'none', playerTurns:0, enemyTurns:0};
-    // Don't add to _allBlocked — units can stand on objective
   }
+
+  // PASS F: Place swamp hexes (passable, -1 dmg/turn, extra move cost)
+  const _swampCandidates = [];
+  for(let r=3;r<HEX_ROWS-3;r++) for(let c=1;c<HEX_COLS-1;c++) {
+    if(!_allBlocked.has(`${c},${r}`)) _swampCandidates.push([c,r]);
+  }
+  hxs.swamps = [];
+  for(let i=0;i<3&&_swampCandidates.length;i++) {
+    const idx=Math.floor(Math.random()*_swampCandidates.length);
+    const pick=_swampCandidates.splice(idx,1)[0];
+    // Make sure swamp hexes are adjacent for a realistic swamp cluster
+    if(i===0 || hxs.swamps.some(([sc,sr])=>hexDist(sc,sr,pick[0],pick[1])<=1)) {
+      hxs.swamps.push(pick);
+    } else { _swampCandidates.unshift(pick); } // put back, try another
+  }
+  hxs.swamps.forEach(([c,r])=>_allBlocked.add(`${c},${r}_passable`)); // mark as occupied by terrain (not blocked)
+
+  // PASS G: Place water hexes (impassable) — 2-3 connected hexes in the middle
+  const _waterCandidates = [];
+  for(let r=4;r<HEX_ROWS-3;r++) for(let c=3;c<HEX_COLS-3;c++) {
+    if(!_allBlocked.has(`${c},${r}`) && !hxs.swamps.some(([sc,sr])=>sc===c&&sr===r)) _waterCandidates.push([c,r]);
+  }
+  hxs.waters = [];
+  if(_waterCandidates.length >= 2) {
+    const idx=Math.floor(Math.random()*_waterCandidates.length);
+    const [wc,wr]=_waterCandidates.splice(idx,1)[0];
+    hxs.waters.push([wc,wr]); _allBlocked.add(`${wc},${wr}`);
+    const adj=hexNeighbors(wc,wr).filter(([c,r])=>!_allBlocked.has(`${c},${r}`));
+    if(adj.length) { const [nc,nr]=adj[Math.floor(Math.random()*adj.length)]; hxs.waters.push([nc,nr]); _allBlocked.add(`${nc},${nr}`); }
+  }
+
+  // PASS H: Place burnable hexes (grass, ignitable by fire spells)
+  hxs.burnable = [];
+  for(let r=2;r<HEX_ROWS-2;r++) for(let c=0;c<HEX_COLS;c++) {
+    if(!_allBlocked.has(`${c},${r}`) && Math.random()<0.15) {
+      hxs.burnable.push([c,r]);
+    }
+  }
+  hxs.fires = [];
 
   const _initLabel = document.getElementById('hx-turn-label');
   _initLabel.className = 'hx-turn-label player-turn';
