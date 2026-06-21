@@ -647,8 +647,8 @@
     <button onclick="hxZoomAdjust(-0.15)" style="padding:1px 8px;border-radius:6px;border:none;background:rgba(255,255,255,0.12);color:#fff;font-size:0.9rem;cursor:pointer;">−</button>
     <button onclick="hxZoomAdjust(0.15)" style="padding:1px 8px;border-radius:6px;border:none;background:rgba(255,255,255,0.12);color:#fff;font-size:0.9rem;cursor:pointer;">+</button>
   </div>
-  <div id="hx-svg-wrap" style="overflow:auto;width:100%;">
-    <svg id="hx-svg" viewBox="0 0 390 335" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;min-width:300px;touch-action:manipulation;"></svg>
+  <div id="hx-svg-wrap" style="overflow:auto;width:100%;max-height:55vh;">
+    <svg id="hx-svg" xmlns="http://www.w3.org/2000/svg" style="display:block;touch-action:manipulation;"></svg>
   </div>
   <div id="hx-legend" style="font-size:0.65rem; color:rgba(255,255,255,0.4); text-align:center; padding:2px 4px; line-height:1.6;">
     🌳 Дерево +2 блок  🗿 Камни +2 атк (дальн.)  🌿 Кусты: -2 урон (дальн.)  ⌖ Разлом  🧱 Стена  ⭐ Цель
@@ -2913,6 +2913,9 @@ function cgLog(msg){ document.getElementById('cg-log').textContent=msg; }
 // ---- HEX GAME (FFT-style) ----
 const HEX_COLS = 11, HEX_ROWS = 11;
 const HEX_SIZE = 20;
+const _HEX_W = Math.sqrt(3) * HEX_SIZE;
+const HEX_SVG_W = Math.ceil(4 + _HEX_W / 2 + HEX_COLS * _HEX_W + HEX_SIZE);
+const HEX_SVG_H = Math.ceil(4 + HEX_SIZE + (HEX_ROWS - 1) * (HEX_SIZE * 1.5) + HEX_SIZE * 1.5);
 
 // ---- ABILITY LIBRARY ----
 // Weapon ability sets
@@ -3410,6 +3413,28 @@ function hxMarkActed(caster, ability) {
   hxApplySchoolCooldown(caster, ability);
 }
 
+function hxCalcHitChance(ability, casterCol, casterRow, targetCol, targetRow) {
+  const r = ability.range || 1;
+  if(r <= 1) return 100;
+  const dist = hexDist(casterCol, casterRow, targetCol, targetRow);
+  const base = ability.type === 'ranged' ? 88 : ability.type === 'magic' ? 92 : 100;
+  const halfR = r / 2;
+  const distPenalty = Math.max(0, dist - halfR) * 8;
+  let acc = base - distPenalty;
+  const inBush = (hxs.bushes||[]).some(([bc,br])=>bc===targetCol&&br===targetRow);
+  const hasCover = (hxs.obstacles||[]).some(ob=>ob.type==='rubble'&&hexDist(ob.col,ob.row,targetCol,targetRow)===1&&hexDist(ob.col,ob.row,casterCol,casterRow)>1);
+  if(inBush || hasCover) acc -= 15;
+  return Math.max(40, Math.min(100, Math.round(acc)));
+}
+
+function hxDistDmgMult(ability, dist) {
+  if(ability.type !== 'ranged') return 1.0;
+  const r = ability.range || 4;
+  if(dist >= r) return 0.8;
+  if(dist >= r - 1) return 0.9;
+  return 1.0;
+}
+
 // Apply an ability effect from caster on primary target (handles AoE automatically)
 function hxApplyAbility(caster, ability, primaryTarget) {
   // PASS D: Track ability usage for FFT hero
@@ -3510,9 +3535,23 @@ function hxApplyAbility(caster, ability, primaryTarget) {
     return;
   }
 
+  // --- HIT CHANCE CHECK (ranged / magic vs enemy) ---
+  if((ability.range||1) > 1 && primaryTarget && primaryTarget.hp > 0 && primaryTarget.team !== caster.team) {
+    const _hitChance = hxCalcHitChance(ability, caster.col, caster.row, primaryTarget.col, primaryTarget.row);
+    if(Math.random() * 100 >= _hitChance) {
+      hxLog(`${caster.icon||''} ${caster.name} — ${ability.icon||''} ${ability.name}: промах! (${_hitChance}%)`, 'damage');
+      hxFlashHex(primaryTarget.col, primaryTarget.row, 'rgba(150,150,150,0.5)');
+      hxMarkActed(caster, ability);
+      if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+      hxRender(); hexUpdateInfo();
+      return;
+    }
+  }
+
   // --- DAMAGE-DEALING ability ---
   if(dmg > 0) {
-    const totalDmg = dmg + bonusDmg;
+    const _distMult = primaryTarget ? hxDistDmgMult(ability, hexDist(caster.col, caster.row, primaryTarget.col, primaryTarget.row)) : 1;
+    const totalDmg = Math.round((dmg + bonusDmg) * _distMult);
     const doHit = (target, hitDmg) => {
       const prevHp = target.hp;
       const blocked = Math.min(hitDmg, target.block||0);
@@ -3528,6 +3567,7 @@ function hxApplyAbility(caster, ability, primaryTarget) {
     const actualDmg = doHit(primaryTarget, totalDmg);
     let logMsg = `${caster.name} — ${ability.icon||''} ${ability.name}: ${actualDmg} урона → ${primaryTarget.name} (${primaryTarget.hp}/${primaryTarget.maxHp})`;
     if(bonusDmg > 0) logMsg += ` [🗿+${bonusDmg}]`;
+    if(_distMult < 1.0) logMsg += ` [дальн.×${_distMult}]`;
 
     hxFlashHex(primaryTarget.col, primaryTarget.row, 'rgba(231,76,60,0.75)');
 
@@ -4669,6 +4709,19 @@ function hexUpdateInfo(unit) {
   if(unit.stunnedTurns > 0) statuses.push(`⚡ оглушён ${unit.stunnedTurns}`);
   if(statusEl) statusEl.textContent = statuses.join('  ');
 
+  // Hit chance + estimated damage preview when in ability targeting mode
+  if(hxs.mode === 'ability' && hxs.confirming && hxs.activeAbilityIdx !== null && statusEl) {
+    const _ab = unit.abilities?.[hxs.activeAbilityIdx];
+    const _tgt = hxs.units.find(u=>u.col===hxs.confirming.col&&u.row===hxs.confirming.row&&u.hp>0);
+    if(_ab && (_ab.range||1) > 1 && _tgt && _tgt.team !== unit.team) {
+      const _acc = hxCalcHitChance(_ab, unit.col, unit.row, hxs.confirming.col, hxs.confirming.row);
+      const _dist = hexDist(unit.col, unit.row, hxs.confirming.col, hxs.confirming.row);
+      const _estDmg = Math.round(hxAbilityDamage(_ab, unit) * hxDistDmgMult(_ab, _dist));
+      const _prev = statuses.length ? statuses.join('  ') + '   ' : '';
+      statusEl.textContent = _prev + `🎯 ${_acc}%  ~${_estDmg} урона`;
+    }
+  }
+
   // Show skip button only for non-hero player units (hero ends turn via "Конец хода")
   // PASS A: hero doesn't skip — uses "Конец хода" button instead
   if(skipBtn) skipBtn.disabled = unit.team !== 'player' || hxs.turn !== 'player' || hxs.ended || done || unit.isHero;
@@ -4974,11 +5027,14 @@ function hxSkipUnit() {
   hxRender(); hexUpdateInfo();
 }
 
-let _hxZoomPct = 100; // percentage width of the SVG
+let _hxZoomScale = 1.0;
 function hxZoomAdjust(delta) {
-  _hxZoomPct = Math.max(60, Math.min(250, _hxZoomPct + delta * 100));
+  _hxZoomScale = Math.max(0.5, Math.min(2.5, _hxZoomScale + delta));
   const svg = document.getElementById('hx-svg');
-  if(svg) svg.style.width = Math.round(_hxZoomPct) + '%';
+  if(svg) {
+    svg.style.width = Math.round(HEX_SVG_W * _hxZoomScale) + 'px';
+    svg.style.height = Math.round(HEX_SVG_H * _hxZoomScale) + 'px';
+  }
 }
 
 function hxEndTurn() {
@@ -5004,6 +5060,13 @@ function initHex() {
   const enemyDefs  = Array.isArray(gameData.enemy_units)  ? gameData.enemy_units  : [{type:'warrior',name:'Страж'}];
 
   hxs = {units:[], turn:'player', selected:null, inspecting:null, reachable:[], attackable:[], abilityTargets:[], activeAbilityIdx:null, mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, ended:false, rifts:[], forests:[], heights:[], obstacles:[], bushes:[], swamps:[], waters:[], fires:[], burnable:[], objective:null, enemyIntents:{}, totalDamageDealt:0, totalDamageTaken:0, aoeHover:null, abilitiesUsed:{}, hero: heroDef, heroAP: 4, heroMaxAP: 4, confirming: null};
+  _hxZoomScale = 1.0;
+  const _initSvg = document.getElementById('hx-svg');
+  if(_initSvg) {
+    _initSvg.setAttribute('viewBox', `0 0 ${HEX_SVG_W} ${HEX_SVG_H}`);
+    _initSvg.style.width = HEX_SVG_W + 'px';
+    _initSvg.style.height = HEX_SVG_H + 'px';
+  }
 
   let idCtr = 0;
 
