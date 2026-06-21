@@ -2493,7 +2493,7 @@ function cgRenderEnemies(){
     const wT=enemy.weak>0?' <span class="cg-status-tag cg-weak">Слаб.</span>':'';
     p.innerHTML='<div class="cg-enemy-name">'+enemy.name+vT+wT
       +'<span style="font-size:0.73rem;font-weight:400"> HP '+enemy.hp+'/'+enemy.maxHp+(enemy.block>0?' 🛡'+enemy.block:'')+'</span></div>'
-      +'<div class="cg-hp-bar"><div class="cg-hp-fill" style="width:'+Math.max(0,enemy.hp/enemy.maxHp*100)+'%"></div></div>'
+      +(()=>{const _ep=Math.max(0,enemy.hp/enemy.maxHp);const _ec=_ep>0.6?'#2ecc71':_ep>0.3?'#f39c12':'#e74c3c';return '<div class="cg-hp-bar"><div class="cg-hp-fill" style="width:'+(_ep*100)+'%;background:'+_ec+'"></div></div>';})()
       +(enemy.hp>0?'<div class="cg-intent">'+cgGetEnemyIntent(enemy)+'</div>':'<div class="cg-intent" style="color:#555">Повержен</div>');
     c.appendChild(p);
   });
@@ -2631,7 +2631,7 @@ function cgPlayCard(cardIdx,targetEnemy){
   }
   if(e.block){cgs.playerBlock+=e.block;parts.push('🛡+'+e.block);}
   if(e.draw){cgDraw(e.draw);parts.push('🃏+'+e.draw);}
-  if(e.energy){cgs.energy=Math.min(cgs.maxEnergy,cgs.energy+e.energy);parts.push('⚡+'+e.energy);}
+  if(e.energy){cgs.energy+=e.energy;parts.push('⚡+'+e.energy);}
   if(e.vulnerable){const ts=e.all_enemies?cgs.enemies.filter(en=>en.hp>0):(targetEnemy?[targetEnemy]:[]);ts.forEach(en=>en.vulnerable=2);if(ts.length)parts.push('🔴Уязв.');}
   if(e.weak){const ts=e.all_enemies?cgs.enemies.filter(en=>en.hp>0):(targetEnemy?[targetEnemy]:[]);ts.forEach(en=>en.weak=2);if(ts.length)parts.push('🟡Слаб.');}
   if(e.heal){const hl=Math.min(e.heal,cgs.playerMaxHp-cgs.playerHp);cgs.playerHp+=hl;parts.push('❤️+'+hl);}
@@ -2655,6 +2655,17 @@ function cgEndTurn(){
       cgApplyEnemyAttack(atk,enemy.name);
     } else if(step.type==='block'){
       enemy.block+=step.value; cgLog('🛡 '+enemy.name+' блокируется (+'+step.value+')');
+    } else if(step.type==='heal'){
+      const gained=Math.min(step.value,enemy.maxHp-enemy.hp); enemy.hp+=gained;
+      cgLog('💚 '+enemy.name+' восстанавливает '+gained+' HP. HP: '+enemy.hp+'/'+enemy.maxHp);
+    } else if(step.type==='weak'){
+      cgs.playerBlock=cgs.playerBlock; // marker
+      // Apply weak to player — track as playerWeak turns
+      cgs.playerWeak=(cgs.playerWeak||0)+2;
+      cgLog('🟡 '+enemy.name+' накладывает слабость на героя (−30% атк на 2 хода)');
+    } else if(step.type==='vulnerable'){
+      cgs.playerVulnerable=(cgs.playerVulnerable||0)+2;
+      cgLog('🔴 '+enemy.name+' делает героя уязвимым (+50% урон на 2 хода)');
     } else if(step.type==='buff'){
       cgLog('✨ '+enemy.name+': '+(step.text||'усиливается'));
     }
@@ -2669,6 +2680,9 @@ function cgGetEnemyIntent(enemy){
   const step=enemy.pattern[enemy.patIdx%enemy.pattern.length];
   if(step.type==='attack'){let v=step.value;if(enemy.weak>0) v=Math.floor(v*0.7);return '⚔️ '+v+' урона'+(enemy.weak>0?' (−30%)':'');}
   else if(step.type==='block') return '🛡 Блок '+step.value;
+  else if(step.type==='heal') return '💚 Исцеление +'+step.value+' HP';
+  else if(step.type==='weak') return '🟡 Слабость герою';
+  else if(step.type==='vulnerable') return '🔴 Уязвимость герою';
   else if(step.type==='buff') return '✨ '+(step.text||'Усиление');
   return '⚔️ ?';
 }
@@ -2678,7 +2692,10 @@ function cgUpdateUI(){
   const s=cgs;
   const pLabel='Герой HP '+s.playerHp+'/'+s.playerMaxHp+(s.playerBlock>0?' <span class="cg-status-tag cg-block-tag">🛡'+s.playerBlock+'</span>':'');
   document.getElementById('cg-player-label').innerHTML=pLabel;
-  document.getElementById('cg-player-hp-fill').style.width=Math.max(0,s.playerHp/s.playerMaxHp*100)+'%';
+  const _pPct=s.playerHp/s.playerMaxHp;
+  const _pFill=document.getElementById('cg-player-hp-fill');
+  _pFill.style.width=Math.max(0,_pPct*100)+'%';
+  _pFill.style.background=_pPct>0.6?'#2ecc71':_pPct>0.3?'#f39c12':'#e74c3c';
   document.getElementById('cg-energy-counter').textContent='⚡ '+s.energy+'/'+s.maxEnergy;
   cgUpdatePiles();
 }
