@@ -4017,12 +4017,13 @@ function hxRender() {
     }
   }
 
-  // Compute AoE preview set
-  const activeAoe = (activeAbility && (activeAbility.aoe||0) > 0 && hxs.aoeHover) ? activeAbility.aoe : 0;
+  // AoE preview: show from confirming hex (after first tap) — no hover re-render on mobile
+  const activeAoe = (activeAbility && (activeAbility.aoe||0) > 0) ? activeAbility.aoe : 0;
+  const aoeCenter = hxs.confirming || null;
   const aoePreviewSet = new Set();
-  if(activeAoe > 0 && hxs.aoeHover) {
+  if(activeAoe > 0 && aoeCenter) {
     for(let r=0;r<HEX_ROWS;r++) for(let c=0;c<HEX_COLS;c++) {
-      if(hexDist(hxs.aoeHover.col, hxs.aoeHover.row, c, r) <= activeAoe) aoePreviewSet.add(`${c},${r}`);
+      if(hexDist(aoeCenter.col, aoeCenter.row, c, r) <= activeAoe) aoePreviewSet.add(`${c},${r}`);
     }
   }
 
@@ -4057,13 +4058,6 @@ function hxRender() {
       poly.setAttribute('stroke-width', sw);
       poly.setAttribute('style', 'pointer-events:all;cursor:pointer;');
       poly.addEventListener('click', () => hxClickHex(col,row));
-      // AoE hover tracking for mouse
-      if(hxs.mode === 'ability' && activeAbility && (activeAbility.aoe||0) > 0) {
-        const _c = col, _r = row;
-        poly.addEventListener('mouseover', () => { hxs.aoeHover = {col:_c, row:_r}; hxRender(); });
-        poly.addEventListener('mouseleave', () => { hxs.aoeHover = null; hxRender(); });
-        poly.addEventListener('touchstart', () => { hxs.aoeHover = {col:_c, row:_r}; hxRender(); }, {passive:true});
-      }
       svg.appendChild(poly);
       // Terrain labels
       if(riftSet.has(key)) {
@@ -4442,7 +4436,8 @@ function hexUpdateInfo(unit) {
   if(nameEl) nameEl.textContent = `${unit.emoji||'?'} ${unit.name}${done?' ✓':''}`;
   const hpPct = Math.round(unit.hp/unit.maxHp*100);
   const atkEff = Math.max(0, unit.atk + (unit.atkBuff||0) - (unit.atkDebuff||0));
-  if(statsEl) statsEl.textContent = `❤ ${unit.hp}/${unit.maxHp} (${hpPct}%)  ⚔ ${atkEff}  👣 ${unit.moveRange}`;
+  const apStr = unit.isHero ? `  ⚡ AP: ${hxs.heroAP}/${hxs.heroMaxAP||4}` : '';
+  if(statsEl) statsEl.textContent = `❤ ${unit.hp}/${unit.maxHp} (${hpPct}%)  ⚔ ${atkEff}  👣 ${unit.moveRange}${apStr}`;
   const statuses = [];
   if(unit.block > 0) statuses.push(`🛡 ${unit.block}`);
   if(unit.atkDebuff > 0) statuses.push(`💨 −${unit.atkDebuff}`);
