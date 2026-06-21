@@ -2795,6 +2795,9 @@ let hxs = {
   rifts: [], // [[col,row], ...]
   forests: [], // [[col,row], ...] — forest hexes (+2 block per turn start)
   heights: [], // [[col,row], ...] — high-ground hexes (+2 atk for ranged attackers)
+  obstacles: [], // [[col,row], ...] — impassable terrain (blocks movement, not ranged attacks)
+  objective: null, // {col, row, controlled:'none'|'player'|'enemy'} — visual objective hex
+  enemyIntents: {}, // {enemyId: {action:'attack'|'move'|'special'|'idle', targetId?}}
   totalDamageDealt: 0,
   totalDamageTaken: 0,
 };
@@ -2836,7 +2839,10 @@ function hexNeighbors(col, row) {
 }
 
 function hexReachable(unit) {
-  const blocked = new Set(hxs.units.filter(u=>u.id!==unit.id&&u.hp>0).map(u=>`${u.col},${u.row}`));
+  const blocked = new Set([
+    ...hxs.units.filter(u=>u.id!==unit.id&&u.hp>0).map(u=>`${u.col},${u.row}`),
+    ...(hxs.obstacles||[]).map(([c,r])=>`${c},${r}`),
+  ]);
   const visited = new Map([[`${unit.col},${unit.row}`, 0]]);
   const queue = [[unit.col, unit.row, 0]];
   const result = [];
@@ -2872,11 +2878,12 @@ const _mercFlavorMap = {
 };
 const _weaponTypes = new Set(['warrior','archer','cavalry']);
 
-function hexAttack(attacker, target, _isCounterAttack) {
+function hexAttack(attacker, target, allowCounter) {
+  if(allowCounter === undefined) allowCounter = true;
   let dmg = attacker.atk - (attacker.atkDebuff || 0);
   if(dmg < 0) dmg = 0;
   if(attacker.aimBonus) { dmg *= 2; attacker.aimBonus = false; }
-  // PASS A: Возвышенность — +2 atk for ranged attackers ON high-ground hex
+  // Возвышенность — +2 atk for ranged attackers ON high-ground hex
   if(attacker.atkRange >= 2 && hxs.heights.some(([hc,hr])=>hc===attacker.col&&hr===attacker.row)) {
     dmg += 2;
     hxLog(`⛰ Возвышенность: +2 к удару`, 'info');
@@ -2888,12 +2895,18 @@ function hexAttack(attacker, target, _isCounterAttack) {
   // Track damage
   if(attacker.team === 'player') hxs.totalDamageDealt += dmg;
   else hxs.totalDamageTaken += dmg;
-  // PASS D: prefix label
+  // Prefix label for log
   const prefix = _weaponTypes.has(attacker.type) ? '[Оружие] ' : (_mercFlavorMap[attacker.type] ? `[${_mercFlavorMap[attacker.type]}] ` : '');
   hxLog(`${prefix}${attacker.name} атакует ${target.name}: ${dmg} урона. HP ${target.hp}/${target.maxHp}`, 'attack');
   attacker.attacked = true;
-  // PASS B: Warrior counter-attack — only on player warriors when ENEMY attacks them
-  // Counter-attack is handled in hexApplyEnemyAttack instead (simpler to pass source there)
+  // Bidirectional warrior counter-attack (PASS B):
+  // When a player attacks an enemy warrior at distance 1, the warrior counter-attacks
+  if(allowCounter && target.hp > 0 && target.type === 'warrior' && hexDist(attacker.col, attacker.row, target.col, target.row) === 1) {
+    const counterDmg = Math.max(0, Math.floor(target.atk * 0.4) - (attacker.block || 0));
+    attacker.block = Math.max(0, (attacker.block || 0) - Math.floor(target.atk * 0.4));
+    attacker.hp = Math.max(0, attacker.hp - counterDmg);
+    hxLog(`🗡 ${target.name} контратакует ${attacker.name}: ${counterDmg} урона`, 'special');
+  }
 }
 
 function hexStartPositions(count, col) {
@@ -2941,12 +2954,43 @@ function hexEnd(won) {
     enemies_total,
     damage_dealt: hxs.totalDamageDealt,
     damage_taken: hxs.totalDamageTaken,
+    controlled_point: hxs.objective ? hxs.objective.controlled : 'none',
   }), 1200);
 }
 
 // PASS C: focus fire helper
 function hexFindBestTarget(unit, candidates) {
   return candidates.slice().sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp))[0];
+}
+
+// ---- Enemy Intent Pre-computation (PASS A) ----
+function hexComputeEnemyIntents() {
+  hxs.enemyIntents = {};
+  hxs.units.filter(u=>u.team==='enemy'&&u.hp>0).forEach(enemy=>{
+    const living = hxs.units.filter(u=>u.originalTeam==='player'&&u.hp>0);
+    if(!living.length) { hxs.enemyIntents[enemy.id]={action:'idle'}; return; }
+    // Check if enemy might use special this turn
+    if(!enemy.specialUsed) {
+      const sid = enemy.special.id;
+      const specialCasters = new Set(['mage','wizard','elementalist','incenser','demonologist','necromancer','adept','druid','healer']);
+      if(specialCasters.has(enemy.type)) {
+        const attackable = hexAttackable(enemy);
+        // Simplified: if special caster and has targets, may use special
+        if(attackable.length >= 1 || sid==='shield'||sid==='summon_shadow'||sid==='raise_cadaver') {
+          hxs.enemyIntents[enemy.id]={action:'special'}; return;
+        }
+      }
+    }
+    // Check if can attack
+    const attackable = hexAttackable(enemy);
+    const bestTarget = hexFindBestTarget(enemy, attackable);
+    if(bestTarget) {
+      hxs.enemyIntents[enemy.id]={action:'attack', targetId:bestTarget.id}; return;
+    }
+    // Will move
+    const target = hexFindBestTarget(enemy, living);
+    hxs.enemyIntents[enemy.id]={action:'move', targetId:target?.id};
+  });
 }
 
 // ---- Enemy AI ----
@@ -3159,16 +3203,7 @@ function hexEnemyTurn() {
     }
 
     if(inRange && !enemy.attacked) {
-      const prevHp = nearest.hp;
-      hexAttack(enemy, nearest);
-      // PASS B: Warrior counter-attack
-      if(nearest.type==='warrior' && nearest.hp > 0 && nearest.hp < prevHp && enemy.atkRange === 1) {
-        const counterDmg = Math.max(0, Math.floor(nearest.atk * 0.4) - (enemy.block||0));
-        enemy.block = Math.max(0, (enemy.block||0) - Math.floor(nearest.atk * 0.4));
-        enemy.hp = Math.max(0, enemy.hp - counterDmg);
-        hxLog(`🗡 ${nearest.name} контратакует — ${counterDmg} урона ${enemy.name}!`, 'special');
-        hexCheckEnd(); if(hxs.ended) return;
-      }
+      hexAttack(enemy, nearest); // allowCounter=true by default → warrior counter-attack handled in hexAttack
       hexCheckEnd(); if(hxs.ended) return;
     } else if(!enemy.moved) {
       // Find reachable hex closest to nearest enemy, in atkRange
@@ -3217,16 +3252,7 @@ function hexEnemyTurn() {
         const best = atkSpots.reduce((a,b) => hexDist(a[0],a[1],nearest.col,nearest.row) <= hexDist(b[0],b[1],nearest.col,nearest.row) ? a : b);
         enemy.col = best[0]; enemy.row = best[1]; enemy.moved = true;
         if(!enemy.attacked) {
-          const prevHp2 = nearest.hp;
-          hexAttack(enemy, nearest);
-          // PASS B: Warrior counter-attack on move+attack
-          if(nearest.type==='warrior' && nearest.hp > 0 && nearest.hp < prevHp2 && enemy.atkRange === 1) {
-            const counterDmg2 = Math.max(0, Math.floor(nearest.atk * 0.4) - (enemy.block||0));
-            enemy.block = Math.max(0, (enemy.block||0) - Math.floor(nearest.atk * 0.4));
-            enemy.hp = Math.max(0, enemy.hp - counterDmg2);
-            hxLog(`🗡 ${nearest.name} контратакует — ${counterDmg2} урона ${enemy.name}!`, 'special');
-            hexCheckEnd(); if(hxs.ended) return;
-          }
+          hexAttack(enemy, nearest); // warrior counter-attack handled in hexAttack
           hexCheckEnd(); if(hxs.ended) return;
         }
       } else if(reach.length > 0) {
@@ -3260,6 +3286,8 @@ function hexEnemyTurn() {
   hxs.mode = 'select';
   if(!hxs.ended) hxLog(`Ход ${hxs.turnNum}. Твой ход!`, 'info');
   document.getElementById('hx-turn-label').textContent = `Ход ${hxs.turnNum} | Ход игрока`;
+  // Pre-compute enemy intents for player to see before acting
+  hexComputeEnemyIntents();
   hxRender();
   hexUpdateInfo();
 }
@@ -3422,6 +3450,80 @@ function hxRender() {
       svg.appendChild(aim);
     }
   });
+
+  // Draw obstacle hexes (PASS C)
+  (hxs.obstacles||[]).forEach(([oc,or]) => {
+    const {x,y} = hexToPixel(oc,or);
+    const obstPoly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    obstPoly.setAttribute('points', hexPoints(x,y));
+    obstPoly.setAttribute('fill', 'rgba(80,80,80,0.6)');
+    obstPoly.setAttribute('stroke', '#555');
+    obstPoly.setAttribute('stroke-width', '1.5');
+    obstPoly.setAttribute('pointer-events','none');
+    svg.appendChild(obstPoly);
+    const obstLbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+    obstLbl.setAttribute('x', x); obstLbl.setAttribute('y', y+5);
+    obstLbl.setAttribute('text-anchor','middle'); obstLbl.setAttribute('font-size','16');
+    obstLbl.setAttribute('pointer-events','none');
+    obstLbl.textContent = '🪨';
+    svg.appendChild(obstLbl);
+  });
+
+  // Draw objective hex (PASS D) — update control status first
+  if(hxs.objective) {
+    const oc = hxs.objective.col, or = hxs.objective.row;
+    const onObj = hxs.units.find(u=>u.hp>0&&u.col===oc&&u.row===or);
+    hxs.objective.controlled = onObj ? (onObj.team==='player'?'player':'enemy') : 'none';
+    const {x,y} = hexToPixel(oc, or);
+    const ctrl = hxs.objective.controlled;
+    const objFill = ctrl==='player'?'rgba(52,152,219,0.3)':ctrl==='enemy'?'rgba(231,76,60,0.3)':'rgba(255,215,0,0.2)';
+    const objStroke = ctrl==='player'?'#3498db':ctrl==='enemy'?'#e74c3c':'#ffd700';
+    const objPoly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    objPoly.setAttribute('points', hexPoints(x,y));
+    objPoly.setAttribute('fill', objFill);
+    objPoly.setAttribute('stroke', objStroke);
+    objPoly.setAttribute('stroke-width', '2');
+    objPoly.setAttribute('pointer-events','none');
+    svg.appendChild(objPoly);
+    const objLbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+    objLbl.setAttribute('x', x); objLbl.setAttribute('y', y+5);
+    objLbl.setAttribute('text-anchor','middle'); objLbl.setAttribute('font-size','14');
+    objLbl.setAttribute('pointer-events','none');
+    objLbl.textContent = '⭐';
+    svg.appendChild(objLbl);
+  }
+
+  // Draw enemy intent indicators (PASS A) — only during player turn
+  if(hxs.turn === 'player' && hxs.enemyIntents) {
+    hxs.units.filter(u=>u.team==='enemy'&&u.hp>0).forEach(enemy=>{
+      const intent = hxs.enemyIntents[enemy.id];
+      if(!intent || intent.action === 'idle') return;
+      const {x:cx, y:cy} = hexToPixel(enemy.col, enemy.row);
+      const intentEmoji = intent.action==='attack' ? '⚔' : intent.action==='special' ? '✨' : intent.action==='move' ? '→' : '·';
+      // Draw dashed attack line from enemy to intended target
+      if(intent.action==='attack' && intent.targetId !== undefined) {
+        const target = hxs.units.find(u=>u.id===intent.targetId);
+        if(target) {
+          const {x:tx, y:ty} = hexToPixel(target.col, target.row);
+          const intentLine = document.createElementNS('http://www.w3.org/2000/svg','line');
+          intentLine.setAttribute('x1', cx); intentLine.setAttribute('y1', cy);
+          intentLine.setAttribute('x2', tx); intentLine.setAttribute('y2', ty);
+          intentLine.setAttribute('stroke', 'rgba(231,76,60,0.3)');
+          intentLine.setAttribute('stroke-width', '2');
+          intentLine.setAttribute('stroke-dasharray', '4,3');
+          intentLine.setAttribute('pointer-events','none');
+          svg.appendChild(intentLine);
+        }
+      }
+      // Intent icon near the unit
+      const intentTxt = document.createElementNS('http://www.w3.org/2000/svg','text');
+      intentTxt.setAttribute('x', cx+16); intentTxt.setAttribute('y', cy-16);
+      intentTxt.setAttribute('font-size','12'); intentTxt.setAttribute('text-anchor','middle');
+      intentTxt.setAttribute('pointer-events','none');
+      intentTxt.textContent = intentEmoji;
+      svg.appendChild(intentTxt);
+    });
+  }
 
   // Rift glow indicator (for units ON a rift)
   hxs.rifts.forEach(([rc,rr]) => {
@@ -3753,7 +3855,7 @@ function initHex() {
   const playerDefs = Array.isArray(gameData.player_units) ? gameData.player_units : [{type:'warrior',name:'Воин'}];
   const enemyDefs  = Array.isArray(gameData.enemy_units)  ? gameData.enemy_units  : [{type:'warrior',name:'Страж'}];
 
-  hxs = {units:[], turn:'player', selected:null, reachable:[], attackable:[], specialTarget:[], mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, ended:false, specialTargetMode:'attack', rifts:[], forests:[], heights:[], totalDamageDealt:0, totalDamageTaken:0};
+  hxs = {units:[], turn:'player', selected:null, reachable:[], attackable:[], specialTarget:[], mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, ended:false, specialTargetMode:'attack', rifts:[], forests:[], heights:[], obstacles:[], objective:null, enemyIntents:{}, totalDamageDealt:0, totalDamageTaken:0};
 
   let idCtr = 0;
   const pPositions = hexStartPositions(playerDefs.length, 0);
@@ -3833,9 +3935,38 @@ function initHex() {
   const _forestSet0 = new Set(hxs.forests.map(([c,r])=>`${c},${r}`));
   hxs.units.filter(u=>u.hp>0&&_forestSet0.has(`${u.col},${u.row}`)).forEach(u=>{ u.block = (u.block||0) + 2; });
 
+  // PASS C: Place obstacles — 2 impassable hexes in middle columns
+  const _allBlocked = new Set([
+    ...hxs.units.map(u=>`${u.col},${u.row}`),
+    ...(hxs.rifts||[]).map(([c,r])=>`${c},${r}`),
+    ...(hxs.forests||[]).map(([c,r])=>`${c},${r}`),
+    ...(hxs.heights||[]).map(([c,r])=>`${c},${r}`),
+  ]);
+  const _obstCandidates = [];
+  for(let r=0;r<HEX_ROWS;r++) for(let c=2;c<=5;c++) {
+    if(!_allBlocked.has(`${c},${r}`)) _obstCandidates.push([c,r]);
+  }
+  hxs.obstacles = [];
+  for(let i=0;i<2&&_obstCandidates.length;i++){
+    const idx=Math.floor(Math.random()*_obstCandidates.length);
+    const [oc,or]=_obstCandidates.splice(idx,1)[0];
+    hxs.obstacles.push([oc,or]);
+    _allBlocked.add(`${oc},${or}`);
+  }
+
+  // PASS D: Place objective hex in center (col 3 or 4, row 2), avoiding obstacles
+  const _objCandidates = [[3,2],[4,2],[3,1],[4,1],[3,3],[4,3]].filter(([c,r])=>!_allBlocked.has(`${c},${r}`));
+  if(_objCandidates.length > 0) {
+    const [oc2,or2] = _objCandidates[0];
+    hxs.objective = {col:oc2, row:or2, controlled:'none'};
+    // Don't add to _allBlocked — units can stand on objective
+  }
+
   document.getElementById('hx-turn-label').textContent = 'Ход 1 | Ход игрока';
   document.getElementById('hx-end-btn').disabled = false;
   hxLog('Ход 1. Твой ход!', 'info');
+  // Pre-compute initial enemy intents
+  hexComputeEnemyIntents();
   hxRender();
   hexUpdateInfo();
 }
