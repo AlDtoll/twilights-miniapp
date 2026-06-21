@@ -3379,8 +3379,8 @@ function hxConfirmApply(unit, ab, col, row) {
   hxRender(); hexUpdateInfo();
 }
 
-// School cooldown: strong ability (★ cd≥3) adds +1 to all abilities of same school.
-// Strong magic: +1 cd to same school; +2 cd to all strong magic of OTHER schools.
+// School cooldown: using a strong spell (cd≥3) resets ALL other strong spells of same school
+// to full cooldown, and adds +2 cd to all strong spells of OTHER magic schools.
 function hxApplySchoolCooldown(caster, usedAbility) {
   if(!usedAbility.school || usedAbility.maxCooldown < 3) return;
   const school = usedAbility.school;
@@ -3388,12 +3388,12 @@ function hxApplySchoolCooldown(caster, usedAbility) {
   const usedIsMagic = isMagicAb(usedAbility);
   (caster.abilities||[]).forEach(ab => {
     if(ab.id === usedAbility.id) return;
-    if(ab.school === school) {
-      ab.cooldown = Math.min(ab.maxCooldown||0, (ab.cooldown||0) + 1);
+    if(ab.school === school && (ab.maxCooldown||0) >= 3) {
+      ab.cooldown = ab.maxCooldown; // Full reset — same school blocked
       return;
     }
     if(usedIsMagic && isMagicAb(ab) && (ab.maxCooldown||0) >= 3) {
-      ab.cooldown = Math.min(ab.maxCooldown, (ab.cooldown||0) + 2);
+      ab.cooldown = Math.min(ab.maxCooldown, (ab.cooldown||0) + 2); // +2 to other strong magic
     }
   });
 }
