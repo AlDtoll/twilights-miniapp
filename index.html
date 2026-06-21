@@ -2793,6 +2793,10 @@ let hxs = {
   mode: 'select', log: '', logs: [], turnNum: 1, ended: false,
   specialTargetMode: 'attack', // 'attack' or 'heal' — for cult_word
   rifts: [], // [[col,row], ...]
+  forests: [], // [[col,row], ...] — forest hexes (+2 block per turn start)
+  heights: [], // [[col,row], ...] — high-ground hexes (+2 atk for ranged attackers)
+  totalDamageDealt: 0,
+  totalDamageTaken: 0,
 };
 
 function hexToPixel(col, row) {
@@ -2854,16 +2858,42 @@ function hexAttackable(unit) {
     && hexDist(unit.col, unit.row, u.col, u.row) <= unit.atkRange);
 }
 
-function hexAttack(attacker, target) {
+// PASS D: мерцание type labels in combat log
+const _mercFlavorMap = {
+  wizard: 'Слабое мерцание',
+  elementalist: 'Слабое мерцание',
+  druid: 'Слабое мерцание (контакт)',
+  demonologist: 'Слабое мерцание',
+  necromancer: 'Слабое мерцание',
+  incenser: 'Слабое мерцание',
+  adept: 'Слабое мерцание',
+  mage: 'Слабое мерцание',
+  healer: 'Слабое мерцание',
+};
+const _weaponTypes = new Set(['warrior','archer','cavalry']);
+
+function hexAttack(attacker, target, _isCounterAttack) {
   let dmg = attacker.atk - (attacker.atkDebuff || 0);
   if(dmg < 0) dmg = 0;
   if(attacker.aimBonus) { dmg *= 2; attacker.aimBonus = false; }
+  // PASS A: Возвышенность — +2 atk for ranged attackers ON high-ground hex
+  if(attacker.atkRange >= 2 && hxs.heights.some(([hc,hr])=>hc===attacker.col&&hr===attacker.row)) {
+    dmg += 2;
+    hxLog(`⛰ Возвышенность: +2 к удару`, 'info');
+  }
   const blocked = Math.min(dmg, target.block);
   target.block = Math.max(0, target.block - blocked);
   dmg -= blocked;
   target.hp = Math.max(0, target.hp - dmg);
-  hxLog(`${attacker.name} атакует ${target.name}: ${dmg} урона. HP ${target.hp}/${target.maxHp}`, 'attack');
+  // Track damage
+  if(attacker.team === 'player') hxs.totalDamageDealt += dmg;
+  else hxs.totalDamageTaken += dmg;
+  // PASS D: prefix label
+  const prefix = _weaponTypes.has(attacker.type) ? '[Оружие] ' : (_mercFlavorMap[attacker.type] ? `[${_mercFlavorMap[attacker.type]}] ` : '');
+  hxLog(`${prefix}${attacker.name} атакует ${target.name}: ${dmg} урона. HP ${target.hp}/${target.maxHp}`, 'attack');
   attacker.attacked = true;
+  // PASS B: Warrior counter-attack — only on player warriors when ENEMY attacks them
+  // Counter-attack is handled in hexApplyEnemyAttack instead (simpler to pass source there)
 }
 
 function hexStartPositions(count, col) {
@@ -2887,6 +2917,20 @@ function hexEnd(won) {
   const enemies_total = hxs.units.filter(u=>u.originalTeam==='enemy').length;
   hxLog(won ? '🏆 Победа! Все враги повержены.' : '💀 Поражение...', 'attack');
   hxRender();
+  // PASS E: visual end-game overlay
+  const svg = document.getElementById('hx-svg');
+  const overlay = document.createElementNS('http://www.w3.org/2000/svg','rect');
+  overlay.setAttribute('x','0'); overlay.setAttribute('y','0');
+  overlay.setAttribute('width','408'); overlay.setAttribute('height','222');
+  overlay.setAttribute('fill', won ? 'rgba(46,213,115,0.25)' : 'rgba(231,76,60,0.25)');
+  svg.appendChild(overlay);
+  const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+  txt.setAttribute('x','204'); txt.setAttribute('y','111');
+  txt.setAttribute('text-anchor','middle'); txt.setAttribute('dominant-baseline','middle');
+  txt.setAttribute('font-size','28'); txt.setAttribute('font-weight','bold');
+  txt.setAttribute('fill', won ? '#2ecc71' : '#e74c3c');
+  txt.textContent = won ? '⚔ ПОБЕДА' : '💀 ПОРАЖЕНИЕ';
+  svg.appendChild(txt);
   setTimeout(() => sendResultToBot({
     game:'hex', win:won,
     outcome: won ? 'Победа' : 'Поражение',
@@ -2895,17 +2939,49 @@ function hexEnd(won) {
     player_units_total: totalPlayer,
     enemies_defeated,
     enemies_total,
+    damage_dealt: hxs.totalDamageDealt,
+    damage_taken: hxs.totalDamageTaken,
   }), 1200);
+}
+
+// PASS C: focus fire helper
+function hexFindBestTarget(unit, candidates) {
+  return candidates.slice().sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp))[0];
 }
 
 // ---- Enemy AI ----
 function hexEnemyTurn() {
   document.getElementById('hx-turn-label').textContent = 'Ход противника...';
+
+  // PASS B: Archer free strike — at start of enemy turn, before enemies act
+  hxs.units.filter(u=>u.team==='player'&&u.type==='archer'&&u.hp>0&&!u.attacked).forEach(archer=>{
+    const adj = hxs.units.filter(e=>e.team==='enemy'&&e.hp>0&&hexDist(archer.col,archer.row,e.col,e.row)===1);
+    if(adj.length>0){
+      const target = adj[0];
+      hxLog(`🏹 ${archer.name} — свободный выстрел по ${target.name}!`, 'special');
+      hexAttack(archer, target);
+      archer.attacked = true;
+      hexCheckEnd(); if(hxs.ended) return;
+    }
+  });
+  if(hxs.ended) return;
+
+  // PASS A: Forest block — apply +2 block at start of enemy turn too
+  const _forestSetE = new Set(hxs.forests.map(([fc,fr])=>`${fc},${fr}`));
+  hxs.units.filter(u=>u.hp>0&&_forestSetE.has(`${u.col},${u.row}`)).forEach(u=>{ u.block = (u.block||0) + 2; });
+
+  // PASS B: Necromancer cadaver aura for ENEMY necromancers
+  hxs.units.filter(u=>u.team==='enemy'&&u.type==='necromancer'&&u.hp>0).forEach(necro=>{
+    const adjCadaversE = hxs.units.filter(u=>u.type==='cadaver'&&u.team==='enemy'&&u.hp>0&&hexDist(necro.col,necro.row,u.col,u.row)===1);
+    adjCadaversE.forEach(cad=>{ cad.hp = Math.min(cad.maxHp, cad.hp+2); });
+  });
+
   const enemies = hxs.units.filter(u=>u.team==='enemy'&&u.hp>0);
   for(const enemy of enemies) {
     const players = hxs.units.filter(u=>u.team==='player'&&u.hp>0);
     if(!players.length) break;
-    const nearest = players.reduce((a,b) => hexDist(enemy.col,enemy.row,a.col,a.row) <= hexDist(enemy.col,enemy.row,b.col,b.row) ? a : b);
+    // PASS C: focus fire — target weakest HP% instead of nearest
+    const nearest = hexFindBestTarget(enemy, players) || players[0];
 
     // Try special first
     if(!enemy.specialUsed) {
@@ -3052,6 +3128,15 @@ function hexEnemyTurn() {
       }
     }
 
+    // PASS C: demonologist moves toward rift to charge up
+    let demoRiftTarget = null;
+    if(enemy.type==='demonologist' && !enemy.specialUsed && hxs.rifts.length > 0) {
+      const nearestRift = hxs.rifts.reduce((a,b) => hexDist(enemy.col,enemy.row,a[0],a[1]) <= hexDist(enemy.col,enemy.row,b[0],b[1]) ? a : b);
+      const riftDist = hexDist(enemy.col,enemy.row,nearestRift[0],nearestRift[1]);
+      const playerDist = hexDist(enemy.col,enemy.row,nearest.col,nearest.row);
+      if(riftDist < playerDist && riftDist > 1) demoRiftTarget = nearestRift;
+    }
+
     const inRange = hexDist(enemy.col,enemy.row,nearest.col,nearest.row) <= enemy.atkRange;
 
     // Cavalry charge
@@ -3074,19 +3159,78 @@ function hexEnemyTurn() {
     }
 
     if(inRange && !enemy.attacked) {
+      const prevHp = nearest.hp;
       hexAttack(enemy, nearest);
+      // PASS B: Warrior counter-attack
+      if(nearest.type==='warrior' && nearest.hp > 0 && nearest.hp < prevHp && enemy.atkRange === 1) {
+        const counterDmg = Math.max(0, Math.floor(nearest.atk * 0.4) - (enemy.block||0));
+        enemy.block = Math.max(0, (enemy.block||0) - Math.floor(nearest.atk * 0.4));
+        enemy.hp = Math.max(0, enemy.hp - counterDmg);
+        hxLog(`🗡 ${nearest.name} контратакует — ${counterDmg} урона ${enemy.name}!`, 'special');
+        hexCheckEnd(); if(hxs.ended) return;
+      }
       hexCheckEnd(); if(hxs.ended) return;
     } else if(!enemy.moved) {
       // Find reachable hex closest to nearest enemy, in atkRange
       const reach = hexReachable(enemy);
-      // First try to find a hex from which we can attack
+
+      // PASS C: Demonologist moves toward rift first if applicable
+      if(demoRiftTarget && !enemy.attacked) {
+        if(reach.length > 0) {
+          const best = reach.reduce((a,b) => hexDist(a[0],a[1],demoRiftTarget[0],demoRiftTarget[1]) <= hexDist(b[0],b[1],demoRiftTarget[0],demoRiftTarget[1]) ? a : b);
+          enemy.col = best[0]; enemy.row = best[1]; enemy.moved = true;
+          hxLog(`${enemy.name} движется к Разлому.`, 'info');
+          continue;
+        }
+      }
+
+      // PASS C: Druid/healer prioritizes healing — moves toward wounded ally
+      if((enemy.type==='druid'||enemy.type==='healer') && !enemy.attacked) {
+        const woundedAllies = hxs.units.filter(u=>u.team==='enemy'&&u.hp>0&&u.id!==enemy.id&&u.hp/u.maxHp<0.6);
+        if(woundedAllies.length > 0 && reach.length > 0) {
+          const healTarget = woundedAllies.reduce((a,b)=>a.hp<=b.hp?a:b);
+          const alreadyAdj = hexDist(enemy.col,enemy.row,healTarget.col,healTarget.row)===1;
+          if(!alreadyAdj) {
+            const best = reach.reduce((a,b) => hexDist(a[0],a[1],healTarget.col,healTarget.row) <= hexDist(b[0],b[1],healTarget.col,healTarget.row) ? a : b);
+            enemy.col = best[0]; enemy.row = best[1]; enemy.moved = true;
+            hxLog(`${enemy.name} движется к раненому союзнику.`, 'info');
+            continue;
+          }
+        }
+      }
+
+      // PASS C: Necromancer moves toward low-HP enemy to raise cadaver
+      if(enemy.type==='necromancer' && !enemy.specialUsed && !enemy.attacked) {
+        const dyingPlayers = players.filter(p=>p.hp/p.maxHp < 0.3);
+        if(dyingPlayers.length > 0 && reach.length > 0) {
+          const dyingT = hexFindBestTarget(enemy, dyingPlayers);
+          const best = reach.reduce((a,b) => hexDist(a[0],a[1],dyingT.col,dyingT.row) <= hexDist(b[0],b[1],dyingT.col,dyingT.row) ? a : b);
+          enemy.col = best[0]; enemy.row = best[1]; enemy.moved = true;
+          hxLog(`${enemy.name} движется к слабому противнику.`, 'info');
+          continue;
+        }
+      }
+
+      // First try to find a hex from which we can attack (focus on weakest target)
       const atkSpots = reach.filter(([c,r]) => hexDist(c,r,nearest.col,nearest.row) <= enemy.atkRange);
       if(atkSpots.length > 0) {
         const best = atkSpots.reduce((a,b) => hexDist(a[0],a[1],nearest.col,nearest.row) <= hexDist(b[0],b[1],nearest.col,nearest.row) ? a : b);
         enemy.col = best[0]; enemy.row = best[1]; enemy.moved = true;
-        if(!enemy.attacked) { hexAttack(enemy, nearest); hexCheckEnd(); if(hxs.ended) return; }
+        if(!enemy.attacked) {
+          const prevHp2 = nearest.hp;
+          hexAttack(enemy, nearest);
+          // PASS B: Warrior counter-attack on move+attack
+          if(nearest.type==='warrior' && nearest.hp > 0 && nearest.hp < prevHp2 && enemy.atkRange === 1) {
+            const counterDmg2 = Math.max(0, Math.floor(nearest.atk * 0.4) - (enemy.block||0));
+            enemy.block = Math.max(0, (enemy.block||0) - Math.floor(nearest.atk * 0.4));
+            enemy.hp = Math.max(0, enemy.hp - counterDmg2);
+            hxLog(`🗡 ${nearest.name} контратакует — ${counterDmg2} урона ${enemy.name}!`, 'special');
+            hexCheckEnd(); if(hxs.ended) return;
+          }
+          hexCheckEnd(); if(hxs.ended) return;
+        }
       } else if(reach.length > 0) {
-        // Move toward nearest
+        // Move toward nearest (weakest target)
         const best = reach.reduce((a,b) => hexDist(a[0],a[1],nearest.col,nearest.row) <= hexDist(b[0],b[1],nearest.col,nearest.row) ? a : b);
         enemy.col = best[0]; enemy.row = best[1]; enemy.moved = true;
         hxLog(`${enemy.name} движется к ${nearest.name}.`, 'info');
@@ -3096,6 +3240,17 @@ function hexEnemyTurn() {
 
   // Reset for next player turn — clear debuffs
   hxs.units.forEach(u => { u.moved = false; u.attacked = false; u.atkDebuff = 0; });
+
+  // PASS A: Forest block — apply +2 block to units in forest hexes at start of player turn
+  const forestSet = new Set(hxs.forests.map(([fc,fr])=>`${fc},${fr}`));
+  hxs.units.filter(u=>u.hp>0&&forestSet.has(`${u.col},${u.row}`)).forEach(u=>{ u.block = (u.block||0) + 2; });
+
+  // PASS B: Necromancer cadaver aura — at start of player turn for player necromancers
+  hxs.units.filter(u=>u.team==='player'&&u.type==='necromancer'&&u.hp>0).forEach(necro=>{
+    const adjCadavers = hxs.units.filter(u=>u.type==='cadaver'&&u.team==='player'&&u.hp>0&&hexDist(necro.col,necro.row,u.col,u.row)===1);
+    adjCadavers.forEach(cad=>{ cad.hp = Math.min(cad.maxHp, cad.hp+2); hxLog(`💀 ${necro.name} поддерживает кадавр (+2 HP)`, 'heal'); });
+  });
+
   hxs.turnNum++;
   hxs.turn = 'player';
   hxs.selected = null;
@@ -3129,13 +3284,15 @@ function hxRender() {
 
   // Draw hexes
   const riftSet = new Set(hxs.rifts.map(([c,r])=>`${c},${r}`));
+  const forestSet2 = new Set(hxs.forests.map(([c,r])=>`${c},${r}`));
+  const heightSet = new Set(hxs.heights.map(([c,r])=>`${c},${r}`));
   for(let row=0; row<HEX_ROWS; row++) {
     for(let col=0; col<HEX_COLS; col++) {
       const {x,y} = hexToPixel(col,row);
       const key = `${col},${row}`;
-      let fill = riftSet.has(key) ? 'rgba(138,43,226,0.25)' : 'rgba(255,255,255,0.04)';
-      let stroke = riftSet.has(key) ? '#9b59b6' : '#444';
-      let sw = riftSet.has(key) ? '1.2' : '0.8';
+      let fill = riftSet.has(key) ? 'rgba(138,43,226,0.25)' : forestSet2.has(key) ? 'rgba(34,139,34,0.3)' : heightSet.has(key) ? 'rgba(139,90,43,0.35)' : 'rgba(255,255,255,0.04)';
+      let stroke = riftSet.has(key) ? '#9b59b6' : forestSet2.has(key) ? '#27ae60' : heightSet.has(key) ? '#8B5E3C' : '#444';
+      let sw = (riftSet.has(key)||forestSet2.has(key)||heightSet.has(key)) ? '1.2' : '0.8';
       if(reachSet.has(key))  { fill='rgba(52,152,219,0.28)';  stroke='#3498db'; sw='1.2'; }
       if(atkSet.has(key))    { fill='rgba(231,76,60,0.22)';   stroke='#e74c3c'; sw='1.2'; }
       if(specSet.has(key)) {
@@ -3156,7 +3313,7 @@ function hxRender() {
       poly.setAttribute('style', 'pointer-events:all;cursor:pointer;');
       poly.addEventListener('click', () => hxClickHex(col,row));
       svg.appendChild(poly);
-      // Rift label
+      // Terrain labels
       if(riftSet.has(key)) {
         const riftLbl = document.createElementNS('http://www.w3.org/2000/svg','text');
         riftLbl.setAttribute('x', x); riftLbl.setAttribute('y', y+1);
@@ -3165,6 +3322,24 @@ function hxRender() {
         riftLbl.setAttribute('pointer-events','none');
         riftLbl.textContent = '⌖';
         svg.appendChild(riftLbl);
+      }
+      if(forestSet2.has(key)) {
+        const fLbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+        fLbl.setAttribute('x', x); fLbl.setAttribute('y', y+1);
+        fLbl.setAttribute('text-anchor','middle'); fLbl.setAttribute('dominant-baseline','middle');
+        fLbl.setAttribute('font-size','10'); fLbl.setAttribute('fill','rgba(39,174,96,0.8)');
+        fLbl.setAttribute('pointer-events','none');
+        fLbl.textContent = '🌲';
+        svg.appendChild(fLbl);
+      }
+      if(heightSet.has(key)) {
+        const hLbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+        hLbl.setAttribute('x', x); hLbl.setAttribute('y', y+1);
+        hLbl.setAttribute('text-anchor','middle'); hLbl.setAttribute('dominant-baseline','middle');
+        hLbl.setAttribute('font-size','10'); hLbl.setAttribute('fill','rgba(139,90,43,0.85)');
+        hLbl.setAttribute('pointer-events','none');
+        hLbl.textContent = '⛰';
+        svg.appendChild(hLbl);
       }
     }
   }
@@ -3578,7 +3753,7 @@ function initHex() {
   const playerDefs = Array.isArray(gameData.player_units) ? gameData.player_units : [{type:'warrior',name:'Воин'}];
   const enemyDefs  = Array.isArray(gameData.enemy_units)  ? gameData.enemy_units  : [{type:'warrior',name:'Страж'}];
 
-  hxs = {units:[], turn:'player', selected:null, reachable:[], attackable:[], specialTarget:[], mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, ended:false, specialTargetMode:'attack', rifts:[]};
+  hxs = {units:[], turn:'player', selected:null, reachable:[], attackable:[], specialTarget:[], mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, ended:false, specialTargetMode:'attack', rifts:[], forests:[], heights:[], totalDamageDealt:0, totalDamageTaken:0};
 
   let idCtr = 0;
   const pPositions = hexStartPositions(playerDefs.length, 0);
@@ -3609,16 +3784,54 @@ function initHex() {
     });
   });
 
-  // Place 1 rift in the center area, not on any unit
+  // Read terrain config from gameData if provided (PASS F)
+  const _terrainCfg = gameData.terrain || {};
+  const _numForests = _terrainCfg.forests !== undefined ? _terrainCfg.forests : 2;
+  const _numHeights = _terrainCfg.heights !== undefined ? _terrainCfg.heights : 1;
+  const _numRifts   = _terrainCfg.rifts   !== undefined ? _terrainCfg.rifts   : 1;
+
+  // Place rifts in the center area, not on any unit
   const _occupied = new Set(hxs.units.map(u=>`${u.col},${u.row}`));
   const _riftCandidates = [];
   for(let r=1; r<=3; r++) for(let c=2; c<=5; c++) {
     if(!_occupied.has(`${c},${r}`)) _riftCandidates.push([c,r]);
   }
-  if(_riftCandidates.length) {
-    const _ri = Math.floor(Math.random() * _riftCandidates.length);
-    hxs.rifts = [_riftCandidates[_ri]];
+  const _placed = new Set();
+  for(let ri=0; ri<_numRifts && _riftCandidates.length; ri++) {
+    const idx = Math.floor(Math.random() * _riftCandidates.length);
+    const [rc,rr] = _riftCandidates.splice(idx,1)[0];
+    hxs.rifts.push([rc,rr]);
+    _placed.add(`${rc},${rr}`);
+    _occupied.add(`${rc},${rr}`);
   }
+
+  // PASS A: Place forests — col 1, random row; col 6, random row
+  const _forestColCandidates = [[1,0],[1,1],[1,2],[1,3],[1,4],[6,0],[6,1],[6,2],[6,3],[6,4]];
+  const _forestCandidates = _forestColCandidates.filter(([c,r])=>!_occupied.has(`${c},${r}`));
+  // Prefer one from col 1, one from col 6
+  const _fc1 = _forestCandidates.filter(([c])=>c===1);
+  const _fc6 = _forestCandidates.filter(([c])=>c===6);
+  let _forestsToPlace = _numForests;
+  if(_fc1.length && _forestsToPlace > 0) {
+    const pick = _fc1[Math.floor(Math.random()*_fc1.length)];
+    hxs.forests.push(pick); _occupied.add(`${pick[0]},${pick[1]}`); _forestsToPlace--;
+  }
+  if(_fc6.length && _forestsToPlace > 0) {
+    const pick = _fc6[Math.floor(Math.random()*_fc6.length)];
+    hxs.forests.push(pick); _occupied.add(`${pick[0]},${pick[1]}`); _forestsToPlace--;
+  }
+
+  // PASS A: Place heights — col 3 or 4, row 0 or row 4
+  const _heightCandidates = [[3,0],[4,0],[3,4],[4,4]].filter(([c,r])=>!_occupied.has(`${c},${r}`));
+  for(let hi=0; hi<_numHeights && _heightCandidates.length; hi++) {
+    const idx = Math.floor(Math.random() * _heightCandidates.length);
+    const pick = _heightCandidates.splice(idx,1)[0];
+    hxs.heights.push(pick); _occupied.add(`${pick[0]},${pick[1]}`);
+  }
+
+  // Apply forest block to units already in forests (initial positions — unlikely but safe)
+  const _forestSet0 = new Set(hxs.forests.map(([c,r])=>`${c},${r}`));
+  hxs.units.filter(u=>u.hp>0&&_forestSet0.has(`${u.col},${u.row}`)).forEach(u=>{ u.block = (u.block||0) + 2; });
 
   document.getElementById('hx-turn-label').textContent = 'Ход 1 | Ход игрока';
   document.getElementById('hx-end-btn').disabled = false;
