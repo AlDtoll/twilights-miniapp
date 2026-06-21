@@ -359,7 +359,9 @@
   /* HEX GAME */
   #hx-battle { padding: 8px; width: 100%; max-width: 440px; }
   #hx-svg { display: block; width: 100%; touch-action: manipulation; }
-  .hx-log { min-height: 52px; font-size: 0.8rem; padding: 4px 8px; background: rgba(0,0,0,0.3); border-radius: 6px; margin: 6px 0; line-height: 1.6; }
+  .hx-log { max-height: 80px; overflow-y: auto; font-size: 0.8rem; padding: 4px 8px; background: rgba(0,0,0,0.3); border-radius: 6px; margin: 6px 0; line-height: 1.6; scroll-behavior: smooth; }
+  .hx-log::-webkit-scrollbar { width: 3px; }
+  .hx-log::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
   .hx-log-attack { color: #e74c3c; }
   .hx-log-heal   { color: #2ecc71; }
   .hx-log-special{ color: #9b59b6; }
@@ -3850,9 +3852,12 @@ function hxLog(msg, type) {
   type = type || 'info';
   hxs.log = msg;
   hxs.logs.push('<span class="hx-log-' + type + '">' + msg + '</span>');
-  if(hxs.logs.length > 3) hxs.logs.shift();
+  if(hxs.logs.length > 10) hxs.logs.shift();
   const el = document.getElementById('hx-log');
-  if(el) el.innerHTML = hxs.logs.join('<br>');
+  if(el) {
+    el.innerHTML = hxs.logs.join('<br>');
+    el.scrollTop = el.scrollHeight;
+  }
 }
 
 // ---- Rendering ----
@@ -4091,13 +4096,18 @@ function hxRender() {
     svg.appendChild(objLbl);
   }
 
-  // Draw enemy intent indicators (PASS A) — only during player turn
+  // Draw enemy intent indicators — only during player turn
   if(hxs.turn === 'player' && hxs.enemyIntents) {
     hxs.units.filter(u=>u.team==='enemy'&&u.hp>0).forEach(enemy=>{
       const intent = hxs.enemyIntents[enemy.id];
       if(!intent || intent.action === 'idle') return;
       const {x:cx, y:cy} = hexToPixel(enemy.col, enemy.row);
-      const intentEmoji = intent.action==='attack' ? '⚔' : intent.action==='ability' ? '✨' : intent.action==='move' ? '→' : '·';
+      // Show ability icon if available, else default
+      let intentEmoji = intent.action==='attack' ? '⚔' : intent.action==='move' ? '→' : '·';
+      if(intent.action === 'ability' && intent.abilityId) {
+        const ab = (enemy.abilities||[]).find(a=>a.id===intent.abilityId);
+        intentEmoji = ab?.icon?.charAt(0) || ab?.icon || '✨';
+      }
       // Draw dashed attack line from enemy to intended target
       if((intent.action==='attack'||intent.action==='ability') && intent.targetId !== undefined) {
         const target = hxs.units.find(u=>u.id===intent.targetId);
