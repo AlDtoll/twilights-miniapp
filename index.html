@@ -3184,15 +3184,30 @@ function hexAttackable(unit) {
 // PASS B: returns hex objects {col, row, isFreeHex?} for hero; unit-based for enemies
 function hxAbilityTargets(unit, ability) {
   if(!ability || ability.range === 0) return [];
-  // PASS B: hero gets hex-based targeting
+  // PASS B: hero gets hex-based targeting — bright targets depend on ability type
   if(unit.isHero) {
     const result = [];
-    for(let r = 0; r < HEX_ROWS; r++) {
-      for(let c = 0; c < HEX_COLS; c++) {
-        if(hexDist(unit.col, unit.row, c, r) > ability.range) continue;
-        if((hxs.obstacles||[]).some(([oc,or])=>oc===c&&or===r)) continue; // can't target walls
-        result.push({col:c, row:r, isFreeHex:true});
+    const inRange = (c,r) => hexDist(unit.col,unit.row,c,r) <= ability.range &&
+                              !(hxs.obstacles||[]).some(([oc,or])=>oc===c&&or===r);
+    if(ability.type === 'heal') {
+      // bright: allies in range
+      hxs.units.filter(u=>u.team===unit.team&&u.hp>0&&inRange(u.col,u.row))
+               .forEach(u=>result.push({col:u.col,row:u.row,isFreeHex:false}));
+    } else if(ability.type === 'summon') {
+      // bright: empty hexes adjacent to unit
+      const occupied = new Set(hxs.units.filter(u=>u.hp>0).map(u=>`${u.col},${u.row}`));
+      for(let r=0;r<HEX_ROWS;r++) for(let c=0;c<HEX_COLS;c++) {
+        if(inRange(c,r) && !occupied.has(`${c},${r}`)) result.push({col:c,row:r,isFreeHex:true});
       }
+    } else if((ability.aoe||0) > 0) {
+      // AoE: bright on all in-range hexes (pick center anywhere)
+      for(let r=0;r<HEX_ROWS;r++) for(let c=0;c<HEX_COLS;c++) {
+        if(inRange(c,r)) result.push({col:c,row:r,isFreeHex:true});
+      }
+    } else {
+      // Single-target damage/debuff: bright only on enemy hexes
+      hxs.units.filter(u=>u.team!==unit.team&&u.hp>0&&inRange(u.col,u.row))
+               .forEach(u=>result.push({col:u.col,row:u.row,isFreeHex:false}));
     }
     return result;
   }
@@ -3259,6 +3274,14 @@ function hxConfirmApply(unit, ab, col, row) {
       hxs.confirming = null; hxRender(); hexUpdateInfo(); return;
     }
     hxApplyAbility(unit, ab, unitOnTarget);
+  } else if(!ab.aoe && primaryTarget.isFreeHex) {
+    // Single-target damage on empty hex — require enemy
+    const enemyInRange = hxs.units.find(u=>u.team!==unit.team&&u.hp>0&&u.col===col&&u.row===row);
+    if(!enemyInRange) {
+      hxLog(`${ab.name}: нет цели на этом гексе.`, 'info');
+      hxs.confirming = null; hxRender(); hexUpdateInfo(); return;
+    }
+    hxApplyAbility(unit, ab, enemyInRange);
   } else {
     hxApplyAbility(unit, ab, primaryTarget);
   }
@@ -4073,23 +4096,6 @@ function hxRender() {
         bLbl.setAttribute('pointer-events','none');
         bLbl.textContent = '🌿';
         svg.appendChild(bLbl);
-      }
-    }
-  }
-
-  // PASS D: Draw attack range overlay for selected hero
-  if(selUnit && selUnit.isHero && hxs.mode !== 'move') {
-    const maxRange = Math.max(...(selUnit.abilities||[]).map(a=>a.range||0), 0);
-    if(maxRange > 0) {
-      for(let rr=0; rr<HEX_ROWS; rr++) for(let cc=0; cc<HEX_COLS; cc++) {
-        const d = hexDist(selUnit.col, selUnit.row, cc, rr);
-        if(d > 0 && d <= maxRange) {
-          const {x:dx, y:dy} = hexToPixel(cc, rr);
-          const dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
-          dot.setAttribute('cx', dx); dot.setAttribute('cy', dy); dot.setAttribute('r', '3');
-          dot.setAttribute('fill', 'rgba(255,80,0,0.15)'); dot.setAttribute('pointer-events','none');
-          svg.appendChild(dot);
-        }
       }
     }
   }
