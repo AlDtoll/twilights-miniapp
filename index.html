@@ -358,7 +358,7 @@
 
   /* HEX GAME */
   #hx-battle { padding: 8px; width: 100%; max-width: 440px; }
-  #hx-svg { display: block; width: 100%; touch-action: none; transition: width 0.2s; }
+  #hx-svg { display: block; width: 100%; height: auto; touch-action: none; }
   .hx-log { max-height: 80px; overflow-y: auto; font-size: 0.8rem; padding: 4px 8px; background: rgba(0,0,0,0.3); border-radius: 6px; margin: 6px 0; line-height: 1.6; scroll-behavior: smooth; }
   .hx-log::-webkit-scrollbar { width: 3px; }
   .hx-log::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
@@ -660,8 +660,8 @@
     <button onclick="hxZoomAdjust(0.15)" style="padding:1px 8px;border-radius:6px;border:none;background:rgba(255,255,255,0.12);color:#fff;font-size:0.9rem;cursor:pointer;">+</button>
   </div>
   <div style="width:100%;overflow:hidden;">
-    <div id="hx-svg-wrap" style="width:100%;max-height:55vh;overflow:auto;">
-      <svg id="hx-svg" xmlns="http://www.w3.org/2000/svg" style="display:block;touch-action:none;"></svg>
+    <div id="hx-svg-wrap" style="width:100%;max-height:55vh;overflow:hidden;">
+      <svg id="hx-svg" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;height:auto;touch-action:none;"></svg>
     </div>
   </div>
   <div id="hx-legend" style="font-size:0.65rem; color:rgba(255,255,255,0.4); text-align:center; padding:2px 4px; line-height:1.6;">
@@ -2537,6 +2537,193 @@ if (game === 'blackjack') {
 } else if (game === 'arkanoid') {
   initArkanoid();
 } else { initChoice(); }
+
+// ---- ARKANOID ----
+let arkCanvas, arkCtx, arkRAF=null, arkDPR=1;
+const ARK_W=320, ARK_H=420;
+let arks={};
+
+function initArkanoid(){
+  document.getElementById('arkanoid-game').style.display='';
+  arkCanvas=document.getElementById('ark-canvas');
+  document.getElementById('ark-ready-title').textContent=gameData.prompt||'🧱 Арканоид';
+  const rows=Math.max(1,Math.min(8,gameData.rows||5));
+  document.getElementById('ark-ready-info').textContent='Разбей все блоки мячом · двигай платформу пальцем · '+rows+' рядов';
+}
+
+function arkStart(){
+  document.getElementById('ark-ready').style.display='none';
+  document.getElementById('ark-play').style.display='';
+  arkDPR=window.devicePixelRatio||1;
+  arkCanvas.width=ARK_W*arkDPR; arkCanvas.height=ARK_H*arkDPR;
+  arkCtx=arkCanvas.getContext('2d');
+  arkCtx.setTransform(arkDPR,0,0,arkDPR,0,0);
+
+  arks={
+    score:0, lives:3, level:1, maxLevel:Math.max(1,Math.min(5,gameData.levels||1)),
+    rows:Math.max(1,Math.min(8,gameData.rows||5)),
+    cols:Math.max(3,Math.min(9,gameData.cols||7)),
+    paddleW:64, paddleX:(ARK_W-64)/2,
+    ballR:6, ball:{x:0,y:0,vx:0,vy:0}, launched:false,
+    bricks:[], over:false, _bound:false, startTime:Date.now()
+  };
+  arkBuildLevel();
+  arkResetBall();
+  arkBindInput();
+  arkUpdateHud();
+  arkLoop();
+}
+
+function arkBuildLevel(){
+  const cols=arks.cols, rows=arks.rows;
+  const pad=6, top=42, side=12, bh=16;
+  const bw=(ARK_W - side*2 - pad*(cols-1))/cols;
+  const palette=['#e74c3c','#e67e22','#f1c40f','#2ecc71','#3498db','#9b59b6','#1abc9c','#e84393'];
+  arks.bricks=[];
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const hits=r<2?2:1; // верхние ряды крепче
+      arks.bricks.push({x:side+c*(bw+pad), y:top+r*(bh+pad), w:bw, h:bh, hits, color:palette[r%palette.length], alive:true});
+    }
+  }
+}
+
+function arkResetBall(){
+  arks.launched=false;
+  arks.ball.x=arks.paddleX+arks.paddleW/2;
+  arks.ball.y=ARK_H-30-arks.ballR;
+  arks.ball.vx=0; arks.ball.vy=0;
+  const h=document.getElementById('ark-hint'); if(h)h.textContent='Тапни, чтобы запустить мяч';
+}
+
+function arkLaunch(){
+  if(arks.over||arks.launched||!arks.ball)return;
+  const speed=3.2+(arks.level-1)*0.4;
+  arks.ball.vx=(Math.random()<0.5?-1:1)*speed*0.6;
+  arks.ball.vy=-speed;
+  arks.launched=true;
+  const h=document.getElementById('ark-hint'); if(h)h.textContent='';
+}
+
+function arkBindInput(){
+  if(arks._bound)return; arks._bound=true;
+  const move=(clientX)=>{
+    const rect=arkCanvas.getBoundingClientRect();
+    let x=(clientX-rect.left)/rect.width*ARK_W - arks.paddleW/2;
+    x=Math.max(0,Math.min(ARK_W-arks.paddleW,x));
+    arks.paddleX=x;
+    if(!arks.launched&&arks.ball){ arks.ball.x=arks.paddleX+arks.paddleW/2; }
+  };
+  arkCanvas.addEventListener('touchmove',e=>{e.preventDefault(); if(e.touches[0])move(e.touches[0].clientX);},{passive:false});
+  arkCanvas.addEventListener('touchstart',e=>{ if(e.touches[0])move(e.touches[0].clientX);},{passive:true});
+  arkCanvas.addEventListener('mousemove',e=>{ if(e.buttons)move(e.clientX); });
+}
+
+function arkLoop(){
+  arkRAF=requestAnimationFrame(arkLoop);
+  arkStep();
+  arkDraw();
+}
+
+function arkStep(){
+  if(arks.over)return;
+  const b=arks.ball;
+  if(!arks.launched){ b.x=arks.paddleX+arks.paddleW/2; return; }
+  b.x+=b.vx; b.y+=b.vy;
+  if(b.x-arks.ballR<0){b.x=arks.ballR;b.vx=Math.abs(b.vx);}
+  if(b.x+arks.ballR>ARK_W){b.x=ARK_W-arks.ballR;b.vx=-Math.abs(b.vx);}
+  if(b.y-arks.ballR<0){b.y=arks.ballR;b.vy=Math.abs(b.vy);}
+  // платформа
+  const py=ARK_H-22;
+  if(b.vy>0 && b.y+arks.ballR>=py && b.y+arks.ballR<=py+14 && b.x>=arks.paddleX && b.x<=arks.paddleX+arks.paddleW){
+    b.y=py-arks.ballR;
+    const hit=(b.x-(arks.paddleX+arks.paddleW/2))/(arks.paddleW/2);
+    const speed=Math.max(3,Math.hypot(b.vx,b.vy));
+    const ang=Math.max(-1,Math.min(1,hit))*Math.PI/3;
+    b.vx=speed*Math.sin(ang);
+    b.vy=-Math.abs(speed*Math.cos(ang));
+  }
+  // мяч упал
+  if(b.y-arks.ballR>ARK_H){
+    arks.lives--; arkUpdateHud();
+    if(arks.lives<=0){ arkEnd(false); return; }
+    arkResetBall();
+    return;
+  }
+  // блоки
+  for(const br of arks.bricks){
+    if(!br.alive)continue;
+    if(b.x+arks.ballR>br.x && b.x-arks.ballR<br.x+br.w && b.y+arks.ballR>br.y && b.y-arks.ballR<br.y+br.h){
+      const overlapX=Math.min(b.x+arks.ballR-br.x, br.x+br.w-(b.x-arks.ballR));
+      const overlapY=Math.min(b.y+arks.ballR-br.y, br.y+br.h-(b.y-arks.ballR));
+      if(overlapX<overlapY){ b.vx=-b.vx; } else { b.vy=-b.vy; }
+      br.hits--;
+      if(br.hits<=0){ br.alive=false; arks.score+=10*arks.level; }
+      else { arks.score+=5; }
+      arkUpdateHud();
+      break;
+    }
+  }
+  // победа на уровне
+  if(arks.bricks.every(br=>!br.alive)){
+    if(arks.level<arks.maxLevel){
+      arks.level++; arks.score+=50; arkUpdateHud();
+      arks.rows=Math.min(8,arks.rows+1);
+      arkBuildLevel(); arkResetBall();
+    } else {
+      arkEnd(true);
+    }
+  }
+}
+
+function arkRoundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
+function arkDraw(){
+  const ctx=arkCtx; if(!ctx)return;
+  ctx.clearRect(0,0,ARK_W,ARK_H);
+  for(const br of arks.bricks){
+    if(!br.alive)continue;
+    ctx.globalAlpha=br.hits>1?1:0.82;
+    ctx.fillStyle=br.color;
+    arkRoundRect(ctx,br.x,br.y,br.w,br.h,4); ctx.fill();
+  }
+  ctx.globalAlpha=1;
+  ctx.fillStyle='#6c5ce7';
+  arkRoundRect(ctx,arks.paddleX,ARK_H-22,arks.paddleW,10,5); ctx.fill();
+  ctx.beginPath();
+  ctx.fillStyle='#fff';
+  ctx.arc(arks.ball.x,arks.ball.y,arks.ballR,0,Math.PI*2); ctx.fill();
+}
+
+function arkUpdateHud(){
+  document.getElementById('ark-score').textContent=arks.score;
+  document.getElementById('ark-level').textContent=arks.level;
+  const lv=Math.max(0,arks.lives);
+  document.getElementById('ark-lives').textContent=lv>0?'❤️'.repeat(lv):'—';
+}
+
+function arkEnd(win){
+  if(arks.over)return;
+  arks.over=true;
+  cancelAnimationFrame(arkRAF);
+  const timeSpent=Math.round((Date.now()-arks.startTime)/1000);
+  let outcome,tier;
+  if(win){ outcome='Победа!'; tier=arks.lives>=3?4:arks.lives===2?3:2; }
+  else { outcome='Игра окончена'; tier=arks.score>=200?2:arks.score>=80?1:0; }
+  document.getElementById('ark-result-title').textContent=(win?'🏆 ':'💥 ')+outcome;
+  document.getElementById('ark-result-sub').textContent='Очки: '+arks.score+' · уровень '+arks.level;
+  document.getElementById('ark-result').style.display='';
+  const h=document.getElementById('ark-hint'); if(h)h.textContent='';
+  setTimeout(function(){ sendResultToBot({game:'arkanoid', score:arks.score, stage:arks.level, win, lives:Math.max(0,arks.lives), outcome, level:tier, timeSpent}); },900);
+}
 
 // ---- CARD GAME ----
 const CG_LIB = {"sword":[{"id":"sword_1","name":"Пластичный удар","skill":"sword","type":"attack","cost":1,"effect":{"damage":8,"vulnerable":true},"description":"8 урона. Уязвимость врагу","rarity":"common","flavor":"Приём клинком: вскрыть защиту, оставить противника уязвимым."},{"id":"sword_2","name":"Размазать клинок","skill":"sword","type":"defense","cost":1,"effect":{"block":7,"draw":1},"description":"7 брони. Взять 1 карту","rarity":"common","flavor":"Скользящий разворот клинка — защита и чтение следующего хода одновременно."},{"id":"sword_3","name":"Укол в сочленение","skill":"sword","type":"attack","cost":1,"effect":{"damage":10,"weak":true},"description":"10 урона. Слабость врагу","rarity":"common","flavor":"Анатомия важнее силы: удар между пластин доспеха лишает врага мощи."},{"id":"sword_4","name":"Работа с пространством","skill":"sword","type":"skill","cost":1,"effect":{"draw":2,"energy":1},"description":"Взять 2 карты. +1 энергия","rarity":"common","flavor":"Дистанция — такое же оружие, как сталь. Шаг назад даёт время думать."},{"id":"sword_5","name":"Выпад на шаг","skill":"sword","type":"attack","cost":1,"effect":{"damage":9,"block":4},"description":"9 урона. 4 брони","rarity":"common","flavor":"Выпад с мгновенным возвратом: атака и позиция в одном движении."},{"id":"sword_6","name":"Рассекающий вихрь","skill":"sword","type":"attack","cost":2,"effect":{"damage":22,"exhaust":true},"description":"22 урона. Истощить","rarity":"rare","flavor":"Один приём — всё мастерство клинка, вложенное в единственный разрез."}],"axe":[{"id":"axe_1","name":"Зацеп","skill":"axe","type":"attack","cost":1,"effect":{"damage":9,"weak":true},"description":"9 урона. Слабость врагу","rarity":"common","flavor":"Бородка топора цепляет оружие — противник теряет контроль над атакой."},{"id":"axe_2","name":"Рез траектории","skill":"axe","type":"attack","cost":1,"effect":{"damage":11},"description":"11 урона","rarity":"common","flavor":"Инерция массы не прощает ошибок — траектория рассекает всё на пути."},{"id":"axe_3","name":"Бросок в опору","skill":"axe","type":"attack","cost":1,"effect":{"damage":8,"vulnerable":true},"description":"8 урона. Уязвимость","rarity":"common","flavor":"Удар в опорную ногу — стойка сломана, тело открыто."},{"id":"axe_4","name":"Импульс массы","skill":"axe","type":"skill","cost":1,"effect":{"block":5,"energy":1},"description":"5 брони. +1 энергия","rarity":"common","flavor":"Кинетика удара отброшена назад — тяжёлый металл сам становится щитом."},{"id":"axe_5","name":"Подсечь и швырнуть","skill":"axe","type":"attack","cost":1,"effect":{"damage":7,"weak":true,"vulnerable":true},"description":"7 урона. Слабость и Уязвимость","rarity":"common","flavor":"Подсечка топором разрушает и равновесие, и защиту разом."},{"id":"axe_6","name":"Сокрушительный импульс","skill":"axe","type":"attack","cost":2,"effect":{"damage":20,"all_enemies":true,"exhaust":true},"description":"20 урона. Истощить","rarity":"rare","flavor":"Волна от удара расходится — всё в радиусе замаха получает свою долю."}],"chain":[{"id":"chain_1","name":"Защитное вращение","skill":"chain","type":"defense","cost":1,"effect":{"block":8},"description":"8 брони","rarity":"common","flavor":"Вращающаяся цепь создаёт щит из инерции — клинок отскакивает назад."},{"id":"chain_2","name":"Зацеп и рывок","skill":"chain","type":"attack","cost":1,"effect":{"damage":7,"weak":true},"description":"7 урона. Слабость врагу","rarity":"common","flavor":"Звено обвивает запястье — рывок лишает противника силы захвата."},{"id":"chain_3","name":"Волна кинетики","skill":"chain","type":"attack","cost":1,"effect":{"damage":10,"vulnerable":true},"description":"10 урона. Уязвимость","rarity":"common","flavor":"Гиря в конце маятника несёт всю накопленную энергию раскрутки."},{"id":"chain_4","name":"Оплетение","skill":"chain","type":"skill","cost":1,"effect":{"weak":true,"draw":1},"description":"Слабость врагу. Взять 1 карту","rarity":"common","flavor":"Цепь оплетает руку — движение скованно, удары теряют силу."},{"id":"chain_5","name":"Удар в слабое место","skill":"chain","type":"attack","cost":1,"effect":{"damage":9,"vulnerable":true},"description":"9 урона. Уязвимость","rarity":"common","flavor":"Точное попадание гирей в незащищённый сустав — доспех не спасает."},{"id":"chain_6","name":"Захват оплетением","skill":"chain","type":"skill","cost":0,"effect":{"weak":true,"vulnerable":true,"exhaust":true},"description":"Слабость и Уязвимость. Истощить","rarity":"rare","flavor":"Цепь вьётся вокруг врага — он слаб и открыт, пока кольца не разжались."}],"dual":[{"id":"dual_1","name":"Фарватер","skill":"dual","type":"attack","cost":1,"effect":{"damage":7,"draw":1},"description":"7 урона. Взять 1 карту","rarity":"common","flavor":"Одно лезвие прокладывает путь — второе идёт следом без промедления."},{"id":"dual_2","name":"Скользящий рывок","skill":"dual","type":"attack","cost":1,"effect":{"damage":6,"block":5},"description":"6 урона. 5 брони","rarity":"common","flavor":"Лавирование между ударами: одно оружие режет, другое держит позицию."},{"id":"dual_3","name":"Двойной росчерк","skill":"dual","type":"attack","cost":1,"effect":{"damage":5,"vulnerable":true},"description":"5 урона. Уязвимость","rarity":"common","flavor":"Два коротких удара крест-накрест — гарда разбита, защита сорвана."},{"id":"dual_4","name":"Перекрёстный удар","skill":"dual","type":"attack","cost":1,"effect":{"damage":9},"description":"9 урона","rarity":"common","flavor":"Лезвия бьют с двух сторон одновременно — блокировать нечем."},{"id":"dual_5","name":"Разворот корпуса","skill":"dual","type":"defense","cost":1,"effect":{"block":6,"draw":1},"description":"6 брони. Взять 1 карту","rarity":"common","flavor":"Уклон и скрещенные клинки — серия продолжается уже с безопасной позиции."},{"id":"dual_6","name":"Серийная резня","skill":"dual","type":"attack","cost":2,"effect":{"damage":18,"exhaust":true,"draw":2},"description":"18 урона. Взять 2 карты. Истощить","rarity":"rare","flavor":"Серия не прерывается, пока есть дыхание — повторяемость убивает вернее силы."}],"heavy":[{"id":"heavy_1","name":"Импульс тяжёлого удара","skill":"heavy","type":"attack","cost":1,"effect":{"damage":12},"description":"12 урона","rarity":"common","flavor":"Масса в движении — остановить её невозможно, только принять."},{"id":"heavy_2","name":"Волновой удар","skill":"heavy","type":"attack","cost":1,"effect":{"damage":8,"all_enemies":true},"description":"8 урона всем врагам","rarity":"common","flavor":"Удар в землю рождает ударную волну — она не выбирает цели."},{"id":"heavy_3","name":"Сбить с ног","skill":"heavy","type":"attack","cost":1,"effect":{"damage":9,"weak":true},"description":"9 урона. Слабость","rarity":"common","flavor":"Тяжёлое оружие давит вниз — противник теряет устойчивость и силу."},{"id":"heavy_4","name":"Накопить замах","skill":"heavy","type":"skill","cost":1,"effect":{"block":6,"energy":1},"description":"6 брони. +1 энергия","rarity":"common","flavor":"Пауза перед ударом — оружие поднято, тело готово, воля сосредоточена."},{"id":"heavy_5","name":"Дробящий напор","skill":"heavy","type":"attack","cost":1,"effect":{"damage":10,"vulnerable":true},"description":"10 урона. Уязвимость","rarity":"common","flavor":"Сминает броню, не пробивая — после удара защита уже не та."},{"id":"heavy_6","name":"Кувалда судьбы","skill":"heavy","type":"attack","cost":2,"effect":{"damage":24,"exhaust":true},"description":"24 урона. Истощить","rarity":"rare","flavor":"Один удар, от которого не встают. Вся мощь — в одно мгновение."}],"polearm":[{"id":"polearm_1","name":"Пластичность древка","skill":"polearm","type":"attack","cost":1,"effect":{"damage":9},"description":"9 урона","rarity":"common","flavor":"Длинное древко гнётся — рычаг умножает силу удара на конце."},{"id":"polearm_2","name":"Тяжёлый режим","skill":"polearm","type":"attack","cost":1,"effect":{"damage":8,"all_enemies":true},"description":"8 урона всем","rarity":"common","flavor":"Горизонтальный взмах — в зоне досягаемости никто не остаётся невредимым."},{"id":"polearm_3","name":"Рывок на дистанции","skill":"polearm","type":"attack","cost":1,"effect":{"damage":7,"block":4},"description":"7 урона. 4 брони","rarity":"common","flavor":"Выпад с отступом: дистанция — главное преимущество копейщика."},{"id":"polearm_4","name":"Укол в линию","skill":"polearm","type":"attack","cost":1,"effect":{"damage":11,"vulnerable":true},"description":"11 урона. Уязвимость","rarity":"common","flavor":"Наконечник проходит в щель строя — броня раскрыта для следующего удара."},{"id":"polearm_5","name":"Сбивание с ног","skill":"polearm","type":"skill","cost":1,"effect":{"weak":true,"block":5},"description":"Слабость врагу. 5 брони","rarity":"common","flavor":"Удар древком по ногам — противник теряет равновесие и силу атаки."},{"id":"polearm_6","name":"Горизонт копья","skill":"polearm","type":"attack","cost":2,"effect":{"damage":19,"all_enemies":true,"exhaust":true},"description":"19 урона всем. Истощить","rarity":"rare","flavor":"Копьё описывает дугу — горизонт зачищен, никого в радиусе не осталось."}],"ranged":[{"id":"ranged_1","name":"Рикошет","skill":"ranged","type":"attack","cost":1,"effect":{"damage":8,"vulnerable":true},"description":"8 урона. Уязвимость","rarity":"common","flavor":"Стрела бьёт под углом — рикошет находит брешь там, где прямой выстрел не прошёл бы."},{"id":"ranged_2","name":"Дуга","skill":"ranged","type":"attack","cost":1,"effect":{"damage":7,"all_enemies":true},"description":"7 урона всем","rarity":"common","flavor":"Навесная траектория — щит не защищает от того, что падает сверху."},{"id":"ranged_3","name":"Быстрый выстрел","skill":"ranged","type":"attack","cost":0,"effect":{"damage":6},"description":"6 урона. Стоит 0","rarity":"common","flavor":"Инстинкт, а не прицел — стрела уходит раньше, чем враг успевает среагировать."},{"id":"ranged_4","name":"Прицельный выстрел","skill":"ranged","type":"attack","cost":1,"effect":{"damage":10},"description":"10 урона","rarity":"common","flavor":"Задержать дыхание, выровнять мушку — один точный выстрел стоит десяти поспешных."},{"id":"ranged_5","name":"Пучок стрел","skill":"ranged","type":"attack","cost":1,"effect":{"damage":6,"all_enemies":true,"weak":true},"description":"6 урона всем. Слабость","rarity":"common","flavor":"Веер стрел в сторону строя — каждый получает своё, никто не остаётся бодрым."},{"id":"ranged_6","name":"Стрела судьбы","skill":"ranged","type":"attack","cost":2,"effect":{"damage":22,"exhaust":true,"vulnerable":true},"description":"22 урона. Уязвимость. Истощить","rarity":"rare","flavor":"Одна стрела — отточенная годами, выпущенная один раз. Не промахивается."}],"shield":[{"id":"shield_1","name":"Перенаправление импульса","skill":"shield","type":"defense","cost":1,"effect":{"block":8,"damage":4},"description":"8 брони. 4 урона","rarity":"common","flavor":"Щит ловит удар и возвращает часть импульса — защита бьёт в ответ."},{"id":"shield_2","name":"Тяжёлый напор","skill":"shield","type":"attack","cost":1,"effect":{"damage":7,"weak":true},"description":"7 урона. Слабость","rarity":"common","flavor":"Удар кромкой щита ломает стойку — тяжесть металла давит на врага."},{"id":"shield_3","name":"Приманка","skill":"shield","type":"defense","cost":1,"effect":{"block":10},"description":"10 брони","rarity":"common","flavor":"Щит выставлен вперёд как цель — кто ударит в него, потратит атаку впустую."},{"id":"shield_4","name":"Ответный толчок","skill":"shield","type":"skill","cost":1,"effect":{"block":6,"draw":1},"description":"6 брони. Взять 1 карту","rarity":"common","flavor":"Отскок щита создаёт пространство — новая возможность открывается сама собой."},{"id":"shield_5","name":"Держать строй","skill":"shield","type":"defense","cost":1,"effect":{"block":7},"description":"7 брони","rarity":"common","flavor":"Щит прижат к телу, ноги упёрты в землю — стена не пошатнётся."},{"id":"shield_6","name":"Форт непробиваемый","skill":"shield","type":"defense","cost":2,"effect":{"block":18,"exhaust":true},"description":"18 брони. Истощить","rarity":"rare","flavor":"Всё тело — за щитом. Пока не решишь двигаться, ты неуязвим."}],"unarmed":[{"id":"unarmed_1","name":"Удар в одну зону","skill":"unarmed","type":"attack","cost":1,"effect":{"damage":7,"draw":1},"description":"7 урона. Взять 1 карту","rarity":"common","flavor":"Давление в одну точку — пока противник реагирует, следующий удар уже готов."},{"id":"unarmed_2","name":"Зеркальный сцеп","skill":"unarmed","type":"defense","cost":1,"effect":{"block":7,"weak":true},"description":"7 брони. Слабость врагу","rarity":"common","flavor":"Захватить атакующую руку и повернуть — чужой удар становится твоей защитой."},{"id":"unarmed_3","name":"Прижать к стене","skill":"unarmed","type":"attack","cost":1,"effect":{"damage":8,"vulnerable":true},"description":"8 урона. Уязвимость","rarity":"common","flavor":"Захват и давление снимают дистанцию — враг открыт и не может отступить."},{"id":"unarmed_4","name":"Серийный натиск","skill":"unarmed","type":"attack","cost":1,"effect":{"damage":9},"description":"9 урона","rarity":"common","flavor":"Удары идут непрерывно — каждый следующий быстрее, чем блок успевает закрыться."},{"id":"unarmed_5","name":"Отражение от угла","skill":"unarmed","type":"skill","cost":1,"effect":{"block":5,"energy":1},"description":"5 брони. +1 энергия","rarity":"common","flavor":"Уйти в сторону, использовать инерцию врага — его сила работает на тебя."},{"id":"unarmed_6","name":"Концентрированная серия","skill":"unarmed","type":"attack","cost":2,"effect":{"damage":16,"exhaust":true,"vulnerable":true},"description":"16 урона. Уязвимость. Истощить","rarity":"rare","flavor":"Серия без пауз — каждый удар открывает следующий, враг рассыпается."}],"wizard":[{"id":"wizard_1","name":"Смешанный импульс","skill":"wizard","type":"attack","cost":1,"effect":{"damage":8},"description":"8 урона","rarity":"common","flavor":"Телекинетический импульс с жезла — магический камень направляет разряд."},{"id":"wizard_2","name":"Импульс осязания","skill":"wizard","type":"skill","cost":0,"effect":{"draw":2},"description":"Взять 2 карты. Стоит 0","rarity":"common","flavor":"Слабое мерцание: телекинетическое эхо сканирует пространство, раскрывая возможности."},{"id":"wizard_3","name":"Парирование жезлом","skill":"wizard","type":"defense","cost":1,"effect":{"block":8},"description":"8 брони","rarity":"common","flavor":"Жезл с камнем становится барьером — мерцание уплотняет воздух перед ударом."},{"id":"wizard_4","name":"Вспышка","skill":"wizard","type":"skill","cost":1,"effect":{"weak":true,"vulnerable":true},"description":"Слабость и Уязвимость врагу","rarity":"common","flavor":"Телекинетический всплеск дезориентирует — воля противника рассеивается."},{"id":"wizard_5","name":"Импульсная волна","skill":"wizard","type":"attack","cost":1,"effect":{"damage":7,"all_enemies":true},"description":"7 урона всем","rarity":"common","flavor":"Кольцевая волна мерцания расходится от жезла — все в радиусе ощущают удар."},{"id":"wizard_6","name":"Молния","skill":"wizard","type":"attack","cost":2,"effect":{"damage":22,"exhaust":true,"vulnerable":true},"description":"22 урона. Уязвимость. Истощить","rarity":"rare","flavor":"Полное высвобождение мерцания — телекинетический разряд прожигает насквозь."}],"elementalist":[{"id":"elementalist_1","name":"Огненный выброс","skill":"elementalist","type":"attack","cost":1,"effect":{"damage":10},"description":"10 урона","rarity":"common","flavor":"Сущность огня — не пламя, а температура. Она находит тело сама."},{"id":"elementalist_2","name":"Каменный бросок","skill":"elementalist","type":"attack","cost":1,"effect":{"damage":8,"vulnerable":true},"description":"8 урона. Уязвимость","rarity":"common","flavor":"Сущность земли уплотняется в проекцию — удар твёрдый, как камень."},{"id":"elementalist_3","name":"Водяной захват","skill":"elementalist","type":"defense","cost":1,"effect":{"block":7,"weak":true},"description":"7 брони. Слабость врагу","rarity":"common","flavor":"Сущность воды обволакивает руку врага — движение вязкое, сила уходит."},{"id":"elementalist_4","name":"Воздушный порыв","skill":"elementalist","type":"skill","cost":1,"effect":{"block":6,"draw":1},"description":"6 брони. Взять 1 карту","rarity":"common","flavor":"Сущность воздуха создаёт щит из давления — удар тормозит ещё в воздухе."},{"id":"elementalist_5","name":"Чувство элемента","skill":"elementalist","type":"skill","cost":0,"effect":{"draw":2,"energy":1},"description":"Взять 2 карты. +1 энергия. Стоит 0","rarity":"common","flavor":"Элемент отзывается без усилий — сущность сама подсказывает следующий шаг."},{"id":"elementalist_6","name":"Зов стихии","skill":"elementalist","type":"attack","cost":2,"effect":{"damage":20,"all_enemies":true,"exhaust":true},"description":"20 урона всем. Истощить","rarity":"rare","flavor":"Все четыре сущности в одном выбросе — стихия отвечает на призыв сполна."}],"druid":[{"id":"druid_1","name":"Стальная мышца","skill":"druid","type":"attack","cost":1,"effect":{"damage":9},"description":"9 урона","rarity":"common","flavor":"Токи жизни уплотняют мышцу через ладонь — удар сильнее, чем позволяет тело."},{"id":"druid_2","name":"Согреть рану","skill":"druid","type":"skill","cost":1,"effect":{"heal":6},"description":"Восстановить 6 HP","rarity":"common","flavor":"Токи жизни через ладонь — живая материя отзывается, рана закрывается."},{"id":"druid_3","name":"Взрывной рост","skill":"druid","type":"attack","cost":1,"effect":{"damage":7,"weak":true},"description":"7 урона. Слабость врагу","rarity":"common","flavor":"Касание запускает рост — живая материя врывается в суставы, связывая движение."},{"id":"druid_4","name":"Обнаружение жизни","skill":"druid","type":"skill","cost":1,"effect":{"draw":2,"block":4},"description":"Взять 2 карты. 4 брони","rarity":"common","flavor":"Токи жизни читают пространство — тело само знает, откуда придёт удар."},{"id":"druid_5","name":"Шок касания","skill":"druid","type":"attack","cost":1,"effect":{"damage":8,"vulnerable":true},"description":"8 урона. Уязвимость","rarity":"common","flavor":"Ладонь на коже врага — и токи жизни бьют изнутри, минуя доспех."},{"id":"druid_6","name":"Запечатать силу","skill":"druid","type":"skill","cost":0,"effect":{"heal":10,"block":8,"exhaust":true},"description":"10 HP. 8 брони. Истощить","rarity":"rare","flavor":"Контакт с землёй — токи жизни проходят сквозь тело и запечатывают рану навсегда."}],"demonologist":[{"id":"demon_1","name":"Удар посохом","skill":"demonologist","type":"attack","cost":1,"effect":{"damage":8},"description":"8 урона","rarity":"common","flavor":"Посох демонолога пропитан потусторонней материей — даже обычный удар оставляет след."},{"id":"demon_2","name":"Выстрел Тенью","skill":"demonologist","type":"attack","cost":1,"effect":{"damage":7,"weak":true},"description":"7 урона. Слабость","rarity":"common","flavor":"Тень посылается вперёд как снаряд — потусторонняя материя истощает волю цели."},{"id":"demon_3","name":"Ослабить Тень","skill":"demonologist","type":"skill","cost":1,"effect":{"weak":true,"vulnerable":true},"description":"Слабость и Уязвимость врагу","rarity":"common","flavor":"Тень прикасается к врагу — потусторонняя материя разъедает силу и защиту."},{"id":"demon_4","name":"Одержимость","skill":"demonologist","type":"skill","cost":1,"effect":{"energy":2,"draw":1},"description":"+2 энергии. Взять 1 карту","rarity":"common","flavor":"Потусторонняя материя хлынула в канал — на секунду ты больше чем человек."},{"id":"demon_5","name":"Воплощение Тени","skill":"demonologist","type":"defense","cost":1,"effect":{"block":7,"damage":4},"description":"7 брони. 4 урона","rarity":"common","flavor":"Тень встаёт между тобой и ударом — и возвращает часть урона обратно."},{"id":"demon_6","name":"Прокол хаоса","skill":"demonologist","type":"attack","cost":2,"effect":{"damage":20,"all_enemies":true,"exhaust":true},"description":"20 урона всем. Истощить","rarity":"rare","flavor":"Прорыв из потустороннего — материя разлетается волной, не щадя никого рядом."}],"necromancer":[{"id":"necro_1","name":"Удар ножом","skill":"necromancer","type":"attack","cost":1,"effect":{"damage":8,"vulnerable":true},"description":"8 урона. Уязвимость","rarity":"common","flavor":"Нож — проводник мёртвой ткани. Рана открывает канал для следующего удара."},{"id":"necro_2","name":"Фантоматон","skill":"necromancer","type":"attack","cost":1,"effect":{"damage":7,"draw":1},"description":"7 урона. Взять 1 карту","rarity":"common","flavor":"Мёртвая ткань формирует проекцию — кадавр наносит удар, открывая новые пути."},{"id":"necro_3","name":"Разрушение плоти","skill":"necromancer","type":"attack","cost":1,"effect":{"damage":10,"weak":true},"description":"10 урона. Слабость","rarity":"common","flavor":"Нож ведёт мёртвую ткань сквозь живую — мышцы противника перестают слушаться."},{"id":"necro_4","name":"Витализм","skill":"necromancer","type":"skill","cost":1,"effect":{"heal":5,"draw":1},"description":"5 HP. Взять 1 карту","rarity":"common","flavor":"Нож — через мёртвую ткань обратно к живой. Кровь течёт снова."},{"id":"necro_5","name":"Кукловодство","skill":"necromancer","type":"skill","cost":1,"effect":{"block":6,"energy":1},"description":"6 брони. +1 энергия","rarity":"common","flavor":"Кадавр берёт удар на себя — пока он стоит, ты недосягаем."},{"id":"necro_6","name":"Пепельный взрыв","skill":"necromancer","type":"attack","cost":2,"effect":{"damage":18,"all_enemies":true,"exhaust":true},"description":"18 урона всем. Истощить","rarity":"rare","flavor":"Мёртвая ткань распыляется взрывом — пепел некроманта жалит всех вокруг."}],"incenser":[{"id":"incenser_1","name":"Развесить дым","skill":"incenser","type":"defense","cost":1,"effect":{"block":7},"description":"7 брони","rarity":"common","flavor":"Дым из кадила создаёт завесу — враг теряет тебя из виду прежде, чем ударит."},{"id":"incenser_2","name":"Смердное облако","skill":"incenser","type":"skill","cost":1,"effect":{"weak":true,"vulnerable":true},"description":"Слабость и Уязвимость врагу","rarity":"common","flavor":"Дым из кадила проникает в зазоры доспеха и разъедает — воля и защита слабеют."},{"id":"incenser_3","name":"Направить облако","skill":"incenser","type":"attack","cost":1,"effect":{"damage":8,"all_enemies":true},"description":"8 урона всем","rarity":"common","flavor":"Взмах кадилом — облако движется туда, куда нужно, обжигая всех на пути."},{"id":"incenser_4","name":"Привязать дым","skill":"incenser","type":"skill","cost":1,"effect":{"weak":true,"draw":1},"description":"Слабость врагу. Взять 1 карту","rarity":"common","flavor":"Дым оседает на враге — движения замедляются, удары теряют точность."},{"id":"incenser_5","name":"Иллюзия в дыму","skill":"incenser","type":"defense","cost":1,"effect":{"block":8,"draw":1},"description":"8 брони. Взять 1 карту","rarity":"common","flavor":"В клубах дыма трудно понять, где ты — атака уходит в пустоту."},{"id":"incenser_6","name":"Проникающее облако","skill":"incenser","type":"attack","cost":0,"effect":{"damage":14,"all_enemies":true,"exhaust":true},"description":"14 урона всем. Истощить","rarity":"rare","flavor":"Дым кадила проходит сквозь любую броню — последний выдох кадильщика сжигает всё."}],"adept":[{"id":"adept_1","name":"Слово Света","skill":"adept","type":"attack","cost":1,"effect":{"damage":8,"weak":true},"description":"8 урона. Слабость врагу","rarity":"common","flavor":"Слово покровителя произнесено — свет ослепляет, рука врага дрогнула."},{"id":"adept_2","name":"Слово Тепла","skill":"adept","type":"skill","cost":1,"effect":{"heal":6,"draw":1},"description":"6 HP. Взять 1 карту","rarity":"common","flavor":"Молитва к покровителю — тепло культа возвращает силы и проясняет разум."},{"id":"adept_3","name":"Слово Холода","skill":"adept","type":"attack","cost":1,"effect":{"damage":7,"vulnerable":true},"description":"7 урона. Уязвимость","rarity":"common","flavor":"Слово произнесено — холод культа проникает сквозь броню, делая врага уязвимым."},{"id":"adept_4","name":"Слово Щита","skill":"adept","type":"defense","cost":1,"effect":{"block":9},"description":"9 брони","rarity":"common","flavor":"Воля покровителя встаёт между адептом и ударом — слово держит крепче стали."},{"id":"adept_5","name":"Молитвенный стих","skill":"adept","type":"skill","cost":1,"effect":{"draw":2,"energy":1},"description":"Взять 2 карты. +1 энергия","rarity":"common","flavor":"Ритм молитвы задаёт ритм боя — покровитель открывает пути, которых не видел глаз."},{"id":"adept_6","name":"Слово Силы","skill":"adept","type":"attack","cost":2,"effect":{"damage":20,"heal":8,"exhaust":true},"description":"20 урона. 8 HP. Истощить","rarity":"rare","flavor":"Имя покровителя произнесено в полную силу — враг сражён, адепт исцелён."}]};
@@ -5218,15 +5405,16 @@ function hxSkipUnit() {
 }
 
 let _hxZoomLevel = 1.0;
+let _hxPanX = 0, _hxPanY = 0;
 function _hxApplyZoom() {
   const svg = document.getElementById('hx-svg');
   if(!svg) return;
-  if(_hxZoomLevel <= 1.0) {
-    svg.style.width = '100%'; svg.style.height = 'auto';
-  } else {
-    svg.style.width = Math.round(HEX_SVG_W * _hxZoomLevel) + 'px';
-    svg.style.height = Math.round(HEX_SVG_H * _hxZoomLevel) + 'px';
-  }
+  const w = HEX_SVG_W / _hxZoomLevel;
+  const h = HEX_SVG_H / _hxZoomLevel;
+  const maxPanX = HEX_SVG_W - w, maxPanY = HEX_SVG_H - h;
+  _hxPanX = Math.max(0, Math.min(_hxPanX, maxPanX));
+  _hxPanY = Math.max(0, Math.min(_hxPanY, maxPanY));
+  svg.setAttribute('viewBox', `${_hxPanX} ${_hxPanY} ${w} ${h}`);
 }
 function hxZoomAdjust(delta) {
   _hxZoomLevel = Math.max(1.0, Math.min(3.0, _hxZoomLevel + delta));
@@ -5248,7 +5436,7 @@ function hxInitPinchZoom() {
       e.preventDefault();
       _hxPinchDist0 = tDist(e.touches); _hxPinchLevel0 = _hxZoomLevel; _panStart = null;
     } else if(e.touches.length === 1) {
-      _panStart = {x:e.touches[0].clientX, y:e.touches[0].clientY, sl:wrap.scrollLeft, st:wrap.scrollTop};
+      _panStart = {x:e.touches[0].clientX, y:e.touches[0].clientY, px:_hxPanX, py:_hxPanY};
       _panActive = false;
     }
   }, {passive:false});
@@ -5259,9 +5447,17 @@ function hxInitPinchZoom() {
       _hxZoomLevel = Math.max(1.0, Math.min(3.0, _hxPinchLevel0 * tDist(e.touches) / _hxPinchDist0));
       _hxApplyZoom();
     } else if(e.touches.length === 1 && _panStart && _hxZoomLevel > 1.0) {
-      const dx = _panStart.x - e.touches[0].clientX, dy = _panStart.y - e.touches[0].clientY;
-      if(!_panActive && (Math.abs(dx)>6 || Math.abs(dy)>6)) _panActive = true;
-      if(_panActive) { e.preventDefault(); wrap.scrollLeft = _panStart.sl+dx; wrap.scrollTop = _panStart.st+dy; }
+      const svgEl = document.getElementById('hx-svg');
+      const svgW = svgEl ? svgEl.clientWidth : 300;
+      const scale = HEX_SVG_W / (svgW * _hxZoomLevel);
+      const dx = (_panStart.x - e.touches[0].clientX) * scale;
+      const dy = (_panStart.y - e.touches[0].clientY) * scale;
+      if(!_panActive && (Math.abs(dx)>2 || Math.abs(dy)>2)) _panActive = true;
+      if(_panActive) {
+        e.preventDefault();
+        _hxPanX = _panStart.px + dx; _hxPanY = _panStart.py + dy;
+        _hxApplyZoom();
+      }
     }
   }, {passive:false});
 
@@ -5295,7 +5491,7 @@ function initHex() {
   const enemyDefs  = Array.isArray(gameData.enemy_units)  ? gameData.enemy_units  : [{type:'warrior',name:'Страж'}];
 
   hxs = {units:[], turn:'player', selected:null, inspecting:null, reachable:[], attackable:[], abilityTargets:[], activeAbilityIdx:null, mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, ended:false, rifts:[], forests:[], heights:[], obstacles:[], bushes:[], swamps:[], waters:[], shallow_waters:[], deep_waters:[], fires:[], burnable:[], enemyIntents:{}, totalDamageDealt:0, totalDamageTaken:0, aoeHover:null, abilitiesUsed:{}, hero: heroDef, heroAP: 4, heroMaxAP: 4, confirming: null};
-  _hxZoomLevel = 1.0;
+  _hxZoomLevel = 1.0; _hxPanX = 0; _hxPanY = 0;
   const _initSvg = document.getElementById('hx-svg');
   if(_initSvg) {
     _initSvg.setAttribute('viewBox', `0 0 ${HEX_SVG_W} ${HEX_SVG_H}`);
