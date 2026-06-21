@@ -410,6 +410,7 @@
   .hx-ab-tier { font-size:8px; vertical-align:super; margin-left:2px; }
   .hx-ab-tier.mid { color:#a0a0d0; }
   .hx-ab-tier.strong { color:#f0c040; }
+  .hx-ab-ap { font-size:9px; color:#f0c040; margin-left:2px; display:block; text-align:center; }
 
   @keyframes hxFlash { 0%{fill-opacity:0.9} 50%{fill-opacity:0.15} 100%{fill-opacity:0} }
   @keyframes hxPulse { 0%,100%{r:16} 50%{r:20} }
@@ -3112,6 +3113,8 @@ let hxs = {
   aoeHover: null, // {col, row} — hex hovered in AoE ability mode
   abilitiesUsed: {}, // FFT: ability usage counter for hero
   hero: null, // FFT hero definition reference
+  heroAP: 4, // PASS A: Action Points for hero (4 per turn)
+  confirming: null, // PASS B/C: {col, row} of hex pending confirmation
 };
 
 function hexToPixel(col, row) {
@@ -3178,8 +3181,22 @@ function hexAttackable(unit) {
 }
 
 // Get targets for a specific ability from a unit position
+// PASS B: returns hex objects {col, row, isFreeHex?} for hero; unit-based for enemies
 function hxAbilityTargets(unit, ability) {
   if(!ability || ability.range === 0) return [];
+  // PASS B: hero gets hex-based targeting
+  if(unit.isHero) {
+    const result = [];
+    for(let r = 0; r < HEX_ROWS; r++) {
+      for(let c = 0; c < HEX_COLS; c++) {
+        if(hexDist(unit.col, unit.row, c, r) > ability.range) continue;
+        if((hxs.obstacles||[]).some(([oc,or])=>oc===c&&or===r)) continue; // can't target walls
+        result.push({col:c, row:r, isFreeHex:true});
+      }
+    }
+    return result;
+  }
+  // Non-hero: unit-based targeting (existing logic)
   if(ability.type === 'heal') {
     return hxs.units.filter(u => u.team === unit.team && u.hp > 0
       && hexDist(unit.col, unit.row, u.col, u.row) <= ability.range);
@@ -3207,6 +3224,62 @@ function hexApplyMorale(deadUnit) {
   hxLog(`💔 Гибель ${deadUnit.name} подрывает боевой дух — соседние союзники −2 атк`, 'attack');
 }
 
+// PASS C: button handler — apply from current hxs.confirming state
+function hxConfirmApplyBtn() {
+  if(!hxs.confirming || hxs.selected === null) return;
+  const unit = hxs.units.find(u=>u.id===hxs.selected);
+  if(!unit||unit.hp<=0) return;
+  const ab = unit.abilities?.[hxs.activeAbilityIdx];
+  if(!ab) return;
+  const {col:cc, row:cr} = hxs.confirming;
+  hxConfirmApply(unit, ab, cc, cr);
+  // Restore skip button
+  const skipBtn = document.getElementById('hx-skip-btn');
+  if(skipBtn) { skipBtn.textContent = 'Пропустить'; skipBtn.onclick = () => hxSkipUnit(); }
+}
+
+// PASS B/C: confirm and apply hero ability at hex {col, row}
+function hxConfirmApply(unit, ab, col, row) {
+  // Resolve primaryTarget: find unit on hex, fallback to hex coords
+  const unitOnTarget = hxs.units.find(u=>u.hp>0&&u.col===col&&u.row===row);
+  const primaryTarget = unitOnTarget || {col, row, isFreeHex:true};
+
+  // For heal: require ally on hex
+  if(ab.type === 'heal') {
+    const allyOnHex = hxs.units.find(u=>u.team===unit.team&&u.hp>0&&u.col===col&&u.row===row);
+    if(!allyOnHex) {
+      hxLog(`${ab.name}: нет союзника на этом гексе.`, 'info');
+      hxs.confirming = null; hxRender(); hexUpdateInfo(); return;
+    }
+    hxApplyAbility(unit, ab, allyOnHex);
+  } else if(ab.effect?.type === 'stun' && (ab.damage === 0 || !ab.damage)) {
+    // Stun-only: require enemy on hex
+    if(!unitOnTarget || unitOnTarget.team === unit.team) {
+      hxLog(`${ab.name}: нет врага на этом гексе.`, 'info');
+      hxs.confirming = null; hxRender(); hexUpdateInfo(); return;
+    }
+    hxApplyAbility(unit, ab, unitOnTarget);
+  } else {
+    hxApplyAbility(unit, ab, primaryTarget);
+  }
+
+  hxs.confirming = null;
+  hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null; hxs.aoeHover = null;
+  if(unit.moved && unit.acted) hxs.selected = null;
+  hxRender(); hexUpdateInfo();
+}
+
+// PASS A: helper — mark caster acted based on AP (hero) or directly (enemy/ally)
+function hxMarkActed(caster, ability) {
+  if(caster.isHero) {
+    const apCost = ability.maxCooldown === 0 ? 1 : ability.maxCooldown <= 2 ? 2 : 3;
+    hxs.heroAP = Math.max(0, hxs.heroAP - apCost);
+    caster.acted = hxs.heroAP === 0; // done when out of AP
+  } else {
+    caster.acted = true;
+  }
+}
+
 // Apply an ability effect from caster on primary target (handles AoE automatically)
 function hxApplyAbility(caster, ability, primaryTarget) {
   // PASS D: Track ability usage for FFT hero
@@ -3231,7 +3304,7 @@ function hxApplyAbility(caster, ability, primaryTarget) {
   if(eff?.type === 'block') {
     caster.block = (caster.block||0) + eff.value;
     hxLog(`${caster.icon||''} ${caster.name} — ${ability.name}: +${eff.value} блок!`, 'special');
-    caster.acted = true;
+    hxMarkActed(caster, ability);
     if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
     return;
   }
@@ -3241,7 +3314,7 @@ function hxApplyAbility(caster, ability, primaryTarget) {
     primaryTarget.atkBuff = (primaryTarget.atkBuff||0) + eff.value;
     primaryTarget.atkBuffTurns = eff.turns||2;
     hxLog(`${caster.name} — ${ability.name}: ${primaryTarget.name} +${eff.value} атк на ${eff.turns} хода!`, 'heal');
-    caster.acted = true;
+    hxMarkActed(caster, ability);
     if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
     return;
   }
@@ -3263,7 +3336,7 @@ function hxApplyAbility(caster, ability, primaryTarget) {
       abilities: (def.abilities||[]).map(a=>({...a,cooldown:0})),
     };
     hxs.units.push(newUnit);
-    caster.acted = true;
+    hxMarkActed(caster, ability);
     if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
     hxLog(`${caster.name} — ${ability.name}: призвана ${def.name}${nearRift?' (Разлом +)':''}!`, 'special');
     return;
@@ -3275,7 +3348,7 @@ function hxApplyAbility(caster, ability, primaryTarget) {
     primaryTarget.hp = Math.min(primaryTarget.maxHp, primaryTarget.hp + heal);
     hxLog(`${caster.name} — ${ability.name}: ${primaryTarget.name} +${heal} HP!`, 'heal');
     hxFlashHex(primaryTarget.col, primaryTarget.row, 'rgba(46,213,115,0.7)');
-    caster.acted = true;
+    hxMarkActed(caster, ability);
     if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
     return;
   }
@@ -3285,7 +3358,7 @@ function hxApplyAbility(caster, ability, primaryTarget) {
     primaryTarget.stunnedTurns = (primaryTarget.stunnedTurns||0) + eff.turns;
     hxLog(`${caster.name} — ${ability.name}: ${primaryTarget.name} оглушён на ${eff.turns} ход(а)!`, 'special');
     hxFlashHex(primaryTarget.col, primaryTarget.row, 'rgba(243,156,18,0.7)');
-    caster.acted = true;
+    hxMarkActed(caster, ability);
     if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
     return;
   }
@@ -3297,7 +3370,7 @@ function hxApplyAbility(caster, ability, primaryTarget) {
       : [primaryTarget];
     targets.forEach(t => { t.atkDebuff = (t.atkDebuff||0) + eff.value; });
     hxLog(`${caster.name} — ${ability.name}: ${targets.length} цел. −${eff.value} атк!`, 'special');
-    caster.acted = true;
+    hxMarkActed(caster, ability);
     if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
     return;
   }
@@ -3392,7 +3465,7 @@ function hxApplyAbility(caster, ability, primaryTarget) {
     }
 
     hxLog(logMsg, ability.type === 'heal' ? 'heal' : 'attack');
-    caster.acted = true;
+    hxMarkActed(caster, ability);
     if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
     hexCheckEnd();
   }
@@ -3863,6 +3936,8 @@ function hexEnemyTurn() {
   hxs.activeAbilityIdx = null;
   hxs.mode = 'select';
   hxs.aoeHover = null;
+  hxs.heroAP = 4; // PASS A: reset hero AP each player turn
+  hxs.confirming = null; // PASS B: reset confirmation
   // Handle stunned player units — mark them as done so they skip this turn
   hxs.units.filter(u=>u.team==='player'&&u.hp>0&&(u.stunnedTurns||0)>0).forEach(u=>{
     hxLog(`${u.name} оглушён — пропускает ход.`, 'info');
@@ -4002,6 +4077,23 @@ function hxRender() {
     }
   }
 
+  // PASS D: Draw attack range overlay for selected hero
+  if(selUnit && selUnit.isHero && hxs.mode !== 'move') {
+    const maxRange = Math.max(...(selUnit.abilities||[]).map(a=>a.range||0), 0);
+    if(maxRange > 0) {
+      for(let rr=0; rr<HEX_ROWS; rr++) for(let cc=0; cc<HEX_COLS; cc++) {
+        const d = hexDist(selUnit.col, selUnit.row, cc, rr);
+        if(d > 0 && d <= maxRange) {
+          const {x:dx, y:dy} = hexToPixel(cc, rr);
+          const dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
+          dot.setAttribute('cx', dx); dot.setAttribute('cy', dy); dot.setAttribute('r', '3');
+          dot.setAttribute('fill', 'rgba(255,80,0,0.15)'); dot.setAttribute('pointer-events','none');
+          svg.appendChild(dot);
+        }
+      }
+    }
+  }
+
   // Draw units
   hxs.units.forEach(unit => {
     if(unit.hp <= 0) return;
@@ -4106,7 +4198,42 @@ function hxRender() {
     svg.appendChild(tapArea);
   });
 
-  // Draw obstacle hexes (PASS C)
+  // PASS C: Draw confirmation ring on hxs.confirming hex
+  const _skipBtn = document.getElementById('hx-skip-btn');
+  if(hxs.confirming) {
+    const {x:cx2, y:cy2} = hexToPixel(hxs.confirming.col, hxs.confirming.row);
+    const ring2 = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    ring2.setAttribute('cx', cx2); ring2.setAttribute('cy', cy2);
+    ring2.setAttribute('r', '17');
+    ring2.setAttribute('fill', 'none');
+    ring2.setAttribute('stroke', '#ff4444');
+    ring2.setAttribute('stroke-width', '2.5');
+    ring2.setAttribute('stroke-dasharray', '6,3');
+    ring2.setAttribute('pointer-events','none');
+    const anim2 = document.createElementNS('http://www.w3.org/2000/svg','animateTransform');
+    anim2.setAttribute('attributeName','transform');
+    anim2.setAttribute('type','rotate');
+    anim2.setAttribute('from',`0 ${cx2} ${cy2}`);
+    anim2.setAttribute('to',`360 ${cx2} ${cy2}`);
+    anim2.setAttribute('dur','1.5s');
+    anim2.setAttribute('repeatCount','indefinite');
+    ring2.appendChild(anim2);
+    svg.appendChild(ring2);
+    // Repurpose skip button as "Apply" button
+    if(_skipBtn) {
+      _skipBtn.textContent = '✓ Применить';
+      _skipBtn.disabled = false;
+      _skipBtn.onclick = () => hxConfirmApplyBtn();
+    }
+  } else {
+    // Restore skip button if it was overridden
+    if(_skipBtn && _skipBtn.textContent === '✓ Применить') {
+      _skipBtn.textContent = 'Пропустить';
+      _skipBtn.onclick = () => hxSkipUnit();
+    }
+  }
+
+  // Draw obstacle hexes
   (hxs.obstacles||[]).forEach(([oc,or]) => {
     const {x,y} = hexToPixel(oc,or);
     const obstPoly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
@@ -4270,7 +4397,14 @@ function hxUpdateStatusBar(unit) {
     if((ab.maxCooldown||0) === 0) return null;
     return ab.cooldown > 0 ? `${ab.icon||ab.name} cd:${ab.cooldown}` : `${ab.icon||ab.name} cd:0`;
   }).filter(Boolean);
-  el.textContent = `${unit.emoji||'?'} ${unit.name} | HP: ${unit.hp}/${unit.maxHp}${cdParts.length?' | '+cdParts.join(' | '):''}`;
+  // PASS A: show AP for hero
+  let apLine = '';
+  if(unit.isHero) {
+    const ap = hxs.heroAP || 0;
+    const dots = '◉'.repeat(ap) + '○'.repeat(Math.max(0, 4 - ap));
+    apLine = `  AP: ${dots} (${ap}/4)`;
+  }
+  el.textContent = `${unit.emoji||'?'} ${unit.name} | HP: ${unit.hp}/${unit.maxHp}${cdParts.length?' | '+cdParts.join(' | '):''}${apLine}`;
 }
 
 function hexUpdateInfo(unit) {
@@ -4305,8 +4439,9 @@ function hexUpdateInfo(unit) {
   if(unit.stunnedTurns > 0) statuses.push(`⚡ оглушён ${unit.stunnedTurns}`);
   if(statusEl) statusEl.textContent = statuses.join('  ');
 
-  // Show skip button only for player units
-  if(skipBtn) skipBtn.disabled = unit.team !== 'player' || hxs.turn !== 'player' || hxs.ended || done;
+  // Show skip button only for non-hero player units (hero ends turn via "Конец хода")
+  // PASS A: hero doesn't skip — uses "Конец хода" button instead
+  if(skipBtn) skipBtn.disabled = unit.team !== 'player' || hxs.turn !== 'player' || hxs.ended || done || unit.isHero;
 
   // Build ability panel (only for player units; show enemy abilities as read-only if inspecting)
   if(!panel || !row) return;
@@ -4343,13 +4478,17 @@ function hexUpdateInfo(unit) {
     const btn = document.createElement('button');
     const isActive = hxs.activeAbilityIdx === idx && hxs.mode === 'ability';
     const onCd = ab.cooldown > 0;
-    const cantAct = unit.acted;
+    // PASS A: AP-based disable for hero
+    const apCost = ab.maxCooldown === 0 ? 1 : ab.maxCooldown <= 2 ? 2 : 3;
+    const cantAct = unit.isHero ? hxs.heroAP < apCost : unit.acted;
     btn.className = `hx-ability-btn hx-ability-type-${ab.type}${isActive ? ' active' : ''}`;
     btn.disabled = onCd || cantAct;
     const cdText = onCd ? `<span class="hx-ability-cd">⏳${ab.cooldown}</span>` : `<span class="hx-ability-cd ready">✓</span>`;
     const cdBadge = onCd ? `<span class="cd-badge">⏳${ab.cooldown}</span>` : '';
     const tier = ab.maxCooldown === 0 ? '' : ab.maxCooldown <= 2 ? '<span class="hx-ab-tier mid">◆</span>' : '<span class="hx-ab-tier strong">★</span>';
-    btn.innerHTML = `${cdBadge}<span class="hx-ability-icon">${ab.icon||'?'}</span><span class="hx-ability-name">${ab.name}${tier}</span>${cdText}`;
+    // PASS A: show AP cost indicator
+    const apBadge = unit.isHero ? `<span class="hx-ab-ap">${apCost}AP</span>` : '';
+    btn.innerHTML = `${cdBadge}<span class="hx-ability-icon">${ab.icon||'?'}</span><span class="hx-ability-name">${ab.name}${tier}</span>${cdText}${apBadge}`;
     btn.onclick = () => hxSelectAbility(idx);
     // Long-press tooltip
     hxAttachAbilityTooltip(btn, ab);
@@ -4365,10 +4504,11 @@ function hxSelectMoveMode() {
   if(!unit||unit.hp<=0||unit.moved) return;
   if(hxs.mode === 'move') {
     // Cancel move mode
-    hxs.mode = 'select'; hxs.reachable = []; hxs.abilityTargets = []; hxs.activeAbilityIdx = null;
+    hxs.mode = 'select'; hxs.reachable = []; hxs.abilityTargets = []; hxs.activeAbilityIdx = null; hxs.confirming = null;
     hxRender(); hexUpdateInfo(); return;
   }
   hxs.mode = 'move';
+  hxs.confirming = null; // PASS B: reset confirmation on move
   hxs.reachable = hexReachable(unit);
   hxs.abilityTargets = [];
   hxs.activeAbilityIdx = null;
@@ -4379,16 +4519,26 @@ function hxSelectMoveMode() {
 function hxSelectAbility(idx) {
   if(hxs.ended || hxs.turn!=='player' || hxs.selected===null) return;
   const unit = hxs.units.find(u=>u.id===hxs.selected);
-  if(!unit||unit.hp<=0||unit.acted) return;
+  if(!unit||unit.hp<=0) return;
+  // PASS A: for hero check AP, for others check acted
+  if(unit.isHero) {
+    // will be checked per-ability below
+  } else if(unit.acted) return;
   const ab = unit.abilities?.[idx];
   if(!ab || ab.cooldown > 0) return;
+  // PASS A: check hero AP cost
+  if(unit.isHero) {
+    const apCost = ab.maxCooldown === 0 ? 1 : ab.maxCooldown <= 2 ? 2 : 3;
+    if(hxs.heroAP < apCost) return;
+  }
   // Toggle off if already selected
   if(hxs.mode === 'ability' && hxs.activeAbilityIdx === idx) {
-    hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null; hxs.aoeHover = null;
+    hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null; hxs.aoeHover = null; hxs.confirming = null;
     hxRender(); hexUpdateInfo(); return;
   }
   hxs.mode = 'ability';
   hxs.activeAbilityIdx = idx;
+  hxs.confirming = null; // PASS B: reset confirmation on new ability select
   hxs.reachable = [];
   hxs.abilityTargets = hxAbilityTargets(unit, ab);
   if(hxs.abilityTargets.length === 0 && ab.range > 0) {
@@ -4399,7 +4549,7 @@ function hxSelectAbility(idx) {
   // Block ability with range=0 (self-buff): apply immediately
   if(ab.range === 0) {
     hxApplyAbility(unit, ab, unit);
-    hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null;
+    hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null; hxs.confirming = null;
     // auto end unit if both done
     if(unit.moved && unit.acted) { hxs.selected = null; hxs.reachable = []; }
     hxRender(); hexUpdateInfo(); return;
@@ -4413,20 +4563,27 @@ function hxClickUnit(unitId) {
   const unit = hxs.units.find(u=>u.id===unitId);
   if(!unit||unit.hp<=0) return;
 
-  // In ability targeting mode — click on target
+  // In ability targeting mode — click on target unit
   if(hxs.mode === 'ability' && hxs.selected !== null) {
     const sel = hxs.units.find(u=>u.id===hxs.selected);
-    if(sel && hxs.abilityTargets.some(t=>t.id===unitId)) {
-      const ab = sel.abilities?.[hxs.activeAbilityIdx];
-      if(ab) {
-        hxApplyAbility(sel, ab, unit);
-        hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null;
-        hxs.reachable = []; hxs.aoeHover = null;
-        // Auto-deselect if unit fully done
-        if(sel.moved && sel.acted) { hxs.selected = null; }
-        hxRender(); hexUpdateInfo();
+    if(sel) {
+      if(sel.isHero) {
+        // PASS B: hero uses hex-based targeting — delegate to hxClickHex
+        hxClickHex(unit.col, unit.row);
+        return;
       }
-      return;
+      // Non-hero: unit-based ability targeting
+      if(hxs.abilityTargets.some(t=>t.id===unitId)) {
+        const ab = sel.abilities?.[hxs.activeAbilityIdx];
+        if(ab) {
+          hxApplyAbility(sel, ab, unit);
+          hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null;
+          hxs.reachable = []; hxs.aoeHover = null; hxs.confirming = null;
+          if(sel.moved && sel.acted) { hxs.selected = null; }
+          hxRender(); hexUpdateInfo();
+        }
+        return;
+      }
     }
   }
 
@@ -4442,10 +4599,11 @@ function hxClickUnit(unitId) {
     hxs.inspecting = null;
     if(hxs.selected === unitId) {
       hxs.selected = null; hxs.reachable = []; hxs.abilityTargets = [];
-      hxs.mode = 'select'; hxs.activeAbilityIdx = null;
+      hxs.mode = 'select'; hxs.activeAbilityIdx = null; hxs.confirming = null;
       hxRender(); hexUpdateInfo(); return;
     }
     hxs.selected = unitId;
+    hxs.confirming = null; // PASS B: reset confirmation on unit change
     const canMove = (unit.remainingMove ?? unit.moveRange) > 0;
     hxs.mode = canMove ? 'move' : 'select';
     hxs.reachable = canMove ? hexReachable(unit) : [];
@@ -4485,25 +4643,44 @@ function hxClickHex(col, row) {
     return;
   }
 
-  // Ability mode: click on free hex
+  // Ability mode: click on hex
   if(hxs.mode === 'ability') {
-    const freeTarget = hxs.abilityTargets.find(t=>t.isFreeHex&&t.col===col&&t.row===row);
-    if(freeTarget) {
-      const ab = unit.abilities?.[hxs.activeAbilityIdx];
-      if(ab) {
-        hxApplyAbility(unit, ab, freeTarget);
-        hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null; hxs.reachable = []; hxs.aoeHover = null;
-        if(unit.moved && unit.acted) { hxs.selected = null; }
-        hxRender(); hexUpdateInfo();
+    const isTarget = hxs.abilityTargets.some(t=>t.col===col&&t.row===row);
+    if(isTarget) {
+      if(unit.isHero) {
+        // PASS B/C: hero uses double-tap confirmation
+        if(hxs.confirming && hxs.confirming.col===col && hxs.confirming.row===row) {
+          // Second tap — apply
+          const ab = unit.abilities?.[hxs.activeAbilityIdx];
+          if(ab) {
+            hxConfirmApply(unit, ab, col, row);
+          }
+        } else {
+          // First tap — show confirmation ring
+          hxs.confirming = {col, row};
+          hxRender(); hexUpdateInfo();
+        }
+        return;
+      }
+      // Non-hero: apply immediately (existing behaviour for summon free hex etc.)
+      const freeTarget = hxs.abilityTargets.find(t=>t.isFreeHex&&t.col===col&&t.row===row);
+      if(freeTarget) {
+        const ab = unit.abilities?.[hxs.activeAbilityIdx];
+        if(ab) {
+          hxApplyAbility(unit, ab, freeTarget);
+          hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null; hxs.reachable = []; hxs.aoeHover = null;
+          hxs.confirming = null;
+          if(unit.moved && unit.acted) { hxs.selected = null; }
+          hxRender(); hexUpdateInfo();
+        }
+        return;
       }
       return;
     }
     // Clicking non-target hex cancels ability mode
-    const isTarget = hxs.abilityTargets.some(t=>t.col===col&&t.row===row);
-    if(!isTarget) {
-      hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null; hxs.aoeHover = null;
-      hxRender(); hexUpdateInfo();
-    }
+    hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null; hxs.aoeHover = null;
+    hxs.confirming = null;
+    hxRender(); hexUpdateInfo();
     return;
   }
 
@@ -4537,7 +4714,7 @@ function hxSkipUnit() {
   unit.moved = true; unit.acted = true;
   hxLog(`${unit.name} пропускает ход.`, 'info');
   hxs.selected = null; hxs.reachable = []; hxs.abilityTargets = [];
-  hxs.mode = 'select'; hxs.activeAbilityIdx = null;
+  hxs.mode = 'select'; hxs.activeAbilityIdx = null; hxs.confirming = null;
   hxRender(); hexUpdateInfo();
 }
 
@@ -4545,6 +4722,8 @@ function hxEndTurn() {
   if(hxs.ended || hxs.turn!=='player') return;
   hxs.selected = null; hxs.reachable = []; hxs.abilityTargets = [];
   hxs.mode = 'select'; hxs.activeAbilityIdx = null; hxs.aoeHover = null;
+  hxs.heroAP = 0; // PASS A: consume remaining AP on end turn
+  hxs.confirming = null; // PASS B: reset confirmation
   hxs.turn = 'enemy';
   document.getElementById('hx-skip-btn').disabled = true;
   hxRender(); hexUpdateInfo();
@@ -4561,7 +4740,7 @@ function initHex() {
   const playerDefs = heroDef ? null : (Array.isArray(gameData.player_units) ? gameData.player_units : [{type:'warrior',name:'Воин'}]);
   const enemyDefs  = Array.isArray(gameData.enemy_units)  ? gameData.enemy_units  : [{type:'warrior',name:'Страж'}];
 
-  hxs = {units:[], turn:'player', selected:null, inspecting:null, reachable:[], attackable:[], abilityTargets:[], activeAbilityIdx:null, mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, ended:false, rifts:[], forests:[], heights:[], obstacles:[], bushes:[], objective:null, enemyIntents:{}, totalDamageDealt:0, totalDamageTaken:0, aoeHover:null, abilitiesUsed:{}, hero: heroDef};
+  hxs = {units:[], turn:'player', selected:null, inspecting:null, reachable:[], attackable:[], abilityTargets:[], activeAbilityIdx:null, mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, ended:false, rifts:[], forests:[], heights:[], obstacles:[], bushes:[], objective:null, enemyIntents:{}, totalDamageDealt:0, totalDamageTaken:0, aoeHover:null, abilitiesUsed:{}, hero: heroDef, heroAP: 4, confirming: null};
 
   let idCtr = 0;
 
