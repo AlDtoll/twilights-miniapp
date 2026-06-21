@@ -4384,16 +4384,21 @@ function hxClickHex(col, row) {
   if(!unit || unit.hp <= 0) return;
 
   // Move mode: click on reachable hex
-  if(hxs.mode === 'move' && hxs.reachable.some(([c,r])=>c===col&&r===row)) {
-    unit.col = col; unit.row = row; unit.moved = true;
-    hxs.mode = 'select'; hxs.reachable = [];
-    // Check if done (ability already used)
-    if(unit.moved && unit.acted) { hxs.selected = null; }
-    hxRender(); hexUpdateInfo();
+  if(hxs.mode === 'move') {
+    if(hxs.reachable.some(([c,r])=>c===col&&r===row)) {
+      unit.col = col; unit.row = row; unit.moved = true;
+      hxs.mode = 'select'; hxs.reachable = [];
+      if(unit.moved && unit.acted) { hxs.selected = null; }
+      hxRender(); hexUpdateInfo();
+    } else {
+      // Cancel move mode on non-reachable hex click
+      hxs.mode = 'select'; hxs.reachable = [];
+      hxRender(); hexUpdateInfo();
+    }
     return;
   }
 
-  // Ability mode: click on free hex (summon target)
+  // Ability mode: click on free hex
   if(hxs.mode === 'ability') {
     const freeTarget = hxs.abilityTargets.find(t=>t.isFreeHex&&t.col===col&&t.row===row);
     if(freeTarget) {
@@ -4404,7 +4409,15 @@ function hxClickHex(col, row) {
         if(unit.moved && unit.acted) { hxs.selected = null; }
         hxRender(); hexUpdateInfo();
       }
+      return;
     }
+    // Clicking non-target hex cancels ability mode
+    const isTarget = hxs.abilityTargets.some(t=>t.col===col&&t.row===row);
+    if(!isTarget) {
+      hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null; hxs.aoeHover = null;
+      hxRender(); hexUpdateInfo();
+    }
+    return;
   }
 }
 
