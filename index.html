@@ -3461,38 +3461,95 @@ function hexFindBestTarget(unit, candidates) {
   return candidates.slice().sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp))[0];
 }
 
-// Pick best enemy ability (not on cooldown, highest potential damage)
+// Role-based enemy AI: pick ability based on unit type personality
 function hxPickEnemyAbility(enemy, players, allies) {
   const abs = enemy.abilities || [];
   if(!abs.length) return null;
-  // Heal ability if HP < 50% and allies wounded
-  const healAbs = abs.filter(a=>a.type==='heal'&&a.cooldown===0);
-  if(healAbs.length && enemy.hp/enemy.maxHp < 0.5) {
-    const woundedAlly = allies.filter(a=>a.hp<a.maxHp&&a.id!==enemy.id&&hexDist(enemy.col,enemy.row,a.col,a.row)<=healAbs[0].range);
-    if(woundedAlly.length) return {ability:healAbs[0], target:woundedAlly.reduce((a,b)=>a.hp<=b.hp?a:b)};
+  const alive = hxs.units.filter(u=>u.hp>0);
+
+  // ---- HEALER role (druid, adept, healer) ----
+  if(['druid','adept','healer'].includes(enemy.type)) {
+    const healAb = abs.find(a=>a.type==='heal'&&a.cooldown===0);
+    if(healAb) {
+      // Find most wounded ally within heal range
+      const wounded = allies.filter(u=>u.hp<u.maxHp*0.5&&u.id!==enemy.id&&hexDist(enemy.col,enemy.row,u.col,u.row)<=healAb.range);
+      if(wounded.length) return {ability:healAb, target:wounded.reduce((a,b)=>a.hp<b.hp?a:b)};
+    }
+    // No heal needed — fall through to damage ability
   }
-  // Summon if outnumbered
-  const summonAbs = abs.filter(a=>a.type==='summon'&&a.cooldown===0);
-  if(summonAbs.length && players.length > allies.filter(a=>a.hp>0).length) {
-    const nbrs = hexNeighbors(enemy.col, enemy.row);
-    const occupied = new Set(hxs.units.filter(u=>u.hp>0).map(u=>`${u.col},${u.row}`));
-    const emptyAdj = nbrs.filter(([c,r])=>!occupied.has(`${c},${r}`));
-    if(emptyAdj.length) {
-      const [sc,sr] = emptyAdj[0];
-      return {ability:summonAbs[0], target:{isFreeHex:true,col:sc,row:sr,id:`free_${sc}_${sr}`,team:'free',hp:1}};
+
+  // ---- SUMMONER role (demonologist, necromancer) ----
+  if(['demonologist','necromancer'].includes(enemy.type)) {
+    const summonAb = abs.find(a=>a.effect?.type==='summon'&&a.cooldown===0);
+    if(summonAb) {
+      const summonedTypes = ['shadow','cadaver'];
+      const summoned = alive.filter(u=>summonedTypes.includes(u.type)&&u.team===enemy.team);
+      if(summoned.length < 1) {
+        const occupied = new Set(alive.map(u=>`${u.col},${u.row}`));
+        const obst = new Set((hxs.obstacles||[]).map(([c,r])=>`${c},${r}`));
+        const freeHex = hexNeighbors(enemy.col,enemy.row).find(([nc,nr])=>!occupied.has(`${nc},${nr}`)&&!obst.has(`${nc},${nr}`));
+        if(freeHex) return {ability:summonAb, target:{isFreeHex:true,col:freeHex[0],row:freeHex[1],id:`free_${freeHex[0]}_${freeHex[1]}`,team:'free',hp:1}};
+      }
     }
   }
-  // Debuff if 2+ players in range
+
+  // ---- DEBUFFER role (incenser) — AoE smoke to cover 2+ players ----
+  if(enemy.type==='incenser') {
+    const smokeAb = abs.find(a=>a.type==='debuff'&&(a.aoe||0)>0&&a.cooldown===0);
+    if(smokeAb) {
+      // Find best anchor player that puts 2+ players in AoE
+      let bestSmoke = null, bestCount = 0;
+      players.forEach(p=>{
+        if(hexDist(enemy.col,enemy.row,p.col,p.row)<=smokeAb.range) {
+          const covered = players.filter(p2=>hexDist(p.col,p.row,p2.col,p2.row)<=smokeAb.aoe).length;
+          if(covered > bestCount) { bestCount=covered; bestSmoke=p; }
+        }
+      });
+      if(bestSmoke && bestCount >= 2) return {ability:smokeAb, target:bestSmoke};
+      // fallback: any player in range
+      const anyInRange = players.filter(p=>hexDist(enemy.col,enemy.row,p.col,p.row)<=smokeAb.range);
+      if(anyInRange.length) return {ability:smokeAb, target:anyInRange[0]};
+    }
+  }
+
+  // ---- TANK role (warrior, cavalry) — block ability if low HP ----
+  if(['warrior','cavalry'].includes(enemy.type)) {
+    if(enemy.hp < enemy.maxHp*0.6) {
+      const blockAb = abs.find(a=>a.effect?.type==='block'&&a.cooldown===0);
+      if(blockAb) return {ability:blockAb, target:enemy}; // self-buff (range=0)
+    }
+    // Cavalry knockback if target near edge
+    if(enemy.type==='cavalry') {
+      const knockAb = abs.find(a=>a.effect?.type==='knockback'&&a.cooldown===0);
+      if(knockAb) {
+        const edgeFoes = players.filter(p=>{
+          const dist = hexDist(enemy.col,enemy.row,p.col,p.row);
+          return dist<=knockAb.range&&(p.col<=1||p.col>=HEX_COLS-2||p.row<=0||p.row>=HEX_ROWS-1);
+        });
+        if(edgeFoes.length) return {ability:knockAb, target:edgeFoes[0]};
+      }
+    }
+  }
+
+  // ---- RANGED role (archer, wizard, elementalist, incenser) — prefer max-range targets ----
+  const isRangedType = ['archer','wizard','elementalist','incenser'].includes(enemy.type);
+
+  // Debuff if 2+ players in range (fallback for non-incenser debuffers)
   const debuffAbs = abs.filter(a=>a.type==='debuff'&&a.cooldown===0);
   for(const ab of debuffAbs) {
     const inRange = players.filter(p=>hexDist(enemy.col,enemy.row,p.col,p.row)<=ab.range);
     if(inRange.length >= 2) return {ability:ab, target:inRange[0]};
   }
+
   // Best damage ability
   const dmgAbs = abs.filter(a=>a.cooldown===0&&a.type!=='heal'&&a.type!=='summon'&&(hxAbilityDamage(a,enemy)>0||a.effect?.type==='stun'));
   if(dmgAbs.length) {
     const best = dmgAbs.slice().sort((a,b)=>hxAbilityDamage(b,enemy)-hxAbilityDamage(a,enemy))[0];
-    const inRange = players.filter(p=>hexDist(enemy.col,enemy.row,p.col,p.row)<=best.range);
+    let inRange = players.filter(p=>hexDist(enemy.col,enemy.row,p.col,p.row)<=best.range);
+    // Ranged units prefer farthest target within range (stay distant)
+    if(isRangedType && inRange.length > 1) {
+      inRange = inRange.slice().sort((a,b)=>hexDist(enemy.col,enemy.row,b.col,b.row)-hexDist(enemy.col,enemy.row,a.col,a.row));
+    }
     if(inRange.length) return {ability:best, target:hexFindBestTarget(enemy,inRange)||inRange[0]};
   }
   return null;
@@ -3585,13 +3642,20 @@ function hexEnemyTurn() {
 
     // No ability or ability out of range — move+basic attack
     const inRange = hexDist(enemy.col,enemy.row,nearest.col,nearest.row) <= enemy.atkRange;
-    if(inRange && !enemy.acted) {
+    const isRangedUnit = ['archer','wizard','elementalist','incenser'].includes(enemy.type);
+    const isTankUnit   = ['warrior','cavalry'].includes(enemy.type);
+    const isSummonerUnit = ['demonologist','necromancer'].includes(enemy.type);
+    const isHealerUnit = ['druid','adept','healer'].includes(enemy.type);
+
+    if(inRange && !enemy.acted && !isRangedUnit) {
+      // Ranged units skip basic attack at melee — handled below with retreat
       hexAttack(enemy, nearest);
       if(hxs.ended) break;
     } else if(!enemy.moved) {
       const reach = hexReachable(enemy);
-      // Druid/healer moves toward wounded ally first
-      if((enemy.type==='druid'||enemy.type==='healer') && !enemy.acted) {
+
+      // Healer/druid — move toward most wounded ally first
+      if(isHealerUnit && !enemy.acted) {
         const woundedAllies = allies.filter(a=>a.hp<a.maxHp&&a.id!==enemy.id);
         if(woundedAllies.length && reach.length) {
           const healT = woundedAllies.reduce((a,b)=>a.hp<=b.hp?a:b);
@@ -3603,6 +3667,88 @@ function hexEnemyTurn() {
           }
         }
       }
+
+      // Ranged units — retreat if player is adjacent (dist <= 1), then attack from distance
+      if(isRangedUnit) {
+        const tooClose = players.filter(p=>hexDist(enemy.col,enemy.row,p.col,p.row)<=1);
+        if(tooClose.length && reach.length) {
+          // BFS retreat: move to hex that maximizes distance from nearest foe
+          const safeSpot = reach.filter(([c,r])=>players.every(p=>hexDist(c,r,p.col,p.row)>1));
+          if(safeSpot.length) {
+            const retreatTo = safeSpot.reduce((a,b)=>{
+              const dA = players.reduce((m,p)=>Math.min(m,hexDist(a[0],a[1],p.col,p.row)),99);
+              const dB = players.reduce((m,p)=>Math.min(m,hexDist(b[0],b[1],p.col,p.row)),99);
+              return dA>=dB?a:b;
+            });
+            enemy.col=retreatTo[0]; enemy.row=retreatTo[1]; enemy.moved=true;
+            hxLog(`${enemy.name} отступает, сохраняя дистанцию.`, 'info');
+            // After retreating, try to attack from new position
+            const newPick = hxPickEnemyAbility(enemy, players, allies);
+            if(newPick && hexDist(enemy.col,enemy.row,newPick.target.col,newPick.target.row)<=newPick.ability.range) {
+              hxApplyAbility(enemy, newPick.ability, newPick.target);
+              if(hxs.ended) break;
+            } else if(hexDist(enemy.col,enemy.row,nearest.col,nearest.row)<=enemy.atkRange && !enemy.acted) {
+              hexAttack(enemy, nearest);
+              if(hxs.ended) break;
+            }
+            continue;
+          }
+        }
+        // Not too close — move to position with attack range (prefer max distance)
+        if(!enemy.moved) {
+          const atkSpots = reach.filter(([c,r])=>hexDist(c,r,nearest.col,nearest.row)<=enemy.atkRange);
+          if(atkSpots.length) {
+            // Prefer spot that keeps distance > 1 from all players
+            const safeAtk = atkSpots.filter(([c,r])=>players.every(p=>hexDist(c,r,p.col,p.row)>1));
+            const pool = safeAtk.length ? safeAtk : atkSpots;
+            // Among pool, pick one farthest from foes
+            const best = pool.reduce((a,b)=>{
+              const dA = players.reduce((m,p)=>Math.min(m,hexDist(a[0],a[1],p.col,p.row)),99);
+              const dB = players.reduce((m,p)=>Math.min(m,hexDist(b[0],b[1],p.col,p.row)),99);
+              return dA>=dB?a:b;
+            });
+            enemy.col=best[0]; enemy.row=best[1]; enemy.moved=true;
+            if(!enemy.acted) {
+              const newPick = hxPickEnemyAbility(enemy, players, allies);
+              if(newPick && hexDist(enemy.col,enemy.row,newPick.target.col,newPick.target.row)<=newPick.ability.range) {
+                hxApplyAbility(enemy, newPick.ability, newPick.target);
+                if(hxs.ended) break;
+              } else { hexAttack(enemy, nearest); if(hxs.ended) break; }
+            }
+          } else if(reach.length) {
+            const best = reach.reduce((a,b)=>hexDist(a[0],a[1],nearest.col,nearest.row)<=hexDist(b[0],b[1],nearest.col,nearest.row)?a:b);
+            enemy.col=best[0]; enemy.row=best[1]; enemy.moved=true;
+            hxLog(`${enemy.name} движется к ${nearest.name}.`, 'info');
+          }
+        }
+        continue;
+      }
+
+      // Summoner movement — necromancer toward dead players, demonologist toward rift
+      if(isSummonerUnit && !enemy.acted && reach.length) {
+        let summonerTarget = null;
+        if(enemy.type==='necromancer') {
+          // Move toward a dead enemy position or nearest rift
+          const deadPlayers = hxs.units.filter(u=>u.originalTeam==='player'&&u.hp<=0);
+          if(deadPlayers.length) {
+            summonerTarget = deadPlayers.reduce((a,b)=>hexDist(enemy.col,enemy.row,a.col,a.row)<=hexDist(enemy.col,enemy.row,b.col,b.row)?a:b);
+          }
+        } else if(enemy.type==='demonologist') {
+          // Move toward nearest rift
+          if(hxs.rifts.length) {
+            const nearRift = hxs.rifts.reduce((a,b)=>hexDist(enemy.col,enemy.row,a[0],a[1])<=hexDist(enemy.col,enemy.row,b[0],b[1])?a:b);
+            summonerTarget = {col:nearRift[0], row:nearRift[1]};
+          }
+        }
+        if(summonerTarget) {
+          const mv = reach.reduce((a,b)=>hexDist(a[0],a[1],summonerTarget.col,summonerTarget.row)<=hexDist(b[0],b[1],summonerTarget.col,summonerTarget.row)?a:b);
+          enemy.col=mv[0]; enemy.row=mv[1]; enemy.moved=true;
+          hxLog(`${enemy.name} движется к позиции для призыва.`, 'info');
+          continue;
+        }
+      }
+
+      // Default movement — move toward nearest enemy to attack
       const atkSpots = reach.filter(([c,r])=>hexDist(c,r,nearest.col,nearest.row)<=enemy.atkRange);
       if(atkSpots.length) {
         const best = atkSpots.reduce((a,b)=>hexDist(a[0],a[1],nearest.col,nearest.row)<=hexDist(b[0],b[1],nearest.col,nearest.row)?a:b);
@@ -3613,6 +3759,12 @@ function hexEnemyTurn() {
         enemy.col=best[0]; enemy.row=best[1]; enemy.moved=true;
         hxLog(`${enemy.name} движется к ${nearest.name}.`, 'info');
       }
+    }
+
+    // Ranged units at melee range without retreat option — attack anyway
+    if(isRangedUnit && inRange && !enemy.acted && !enemy.moved) {
+      hexAttack(enemy, nearest);
+      if(hxs.ended) break;
     }
   }
 
