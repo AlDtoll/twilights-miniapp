@@ -408,6 +408,27 @@
 
   @keyframes hxFlash { 0%{fill-opacity:0.9} 50%{fill-opacity:0.15} 100%{fill-opacity:0} }
   @keyframes hxPulse { 0%,100%{r:16} 50%{r:20} }
+
+  /* ABILITY TOOLTIP */
+  #hx-ability-tooltip {
+    position: fixed; z-index: 999; pointer-events: none;
+    background: #1a1a2e; border: 1px solid #7f8c8d;
+    border-radius: 8px; padding: 8px 10px; font-size: 12px;
+    color: #fff; max-width: 180px; line-height: 1.5;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    display: none;
+  }
+  #hx-ability-tooltip .tip-name { font-weight: 700; font-size: 13px; margin-bottom: 3px; }
+  #hx-ability-tooltip .tip-row { color: rgba(255,255,255,0.75); font-size: 11px; }
+  #hx-ability-tooltip .tip-effect { color: #a29bfe; font-size: 11px; }
+  #hx-ability-tooltip .tip-cd-ready { color: #2ecc71; font-size: 11px; }
+  #hx-ability-tooltip .tip-cd-wait { color: #e74c3c; font-size: 11px; }
+
+  /* UNIT STATUS BAR */
+  #hx-unit-status-bar {
+    font-size: 0.72rem; color: rgba(255,255,255,0.75); padding: 3px 8px 2px;
+    min-height: 1.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
 </style>
 </head>
 <body>
@@ -621,6 +642,7 @@
   <div id="hx-ability-panel">
     <div class="hx-ability-row" id="hx-ability-row"></div>
   </div>
+  <div id="hx-unit-status-bar"></div>
   <div class="hx-actions">
     <button class="hx-skip-btn" id="hx-skip-btn" onclick="hxSkipUnit()" disabled>Пропустить</button>
     <button class="hx-end-btn" id="hx-end-btn" onclick="hxEndTurn()">Конец хода</button>
@@ -4130,6 +4152,65 @@ function hxRender() {
   }
 }
 
+// ---- Ability Tooltip (long press >400ms) ----
+let _hxTooltipTimer = null;
+function hxShowAbilityTooltip(btn, ab) {
+  const tip = document.getElementById('hx-ability-tooltip');
+  if(!tip) return;
+  const typeNames = {melee:'Ближний бой',ranged:'Дальний бой',magic:'Магия',heal:'Лечение',summon:'Призыв',debuff:'Дебафф'};
+  let html = `<div class="tip-name">${ab.icon||''} ${ab.name}</div>`;
+  const dmgVal = ab.damage && ab.damage !== 0 ? (typeof ab.damage==='string'?ab.damage:ab.damage) : 0;
+  if(dmgVal && dmgVal !== 0) html += `<div class="tip-row">Урон: ${dmgVal}</div>`;
+  html += `<div class="tip-row">Тип: ${typeNames[ab.type]||ab.type}</div>`;
+  if(ab.range > 0) html += `<div class="tip-row">Дальность: ${ab.range} гекс.</div>`;
+  if((ab.aoe||0) > 0) html += `<div class="tip-row">Радиус AoE: ${ab.aoe}</div>`;
+  if(ab.effect?.type==='stun') html += `<div class="tip-effect">Эффект: Оглушение ${ab.effect.turns} хода</div>`;
+  if(ab.effect?.type==='heal') html += `<div class="tip-effect">Лечит: ${ab.effect.value} HP</div>`;
+  if(ab.effect?.type==='lifesteal') html += `<div class="tip-effect">Жизнекража: ${ab.effect.value} HP</div>`;
+  if(ab.effect?.type==='chain') html += `<div class="tip-effect">Цепная молния: ${ab.effect.value} урон</div>`;
+  if(ab.effect?.type==='knockback') html += `<div class="tip-effect">Отбрасывание</div>`;
+  if((ab.maxCooldown||0) > 0) {
+    html += ab.cooldown > 0
+      ? `<div class="tip-cd-wait">Кулдаун: ${ab.maxCooldown} хода (ост. ${ab.cooldown})</div>`
+      : `<div class="tip-cd-ready">Доступна</div>`;
+  } else {
+    html += `<div class="tip-cd-ready">Нет кулдауна</div>`;
+  }
+  tip.innerHTML = html;
+  const rect = btn.getBoundingClientRect();
+  tip.style.display = 'block';
+  const tipH = 80;
+  tip.style.left = Math.max(4, Math.min(rect.left, window.innerWidth - 190)) + 'px';
+  tip.style.top = Math.max(4, rect.top - tipH - 6) + 'px';
+}
+function hxHideAbilityTooltip() {
+  const tip = document.getElementById('hx-ability-tooltip');
+  if(tip) tip.style.display = 'none';
+  if(_hxTooltipTimer) { clearTimeout(_hxTooltipTimer); _hxTooltipTimer = null; }
+}
+function hxAttachAbilityTooltip(btn, ab) {
+  btn.addEventListener('touchstart', (e) => {
+    _hxTooltipTimer = setTimeout(() => hxShowAbilityTooltip(btn, ab), 400);
+  }, {passive:true});
+  btn.addEventListener('touchend', hxHideAbilityTooltip, {passive:true});
+  btn.addEventListener('touchmove', hxHideAbilityTooltip, {passive:true});
+  btn.addEventListener('mousedown', () => { _hxTooltipTimer = setTimeout(() => hxShowAbilityTooltip(btn, ab), 400); });
+  btn.addEventListener('mouseup', hxHideAbilityTooltip);
+  btn.addEventListener('mouseleave', hxHideAbilityTooltip);
+}
+
+// ---- Unit Status Bar (active cooldowns) ----
+function hxUpdateStatusBar(unit) {
+  const el = document.getElementById('hx-unit-status-bar');
+  if(!el) return;
+  if(!unit || unit.hp <= 0 || unit.team !== 'player') { el.textContent = ''; return; }
+  const cdParts = (unit.abilities||[]).map(ab=>{
+    if((ab.maxCooldown||0) === 0) return null;
+    return ab.cooldown > 0 ? `${ab.icon||ab.name} cd:${ab.cooldown}` : `${ab.icon||ab.name} cd:0`;
+  }).filter(Boolean);
+  el.textContent = `${unit.emoji||'?'} ${unit.name} | HP: ${unit.hp}/${unit.maxHp}${cdParts.length?' | '+cdParts.join(' | '):''}`;
+}
+
 function hexUpdateInfo(unit) {
   if(!unit && hxs.selected !== null) unit = hxs.units.find(u=>u.id===hxs.selected);
   const nameEl   = document.getElementById('hx-info-name');
@@ -4191,8 +4272,11 @@ function hexUpdateInfo(unit) {
     const cdBadge = onCd ? `<span class="cd-badge">⏳${ab.cooldown}</span>` : '';
     btn.innerHTML = `${cdBadge}<span class="hx-ability-icon">${ab.icon||'?'}</span><span class="hx-ability-name">${ab.name}</span>${cdText}`;
     btn.onclick = () => hxSelectAbility(idx);
+    // Long-press tooltip
+    hxAttachAbilityTooltip(btn, ab);
     row.appendChild(btn);
   });
+  hxUpdateStatusBar(unit);
 }
 
 // ---- Click handlers ----
@@ -4505,5 +4589,6 @@ function initHex() {
   hexUpdateInfo();
 }
 </script>
+<div id="hx-ability-tooltip"></div>
 </body>
 </html>
