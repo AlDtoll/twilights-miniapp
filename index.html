@@ -3347,7 +3347,8 @@ function hxConfirmApplyBtn() {
 function hxConfirmApply(unit, ab, col, row) {
   const unitOnTarget = hxs.units.find(u=>u.hp>0&&u.col===col&&u.row===row);
   const obstOnTarget = hxObstAt(col, row);
-  const primaryTarget = unitOnTarget || {col, row, isFreeHex:true};
+  const abTarget = hxs.abilityTargets.find(t=>t.col===col&&t.row===row);
+  const primaryTarget = unitOnTarget || abTarget || {col, row, isFreeHex:true};
 
   const dmgForObst = () => {
     const d = hxAbilityDamage(ab, unit);
@@ -5062,35 +5063,35 @@ function hxZoomAdjust(delta) {
 }
 
 let _hxPinchDist0 = null, _hxPinchLevel0 = 1.0, _hxPinchInited = false;
+const _hxPtrs = new Map();
 function hxInitPinchZoom() {
   if(_hxPinchInited) return;
   _hxPinchInited = true;
   const svg = document.getElementById('hx-svg');
   if(!svg) return;
-  const dist = (t) => {
-    const dx = t[0].clientX - t[1].clientX, dy = t[0].clientY - t[1].clientY;
-    return Math.sqrt(dx*dx + dy*dy);
+  svg.style.touchAction = 'pan-x pan-y'; // 1-finger scroll works, browser won't do native pinch-zoom
+  const pDist = () => {
+    const pts = [..._hxPtrs.values()];
+    return Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
   };
-  svg.addEventListener('touchstart', (e) => {
-    if(e.touches.length === 2) {
-      _hxPinchDist0 = dist(e.touches);
-      _hxPinchLevel0 = _hxZoomLevel;
-      e.preventDefault();
-    }
-  }, {passive: false});
-  svg.addEventListener('touchmove', (e) => {
-    if(e.touches.length === 2 && _hxPinchDist0 !== null) {
-      const scale = dist(e.touches) / _hxPinchDist0;
-      _hxZoomLevel = Math.max(0.4, Math.min(3.0, _hxPinchLevel0 * scale));
+  svg.addEventListener('pointerdown', (e) => {
+    _hxPtrs.set(e.pointerId, {x: e.clientX, y: e.clientY});
+    if(_hxPtrs.size === 2) { _hxPinchDist0 = pDist(); _hxPinchLevel0 = _hxZoomLevel; }
+  });
+  svg.addEventListener('pointermove', (e) => {
+    if(!_hxPtrs.has(e.pointerId)) return;
+    _hxPtrs.set(e.pointerId, {x: e.clientX, y: e.clientY});
+    if(_hxPtrs.size === 2 && _hxPinchDist0) {
+      _hxZoomLevel = Math.max(0.4, Math.min(3.0, _hxPinchLevel0 * pDist() / _hxPinchDist0));
       const vw = Math.round(HEX_SVG_W / _hxZoomLevel);
       const vh = Math.round(HEX_SVG_H / _hxZoomLevel);
       const vx = Math.max(0, Math.round((HEX_SVG_W - vw) / 2));
       const vy = Math.max(0, Math.round((HEX_SVG_H - vh) / 2));
       svg.setAttribute('viewBox', `${vx} ${vy} ${vw} ${vh}`);
-      e.preventDefault();
     }
-  }, {passive: false});
-  svg.addEventListener('touchend', () => { if(event.touches.length < 2) _hxPinchDist0 = null; });
+  });
+  svg.addEventListener('pointerup', (e) => { _hxPtrs.delete(e.pointerId); if(_hxPtrs.size < 2) _hxPinchDist0 = null; });
+  svg.addEventListener('pointercancel', (e) => { _hxPtrs.delete(e.pointerId); _hxPinchDist0 = null; });
 }
 
 function hxEndTurn() {
