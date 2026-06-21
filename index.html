@@ -2473,18 +2473,24 @@ function cgRenderHand(){
     el.className='cg-card'+(isNew?' dealing':'')+(cgs.sel===idx?' selected':'')+(card.cost>cgs.energy?' unaffordable':'');
     if(isNew) el.style.animationDelay=((idx-newStart)*80)+'ms';
     el.dataset.type=card.type;
-    let lpTimer=null;
-    el.addEventListener('touchstart',()=>{
+    let lpTimer=null,_tx=0,_ty=0,_moved=false;
+    el.addEventListener('touchstart',(ev)=>{
+      _tx=ev.touches[0].clientX; _ty=ev.touches[0].clientY; _moved=false;
       lpTimer=setTimeout(()=>{lpTimer=null;cgShowCardDetail(card);},500);
     },{passive:true});
-    el.addEventListener('touchmove',()=>{if(lpTimer){clearTimeout(lpTimer);lpTimer=null;}},{passive:true});
+    el.addEventListener('touchmove',(ev)=>{
+      const dx=ev.touches[0].clientX-_tx, dy=ev.touches[0].clientY-_ty;
+      if(Math.sqrt(dx*dx+dy*dy)>8) _moved=true;
+      if(lpTimer){clearTimeout(lpTimer);lpTimer=null;}
+    },{passive:true});
     el.addEventListener('touchend',(ev)=>{
       ev.preventDefault();
       if(lpTimer){clearTimeout(lpTimer);lpTimer=null;}
+      if(_moved) return;
       if(card.cost>cgs.energy) return;
       cgTapCard(idx,card);
     });
-    el.addEventListener('touchcancel',()=>{if(lpTimer){clearTimeout(lpTimer);lpTimer=null;}});
+    el.addEventListener('touchcancel',()=>{if(lpTimer){clearTimeout(lpTimer);lpTimer=null;} _moved=true;});
     el.onclick=()=>{if(card.cost>cgs.energy)return; cgTapCard(idx,card);};
     const icon=card.type==='attack'?'⚔️':card.type==='defense'?'🛡':'✨';
     const typeName=card.type==='attack'?'Атака':card.type==='defense'?'Защита':'Умение';
