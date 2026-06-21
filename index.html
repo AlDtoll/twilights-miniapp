@@ -367,6 +367,8 @@
   .hx-actions { display:flex; gap:8px; margin-top:6px; }
   .hx-end-btn { flex:1; padding: 10px; border-radius: 10px; border:none; background: #e74c3c; color:#fff; font-size:0.9rem; font-weight:700; cursor:pointer; }
   .hx-turn-label { text-align:center; font-size:0.85rem; font-weight:700; padding:4px; color:#f39c12; margin-bottom:4px; }
+  .hx-turn-label.player-turn { color: #2ecc71; }
+  .hx-turn-label.enemy-turn  { color: #e74c3c; }
   #hx-summary { text-align:center; font-size:0.78rem; color:rgba(255,255,255,0.6); margin-bottom:4px; }
 </style>
 </head>
@@ -567,11 +569,16 @@
   <svg id="hx-svg" viewBox="0 0 408 222" xmlns="http://www.w3.org/2000/svg"></svg>
   <div class="hx-log" id="hx-log">Выбери юнит и действуй!</div>
   <div class="hx-info" id="hx-info">
-    <div class="hx-info-main">
-      <span id="hx-info-text">Выбери отряд</span>
-      <div class="hx-info-flavor" id="hx-info-flavor"></div>
+    <div id="hx-info-main" style="flex:1; min-width:0;">
+      <div id="hx-info-name" style="font-weight:700; font-size:0.85rem;"></div>
+      <div id="hx-info-stats" style="font-size:0.75rem; color:rgba(255,255,255,0.7); margin-top:2px;"></div>
+      <div id="hx-info-spec" style="font-size:0.72rem; color:#9b59b6; margin-top:2px;"></div>
+      <div id="hx-info-flavor" style="font-size:0.65rem; color:rgba(255,255,255,0.45); font-style:italic; margin-top:1px;"></div>
+      <div id="hx-info-status" style="font-size:0.7rem; margin-top:2px;"></div>
     </div>
-    <button class="hx-spec-btn" id="hx-spec-btn" onclick="hxUseSpecial()" disabled>Спец</button>
+    <div style="display:flex; flex-direction:column; gap:4px; margin-left:6px;">
+      <button class="hx-spec-btn" id="hx-spec-btn" onclick="hxUseSpecial()" disabled>Спец</button>
+    </div>
   </div>
   <div class="hx-actions">
     <button class="hx-end-btn" id="hx-end-btn" onclick="hxEndTurn()">Конец хода</button>
@@ -2736,6 +2743,17 @@ const CG_GLOSSARY=[
   {key:'block',term:'Блок',def:'Поглощает входящий урон до конца хода, потом сбрасывается'},
 ];
 
+// Twilights lore glossary — shown in keyword popup for all cards
+const CG_LORE_GLOSSARY = [
+  {term:'Мерцание',def:'Единая природа всей боевой и магической силы — искажение пространства и материи.'},
+  {term:'Слабое мерцание',def:'Повторяемое базовое действие. Каждый маг описывает его по-своему: волшебник — телекинез, друид — токи жизни.'},
+  {term:'Сильное мерцание',def:'Мощный приём с перезарядкой — один раз за бой. Требует концентрации.'},
+  {term:'Истощить',def:'Карта уходит из игры и не возвращается в колоду после этого боя.'},
+  {term:'Уязвимость',def:'Цель берёт на 50% больше урона от атак.'},
+  {term:'Слабость',def:'Отряд наносит на 30% меньше урона атаками.'},
+  {term:'Броня',def:'Поглощает урон перед тем как HP снижается. Снимается в начале каждого хода.'},
+];
+
 function cgShowCardDetail(card){
   const icon=card.type==='attack'?'⚔️':card.type==='defense'?'🛡':'✨';
   const typeName=card.type==='attack'?'Атака':card.type==='defense'?'Защита':'Умение';
@@ -2748,6 +2766,17 @@ function cgShowCardDetail(card){
       if(card.effect[g.key]){
         const d=document.createElement('div'); d.className='cg-detail-term';
         d.innerHTML='<div class="cg-detail-term-name">'+g.term+'</div><div class="cg-detail-term-def">'+g.def+'</div>';
+        gl.appendChild(d);
+      }
+    });
+  }
+  // Show Twilights lore terms if card flavor references them
+  if(card.flavor) {
+    const flavorLow = card.flavor.toLowerCase();
+    CG_LORE_GLOSSARY.forEach(g=>{
+      if(flavorLow.includes(g.term.toLowerCase())){
+        const d=document.createElement('div'); d.className='cg-detail-term';
+        d.innerHTML='<div class="cg-detail-term-name" style="color:#a29bfe">'+g.term+'</div><div class="cg-detail-term-def">'+g.def+'</div>';
         gl.appendChild(d);
       }
     });
@@ -2960,6 +2989,7 @@ function hexEnd(won) {
 
 // PASS C: focus fire helper
 function hexFindBestTarget(unit, candidates) {
+  if(!candidates.length) return null;
   return candidates.slice().sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp))[0];
 }
 
@@ -2995,7 +3025,10 @@ function hexComputeEnemyIntents() {
 
 // ---- Enemy AI ----
 function hexEnemyTurn() {
-  document.getElementById('hx-turn-label').textContent = 'Ход противника...';
+  const _turnLabel = document.getElementById('hx-turn-label');
+  _turnLabel.className = 'hx-turn-label enemy-turn';
+  _turnLabel.textContent = 'Ход ' + hxs.turnNum + ' — ход врага...';
+  document.getElementById('hx-end-btn').disabled = true;
 
   // PASS B: Archer free strike — at start of enemy turn, before enemies act
   hxs.units.filter(u=>u.team==='player'&&u.type==='archer'&&u.hp>0&&!u.attacked).forEach(archer=>{
@@ -3009,10 +3042,6 @@ function hexEnemyTurn() {
     }
   });
   if(hxs.ended) return;
-
-  // PASS A: Forest block — apply +2 block at start of enemy turn too
-  const _forestSetE = new Set(hxs.forests.map(([fc,fr])=>`${fc},${fr}`));
-  hxs.units.filter(u=>u.hp>0&&_forestSetE.has(`${u.col},${u.row}`)).forEach(u=>{ u.block = (u.block||0) + 2; });
 
   // PASS B: Necromancer cadaver aura for ENEMY necromancers
   hxs.units.filter(u=>u.team==='enemy'&&u.type==='necromancer'&&u.hp>0).forEach(necro=>{
@@ -3285,7 +3314,10 @@ function hexEnemyTurn() {
   hxs.specialTarget = [];
   hxs.mode = 'select';
   if(!hxs.ended) hxLog(`Ход ${hxs.turnNum}. Твой ход!`, 'info');
-  document.getElementById('hx-turn-label').textContent = `Ход ${hxs.turnNum} | Ход игрока`;
+  const _pLabel = document.getElementById('hx-turn-label');
+  _pLabel.className = 'hx-turn-label player-turn';
+  _pLabel.textContent = `Ход ${hxs.turnNum} — твой ход`;
+  document.getElementById('hx-end-btn').disabled = false;
   // Pre-compute enemy intents for player to see before acting
   hexComputeEnemyIntents();
   hxRender();
@@ -3449,6 +3481,14 @@ function hxRender() {
       aim.textContent = '🎯';
       svg.appendChild(aim);
     }
+
+    // Larger invisible tap target (mobile UX)
+    const tapArea = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    tapArea.setAttribute('cx', x); tapArea.setAttribute('cy', y); tapArea.setAttribute('r', '22');
+    tapArea.setAttribute('fill', 'transparent');
+    tapArea.setAttribute('style', 'pointer-events:all; cursor:pointer;');
+    tapArea.addEventListener('click', () => hxClickUnit(unit.id));
+    svg.appendChild(tapArea);
   });
 
   // Draw obstacle hexes (PASS C)
@@ -3556,29 +3596,49 @@ function hxRender() {
   }
 }
 
-function hexUpdateInfo() {
-  const infoEl = document.getElementById('hx-info-text');
+function hexUpdateInfo(unit) {
+  if(!unit && hxs.selected !== null) unit = hxs.units.find(u=>u.id===hxs.selected);
+  const nameEl   = document.getElementById('hx-info-name');
+  const statsEl  = document.getElementById('hx-info-stats');
+  const specEl   = document.getElementById('hx-info-spec');
   const flavorEl = document.getElementById('hx-info-flavor');
-  const specBtn = document.getElementById('hx-spec-btn');
-  if(hxs.selected === null) {
-    infoEl.textContent = 'Выбери отряд';
+  const statusEl = document.getElementById('hx-info-status');
+  const specBtn  = document.getElementById('hx-spec-btn');
+  if(!unit || unit.hp <= 0) {
+    if(nameEl)   nameEl.textContent  = unit ? '—' : 'Выбери отряд';
+    if(statsEl)  statsEl.textContent  = '';
+    if(specEl)   specEl.textContent   = '';
     if(flavorEl) flavorEl.textContent = '';
-    specBtn.disabled = true;
+    if(statusEl) statusEl.textContent = '';
+    specBtn.disabled  = true;
     specBtn.textContent = 'Спец';
     return;
   }
-  const unit = hxs.units.find(u=>u.id===hxs.selected);
-  if(!unit||unit.hp<=0) { infoEl.textContent='—'; if(flavorEl) flavorEl.textContent=''; specBtn.disabled=true; return; }
+  const def = HEX_UNIT_DEFS[unit.type] || {};
   const done = unit.moved && unit.attacked;
-  infoEl.textContent = `${unit.name} HP ${unit.hp}/${unit.maxHp}${unit.block>0?' 🛡'+unit.block:''}${done?' [готово]':''}`;
-  if(flavorEl) flavorEl.textContent = unit.special.flavor || '';
-  if(hxs.mode === 'special') {
-    specBtn.textContent = 'Отмена';
-    specBtn.disabled = false;
-  } else {
-    specBtn.textContent = unit.special.name || 'Спец';
-    specBtn.disabled = unit.specialUsed || hxs.turn!=='player' || hxs.ended;
+  if(nameEl) nameEl.textContent = `${unit.emoji||def.emoji||'?'} ${unit.name}${done?' ✓':''}`;
+  // Stats line
+  const hpPct = Math.round(unit.hp/unit.maxHp*100);
+  let statsLine = `❤ ${unit.hp}/${unit.maxHp} (${hpPct}%)  ⚔ ${unit.atk}  👣 ${unit.moveRange}  🎯 ${unit.atkRange}`;
+  if(statsEl) statsEl.textContent = statsLine;
+  // Special
+  const sp = unit.special || def.special;
+  if(specEl) {
+    if(sp && sp.name && sp.name !== '—') {
+      specEl.textContent = unit.specialUsed ? `[использовано] ${sp.name}` : `${sp.name}: ${sp.desc}`;
+    } else { specEl.textContent = ''; }
   }
+  if(flavorEl) flavorEl.textContent = (sp && sp.flavor) ? sp.flavor : '';
+  // Status effects
+  const statuses = [];
+  if(unit.block > 0) statuses.push(`🛡 ${unit.block}`);
+  if(unit.atkDebuff > 0) statuses.push(`💨 −${unit.atkDebuff}`);
+  if(unit.aimBonus) statuses.push('🎯×2');
+  if(statusEl) statusEl.textContent = statuses.join('  ');
+  // Spec button
+  const inSpecialMode = hxs.mode === 'special';
+  specBtn.textContent = inSpecialMode ? 'Отмена' : (sp && sp.name && sp.name !== '—' ? 'Спец' : 'Спец');
+  specBtn.disabled = unit.team !== 'player' || unit.specialUsed || hxs.turn !== 'player' || hxs.ended || (!inSpecialMode && !sp?.name);
 }
 
 // ---- Click handlers ----
@@ -3962,7 +4022,9 @@ function initHex() {
     // Don't add to _allBlocked — units can stand on objective
   }
 
-  document.getElementById('hx-turn-label').textContent = 'Ход 1 | Ход игрока';
+  const _initLabel = document.getElementById('hx-turn-label');
+  _initLabel.className = 'hx-turn-label player-turn';
+  _initLabel.textContent = 'Ход 1 — твой ход';
   document.getElementById('hx-end-btn').disabled = false;
   hxLog('Ход 1. Твой ход!', 'info');
   // Pre-compute initial enemy intents
