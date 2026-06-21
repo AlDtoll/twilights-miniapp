@@ -358,7 +358,7 @@
 
   /* HEX GAME */
   #hx-battle { padding: 8px; width: 100%; max-width: 440px; }
-  #hx-svg { display: block; width: 100%; touch-action: manipulation; transition: width 0.2s; }
+  #hx-svg { display: block; width: 100%; touch-action: none; transition: width 0.2s; }
   .hx-log { max-height: 80px; overflow-y: auto; font-size: 0.8rem; padding: 4px 8px; background: rgba(0,0,0,0.3); border-radius: 6px; margin: 6px 0; line-height: 1.6; scroll-behavior: smooth; }
   .hx-log::-webkit-scrollbar { width: 3px; }
   .hx-log::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
@@ -649,7 +649,7 @@
   </div>
   <div style="width:100%;overflow:hidden;">
     <div id="hx-svg-wrap" style="width:100%;max-height:55vh;overflow:auto;">
-      <svg id="hx-svg" xmlns="http://www.w3.org/2000/svg" style="display:block;touch-action:manipulation;"></svg>
+      <svg id="hx-svg" xmlns="http://www.w3.org/2000/svg" style="display:block;touch-action:none;"></svg>
     </div>
   </div>
   <div id="hx-legend" style="font-size:0.65rem; color:rgba(255,255,255,0.4); text-align:center; padding:2px 4px; line-height:1.6;">
@@ -3144,7 +3144,6 @@ let hxs = {
   forests: [],
   heights: [],
   obstacles: [],
-  objective: null,
   enemyIntents: {},
   totalDamageDealt: 0,
   totalDamageTaken: 0,
@@ -3232,9 +3231,11 @@ function hexReachable(unit) {
     ...hxs.units.filter(u=>u.id!==unit.id&&u.hp>0).map(u=>`${u.col},${u.row}`),
     ...(hxs.obstacles||[]).map(ob=>`${ob.col},${ob.row}`),
     ...(hxs.waters||[]).map(([c,r])=>`${c},${r}`),
+    ...(hxs.deep_waters||[]).map(([c,r])=>`${c},${r}`),
   ]);
   const swampSet = new Set((hxs.swamps||[]).map(([c,r])=>`${c},${r}`));
-  // Dijkstra with move-cost: swamp costs 2, everything else 1
+  const shallowSet = new Set((hxs.shallow_waters||[]).map(([c,r])=>`${c},${r}`));
+  // Dijkstra with move-cost: swamp/shallow_water costs 2, everything else 1
   const visited = new Map([[`${unit.col},${unit.row}`, 0]]);
   const queue = [[0, unit.col, unit.row]]; // [cost, c, r]
   const result = [];
@@ -3244,7 +3245,7 @@ function hexReachable(unit) {
     if(d > 0 && !blocked.has(`${c},${r}`)) result.push([c, r]);
     if(d < range && !blocked.has(`${c},${r}`)) {
       for(const [nc, nr] of hexNeighbors(c, r)) {
-        const stepCost = swampSet.has(`${nc},${nr}`) ? 2 : 1;
+        const stepCost = (swampSet.has(`${nc},${nr}`) || shallowSet.has(`${nc},${nr}`)) ? 2 : 1;
         const newCost = d + stepCost;
         const key = `${nc},${nr}`;
         if(newCost <= range && (!visited.has(key) || visited.get(key) > newCost)) {
@@ -3855,8 +3856,7 @@ function hexCheckEnd() {
   const playerAlive = hxs.units.some(u => (u.originalTeam==='player' || u.originalTeam==='enemy' && u.team==='player') && u.hp>0);
   if(!enemyStillFighting) { hexEnd(true); return; }
   if(!playerAlive) { hexEnd(false); return; }
-  // Objective win: player held the star hex for 3 full turns
-  if(hxs.objective && (hxs.objective.playerTurns||0) >= 3) { hexEnd(true); return; }
+
 }
 
 function hexEnd(won) {
@@ -3867,8 +3867,7 @@ function hexEnd(won) {
   const totalPlayer = hxs.units.filter(u=>u.originalTeam==='player').length;
   const enemies_defeated = hxs.units.filter(u=>u.originalTeam==='enemy'&&(u.hp<=0||u.team==='player')).length;
   const enemies_total = hxs.units.filter(u=>u.originalTeam==='enemy').length;
-  const objWon = won && (hxs.objective?.playerTurns||0) >= 3;
-  hxLog(objWon ? '⭐ Цель захвачена! Победа!' : won ? '🏆 Победа! Все враги повержены.' : '💀 Поражение...', 'attack');
+  hxLog(won ? '🏆 Победа! Все враги повержены.' : '💀 Поражение...', 'attack');
   hxRender();
   // Visual end-game overlay
   const svg = document.getElementById('hx-svg');
@@ -3882,7 +3881,7 @@ function hexEnd(won) {
   txt.setAttribute('text-anchor','middle'); txt.setAttribute('dominant-baseline','middle');
   txt.setAttribute('font-size','28'); txt.setAttribute('font-weight','bold');
   txt.setAttribute('fill', won ? '#2ecc71' : '#e74c3c');
-  txt.textContent = objWon ? '⭐ ЗАХВАТ ЦЕЛИ' : won ? '⚔ ПОБЕДА' : '💀 ПОРАЖЕНИЕ';
+  txt.textContent = won ? '⚔ ПОБЕДА' : '💀 ПОРАЖЕНИЕ';
   svg.appendChild(txt);
   // PASS D: Build FFT result extras if hero mode
   const _heroUnit = hxs.units.find(u => u.isHero);
@@ -3905,10 +3904,6 @@ function hexEnd(won) {
     enemies_total,
     damage_dealt: hxs.totalDamageDealt,
     damage_taken: hxs.totalDamageTaken,
-    controlled_point: hxs.objective ? hxs.objective.controlled : 'none',
-    objective_player_turns: hxs.objective?.playerTurns || 0,
-    objective_enemy_turns: hxs.objective?.enemyTurns || 0,
-    objective_won: (hxs.objective?.playerTurns||0) >= 3,
     ..._fftExtras,
   }), 1200);
 }
@@ -3944,7 +3939,7 @@ function hxPickEnemyAbility(enemy, players, allies) {
       const summoned = alive.filter(u=>summonedTypes.includes(u.type)&&u.team===enemy.team);
       if(summoned.length < 1) {
         const occupied = new Set(alive.map(u=>`${u.col},${u.row}`));
-        const obst = new Set([...(hxs.obstacles||[]).map(ob=>`${ob.col},${ob.row}`),...(hxs.waters||[]).map(([c,r])=>`${c},${r}`)]);
+        const obst = new Set([...(hxs.obstacles||[]).map(ob=>`${ob.col},${ob.row}`),...(hxs.waters||[]).map(([c,r])=>`${c},${r}`),...(hxs.deep_waters||[]).map(([c,r])=>`${c},${r}`)]);
         const freeHex = hexNeighbors(enemy.col,enemy.row).find(([nc,nr])=>!occupied.has(`${nc},${nr}`)&&!obst.has(`${nc},${nr}`));
         if(freeHex) return {ability:summonAb, target:{isFreeHex:true,col:freeHex[0],row:freeHex[1],id:`free_${freeHex[0]}_${freeHex[1]}`,team:'free',hp:1}};
       }
@@ -4080,7 +4075,7 @@ async function hexEnemyTurn() {
     const allies = hxs.units.filter(u=>u.team==='enemy'&&u.hp>0);
     const nearest = hexFindBestTarget(enemy, players) || players[0];
 
-    const pick = hxPickEnemyAbility(enemy, players, allies);
+    const pick = !enemy.deepWaterStunned ? hxPickEnemyAbility(enemy, players, allies) : null;
     if(pick) {
       if(!enemy.moved) {
         const reach = hexReachable(enemy);
@@ -4102,7 +4097,7 @@ async function hexEnemyTurn() {
     const isSummonerUnit = ['demonologist','necromancer'].includes(enemy.type);
     const isHealerUnit = ['druid','adept','healer'].includes(enemy.type);
 
-    if(inRange && !enemy.acted && !isRangedUnit) {
+    if(inRange && !enemy.acted && !isRangedUnit && !enemy.deepWaterStunned) {
       await hxEnemyBasicAtk(enemy, nearest);
       if(hxs.ended) break;
     } else if(!enemy.moved) {
@@ -4199,7 +4194,7 @@ async function hexEnemyTurn() {
       }
     }
 
-    if(isRangedUnit && inRange && !enemy.acted && !enemy.moved) {
+    if(isRangedUnit && inRange && !enemy.acted && !enemy.moved && !enemy.deepWaterStunned) {
       await hxEnemyBasicAtk(enemy, nearest);
       if(hxs.ended) break;
     }
@@ -4208,6 +4203,7 @@ async function hexEnemyTurn() {
   // Reset for next player turn
   hxs.units.forEach(u => {
     u.moved = false; u.acted = false; u.atkDebuff = 0; u.remainingMove = u.moveRange; u.freeMoveDone = false;
+    u.deepWaterStunned = false; // reset deep water stun (re-applied each turn if still in deep water)
     // Tick buff durations
     if(u.atkBuffTurns > 0) { u.atkBuffTurns--; if(u.atkBuffTurns <= 0) u.atkBuff = 0; }
     // Tick ability cooldowns
@@ -4237,6 +4233,13 @@ async function hexEnemyTurn() {
     hxLog(`🟫 ${u.name} в болоте! −1 HP`, 'info');
   });
 
+  // Deep water: units standing in deep water cannot act this turn
+  const _deepWaterSetTick = new Set((hxs.deep_waters||[]).map(([c,r])=>`${c},${r}`));
+  hxs.units.filter(u=>u.hp>0&&_deepWaterSetTick.has(`${u.col},${u.row}`)).forEach(u=>{
+    u.deepWaterStunned = true;
+    hxLog(`🌊 ${u.name} в глубокой воде — не может атаковать или использовать способности!`, 'info');
+  });
+
   // Forest block at start of player turn
   const forestSet = new Set(hxs.forests.map(([fc,fr])=>`${fc},${fr}`));
   hxs.units.filter(u=>u.hp>0&&forestSet.has(`${u.col},${u.row}`)).forEach(u=>{
@@ -4249,13 +4252,6 @@ async function hexEnemyTurn() {
     hxs.units.filter(u=>u.type==='cadaver'&&u.team==='player'&&u.hp>0&&hexDist(necro.col,necro.row,u.col,u.row)===1)
       .forEach(cad=>{ cad.hp=Math.min(cad.maxHp,cad.hp+2); hxLog(`💀 ${necro.name} поддерживает кадавр (+2 HP)`, 'heal'); });
   });
-
-  // Objective hex tracking
-  if(hxs.objective) {
-    const onObj = hxs.units.find(u=>u.hp>0&&u.col===hxs.objective.col&&u.row===hxs.objective.row);
-    if(onObj?.team === 'player') hxs.objective.playerTurns = (hxs.objective.playerTurns||0) + 1;
-    else if(onObj?.team === 'enemy') hxs.objective.enemyTurns = (hxs.objective.enemyTurns||0) + 1;
-  }
 
   hxs.turnNum++;
   hxs.turn = 'player';
@@ -4408,9 +4404,27 @@ function hxRender() {
 
   // Draw units
   hxs.units.forEach(unit => {
-    if(unit.hp <= 0) return;
     if(unit._animating) return; // skip — animation overlay draws this unit
     const {x,y} = hexToPixel(unit.col, unit.row);
+
+    // Dead units shown as corpses (💀), grey, non-interactive
+    if(unit.dead || unit.hp <= 0) {
+      if(unit.team !== 'enemy') return; // only show enemy corpses
+      const corpseCircle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      corpseCircle.setAttribute('cx', x); corpseCircle.setAttribute('cy', y); corpseCircle.setAttribute('r', '12');
+      corpseCircle.setAttribute('fill', 'rgba(60,60,60,0.5)');
+      corpseCircle.setAttribute('stroke', '#555'); corpseCircle.setAttribute('stroke-width', '1');
+      corpseCircle.setAttribute('pointer-events','none');
+      svg.appendChild(corpseCircle);
+      const corpseLbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+      corpseLbl.setAttribute('x', x); corpseLbl.setAttribute('y', y+1);
+      corpseLbl.setAttribute('text-anchor','middle'); corpseLbl.setAttribute('dominant-baseline','middle');
+      corpseLbl.setAttribute('font-size','11'); corpseLbl.setAttribute('pointer-events','none');
+      corpseLbl.textContent = '💀';
+      svg.appendChild(corpseLbl);
+      return;
+    }
+
     const isSelected = unit.id === hxs.selected;
     const isDone = unit.moved && unit.acted;
     const isPlayer = unit.team === 'player';
@@ -4619,6 +4633,30 @@ function hxRender() {
     t.textContent='💧'; svg.appendChild(t);
   });
 
+  // Draw shallow water terrain (light blue, passable but costs 2 AP to enter)
+  (hxs.shallow_waters||[]).forEach(([wc,wr]) => {
+    const {x,y} = hexToPixel(wc,wr);
+    const p = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    p.setAttribute('points', hexPoints(x,y)); p.setAttribute('fill','rgba(100,180,255,0.35)');
+    p.setAttribute('stroke','#5bc0de'); p.setAttribute('stroke-width','1.2'); p.setAttribute('pointer-events','none');
+    svg.appendChild(p);
+    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x',x); t.setAttribute('y',y+6); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('pointer-events','none');
+    t.textContent='〰'; svg.appendChild(t);
+  });
+
+  // Draw deep water terrain (dark blue, passable but no attack/abilities this turn)
+  (hxs.deep_waters||[]).forEach(([wc,wr]) => {
+    const {x,y} = hexToPixel(wc,wr);
+    const p = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    p.setAttribute('points', hexPoints(x,y)); p.setAttribute('fill','rgba(10,50,160,0.6)');
+    p.setAttribute('stroke','#0a3296'); p.setAttribute('stroke-width','1.5'); p.setAttribute('pointer-events','none');
+    svg.appendChild(p);
+    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x',x); t.setAttribute('y',y+6); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('pointer-events','none');
+    t.textContent='🌊'; svg.appendChild(t);
+  });
+
   // Draw fire terrain (orange-red, deals 2 dmg/turn, fades by duration)
   (hxs.fires||[]).forEach(fire => {
     const {x,y} = hexToPixel(fire.col,fire.row);
@@ -4631,30 +4669,6 @@ function hxRender() {
     t.setAttribute('x',x); t.setAttribute('y',y+6); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','13'); t.setAttribute('pointer-events','none');
     t.textContent='🔥'; svg.appendChild(t);
   });
-
-  // Draw objective hex (PASS D) — update control status first
-  if(hxs.objective) {
-    const oc = hxs.objective.col, or = hxs.objective.row;
-    const onObj = hxs.units.find(u=>u.hp>0&&u.col===oc&&u.row===or);
-    hxs.objective.controlled = onObj ? (onObj.team==='player'?'player':'enemy') : 'none';
-    const {x,y} = hexToPixel(oc, or);
-    const ctrl = hxs.objective.controlled;
-    const objFill = ctrl==='player'?'rgba(52,152,219,0.3)':ctrl==='enemy'?'rgba(231,76,60,0.3)':'rgba(255,215,0,0.2)';
-    const objStroke = ctrl==='player'?'#3498db':ctrl==='enemy'?'#e74c3c':'#ffd700';
-    const objPoly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
-    objPoly.setAttribute('points', hexPoints(x,y));
-    objPoly.setAttribute('fill', objFill);
-    objPoly.setAttribute('stroke', objStroke);
-    objPoly.setAttribute('stroke-width', '2');
-    objPoly.setAttribute('pointer-events','none');
-    svg.appendChild(objPoly);
-    const objLbl = document.createElementNS('http://www.w3.org/2000/svg','text');
-    objLbl.setAttribute('x', x); objLbl.setAttribute('y', y+5);
-    objLbl.setAttribute('text-anchor','middle'); objLbl.setAttribute('font-size','14');
-    objLbl.setAttribute('pointer-events','none');
-    objLbl.textContent = '⭐';
-    svg.appendChild(objLbl);
-  }
 
   // Draw enemy intent indicators — only during player turn
   if(hxs.turn === 'player' && hxs.enemyIntents) {
@@ -4881,7 +4895,7 @@ function hexUpdateInfo(unit) {
     const onCd = ab.cooldown > 0;
     // PASS A: AP-based disable for hero
     const apCost = ab.maxCooldown === 0 ? 1 : ab.maxCooldown <= 2 ? 2 : 3;
-    const cantAct = unit.isHero ? hxs.heroAP < apCost : unit.acted;
+    const cantAct = unit.deepWaterStunned || (unit.isHero ? hxs.heroAP < apCost : unit.acted);
     btn.className = `hx-ability-btn hx-ability-type-${ab.type}${isActive ? ' active' : ''}`;
     btn.disabled = onCd || cantAct;
     const cdText = onCd ? `<span class="hx-ability-cd">⏳${ab.cooldown}</span>` : `<span class="hx-ability-cd ready">✓</span>`;
@@ -4921,6 +4935,8 @@ function hxSelectAbility(idx) {
   if(hxs.ended || hxs.turn!=='player' || hxs.selected===null) return;
   const unit = hxs.units.find(u=>u.id===hxs.selected);
   if(!unit||unit.hp<=0) return;
+  // Deep water: cannot use abilities
+  if(unit.deepWaterStunned) { hxLog(`🌊 ${unit.name} в глубокой воде — не может использовать способности!`, 'info'); return; }
   // PASS A: for hero check AP, for others check acted
   if(unit.isHero) {
     // will be checked per-ability below
@@ -5041,6 +5057,7 @@ function hxClickHex(col, row) {
         if(!unit.freeMoveDone) unit.freeMoveDone = true;
         hxs.heroAP = Math.max(0, hxs.heroAP - paidHexes);
       }
+      const fromCol = unit.col, fromRow = unit.row;
       unit.col = col; unit.row = row;
       unit.remainingMove = Math.max(0, (unit.remainingMove ?? unit.moveRange) - dist);
       unit.moved = unit.remainingMove === 0;
@@ -5053,7 +5070,10 @@ function hxClickHex(col, row) {
         hxs.mode = 'select'; hxs.reachable = [];
       }
       if(unit.moved && unit.acted) { hxs.selected = null; }
-      hxRender(); hexUpdateInfo();
+      // Animate player unit movement
+      hxAnimateMove(unit, fromCol, fromRow, col, row).then(() => {
+        hxRender(); hexUpdateInfo();
+      });
     } else {
       // Cancel move mode on non-reachable hex click
       hxs.mode = 'select'; hxs.reachable = [];
@@ -5126,13 +5146,15 @@ function hxTerrainInfoAt(col, row) {
     nameEl.textContent = '🟫 Болото'; statsEl.textContent = 'Движение стоит 2 ОД; −1 HP в конце хода';
   } else if((hxs.waters||[]).some(([c,r])=>c===col&&r===row)) {
     nameEl.textContent = '💧 Вода'; statsEl.textContent = 'Непроходимо';
+  } else if((hxs.shallow_waters||[]).some(([c,r])=>c===col&&r===row)) {
+    nameEl.textContent = '〰 Мелководье'; statsEl.textContent = 'Движение стоит 2 ОД';
+  } else if((hxs.deep_waters||[]).some(([c,r])=>c===col&&r===row)) {
+    nameEl.textContent = '🌊 Глубокая вода'; statsEl.textContent = 'Нельзя атаковать и использовать способности в этом ходу';
   } else if((hxs.fires||[]).some(f=>f.col===col&&f.row===row)) {
     const _f = hxs.fires.find(f=>f.col===col&&f.row===row);
     nameEl.textContent = `🔥 Огонь (${_f.duration} хода)`; statsEl.textContent = '−2 HP в конце каждого хода';
   } else if((hxs.burnable||[]).some(([c,r])=>c===col&&r===row)) {
     nameEl.textContent = '🌾 Трава'; statsEl.textContent = 'Горючая — поджигается огненными заклинаниями';
-  } else if(hxs.objective&&hxs.objective.col===col&&hxs.objective.row===row) {
-    nameEl.textContent = '⭐ Цель'; statsEl.textContent = `Захват: ${hxs.objective.playerTurns||0}/3 ходов`;
   }
 }
 
@@ -5224,7 +5246,7 @@ function initHex() {
   const playerDefs = heroDef ? null : (Array.isArray(gameData.player_units) ? gameData.player_units : [{type:'warrior',name:'Воин'}]);
   const enemyDefs  = Array.isArray(gameData.enemy_units)  ? gameData.enemy_units  : [{type:'warrior',name:'Страж'}];
 
-  hxs = {units:[], turn:'player', selected:null, inspecting:null, reachable:[], attackable:[], abilityTargets:[], activeAbilityIdx:null, mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, ended:false, rifts:[], forests:[], heights:[], obstacles:[], bushes:[], swamps:[], waters:[], fires:[], burnable:[], objective:null, enemyIntents:{}, totalDamageDealt:0, totalDamageTaken:0, aoeHover:null, abilitiesUsed:{}, hero: heroDef, heroAP: 4, heroMaxAP: 4, confirming: null};
+  hxs = {units:[], turn:'player', selected:null, inspecting:null, reachable:[], attackable:[], abilityTargets:[], activeAbilityIdx:null, mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, ended:false, rifts:[], forests:[], heights:[], obstacles:[], bushes:[], swamps:[], waters:[], shallow_waters:[], deep_waters:[], fires:[], burnable:[], enemyIntents:{}, totalDamageDealt:0, totalDamageTaken:0, aoeHover:null, abilitiesUsed:{}, hero: heroDef, heroAP: 4, heroMaxAP: 4, confirming: null};
   _hxZoomLevel = 1.0;
   const _initSvg = document.getElementById('hx-svg');
   if(_initSvg) {
@@ -5401,13 +5423,6 @@ function initHex() {
     _allBlocked.add(`${pick[0]},${pick[1]}`);
   }
 
-  // PASS D: Place objective hex in center, avoiding obstacles
-  const _objCandidates = [[5,5],[5,4],[4,5],[6,5],[5,6],[4,4],[6,6]].filter(([c,r])=>!_allBlocked.has(`${c},${r}`));
-  if(_objCandidates.length > 0) {
-    const [oc2,or2] = _objCandidates[0];
-    hxs.objective = {col:oc2, row:or2, controlled:'none', playerTurns:0, enemyTurns:0};
-  }
-
   // PASS F: Place swamp hexes (passable, -1 dmg/turn, extra move cost)
   const _swampCandidates = [];
   for(let r=3;r<HEX_ROWS-3;r++) for(let c=1;c<HEX_COLS-1;c++) {
@@ -5436,6 +5451,37 @@ function initHex() {
     hxs.waters.push([wc,wr]); _allBlocked.add(`${wc},${wr}`);
     const adj=hexNeighbors(wc,wr).filter(([c,r])=>!_allBlocked.has(`${c},${r}`));
     if(adj.length) { const [nc,nr]=adj[Math.floor(Math.random()*adj.length)]; hxs.waters.push([nc,nr]); _allBlocked.add(`${nc},${nr}`); }
+  }
+
+  // Place shallow_water (passable, costs 2 AP) — adjacent to impassable water or standalone
+  hxs.shallow_waters = [];
+  const _shallowCandidates = [];
+  for(let r=3;r<HEX_ROWS-3;r++) for(let c=2;c<HEX_COLS-2;c++) {
+    if(!_allBlocked.has(`${c},${r}`) && !hxs.swamps.some(([sc,sr])=>sc===c&&sr===r)) {
+      // Prefer hexes adjacent to water
+      const nearWater = hxs.waters.some(([wc,wr])=>hexDist(wc,wr,c,r)===1);
+      if(nearWater) _shallowCandidates.unshift([c,r]); else _shallowCandidates.push([c,r]);
+    }
+  }
+  for(let i=0;i<2&&_shallowCandidates.length;i++){
+    const pick=_shallowCandidates.shift();
+    hxs.shallow_waters.push(pick);
+    _allBlocked.add(`${pick[0]},${pick[1]}_passable`);
+  }
+
+  // Place deep_water (passable but no attack/abilities) — 1-2 hexes
+  hxs.deep_waters = [];
+  const _deepCandidates = [];
+  for(let r=3;r<HEX_ROWS-3;r++) for(let c=2;c<HEX_COLS-2;c++) {
+    if(!_allBlocked.has(`${c},${r}`) && !hxs.swamps.some(([sc,sr])=>sc===c&&sr===r) && !hxs.shallow_waters.some(([sc,sr])=>sc===c&&sr===r)) {
+      const nearWater = hxs.waters.some(([wc,wr])=>hexDist(wc,wr,c,r)<=2) || hxs.shallow_waters.some(([wc,wr])=>hexDist(wc,wr,c,r)===1);
+      if(nearWater) _deepCandidates.unshift([c,r]); else _deepCandidates.push([c,r]);
+    }
+  }
+  for(let i=0;i<1&&_deepCandidates.length;i++){
+    const pick=_deepCandidates.shift();
+    hxs.deep_waters.push(pick);
+    _allBlocked.add(`${pick[0]},${pick[1]}_passable`);
   }
 
   // PASS H: Place burnable hexes (grass, ignitable by fire spells)
