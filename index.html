@@ -329,6 +329,11 @@
   .cg-vuln { background:rgba(231,76,60,0.25); color:#e74c3c; }
   .cg-weak { background:rgba(243,156,18,0.25); color:#f39c12; }
   .cg-block-tag { background:rgba(52,152,219,0.25); color:#3498db; }
+  .cg-enemy-intent { font-size:0.7rem; font-weight:600; margin-top:3px; padding:2px 4px; border-radius:4px; background:rgba(0,0,0,0.2); }
+  .cg-enemy-intent.attack { color:#e74c3c; }
+  .cg-enemy-intent.block { color:#3498db; }
+  .cg-enemy-intent.heal { color:#2ecc71; }
+  .cg-enemy-intent.debuff { color:#f39c12; }
   @keyframes cgDeal { from{opacity:0;transform:translateY(40px) scale(0.85)} to{opacity:1;transform:translateY(0) scale(1)} }
   .cg-card.dealing { animation:cgDeal 0.22s ease-out both; }
   .cg-piles { display:flex; gap:8px; justify-content:center; padding:4px 0; }
@@ -512,6 +517,7 @@
       <div class="cg-player-panel">
         <div class="cg-player-label" id="cg-player-label">Герой</div>
         <div class="cg-hp-bar"><div class="cg-hp-fill player" id="cg-player-hp-fill" style="width:100%"></div></div>
+        <div id="cg-player-status" style="font-size:0.72rem; color:rgba(255,200,50,0.85); min-height:16px; text-align:center;"></div>
         <div id="cg-minions" class="cg-minions-row"></div>
       </div>
       <div class="cg-energy-counter" id="cg-energy-counter">⚡ 3/3</div>
@@ -520,6 +526,9 @@
     <div class="cg-log" id="cg-log">Ход 1. Тяни и играй карты!</div>
     <div class="cg-hand-label" id="cg-hand-label">Рука (0)</div>
     <div class="cg-hand-wrap"><div class="cg-hand" id="cg-hand"></div></div>
+    <div style="font-size:0.6rem; color:rgba(255,255,255,0.25); text-align:center; padding:2px;">
+      Долгий тап по карте — описание умений
+    </div>
     <div class="cg-piles" id="cg-piles">
       <div class="cg-pile-btn" onclick="cgShowPile('deck')">
         <div class="cg-pile-icon">🂠</div>
@@ -567,6 +576,9 @@
   <div class="hx-turn-label" id="hx-turn-label">Ход игрока</div>
   <div id="hx-summary"></div>
   <svg id="hx-svg" viewBox="0 0 408 222" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div id="hx-legend" style="font-size:0.65rem; color:rgba(255,255,255,0.4); text-align:center; padding:2px 4px; line-height:1.6;">
+    🌲 +2 блок  ⛰ +2 атк (дальн.)  ⌖ Разлом  🪨 Непроход.  ⭐ Цель
+  </div>
   <div class="hx-log" id="hx-log">Выбери юнит и действуй!</div>
   <div class="hx-info" id="hx-info">
     <div id="hx-info-main" style="flex:1; min-width:0;">
@@ -2494,7 +2506,7 @@ function cgRenderEnemies(){
     p.innerHTML='<div class="cg-enemy-name">'+enemy.name+vT+wT
       +'<span style="font-size:0.73rem;font-weight:400"> HP '+enemy.hp+'/'+enemy.maxHp+(enemy.block>0?' 🛡'+enemy.block:'')+'</span></div>'
       +(()=>{const _ep=Math.max(0,enemy.hp/enemy.maxHp);const _ec=_ep>0.6?'#2ecc71':_ep>0.3?'#f39c12':'#e74c3c';return '<div class="cg-hp-bar"><div class="cg-hp-fill" style="width:'+(_ep*100)+'%;background:'+_ec+'"></div></div>';})()
-      +(enemy.hp>0?'<div class="cg-intent">'+cgGetEnemyIntent(enemy)+'</div>':'<div class="cg-intent" style="color:#555">Повержен</div>');
+      +(enemy.hp>0?(()=>{const _ii=cgGetEnemyIntentInfo(enemy);return '<div class="cg-enemy-intent '+_ii.cls+'">'+_ii.text+'</div>';})():'<div class="cg-enemy-intent" style="color:#555">Повержен</div>');
     c.appendChild(p);
   });
 }
@@ -2603,11 +2615,12 @@ function cgApplyEnemyAttack(atk,sourceName){
     cgLog('👤 '+sourceName+' бьёт '+m.name+' → HP '+m.hp+'/'+m.maxHp);
     return;
   }
+  if((cgs.playerVulnerable||0)>0) atk=Math.floor(atk*1.5);
   const bl=Math.min(atk,cgs.playerBlock); const tk=atk-bl;
   cgs.playerBlock=Math.max(0,cgs.playerBlock-bl);
   cgs.playerHp=Math.max(0,cgs.playerHp-tk);
   cgs.damageTaken+=tk; cgs.lowestHp=Math.min(cgs.lowestHp,cgs.playerHp);
-  let msg='👹'+sourceName+' атакует '+atk;
+  let msg='👹'+sourceName+' атакует '+atk+((cgs.playerVulnerable||0)>0?' (×1.5)':'');
   if(bl>0) msg+=' (блок −'+bl+')'; msg+=' → −'+tk+' HP';
   cgLog(msg);
 }
@@ -2618,13 +2631,15 @@ function cgPlayCard(cardIdx,targetEnemy){
   cgs.energy-=card.cost; cgs.hand.splice(cardIdx,1); cgs.sel=null; cgs.targeting=false; cgs.played++;
   const pb=document.getElementById('cg-play-btn'); if(pb){pb.disabled=true; pb.textContent='Сыграть'; document.getElementById('cg-target-hint').style.visibility='hidden';}
   const e=card.effect; const parts=['▶ '+card.name+':'];
+  const _weakMul=(cgs.playerWeak||0)>0?0.7:1.0;
   if(e.damage){
+    const _rawDmg=Math.floor(e.damage*_weakMul);
     if(e.all_enemies){
-      let tot=0; cgs.enemies.forEach(en=>{if(en.hp<=0)return; const {dmg}=cgApplyDamageToEnemy(en,e.damage); tot+=dmg;});
-      parts.push('💥'+e.damage+' всем ('+tot+' итого)');
+      let tot=0; cgs.enemies.forEach(en=>{if(en.hp<=0)return; const {dmg}=cgApplyDamageToEnemy(en,_rawDmg); tot+=dmg;});
+      parts.push('💥'+_rawDmg+' всем ('+tot+' итого)'+(cgs.playerWeak>0?' 😵−30%':''));
     } else if(targetEnemy){
-      const {dmg,blocked}=cgApplyDamageToEnemy(targetEnemy,e.damage);
-      parts.push('💥'+dmg+(targetEnemy.vulnerable>0?'(×1.5)':'')+(blocked>0?' блок−'+blocked:''));
+      const {dmg,blocked}=cgApplyDamageToEnemy(targetEnemy,_rawDmg);
+      parts.push('💥'+dmg+(targetEnemy.vulnerable>0?'(×1.5)':'')+(blocked>0?' блок−'+blocked:'')+(cgs.playerWeak>0?' 😵':''));
       if(e.lifesteal){const hl=Math.min(dmg,cgs.playerMaxHp-cgs.playerHp);cgs.playerHp+=hl;parts.push('❤️+'+hl);}
       cgCheckFlavor(targetEnemy);
     }
@@ -2673,18 +2688,24 @@ function cgEndTurn(){
   });
   cgs.minions.forEach(m=>{m.block=0;});
   if(cgs.playerHp<=0){cgEnd(false);return;}
-  cgs.turn++; cgs.energy=cgs.maxEnergy; cgDraw(5); cgUpdateUI();
+  cgs.turn++; cgs.energy=cgs.maxEnergy;
+  if((cgs.playerWeak||0)>0){cgs.playerWeak--;if(cgs.playerWeak===0)cgLog('😵 Слабость развеялась.');}
+  if((cgs.playerVulnerable||0)>0){cgs.playerVulnerable--;if(cgs.playerVulnerable===0)cgLog('🩸 Уязвимость развеялась.');}
+  cgDraw(5); cgUpdateUI();
 }
 
-function cgGetEnemyIntent(enemy){
+function cgGetEnemyIntentInfo(enemy){
   const step=enemy.pattern[enemy.patIdx%enemy.pattern.length];
-  if(step.type==='attack'){let v=step.value;if(enemy.weak>0) v=Math.floor(v*0.7);return '⚔️ '+v+' урона'+(enemy.weak>0?' (−30%)':'');}
-  else if(step.type==='block') return '🛡 Блок '+step.value;
-  else if(step.type==='heal') return '💚 Исцеление +'+step.value+' HP';
-  else if(step.type==='weak') return '🟡 Слабость герою';
-  else if(step.type==='vulnerable') return '🔴 Уязвимость герою';
-  else if(step.type==='buff') return '✨ '+(step.text||'Усиление');
-  return '⚔️ ?';
+  if(step.type==='attack'){let v=step.value;if(enemy.weak>0) v=Math.floor(v*0.7);return {cls:'attack',text:'⚔️ будет атаковать '+v+(enemy.weak>0?' (−30%)':'')};}
+  else if(step.type==='block') return {cls:'block',text:'🛡 поставит '+step.value+' брони'};
+  else if(step.type==='heal') return {cls:'heal',text:'💚 исцелится на '+step.value};
+  else if(step.type==='weak') return {cls:'debuff',text:'😵 применит Слабость'};
+  else if(step.type==='vulnerable') return {cls:'debuff',text:'🩸 применит Уязвимость'};
+  else if(step.type==='buff') return {cls:'debuff',text:'✨ '+(step.text||'Усиление')};
+  return {cls:'attack',text:'⚔️ ?'};
+}
+function cgGetEnemyIntent(enemy){
+  return cgGetEnemyIntentInfo(enemy).text;
 }
 
 function cgUpdateUI(){
@@ -2697,6 +2718,12 @@ function cgUpdateUI(){
   _pFill.style.width=Math.max(0,_pPct*100)+'%';
   _pFill.style.background=_pPct>0.6?'#2ecc71':_pPct>0.3?'#f39c12':'#e74c3c';
   document.getElementById('cg-energy-counter').textContent='⚡ '+s.energy+'/'+s.maxEnergy;
+  const _statuses=[];
+  if((s.playerWeak||0)>0) _statuses.push('😵 Слабость ('+s.playerWeak+')');
+  if((s.playerVulnerable||0)>0) _statuses.push('🩸 Уязвимость ('+s.playerVulnerable+')');
+  if(s.playerBlock>0) _statuses.push('🛡 '+s.playerBlock);
+  const _stEl=document.getElementById('cg-player-status');
+  if(_stEl) _stEl.textContent=_statuses.join('  ')||'';
   cgUpdatePiles();
 }
 
