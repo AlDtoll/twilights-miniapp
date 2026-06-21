@@ -3284,6 +3284,12 @@ function hxAbilityTargets(unit, ability) {
            !(isRangedMagic && hxLoSBlocked(unit.col,unit.row,c,r)))
           result.push({col:c,row:r,isFreeHex:true});
       }
+    } else if(ability.effect?.type === 'ignite' && (ability.aoe||0) === 0) {
+      // Ignite single: enemies in range + burnable terrain hexes (direct fire placement)
+      hxs.units.filter(u=>u.team!==unit.team&&u.hp>0&&inRange(u.col,u.row))
+               .forEach(u=>result.push({col:u.col,row:u.row,isFreeHex:false}));
+      (hxs.burnable||[]).filter(([c,r])=>inRange(c,r)&&!(hxs.fires||[]).some(f=>f.col===c&&f.row===r))
+               .forEach(([c,r])=>result.push({col:c,row:r,isFreeHex:true,isBurnable:true}));
     } else {
       // Single-target: enemies + obstacle hexes in range
       hxs.units.filter(u=>u.team!==unit.team&&u.hp>0&&inRange(u.col,u.row))
@@ -3532,6 +3538,18 @@ function hxApplyAbility(caster, ability, primaryTarget) {
     hxLog(`${caster.name} — ${ability.name}: ${targets.length} цел. −${eff.value} атк!`, 'special');
     hxMarkActed(caster, ability);
     if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    return;
+  }
+
+  // --- DIRECT IGNITE on burnable terrain hex (no damage, no hit check) ---
+  if(primaryTarget.isBurnable) {
+    if(!(hxs.fires||[]).some(f=>f.col===primaryTarget.col&&f.row===primaryTarget.row)) {
+      hxs.fires.push({col:primaryTarget.col,row:primaryTarget.row,duration:3});
+      hxLog(`🔥 Трава загорелась!`, 'special');
+    }
+    hxMarkActed(caster, ability);
+    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    hxRender(); hexUpdateInfo();
     return;
   }
 
@@ -4193,7 +4211,7 @@ function hxRender() {
   svg.innerHTML = '';
   // Dark background rect so highlight colors are consistent regardless of Telegram theme
   const bgR = document.createElementNS('http://www.w3.org/2000/svg','rect');
-  bgR.setAttribute('x','0'); bgR.setAttribute('y','0'); bgR.setAttribute('width','262'); bgR.setAttribute('height','272');
+  bgR.setAttribute('x','0'); bgR.setAttribute('y','0'); bgR.setAttribute('width', HEX_SVG_W); bgR.setAttribute('height', HEX_SVG_H);
   bgR.setAttribute('fill','#1a1a2e'); bgR.setAttribute('pointer-events','none');
   svg.appendChild(bgR);
   const reachSet = new Set(hxs.reachable.map(([c,r])=>`${c},${r}`));
@@ -4900,7 +4918,12 @@ function hxClickUnit(unitId) {
 }
 
 function hxClickHex(col, row) {
-  if(hxs.ended || hxs.turn !== 'player' || hxs.selected === null) return;
+  if(hxs.ended) return;
+  if(hxs.turn !== 'player' || hxs.selected === null) {
+    // Still show terrain info on empty hex tap
+    hxTerrainInfoAt(col, row);
+    return;
+  }
   const unit = hxs.units.find(u=>u.id===hxs.selected);
   if(!unit || unit.hp <= 0) return;
 
@@ -4982,37 +5005,36 @@ function hxClickHex(col, row) {
     return;
   }
 
-  // Click on empty hex in select mode — show terrain info
-  if(hxs.mode === 'select') {
-    const key = `${col},${row}`;
-    const nameEl = document.getElementById('hx-info-name');
-    const statsEl = document.getElementById('hx-info-stats');
-    if(nameEl && statsEl) {
-      if((hxs.rifts||[]).some(([c,r])=>c===col&&r===row)) {
-        nameEl.textContent = '⌖ Разлом'; statsEl.textContent = 'Демонолог рядом: +5HP к Тени';
-      } else if((hxs.forests||[]).some(([c,r])=>c===col&&r===row)) {
-        nameEl.textContent = '🌳 Дерево'; statsEl.textContent = '+2 блок в начале хода';
-      } else if((hxs.bushes||[]).some(([c,r])=>c===col&&r===row)) {
-        nameEl.textContent = '🌿 Кусты'; statsEl.textContent = 'Укрытие: −2 урон от дальних атак';
-      } else if((hxs.heights||[]).some(([c,r])=>c===col&&r===row)) {
-        nameEl.textContent = '🗿 Камни'; statsEl.textContent = '+2 атк дальнобойным юнитам';
-      } else if(hxObstAt(col,row)) {
-        const _ob = hxObstAt(col,row);
-        if(_ob.type==='wall') { nameEl.textContent = `🧱 Стена (${_ob.hp}/${_ob.maxHp})`; statsEl.textContent = 'Блокирует движение и дальний обзор'; }
-        else { nameEl.textContent = `🪨 Обломки (${_ob.hp}/${_ob.maxHp})`; statsEl.textContent = 'Укрытие: −2 урон от дальних атак; разрушаемо'; }
-      } else if((hxs.swamps||[]).some(([c,r])=>c===col&&r===row)) {
-        nameEl.textContent = '🟫 Болото'; statsEl.textContent = 'Движение стоит 2 ОД; −1 HP в конце хода';
-      } else if((hxs.waters||[]).some(([c,r])=>c===col&&r===row)) {
-        nameEl.textContent = '💧 Вода'; statsEl.textContent = 'Непроходимо';
-      } else if((hxs.fires||[]).some(f=>f.col===col&&f.row===row)) {
-        const _f = hxs.fires.find(f=>f.col===col&&f.row===row);
-        nameEl.textContent = `🔥 Огонь (${_f.duration} хода)`; statsEl.textContent = '−2 HP в конце каждого хода';
-      } else if((hxs.burnable||[]).some(([c,r])=>c===col&&r===row)) {
-        nameEl.textContent = '🌾 Трава'; statsEl.textContent = 'Горючая — поджигается огненными заклинаниями';
-      } else if(hxs.objective&&hxs.objective.col===col&&hxs.objective.row===row) {
-        nameEl.textContent = '⭐ Цель'; statsEl.textContent = `Захват: ${hxs.objective.playerTurns||0}/3 ходов`;
-      }
-    }
+  if(hxs.mode === 'select') hxTerrainInfoAt(col, row);
+}
+
+function hxTerrainInfoAt(col, row) {
+  const nameEl = document.getElementById('hx-info-name');
+  const statsEl = document.getElementById('hx-info-stats');
+  if(!nameEl || !statsEl) return;
+  if((hxs.rifts||[]).some(([c,r])=>c===col&&r===row)) {
+    nameEl.textContent = '⌖ Разлом'; statsEl.textContent = 'Демонолог рядом: +5HP к Тени';
+  } else if((hxs.forests||[]).some(([c,r])=>c===col&&r===row)) {
+    nameEl.textContent = '🌳 Дерево'; statsEl.textContent = '+2 блок в начале хода';
+  } else if((hxs.bushes||[]).some(([c,r])=>c===col&&r===row)) {
+    nameEl.textContent = '🌿 Кусты'; statsEl.textContent = 'Укрытие: −2 урон от дальних атак';
+  } else if((hxs.heights||[]).some(([c,r])=>c===col&&r===row)) {
+    nameEl.textContent = '🗿 Камни'; statsEl.textContent = '+2 атк дальнобойным юнитам';
+  } else if(hxObstAt(col,row)) {
+    const _ob = hxObstAt(col,row);
+    if(_ob.type==='wall') { nameEl.textContent = `🧱 Стена (${_ob.hp}/${_ob.maxHp})`; statsEl.textContent = 'Блокирует движение и дальний обзор'; }
+    else { nameEl.textContent = `🪨 Обломки (${_ob.hp}/${_ob.maxHp})`; statsEl.textContent = 'Укрытие: −2 урон от дальних атак; разрушаемо'; }
+  } else if((hxs.swamps||[]).some(([c,r])=>c===col&&r===row)) {
+    nameEl.textContent = '🟫 Болото'; statsEl.textContent = 'Движение стоит 2 ОД; −1 HP в конце хода';
+  } else if((hxs.waters||[]).some(([c,r])=>c===col&&r===row)) {
+    nameEl.textContent = '💧 Вода'; statsEl.textContent = 'Непроходимо';
+  } else if((hxs.fires||[]).some(f=>f.col===col&&f.row===row)) {
+    const _f = hxs.fires.find(f=>f.col===col&&f.row===row);
+    nameEl.textContent = `🔥 Огонь (${_f.duration} хода)`; statsEl.textContent = '−2 HP в конце каждого хода';
+  } else if((hxs.burnable||[]).some(([c,r])=>c===col&&r===row)) {
+    nameEl.textContent = '🌾 Трава'; statsEl.textContent = 'Горючая — поджигается огненными заклинаниями';
+  } else if(hxs.objective&&hxs.objective.col===col&&hxs.objective.row===row) {
+    nameEl.textContent = '⭐ Цель'; statsEl.textContent = `Захват: ${hxs.objective.playerTurns||0}/3 ходов`;
   }
 }
 
@@ -5027,14 +5049,16 @@ function hxSkipUnit() {
   hxRender(); hexUpdateInfo();
 }
 
-let _hxZoomScale = 1.0;
+let _hxZoomLevel = 1.0;
 function hxZoomAdjust(delta) {
-  _hxZoomScale = Math.max(0.5, Math.min(2.5, _hxZoomScale + delta));
+  _hxZoomLevel = Math.max(0.4, Math.min(3.0, _hxZoomLevel + delta));
   const svg = document.getElementById('hx-svg');
-  if(svg) {
-    svg.style.width = Math.round(HEX_SVG_W * _hxZoomScale) + 'px';
-    svg.style.height = Math.round(HEX_SVG_H * _hxZoomScale) + 'px';
-  }
+  if(!svg) return;
+  const vw = Math.round(HEX_SVG_W / _hxZoomLevel);
+  const vh = Math.round(HEX_SVG_H / _hxZoomLevel);
+  const vx = Math.max(0, Math.round((HEX_SVG_W - vw) / 2));
+  const vy = Math.max(0, Math.round((HEX_SVG_H - vh) / 2));
+  svg.setAttribute('viewBox', `${vx} ${vy} ${vw} ${vh}`);
 }
 
 function hxEndTurn() {
@@ -5060,12 +5084,12 @@ function initHex() {
   const enemyDefs  = Array.isArray(gameData.enemy_units)  ? gameData.enemy_units  : [{type:'warrior',name:'Страж'}];
 
   hxs = {units:[], turn:'player', selected:null, inspecting:null, reachable:[], attackable:[], abilityTargets:[], activeAbilityIdx:null, mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, ended:false, rifts:[], forests:[], heights:[], obstacles:[], bushes:[], swamps:[], waters:[], fires:[], burnable:[], objective:null, enemyIntents:{}, totalDamageDealt:0, totalDamageTaken:0, aoeHover:null, abilitiesUsed:{}, hero: heroDef, heroAP: 4, heroMaxAP: 4, confirming: null};
-  _hxZoomScale = 1.0;
+  _hxZoomLevel = 1.0;
   const _initSvg = document.getElementById('hx-svg');
   if(_initSvg) {
     _initSvg.setAttribute('viewBox', `0 0 ${HEX_SVG_W} ${HEX_SVG_H}`);
-    _initSvg.style.width = HEX_SVG_W + 'px';
-    _initSvg.style.height = HEX_SVG_H + 'px';
+    _initSvg.style.width = '100%';
+    _initSvg.style.height = 'auto';
   }
 
   let idCtr = 0;
