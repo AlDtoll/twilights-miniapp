@@ -517,6 +517,7 @@
       </div>
     </div>
     <div class="cg-actions">
+      <button class="cg-btn cg-play-btn" id="cg-play-btn" onclick="cgPlayButton()" disabled>Сыграть</button>
       <button class="cg-btn cg-end-btn" id="cg-end-btn" onclick="cgEndTurn()">Конец хода →</button>
     </div>
   </div>
@@ -2500,18 +2501,32 @@ function cgRenderHand(){
 
 
 function cgTapCard(idx,card){
-  const living=cgs.enemies.filter(e=>e.hp>0);
-  if(cgs.targeting){
-    if(cgs.sel===idx){cgs.sel=null;cgs.targeting=false;document.getElementById('cg-target-hint').style.visibility='hidden';cgRenderEnemies();cgRenderHand();}
-    else{cgs.sel=idx;cgRenderHand();}
-    return;
+  if(cgs.targeting&&cgs.sel===idx){
+    // Deselect / cancel targeting
+    cgs.sel=null; cgs.targeting=false;
+    document.getElementById('cg-target-hint').style.visibility='hidden';
+    document.getElementById('cg-play-btn').disabled=true;
+    cgRenderEnemies(); cgRenderHand(); return;
   }
+  cgs.sel=idx; cgs.targeting=false;
+  document.getElementById('cg-target-hint').style.visibility='hidden';
+  document.getElementById('cg-play-btn').disabled=false;
+  cgRenderEnemies(); cgRenderHand();
+}
+
+function cgPlayButton(){
+  if(cgs.sel===null) return;
+  const card=cgs.hand[cgs.sel];
+  if(card.cost>cgs.energy) return;
+  const living=cgs.enemies.filter(e=>e.hp>0);
   if(card.type==='attack'&&!card.effect?.all_enemies&&living.length>1){
-    cgs.sel=idx; cgs.targeting=true;
+    // Enter targeting mode
+    cgs.targeting=true;
+    document.getElementById('cg-play-btn').textContent='→ цель';
     document.getElementById('cg-target-hint').style.visibility='visible';
-    cgRenderEnemies(); cgRenderHand();
+    cgRenderEnemies();
   } else {
-    cgPlayCard(idx,card.effect?.all_enemies?null:(living[0]||null));
+    cgPlayCard(cgs.sel, card.effect?.all_enemies?null:(living[0]||null));
   }
 }
 
@@ -2549,7 +2564,8 @@ function cgApplyEnemyAttack(atk,sourceName){
 function cgPlayCard(cardIdx,targetEnemy){
   const card=cgs.hand[cardIdx];
   if(card.cost>cgs.energy) return;
-  cgs.energy-=card.cost; cgs.hand.splice(cardIdx,1); cgs.sel=null; cgs.played++;
+  cgs.energy-=card.cost; cgs.hand.splice(cardIdx,1); cgs.sel=null; cgs.targeting=false; cgs.played++;
+  const pb=document.getElementById('cg-play-btn'); if(pb){pb.disabled=true; pb.textContent='Сыграть'; document.getElementById('cg-target-hint').style.visibility='hidden';}
   const e=card.effect; const parts=['▶ '+card.name+':'];
   if(e.damage){
     if(e.all_enemies){
@@ -2577,6 +2593,7 @@ function cgPlayCard(cardIdx,targetEnemy){
 function cgEndTurn(){
   if(cgs.enemies.every(e=>e.hp<=0)||cgs.playerHp<=0) return;
   cgs.discard.push(...cgs.hand); cgs.hand=[]; cgs.sel=null; cgs.targeting=false;
+  const _pb=document.getElementById('cg-play-btn'); if(_pb){_pb.disabled=true;_pb.textContent='Сыграть';}
   document.getElementById('cg-target-hint').style.visibility='hidden';
   cgLog('— Конец хода '+cgs.turn+' —');
   cgs.enemies.forEach(enemy=>{
