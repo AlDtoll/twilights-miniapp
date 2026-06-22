@@ -1,0 +1,40 @@
+/* ============================================================
+ * Twilights miniapp — SHARED STYLES
+ * Load on every game page BEFORE game-specific CSS:
+ *   <link rel="stylesheet" href="/shared/styles.css">
+ * Contains only rules reused across multiple games / the app shell.
+ * Game-specific selectors stay in each game's own page.
+ * Extracted verbatim from index.html.
+ * ============================================================ */
+
+/* ---- reset + app shell ---- */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--tg-theme-bg-color, #1a1a2e);
+  color: var(--tg-theme-text-color, #eee);
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 20px;
+}
+h1 { font-size: 1.4rem; margin-bottom: 8px; text-align: center; }
+.subtitle { font-size: 0.9rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 16px; text-align: center; }
+
+/* ---- generic buttons (blackjack, match3, match3fight, ...) ---- */
+.btn { flex: 1; padding: 12px; border-radius: 12px; border: none; font-size: 1rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+.btn:disabled { opacity: 0.4; cursor: default; }
+.btn-primary { background: var(--tg-theme-button-color, #6c5ce7); color: var(--tg-theme-button-text-color, #fff); }
+.btn-secondary { background: rgba(255,255,255,0.1); color: var(--tg-theme-text-color, #fff); }
+
+/* primary "confirm / start" button used by many ready-screens */
+.confirm-btn { width: 100%; margin-top: 20px; padding: 14px; border-radius: 14px; border: none; background: var(--tg-theme-button-color, #6c5ce7); color: var(--tg-theme-button-text-color, #fff); font-size: 1.05rem; font-weight: 700; cursor: pointer; }
+.confirm-btn:disabled { opacity: 0.25; cursor: default; }
+
+/* ---- result banner (blackjack, match3, combat, match3fight, ...) ---- */
+.result-banner { padding: 12px; border-radius: 12px; text-align: center; font-size: 1.1rem; font-weight: bold; margin-top: 12px; display: none; }
+.result-good { background: rgba(0,184,148,0.2); border: 2px solid #00b894; color: #00b894; }
+.result-mid  { background: rgba(255,193,7,0.15); border: 2px solid #ffc107; color: #ffc107; }
+.result-bad  { background: rgba(231,76,60,0.2); border: 2px solid #e74c3c; color: #e74c3c; }
+
+/* ---- combat log (combat game + match3fight reuse class="combat-log") ---- */
+.combat-log { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,0.05); font-size: 0.85rem; color: var(--tg-theme-hint-color, #aaa); line-height: 1.6; min-height: 36px; }

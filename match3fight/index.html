@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Twilights — Бой 3-в-ряд</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="../shared/styles.css">
+  <style>
+  /* HP bar (shared with the combat game in the monolith; inlined here so the
+     match3fight page is self-contained — m3fRenderFighter renders these). */
+  .combat-hp-bar { height: 8px; border-radius: 4px; background: rgba(255,255,255,0.1); overflow: hidden; margin-bottom: 8px; }
+  .combat-hp-fill { height: 100%; border-radius: 4px; background: #e74c3c; transition: width 0.4s; }
+
+  /* MATCH3 FIGHT */
+  #m3f-game { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 8px; }
+  .m3f-fighter { padding: 8px 12px; border-radius: 12px; background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.1); }
+  .m3f-fighter-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+  .m3f-fighter-name { font-weight: 700; font-size: 0.98rem; }
+  .m3f-fighter-hp-text { font-size: 0.82rem; color: var(--tg-theme-hint-color, #aaa); }
+  .m3f-shield { color: #74b9ff; font-weight: 700; font-size: 0.82rem; }
+  .m3f-wounds { color: #ff7675; font-weight: 700; font-size: 0.82rem; letter-spacing: 1px; }
+  .m3f-statuses { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+  .m3f-status-chip { padding: 1px 7px; border-radius: 6px; font-size: 0.68rem; background: rgba(162,155,254,0.15); border: 1px solid rgba(162,155,254,0.5); color: #c8c2ff; }
+  .m3f-status-chip.bad { background: rgba(231,76,60,0.12); border-color: rgba(231,76,60,0.5); color: #ff9b8f; }
+  .m3f-resources { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+  .m3f-res-chip { padding: 1px 7px; border-radius: 6px; font-size: 0.68rem; background: rgba(241,196,15,0.14); border: 1px solid rgba(241,196,15,0.5); color: #f1c40f; }
+  .m3f-info { font-size: 0.72rem; color: var(--tg-theme-hint-color, #aaa); margin-top: 3px; font-style: italic; }
+  .m3f-stocks { display: flex; flex-wrap: wrap; gap: 6px; }
+  .m3f-stock { display: flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 8px; background: rgba(255,255,255,0.06); font-size: 0.82rem; font-weight: 600; }
+  .m3f-stock-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+  .m3f-board { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; touch-action: none; }
+  .m3f-cell { aspect-ratio: 1; border-radius: 50%; cursor: pointer; transition: transform 0.12s, box-shadow 0.12s; }
+  .m3f-cell.selected { transform: scale(1.18); box-shadow: 0 0 0 3px #fff, 0 0 10px rgba(255,255,255,0.5); }
+  .m3f-cell.removing { transition: transform 0.22s cubic-bezier(0.4,0,1,1), opacity 0.22s ease-in !important; transform: scale(0) !important; opacity: 0 !important; }
+  .m3f-cell.dead { background: rgba(255,255,255,0.04) !important; cursor: default; }
+  .m3f-cell.m3f-special { box-shadow: inset 0 0 0 2px rgba(255,255,255,0.55); position: relative; }
+  .m3f-cell.m3f-special::after { content: attr(data-mark); position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 0.6rem; font-weight: 800; color: #fff; text-shadow: 0 0 3px #000, 0 0 3px #000; pointer-events: none; }
+  .m3f-cell.m3f-bonus { box-shadow: inset 0 0 0 2px #f1c40f, 0 0 6px rgba(241,196,64,0.7); }
+  .m3f-cell.m3f-half { opacity: 0.55; }
+  .m3f-hands { display: flex; flex-direction: column; gap: 8px; }
+  .m3f-hand { padding: 7px 10px; border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); }
+  .m3f-hand-label { font-size: 0.74rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 5px; display: flex; align-items: center; gap: 5px; }
+  .m3f-perks { display: flex; flex-direction: column; gap: 5px; }
+  .m3f-perk { width: 100%; text-align: left; padding: 7px 10px; border-radius: 9px; border: 1.5px solid rgba(162,155,254,0.4); background: rgba(162,155,254,0.1); color: var(--tg-theme-text-color, #fff); cursor: pointer; transition: all 0.15s; }
+  .m3f-perk:active:not(:disabled) { background: rgba(162,155,254,0.3); }
+  .m3f-perk:disabled { opacity: 0.32; cursor: default; }
+  .m3f-perk-name { font-weight: 700; font-size: 0.9rem; }
+  .m3f-perk-cost { font-size: 0.74rem; color: var(--tg-theme-hint-color, #aaa); margin-top: 2px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .m3f-perk-cost .m3f-stock-dot { width: 9px; height: 9px; }
+  .m3f-perk-desc { font-size: 0.72rem; color: var(--tg-theme-hint-color, #aaa); margin-top: 2px; }
+  </style>
+</head>
+<body>
+<h1>⚔️ Twilights</h1>
+<p class="subtitle" id="subtitle">Загрузка...</p>
+
+<div id="m3f-game" style="display:none">
+  <div class="m3f-fighter" id="m3f-enemy"></div>
+  <div class="m3f-stocks" id="m3f-stocks"></div>
+  <div class="m3f-board" id="m3f-board"></div>
+  <div class="m3f-fighter" id="m3f-hero"></div>
+  <div class="m3f-hands" id="m3f-hands"></div>
+  <button class="btn btn-primary" id="m3f-endturn" onclick="m3fEndTurn()" style="width:100%;padding:12px;border-radius:12px">Завершить ход</button>
+  <div class="combat-log" id="m3f-log"></div>
+  <div class="result-banner" id="m3f-result" style="display:none"></div>
+</div>
+
+<script src="../shared/core.js"></script>
+<script>
+// ---- MATCH3 FIGHT (game:'match3fight') ----
+// Web analog of the Android twiligihts combat loop. Same JSON field names.
+// Unknown fields are ignored gracefully (forward-compat). See MATCH3FIGHT.md.
+// ============================================================
+const M3F_SIZE = 8; // Android GameBoard.kt: numRows=8, numCols=8 (1:1 parity)
+// Default gem color palette (reuses M3_COLORS, extends for types>=6).
+// Overridable per scene via gemSettings[i].colorHex.
+const M3F_COLORS = ['#e74c3c','#3498db','#2ecc71','#f1c40f','#a29bfe','#e67e22','#1abc9c','#e84393'];
+let m3f = null;
+
+// ---------- Demo scene (Twilights flavor) ----------
+function m3fDemoScene() {
+  return {
+    hero: { name: 'Воин зари', hp: 100, maxHp: 100, shield: 0, wounds: 0, maxWounds: 2, statuses: [],
+      resources: [ { name: 'Стрелы', amount: 3, maxAmount: 5 } ] },
+    enemy: {
+      name: 'Тень разлома', hp: 80, maxHp: 80, shield: 0, wounds: 0, maxWounds: 1,
+      info: 'Порождение трещины между мирами.',
+      statuses: [ { name: 'Шипы', type: 'ARMOR', value: 3, probability: 50, duration: -1 } ]
+    },
+    settings: {
+      types: 5, makeEnemyMove: false,
+      gemSettings: [
+        { type: '1', name: 'axe_shield', fullValue: 10, bonusProbability: 20, bonusValue: 2, extraProbability: 15, turnKeepStrategy: 40, damageKeepStrategy: 100, displayName: 'оружия' },
+        { type: '2', name: 'sparkles',  fullValue: 10, turnKeepStrategy: 40, damageKeepStrategy: 100, displayName: 'воли мага' },
+        { type: '3', name: 'armor',     fullValue: 10, halfProbability: 15, turnKeepStrategy: 50, damageKeepStrategy: 100, displayName: 'защиты' },
+        { type: '4', name: 'hill',      fullValue: 8,  turnKeepStrategy: 30, damageKeepStrategy: 100, displayName: 'земли' },
+        { type: '5', name: 'move',      fullValue: 8,  turnKeepStrategy: 30, damageKeepStrategy: 100, displayName: 'духа' }
+      ],
+      cells: [
+        { row: 0, col: 0, cellType: 'MULTIPLIER', modifierValue: 1.5 },
+        { row: 5, col: 5, cellType: 'MULTIPLIER', modifierValue: 1.5 },
+        { row: 2, col: 3, cellType: 'ADDITIVE', modifierValue: -2 },
+        { row: 3, col: 2, cellType: 'TRIGGER', modifierValue: 1,
+          triggerPerk: { name: 'Искра разлома', charges: 3, currentCharges: 3,
+            effects: [{ command: 'INFO', message: 'Искра разлома вспыхнула.' }] } }
+      ],
+      HeroTimePerks: [
+        { id: 1, time: 2, perk: { name: 'Второе дыхание', effects: [{ command: 'HEAL', type: 'CHANGE', target: 'SELF', value: 5 }] } }
+      ],
+      EnemyStockPerks: [
+        { id: 1, gemType: 1, threshold: 60, perk: { name: 'Разлом чует силу', effects: [{ command: 'INFO', message: 'Тень настораживается: оружие героя крепнет.' }] } }
+      ]
+    },
+    heroHands: [
+      { gemType: 1, name: 'Оружие', perks: [
+        { name: 'Меч-удар', description: 'Рубящий удар клинком.',
+          prices: [{ gemType: 1, value: 20 }],
+          effects: [{ command: 'ATTACK', target: 'ENEMY', value: 18, func: { dice: 6 } }] },
+        { name: 'Выстрел из лука', description: 'Точный выстрел. Тратит стрелу.',
+          prices: [{ gemType: 1, value: 8 }], resources: [{ name: 'Стрелы', amount: 1 }],
+          effects: [{ command: 'ATTACK', type: 'HP', target: 'ENEMY', value: 22 }] }
+      ] },
+      { gemType: 2, name: 'Воля мага', perks: [
+        { name: 'Импульс волшебника', description: 'Чистая магия, пробивает щиты.',
+          prices: [{ gemType: 2, value: 25 }],
+          effects: [{ command: 'ATTACK', type: 'HP', target: 'ENEMY', value: 14 }] }
+      ] },
+      { gemType: 3, name: 'Защита', perks: [
+        { name: 'Заслон', description: 'Поднять щит.',
+          category: 'Восстановление', coolDown: 1, reloadType: 'TURN',
+          prices: [{ gemType: 3, value: 15 }],
+          effects: [{ command: 'DEFEND', target: 'SELF', value: 20 }] },
+        { name: 'Лечение', description: 'Перевязать раны.',
+          category: 'Восстановление', coolDown: 1, reloadType: 'TURN',
+          prices: [{ gemType: 3, value: 20 }],
+          effects: [{ command: 'HEAL', type: 'CHANGE', target: 'SELF', value: 18 }] },
+        { name: 'Собрать стрелы', description: 'Пополнить колчан (+2 стрелы).',
+          prices: [{ gemType: 3, value: 10 }],
+          effects: [{ command: 'EDIT_RES', type: 'CHANGE', target: 'SELF', resName: 'Стрелы', value: 2 }] }
+      ] }
+    ],
+    heroRules: [
+      { orientation: null, gemType: null, minSize: 4,
+        perk: { name: 'Резонанс', effects: [{ command: 'EDIT_STOCK', type: 'CHANGE', target: 'SELF', gemTypes: [1], value: 10 }] } }
+    ],
+    enemyHands: [
+      { gemType: 1, name: 'Когти', perks: [
+        { name: 'Когтистый удар', probability: 100,
+          prices: [],
+          effects: [{ command: 'ATTACK', target: 'HERO', value: 12, func: { dice: 4 } }] },
+        { name: 'Морок', probability: 50, coolDown: 2, reloadType: 'TURN',
+          prices: [],
+          effects: [{ command: 'EDIT_STATUS', type: 'CHANGE', target: 'HERO', value: 2,
+            status: { name: 'Ослабление', type: 'WEAK', value: 4, duration: 2 } }] }
+      ] }
+    ]
+  };
+}
+
+// ---------- Scene loader / state builder ----------
+function m3fLoadScene() {
+  const raw = (gameData && gameData.game === 'match3fight') ? gameData : {};
+  const hasScene = raw.hero || raw.enemy || raw.heroHands || raw.settings;
+  const sc = hasScene ? raw : m3fDemoScene();
+
+  const settings = sc.settings || {};
+  const types = Math.max(4, parseInt(settings.types) || 5);
+
+  function mkFighter(o, isEnemy) {
+    o = o || {};
+    const maxHp = parseInt(o.maxHp) || parseInt(o.hp) || 100;
+    const f = {
+      name: o.name || (isEnemy ? 'Враг' : 'Герой'),
+      hp: (o.hp != null ? parseInt(o.hp) : maxHp),
+      maxHp: maxHp,
+      shield: parseInt(o.shield) || 0,
+      statuses: (Array.isArray(o.statuses) ? o.statuses : []).map(m3fMkStatus),
+      // Named per-side resources (стрелы, заряды и т.п.): {name, amount, maxAmount?}
+      resources: (Array.isArray(o.resources) ? o.resources : []).map(r => ({
+        name: r.name || '', amount: parseInt(r.amount) || 0,
+        maxAmount: (r.maxAmount != null ? parseInt(r.maxAmount) : null)
+      })),
+      touches: 0, hits: 0, blocks: (parseInt(o.blocks) || 0),
+      wounds: (o.wounds != null ? parseInt(o.wounds) : 0),
+      maxWounds: (o.maxWounds != null ? parseInt(o.maxWounds) : null),
+      wasTouchedByPreviousEffect: false,
+      wasHitByPreviousEffect: false
+    };
+    if (isEnemy) { f.info = o.info || ''; f.preview = o.preview || ''; }
+    return f;
+  }
+
+  // gemSettings keyed by integer gemType (string "1" -> 1)
+  const gemSettings = {};
+  (settings.gemSettings || []).forEach(g => {
+    const gt = parseInt(g.type);
+    if (!gt) return;
+    gemSettings[gt] = {
+      type: gt,
+      name: g.name || '',
+      fullValue: (g.fullValue != null ? +g.fullValue : 10),
+      halfProbability: +g.halfProbability || 0,
+      bonusValue: (g.bonusValue != null ? +g.bonusValue : 2),
+      bonusProbability: +g.bonusProbability || 0,
+      extraProbability: +g.extraProbability || 0,
+      turnKeepStrategy: (g.turnKeepStrategy != null ? +g.turnKeepStrategy : 50),
+      damageKeepStrategy: (g.damageKeepStrategy != null ? +g.damageKeepStrategy : 100),
+      displayName: g.displayName || ('тип ' + gt),
+      colorHex: g.colorHex || M3F_COLORS[(gt - 1) % M3F_COLORS.length],
+      maxValue: (g.maxValue != null ? +g.maxValue : null)
+    };
+  });
+  // Ensure a gemSettings entry exists for every active color 1..types
+  for (let gt = 1; gt <= types; gt++) {
+    if (!gemSettings[gt]) {
+      gemSettings[gt] = {
+        type: gt, name: '', fullValue: 10, halfProbability: 0, bonusValue: 2,
+        bonusProbability: 0, extraProbability: 0, turnKeepStrategy: 50, damageKeepStrategy: 100,
+        displayName: 'тип ' + gt, colorHex: M3F_COLORS[(gt - 1) % M3F_COLORS.length], maxValue: null
+      };
+    }
+  }
+
+  // stocks keyed by gemType
+  const stocks = {};
+  for (let gt = 1; gt <= types; gt++) {
+    stocks[gt] = { value: 0, gemType: gt, maxValue: gemSettings[gt].maxValue };
+  }
+
+  function mkHands(arr) {
+    return (Array.isArray(arr) ? arr : []).map(h => ({
+      gemType: parseInt(h.gemType) || 0,
+      name: h.name || '',
+      conditionsForDisplay: h.conditionsForDisplay || null,
+      perks: (Array.isArray(h.perks) ? h.perks : []).map(m3fMkPerk)
+    }));
+  }
+
+  // TimePerk: { id, time, perk } — perk fires when turn-second counter == time.
+  function mkTimePerks(arr) {
+    return (Array.isArray(arr) ? arr : []).map(tp => ({
+      id: (tp.id != null ? +tp.id : 0),
+      time: (tp.time != null ? parseInt(tp.time) : 0),
+      perk: tp.perk ? m3fMkPerk(tp.perk) : null
+    })).filter(tp => tp.perk);
+  }
+
+  // StockPerk: { id, gemType, threshold, perk } — perk fires on upward threshold crossing.
+  function mkStockPerks(arr) {
+    return (Array.isArray(arr) ? arr : []).map(sp => ({
+      id: (sp.id != null ? +sp.id : 0),
+      gemType: (sp.gemType != null ? parseInt(sp.gemType) : 0),
+      threshold: (sp.threshold != null ? +sp.threshold : 0),
+      perk: sp.perk ? m3fMkPerk(sp.perk) : null
+    })).filter(sp => sp.perk && sp.gemType);
+  }
+
+  // Settings.cells: special board cells (NONE/MULTIPLIER/ADDITIVE/TRIGGER). Keyed by "row_col".
+  const cellMap = {};
+  (Array.isArray(settings.cells) ? settings.cells : []).forEach(c => {
+    const row = parseInt(c.row), col = parseInt(c.col);
+    if (!(row >= 0) || !(col >= 0)) return;
+    const ct = (c.cellType || 'NONE').toUpperCase();
+    if (ct === 'NONE') return;
+    cellMap[row + '_' + col] = {
+      row: row, col: col, cellType: ct,
+      modifierValue: (c.modifierValue != null ? +c.modifierValue : (ct === 'MULTIPLIER' ? 1 : 0)),
+      triggerPerk: (ct === 'TRIGGER' && c.triggerPerk) ? m3fMkPerk(c.triggerPerk) : null
+    };
+  });
+
+  m3f = {
+    hero: mkFighter(sc.hero, false),
+    enemy: mkFighter(sc.enemy, true),
+    stocks: stocks,
+    gemSettings: gemSettings,
+    heroHands: mkHands(sc.heroHands),
+    enemyHands: mkHands(sc.enemyHands),
+    heroRules: (Array.isArray(sc.heroRules) ? sc.heroRules : []).map(r => ({
+      orientation: r.orientation || null,
+      gemType: (r.gemType != null ? parseInt(r.gemType) : null),
+      minSize: (r.minSize != null ? +r.minSize : 3),
+      perk: r.perk || null
+    })),
+    heroTimePerks: mkTimePerks(settings.HeroTimePerks || sc.HeroTimePerks),
+    enemyTimePerks: mkTimePerks(settings.EnemyTimePerks || sc.EnemyTimePerks),
+    heroStockPerks: mkStockPerks(settings.HeroStockPerks || sc.HeroStockPerks),
+    enemyStockPerks: mkStockPerks(settings.EnemyStockPerks || sc.EnemyStockPerks),
+    cells: cellMap,                 // "row_col" -> special cell descriptor
+    settings: {
+      types: types,
+      makeEnemyMove: !!settings.makeEnemyMove,
+      animateEnemy: !!settings.animateEnemy
+    },
+    grid: [], gmeta: [], sel: null, animating: false, done: false, turn: 'hero',
+    turnNum: 1,
+    timeSec: 0,           // per-turn second counter (advanced each effect-loop tick)
+    perkCharges: {},      // name -> remaining charges
+    perkReload: {},       // name -> turns since last use (>= coolDown => ready)
+    categoryLocked: {},   // category -> true if a perk of category used this turn
+    log: []
+  };
+
+  // initialize charges & reload trackers (incl. trigger/time/stock perks so charges work)
+  const allPerkSources = [...m3f.heroHands, ...m3f.enemyHands];
+  allPerkSources.forEach(h => h.perks.forEach(p => {
+    if (p.charges != null) m3f.perkCharges[p.name] = p.charges;
+    m3f.perkReload[p.name] = p.coolDown; // ready at start
+  }));
+  [...m3f.heroTimePerks, ...m3f.enemyTimePerks, ...m3f.heroStockPerks, ...m3f.enemyStockPerks]
+    .forEach(tp => { if (tp.perk && tp.perk.charges != null) m3f.perkCharges[tp.perk.name] = tp.perk.charges; });
+  Object.keys(m3f.cells).forEach(k => {
+    const cp = m3f.cells[k].triggerPerk;
+    if (cp && cp.charges != null) m3f.perkCharges[cp.name] = cp.charges;
+  });
+}
+
+// Build a full perk object from raw JSON (shared by hands, time/stock perks, trigger cells).
+function m3fMkPerk(p) {
+  p = p || {};
+  return {
+    name: p.name || '(перк)',
+    description: p.description,
+    effects: Array.isArray(p.effects) ? p.effects : [],
+    prices: Array.isArray(p.prices) ? p.prices.map(pr => ({ gemType: parseInt(pr.gemType) || 0, value: +pr.value || 0 })) : [],
+    // resource cost (стрелы/заряды): [{name, amount}] — spent on use (Android spendResourcesForPerk)
+    resources: Array.isArray(p.resources) ? p.resources.map(r => ({ name: r.name || '', amount: parseInt(r.amount) || 0 })) : [],
+    icon: p.icon || '',
+    category: p.category || null,
+    coolDown: (p.coolDown != null ? +p.coolDown : 0),
+    reloadType: p.reloadType || 'TURN',
+    charges: (p.charges != null ? +p.charges : null),
+    probability: (p.probability != null ? +p.probability : 100),
+    conditionsForDisplay: Array.isArray(p.conditionsForDisplay) ? p.conditionsForDisplay : null,
+    conditionsForEnable: Array.isArray(p.conditionsForEnable) ? p.conditionsForEnable : null,
+    place: !!p.place
+  };
+}
+
+function m3fMkStatus(s) {
+  s = s || {};
+  return {
+    name: s.name || 'статус',
+    description: s.description || '',
+    value: (s.value != null ? +s.value : 0),
+    type: s.type || 'INFO',
+    probability: (s.probability != null ? +s.probability : 100),
+    duration: (s.duration != null ? parseInt(s.duration) : 1),
+    gemTypes: Array.isArray(s.gemTypes) ? s.gemTypes.map(Number) : [],
+    times: (s.times != null ? +s.times : null),
+    end: !!s.end
+  };
+}
+
+// ---------- Board engine (adapted copies of m3* — originals untouched) ----------
+function m3fGem() { return Math.floor(rng() * m3f.settings.types); }
+
+// Per-gem metadata rolled once on creation (dual-color / bonus / half debuff).
+// `primary` is the base color id (1..types). `extra` is a SECOND color id (1..types)
+// that the gem also counts as (extraProbability) or null. `bonus` carries bonusValue
+// of a different color (bonusProbability). `half` => fullValue/2 debuff (halfProbability,
+// which per spec also sets extraType=EMPTY_COLOR, i.e. no extra color).
+function m3fMkGemMeta(g) {
+  const primary = g + 1;
+  const gs = m3f.gemSettings[primary] || {};
+  const meta = { extra: null, bonus: false, half: false };
+  if (m3fRoll(gs.halfProbability)) {
+    meta.half = true; // EMPTY_COLOR sentinel => no extra color when half-debuffed
+  } else if (m3fRoll(gs.extraProbability)) {
+    // pick a different color in 1..types as the additional matchable color
+    const types = m3f.settings.types;
+    if (types > 1) {
+      let e; do { e = Math.floor(rng() * types) + 1; } while (e === primary);
+      meta.extra = e;
+    }
+  }
+  if (m3fRoll(gs.bonusProbability)) meta.bonus = true;
+  return meta;
+}
+
+// Does gem with metadata m (primary color `prim`) count as color `color`?
+function m3fGemMatchesColor(prim, meta, color) {
+  if (prim === color) return true;
+  if (meta && meta.extra === color) return true;
+  return false;
+}
+
+function m3fInitBoard() {
+  m3f.grid = Array.from({ length: M3F_SIZE }, () => new Array(M3F_SIZE).fill(0));
+  m3f.gmeta = Array.from({ length: M3F_SIZE }, () => new Array(M3F_SIZE).fill(null));
+  for (let r = 0; r < M3F_SIZE; r++) {
+    for (let c = 0; c < M3F_SIZE; c++) {
+      let g;
+      do {
+        g = m3fGem();
+      } while (
+        (c >= 2 && m3f.grid[r][c-1] === g && m3f.grid[r][c-2] === g) ||
+        (r >= 2 && m3f.grid[r-1][c] === g && m3f.grid[r-2][c] === g)
+      );
+      m3f.grid[r][c] = g;
+      m3f.gmeta[r][c] = m3fMkGemMeta(g);
+    }
+  }
+}
+
+function m3fRender() {
+  const board = document.getElementById('m3f-board');
+  board.innerHTML = '';
+  for (let r = 0; r < M3F_SIZE; r++) {
+    for (let c = 0; c < M3F_SIZE; c++) {
+      const cell = document.createElement('div');
+      const g = m3f.grid[r][c];
+      cell.className = 'm3f-cell';
+      // special-cell marker (drawn on every special cell, occupied or not)
+      const sp = m3f.cells[r + '_' + c];
+      if (sp) {
+        cell.classList.add('m3f-special');
+        cell.dataset.mark = sp.cellType === 'MULTIPLIER' ? ('×' + sp.modifierValue)
+          : sp.cellType === 'ADDITIVE' ? (sp.modifierValue >= 0 ? '+' + sp.modifierValue : '' + sp.modifierValue)
+          : '★';
+      }
+      if (g < 0) {
+        cell.classList.add('dead');
+      } else {
+        cell.style.background = (m3f.gemSettings[g+1] || {}).colorHex || M3F_COLORS[g % M3F_COLORS.length];
+        const meta = m3f.gmeta[r][c];
+        if (meta) {
+          // dual-color gem: diagonal split with the extra color
+          if (meta.extra) {
+            const ec = (m3f.gemSettings[meta.extra] || {}).colorHex || M3F_COLORS[(meta.extra - 1) % M3F_COLORS.length];
+            cell.style.background = `linear-gradient(135deg, ${cell.style.background} 50%, ${ec} 50%)`;
+          }
+          if (meta.bonus) cell.classList.add('m3f-bonus');
+          if (meta.half) cell.classList.add('m3f-half');
+        }
+        if (m3f.sel && m3f.sel.r === r && m3f.sel.c === c) cell.classList.add('selected');
+        if (!m3f.done && !m3f.animating && m3f.turn === 'hero') cell.addEventListener('click', () => m3fClick(r, c));
+      }
+      board.appendChild(cell);
+    }
+  }
+}
+
+function m3fClick(r, c) {
+  if (m3f.done || m3f.animating || m3f.turn !== 'hero' || m3f.grid[r][c] < 0) return;
+  if (!m3f.sel) { m3f.sel = { r, c }; m3fRender(); return; }
+  if (m3f.sel.r === r && m3f.sel.c === c) { m3f.sel = null; m3fRender(); return; }
+  if (Math.abs(m3f.sel.r - r) + Math.abs(m3f.sel.c - c) !== 1) { m3f.sel = { r, c }; m3fRender(); return; }
+
+  const sr = m3f.sel.r, sc = m3f.sel.c;
+  m3f.sel = null; m3f.animating = true;
+  [m3f.grid[r][c], m3f.grid[sr][sc]] = [m3f.grid[sr][sc], m3f.grid[r][c]];
+  [m3f.gmeta[r][c], m3f.gmeta[sr][sc]] = [m3f.gmeta[sr][sc], m3f.gmeta[r][c]];
+
+  if (!m3fFindMatches().cells.length) {
+    [m3f.grid[r][c], m3f.grid[sr][sc]] = [m3f.grid[sr][sc], m3f.grid[r][c]];
+    [m3f.gmeta[r][c], m3f.gmeta[sr][sc]] = [m3f.gmeta[sr][sc], m3f.gmeta[r][c]];
+    m3f.animating = false; m3fRender(); return;
+  }
+  m3fRender();
+  setTimeout(m3fCascade, 150);
+}
+
+// Returns {cells:[{r,c}], runs:[{gemType,size,orientation,cells}]}
+// Dual-color aware: a gem matches a run of color `color` if its primary OR extra color is `color`.
+function m3fCellColor(r, c) { return m3f.grid[r][c] >= 0 ? m3f.grid[r][c] + 1 : -1; }
+function m3fCellMatchesColor(r, c, color) {
+  const prim = m3fCellColor(r, c);
+  if (prim < 0) return false;
+  return m3fGemMatchesColor(prim, m3f.gmeta[r][c], color);
+}
+function m3fFindMatches() {
+  const set = new Set();
+  const runs = [];
+  for (let r = 0; r < M3F_SIZE; r++) {
+    for (let c = 0; c <= M3F_SIZE - 3; c++) {
+      const color = m3fCellColor(r, c);
+      if (color < 0) continue;
+      // run color anchored on this cell's primary color
+      if (m3fCellMatchesColor(r, c+1, color) && m3fCellMatchesColor(r, c+2, color)) {
+        let len = 3; while (c+len < M3F_SIZE && m3fCellMatchesColor(r, c+len, color)) len++;
+        const cells = [];
+        for (let i = 0; i < len; i++) { set.add(r+'_'+(c+i)); cells.push({ r, c: c+i }); }
+        runs.push({ gemType: color, size: len, orientation: 'HORIZONTAL', cells });
+        c += len - 1;
+      }
+    }
+  }
+  for (let c = 0; c < M3F_SIZE; c++) {
+    for (let r = 0; r <= M3F_SIZE - 3; r++) {
+      const color = m3fCellColor(r, c);
+      if (color < 0) continue;
+      if (m3fCellMatchesColor(r+1, c, color) && m3fCellMatchesColor(r+2, c, color)) {
+        let len = 3; while (r+len < M3F_SIZE && m3fCellMatchesColor(r+len, c, color)) len++;
+        const cells = [];
+        for (let i = 0; i < len; i++) { set.add((r+i)+'_'+c); cells.push({ r: r+i, c }); }
+        runs.push({ gemType: color, size: len, orientation: 'VERTICAL', cells });
+        r += len - 1;
+      }
+    }
+  }
+  const cells = [...set].map(s => { const p = s.split('_'); return { r:+p[0], c:+p[1] }; });
+  return { cells, runs };
+}
+
+function m3fFallAnim(cb) {
+  const moves = [];
+  const fresh = [];
+  for (let c = 0; c < M3F_SIZE; c++) {
+    let w = M3F_SIZE - 1, gap = 0;
+    for (let r = M3F_SIZE - 1; r >= 0; r--) {
+      if (m3f.grid[r][c] >= 0) { if (w !== r) moves.push({ col: c, fromRow: r, toRow: w }); w--; }
+      else { gap++; }
+    }
+    let above = gap;
+    for (let r = w; r >= 0; r--) fresh.push({ col: c, toRow: r, aboveCount: above-- });
+  }
+  for (let c = 0; c < M3F_SIZE; c++) {
+    let w = M3F_SIZE - 1;
+    for (let r = M3F_SIZE - 1; r >= 0; r--) {
+      if (m3f.grid[r][c] >= 0) {
+        m3f.grid[w][c] = m3f.grid[r][c];
+        m3f.gmeta[w][c] = m3f.gmeta[r][c];
+        if (w !== r) { m3f.grid[r][c] = -1; m3f.gmeta[r][c] = null; }
+        w--;
+      }
+    }
+    for (let r = w; r >= 0; r--) { m3f.grid[r][c] = -1; m3f.gmeta[r][c] = null; }
+  }
+  fresh.forEach(({ col, toRow }) => { const g = m3fGem(); m3f.grid[toRow][col] = g; m3f.gmeta[toRow][col] = m3fMkGemMeta(g); });
+
+  m3fRender();
+  const board = document.getElementById('m3f-board');
+  const cellH = board.children[0] ? board.children[0].offsetHeight + 4 : 46;
+  moves.forEach(({ col, fromRow, toRow }) => {
+    const el = board.children[toRow * M3F_SIZE + col];
+    if (!el || el.classList.contains('dead')) return;
+    el.style.transition = 'none';
+    el.style.transform = `translateY(${-(toRow - fromRow) * cellH}px)`;
+  });
+  fresh.forEach(({ col, toRow, aboveCount }) => {
+    const el = board.children[toRow * M3F_SIZE + col];
+    if (!el || el.classList.contains('dead')) return;
+    el.style.transition = 'none';
+    el.style.transform = `translateY(${-(toRow + aboveCount) * cellH}px)`;
+  });
+  const dur = 380;
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const cells = board.children;
+    for (let i = 0; i < cells.length; i++) {
+      if (cells[i].style.transform) {
+        cells[i].style.transition = `transform ${dur}ms cubic-bezier(0.4, 0.0, 0.2, 1.0)`;
+        cells[i].style.transform = '';
+      }
+    }
+    setTimeout(cb, dur + 20);
+  }));
+}
+
+function m3fCascade() {
+  const { cells: matches, runs } = m3fFindMatches();
+  if (!matches.length) {
+    m3f.animating = false; m3fRender();
+    return;
+  }
+  m3fAccumulateStocks(matches, runs);
+  m3fUpdateStocksUI();
+
+  const board = document.getElementById('m3f-board');
+  matches.forEach(({ r, c }) => {
+    const el = board.children[r * M3F_SIZE + c];
+    if (el) el.classList.add('removing');
+  });
+  setTimeout(() => {
+    matches.forEach(({ r, c }) => { m3f.grid[r][c] = -1; m3f.gmeta[r][c] = null; });
+    m3fFallAnim(() => setTimeout(m3fCascade, 60));
+  }, 250);
+}
+
+// ---------- Stock accumulation pipeline ----------
+function m3fRoll(prob) { return (rng() * 100) <= (prob || 0); }
+
+function m3fAddStock(gemType, pts) {
+  const st = m3f.stocks[gemType];
+  if (!st) return;
+  const prev = st.value;
+  let v = st.value + pts;
+  if (v < 0) v = 0;
+  if (st.maxValue != null) v = Math.min(v, st.maxValue);
+  st.value = Math.round(v);
+  // StockPerk: fire on upward threshold crossing (prev < threshold && cur >= threshold)
+  m3fCheckStockPerks(gemType, prev, st.value);
+}
+
+// StockPerk executor — stateless upward-crossing detector for both sides.
+function m3fCheckStockPerks(gemType, prev, cur) {
+  if (prev === cur) return;
+  const fire = (list, isHero) => {
+    list.forEach(sp => {
+      if (sp.gemType !== gemType) return;
+      if (!(prev < sp.threshold && cur >= sp.threshold)) return;
+      const owner = isHero ? 'hero' : 'enemy';
+      if (!m3fCheckConditions(sp.perk.conditionsForDisplay, owner)) return;
+      m3fLog(`Порог ресурса (${gemType}≥${sp.threshold}): «${sp.perk.name}».`);
+      sp.perk.effects.forEach(eff => m3fApplyEffect(eff, owner));
+    });
+  };
+  fire(m3f.heroStockPerks, true);
+  fire(m3f.enemyStockPerks, false);
+}
+
+function m3fAccumulateStocks(cells, runs) {
+  // GENERATE statuses on hero: flat points per matched gem of matching gemTypes
+  const genStatuses = m3f.hero.statuses.filter(s => s.type === 'GENERATE');
+  const changeStatuses = m3f.hero.statuses.filter(s => s.type === 'CHANGE_STOCK');
+
+  cells.forEach(({ r, c }) => {
+    const g = m3f.grid[r][c];
+    if (g < 0) return;
+    const gemType = g + 1;
+    const gs = m3f.gemSettings[gemType];
+    if (!gs) return;
+    const meta = m3f.gmeta[r][c] || {};
+    // base points: half-debuff (meta.half) halves the award; bonus adds bonusValue
+    let pts = meta.half ? Math.floor(gs.fullValue / 2) : gs.fullValue;
+    if (meta.bonus) pts += gs.bonusValue;
+    // CHANGE_STOCK: +status.value for matching gemTypes
+    changeStatuses.forEach(s => { if (s.gemTypes.includes(gemType)) pts += s.value; });
+
+    // special-cell point modifier (MULTIPLIER / ADDITIVE) at this (r,c)
+    const cell = m3f.cells[r + '_' + c];
+    if (cell) {
+      if (cell.cellType === 'MULTIPLIER') pts = Math.round(pts * cell.modifierValue);
+      else if (cell.cellType === 'ADDITIVE') pts += cell.modifierValue;
+      else if (cell.cellType === 'TRIGGER' && cell.modifierValue) pts += cell.modifierValue;
+    }
+
+    m3fAddStock(gemType, pts);
+    // dual-color gem: also score its extra color (extraType) with that color's fullValue
+    if (meta.extra) {
+      const egs = m3f.gemSettings[meta.extra];
+      if (egs) {
+        let epts = egs.fullValue;
+        changeStatuses.forEach(s => { if (s.gemTypes.includes(meta.extra)) epts += s.value; });
+        m3fAddStock(meta.extra, epts);
+      }
+    }
+    // GENERATE: flat add per gem
+    genStatuses.forEach(s => { if (s.gemTypes.includes(gemType)) m3fAddStock(gemType, s.value); });
+
+    // TRIGGER cell: fire its embedded perk once per gem cleared here
+    if (cell && cell.cellType === 'TRIGGER' && cell.triggerPerk) m3fFireCellTrigger(cell.triggerPerk);
+  });
+
+  // HeroRules fire by run shape/size
+  m3fRunMatchRules(runs);
+}
+
+// Fire a TRIGGER cell's embedded perk (hero-side, gated by conditionsForDisplay + charges).
+function m3fFireCellTrigger(perk) {
+  if (!m3fCheckConditions(perk.conditionsForDisplay, 'hero')) return;
+  if (perk.charges != null && (m3f.perkCharges[perk.name] || 0) <= 0) return;
+  m3fLog(`Клетка: «${perk.name}».`);
+  perk.effects.forEach(eff => m3fApplyEffect(eff, 'hero'));
+  if (perk.charges != null) m3f.perkCharges[perk.name] = Math.max(0, (m3f.perkCharges[perk.name] || 0) - 1);
+}
+
+function m3fRunMatchRules(runs) {
+  if (!m3f.heroRules.length) return;
+  runs.forEach(run => {
+    m3f.heroRules.forEach(rule => {
+      if (run.size < rule.minSize) return;
+      if (rule.orientation && rule.orientation !== run.orientation) return;
+      if (rule.gemType != null && rule.gemType !== run.gemType) return;
+      if (rule.perk && Array.isArray(rule.perk.effects)) {
+        rule.perk.effects.forEach(eff => m3fApplyEffect(eff, 'hero'));
+        m3fLog(`Правило «${rule.perk.name || '?'}» сработало (${run.size} в ряд).`);
+      }
+    });
+  });
+}
+
+// ---------- Effect executor ----------
+function m3fResolvePersons(target, source) {
+  // source: 'hero'|'enemy'; returns array of fighter objects
+  const self = source === 'hero' ? m3f.hero : m3f.enemy;
+  const foe = source === 'hero' ? m3f.enemy : m3f.hero;
+  switch ((target || 'SELF').toUpperCase()) {
+    case 'HERO': return [m3f.hero];
+    case 'ENEMY': return [m3f.enemy];
+    case 'SELF': return [self];
+    case 'FOE': return [foe];
+    case 'ALL': return [m3f.hero, m3f.enemy];
+    default: return [self];
+  }
+}
+
+// Resolve a person object from a pFunc/func segment `source` (HERO/ENEMY/SELF/FOE).
+// `owner` is the side that owns the effect ('hero'|'enemy') — used for SELF/FOE.
+function m3fSourcePerson(source, owner) {
+  const self = owner === 'hero' ? m3f.hero : m3f.enemy;
+  const foe = owner === 'hero' ? m3f.enemy : m3f.hero;
+  switch ((source || 'SELF').toUpperCase()) {
+    case 'HERO': return m3f.hero;
+    case 'ENEMY': return m3f.enemy;
+    case 'SELF': return self;
+    case 'FOE': return foe;
+    default: return self;
+  }
+}
+
+// Raw numeric value of a single named status on a person (sum if duplicated).
+function m3fStatusValue(person, name) {
+  let v = 0; let found = false;
+  person.statuses.forEach(s => { if (s.name === name) { v += s.value; found = true; } });
+  return found ? v : 0;
+}
+function m3fHasStatus(person, name) {
+  return person.statuses.some(s => s.name === name);
+}
+
+// Read a raw segment parameter value for a person (used by pFunc/func segments).
+// owner: side owning the effect ('hero'|'enemy').
+// Amount of a named resource on a person (0 if absent).
+function m3fResAmount(person, name) {
+  const r = (person.resources || []).find(x => x.name === name);
+  return r ? r.amount : 0;
+}
+
+function m3fSegmentParamValue(seg, owner) {
+  const param = (seg.parameter || 'STOCK').toUpperCase();
+  if (param === 'STOCK') {
+    const st = m3f.stocks[parseInt(seg.gemType)];
+    return st ? st.value : 0;
+  }
+  const person = m3fSourcePerson(seg.source, owner);
+  switch (param) {
+    case 'RES': return m3fResAmount(person, seg.name);
+    case 'HP': return person.hp;
+    case 'HP_P': return person.maxHp ? Math.round(person.hp / person.maxHp * 100) : 0;
+    case 'STATUS': return m3fStatusValue(person, seg.name);
+    case 'TURN': return m3f.turnNum;
+    case 'TOUCHES': return person.touches || 0;
+    case 'HITS': return person.hits || 0;
+    case 'BLOCKS': return person.blocks || 0;
+    case 'TIME': return m3f.turnNum; // no real-time timer in this engine; map to turn
+    default: return 0;
+  }
+}
+
+// Sum over segments(paramValue * mul) + dice. `owner` defaults to 'hero' (back-compat).
+function m3fFuncValue(func, owner) {
+  if (!func) return 0;
+  owner = owner || 'hero';
+  let v = 0;
+  if (func.dice) v += Math.floor(rng() * func.dice) + 1;
+  if (Array.isArray(func.segments)) {
+    func.segments.forEach(seg => {
+      // Android Effect.Func.Segment.mul defaults to 1f (Effect.kt:446); value += (mul*param).toInt()
+      v += Math.trunc(m3fSegmentParamValue(seg, owner) * (seg.mul != null ? seg.mul : 1));
+    });
+  }
+  return v;
+}
+
+// ---------- Conditions DSL (Section 7) ----------
+// Resolve a condition `target` (HERO/ENEMY/SELF/FOE/ALL) to person(s).
+// owner: side evaluating the condition ('hero'|'enemy').
+function m3fConditionPersons(target, owner) {
+  const self = owner === 'hero' ? m3f.hero : m3f.enemy;
+  const foe = owner === 'hero' ? m3f.enemy : m3f.hero;
+  switch ((target || 'SELF').toUpperCase()) {
+    case 'HERO': return [m3f.hero];
+    case 'ENEMY': return [m3f.enemy];
+    case 'SELF': return [self];
+    case 'FOE': return [foe];
+    case 'ALL': return [m3f.hero, m3f.enemy];
+    default: return [self];
+  }
+}
+
+// Live numeric value of a condition parameter for a person.
+function m3fConditionParamValue(param, person, cond) {
+  switch (param) {
+    case 'HP': return person.hp;
+    case 'HP_P': return person.maxHp ? Math.round(person.hp / person.maxHp * 100) : 0;
+    case 'STATUS': return m3fStatusValue(person, cond.name);
+    case 'TURN': return m3f.turnNum;
+    case 'TIME': return m3f.turnNum;
+    case 'TOUCHES': return person.touches || 0;
+    case 'HITS': return person.hits || 0;
+    case 'STOCK': { const st = m3f.stocks[parseInt(cond.gemType)]; return st ? st.value : 0; }
+    case 'RES': return m3fResAmount(person, cond.name);
+    case 'TOUCHED': return person.wasTouchedByPreviousEffect ? 1 : 0;
+    case 'HIT': return person.wasHitByPreviousEffect ? 1 : 0;
+    default: return 0;
+  }
+}
+
+// Evaluate a single condition for one person. Returns boolean.
+function m3fEvalConditionOne(cond, person) {
+  const param = (cond.parameter || 'STATUS').toUpperCase();
+  const sym = (cond.symbol || 'HAVE').toUpperCase();
+  const cmpVal = (cond.value != null ? +cond.value : 0);
+  // Status-existence symbols (HAVE/EXIST/EMPTY) only meaningful for STATUS param.
+  if (param === 'STATUS') {
+    const exists = m3fHasStatus(person, cond.name);
+    const val = m3fStatusValue(person, cond.name);
+    switch (sym) {
+      case 'HAVE': return exists && val > 0;
+      case 'EXIST': return exists;
+      case 'EMPTY': return !exists;
+      case 'MORE': return val > cmpVal;
+      case 'LESS': return val < cmpVal;
+      case 'EQUALS': return val === cmpVal;
+      case 'NOT': return val !== cmpVal;
+      default: return true;
+    }
+  }
+  const val = m3fConditionParamValue(param, person, cond);
+  switch (sym) {
+    case 'MORE': return val > cmpVal;
+    case 'LESS': return val < cmpVal;
+    case 'EQUALS': return val === cmpVal;
+    case 'NOT': return val !== cmpVal;
+    case 'HAVE': return val > 0;
+    case 'EXIST': return val != null;
+    case 'EMPTY': return !val;
+    default: return true;
+  }
+}
+
+// Evaluate one condition over its target(s). For ALL, true if ANY person satisfies
+// (mirrors Android target resolution where ALL maps to hero||enemy for flags).
+function m3fEvalCondition(cond, owner) {
+  if (!cond) return true;
+  const persons = m3fConditionPersons(cond.target, owner);
+  return persons.some(p => m3fEvalConditionOne(cond, p));
+}
+
+// AND over an array of conditions. Empty/absent => true.
+function m3fCheckConditions(conds, owner) {
+  if (!conds || !conds.length) return true;
+  return conds.every(c => m3fEvalCondition(c, owner));
+}
+
+// executePerkEffects-per-effect entry (Android PerkExecutor.executePerkEffects:417-446).
+// repeats wraps the WHOLE probability+dispatch+additionalEffects unit, and effect-level
+// conditions are RE-CHECKED each iteration (Android lines 430-443). func/dice re-roll per
+// iteration because m3fApplyEffectUnit recomputes them. additionalEffects (which call
+// m3fApplyEffectUnit directly) are NOT wrapped by this loop — mirroring Android where
+// additionalEffects invoke applyEffect once, outside executePerkEffects' repeats loop.
+function m3fApplyEffect(effect, source, disableUndo) {
+  if (!effect || !effect.command) return;
+  // repeats computed ONCE before the loop (rFunc re-read here, matching Android
+  // useFunctionForChangeEffectRepeats which runs once in executePerkEffects).
+  let repeats = (effect.repeats != null ? effect.repeats : 1) + m3fFuncValue(effect.rFunc, source);
+  if (repeats < 1) repeats = 1;
+  for (let i = 0; i < repeats; i++) {
+    // re-check effect-level conditions each iteration (Android lines 430-443).
+    // On condition fail Android simply skips applyEffect for this iteration — no
+    // FAIL additionalEffects fire, since those belong to the probability roll, not
+    // the condition gate. So we just `continue`.
+    if (!m3fCheckConditions(effect.conditions, source)) continue;
+    m3fApplyEffectUnit(effect, source, disableUndo);
+  }
+}
+
+// A single full application unit (Android PerkExecutor.applyEffect:475 +
+// countProbabilityAndUseEffect:499): reset contact flags (unless chained), roll
+// probability ONCE, dispatch the main action ONCE, then run additionalEffects ONCE
+// reading THIS unit's contact flags. Called per repeat by m3fApplyEffect, and directly
+// (no repeats) by additionalEffects dispatch.
+function m3fApplyEffectUnit(effect, source, disableUndo) {
+  // reset previous-effect contact flags unless chained (disableUndo)
+  if (!disableUndo) { m3fResetContactFlags(); }
+  // probability gate
+  let p = (effect.probability != null ? effect.probability : 100);
+  p += m3fFuncValue(effect.pFunc, source);
+  const rolled = (rng() * 100) <= p;
+  if (!rolled) {
+    // FAIL branch: only additionalEffects with successType==FAIL fire
+    m3fRunAdditionalEffects(effect, source, false, false, true);
+    return;
+  }
+  // main action (func/dice re-roll happens inside m3fApplyEffectOnce per call)
+  m3fApplyEffectOnce(effect, source);
+  // SUCCESS branch: TOUCH/HIT/ANY additionalEffects, gated by parent contact flags
+  m3fRunAdditionalEffects(effect, source, true, false, false);
+}
+
+// Reset per-effect contact flags on both fighters (mirror Person.undo()).
+function m3fResetContactFlags() {
+  m3f.hero.wasTouchedByPreviousEffect = false;
+  m3f.hero.wasHitByPreviousEffect = false;
+  m3f.enemy.wasTouchedByPreviousEffect = false;
+  m3f.enemy.wasHitByPreviousEffect = false;
+}
+
+// Run additionalEffects of a parent effect.
+//   parentSuccess: probability roll passed (SUCCESS branch) vs failed (FAIL branch)
+//   The flags are read from the PARENT effect's target resolution.
+function m3fRunAdditionalEffects(effect, source, parentSuccess, _unused, failBranch) {
+  const list = Array.isArray(effect.additionalEffects) ? effect.additionalEffects : null;
+  if (!list || !list.length) return;
+  const parentTargets = m3fConditionPersons(effect.target, source);
+  const flag = (name) => parentTargets.some(p => p[name]);
+  list.forEach(ae => {
+    // default successType: ATTACK -> HIT, otherwise ANY
+    let st = ae.successType ? ae.successType.toUpperCase() : null;
+    if (!st) st = ((ae.command || '').toUpperCase() === 'ATTACK') ? 'HIT' : 'ANY';
+    if (failBranch) {
+      // FAIL branch: only FAIL successType, applied with undo enabled (resets flags).
+      // Android calls applyEffect (4-arg default disableUndo=false) directly — NOT through
+      // executePerkEffects — so additionalEffects fire once regardless of their own repeats.
+      if (st !== 'FAIL') return;
+      if (!m3fCheckConditions(ae.conditions, source)) return;
+      m3fApplyEffectUnit(ae, source, false);
+      return;
+    }
+    if (!parentSuccess) return;
+    let ok;
+    switch (st) {
+      case 'TOUCH': ok = flag('wasTouchedByPreviousEffect'); break;
+      case 'HIT': ok = flag('wasHitByPreviousEffect'); break;
+      case 'ANY': case 'SUCCESS': ok = true; break;
+      case 'FAIL': ok = false; break;
+      default: ok = true; break;
+    }
+    if (!ok) return;
+    if (!m3fCheckConditions(ae.conditions, source)) return;
+    // additionalEffects applied with disableUndo=true (keep parent flags). Android calls
+    // applyEffect(ae, enemy, hero, true) directly — once, NOT through executePerkEffects —
+    // so additionalEffects do not honor their own `repeats`.
+    m3fApplyEffectUnit(ae, source, true);
+  });
+}
+
+function m3fApplyEffectOnce(effect, source) {
+  const cmd = (effect.command || '').toUpperCase();
+  const baseValue = (+effect.value || 0) + m3fFuncValue(effect.func, source);
+  const targets = m3fResolvePersons(effect.target, source);
+  const srcF = source === 'hero' ? m3f.hero : m3f.enemy;
+
+  switch (cmd) {
+    case 'ATTACK':
+      targets.forEach(t => m3fAttack(srcF, t, baseValue, (effect.type || 'BOTH').toUpperCase(), t === srcF));
+      break;
+    case 'DEFEND':
+      targets.forEach(t => {
+        let v = baseValue;
+        srcF.statuses.forEach(s => { if (s.type === 'CHANGE_DEFEND') v += s.value; });
+        t.shield += Math.max(0, v);
+        m3fLog(`${t.name}: +${Math.max(0,v)} щитов.`);
+      });
+      break;
+    case 'HEAL':
+      targets.forEach(t => {
+        const ty = (effect.type || 'CHANGE').toUpperCase();
+        if (ty === 'SET') t.hp = Math.max(0, Math.min(t.maxHp, baseValue));
+        else t.hp = Math.min(t.maxHp, t.hp + baseValue);
+        if (t.hp < 0) t.hp = 0;
+        m3fLog(`${t.name}: HP ${baseValue >= 0 ? '+' : ''}${baseValue}.`);
+      });
+      break;
+    case 'EDIT_STOCK': {
+      const ty = (effect.type || 'CHANGE').toUpperCase();
+      const gts = Array.isArray(effect.gemTypes) ? effect.gemTypes : [];
+      gts.forEach(gt => {
+        gt = parseInt(gt);
+        const st = m3f.stocks[gt];
+        if (!st) return;
+        const prev = st.value;
+        if (ty === 'SET') st.value = Math.max(0, baseValue);
+        else st.value = Math.max(0, st.value + baseValue);
+        // StockPerks fire on any resource change, incl. EDIT_STOCK (Android parity)
+        m3fCheckStockPerks(gt, prev, st.value);
+      });
+      m3fUpdateStocksUI();
+      break;
+    }
+    case 'EDIT_RES': {
+      // Named resources (стрелы/заряды): SET overwrites, CHANGE adds (Android EditResourcesExecutor).
+      const ty = (effect.type || 'CHANGE').toUpperCase();
+      const rn = (effect.resName != null ? effect.resName : effect.name);
+      targets.forEach(t => {
+        const r = (t.resources || []).find(x => x.name === rn);
+        if (!r) return; // only edits an existing resource
+        r.amount = (ty === 'SET') ? baseValue : r.amount + baseValue;
+        if (r.maxAmount != null && r.amount > r.maxAmount) r.amount = r.maxAmount;
+        m3fLog(`${t.name}: ${rn} = ${r.amount}.`);
+      });
+      m3fUpdateStocksUI();
+      break;
+    }
+    case 'EDIT_STATUS': {
+      const ty = (effect.type || 'CHANGE').toUpperCase();
+      targets.forEach(t => {
+        const stDef = effect.status || {};
+        const ns = m3fMkStatus(stDef);
+        // effect-level value overrides the incoming status magnitude
+        if (effect.value != null) ns.value = +effect.value;
+        // Android EditStatusHandler: merge into existing status by name.
+        // SET overwrites value, CHANGE adds to it, TIMES adjusts times;
+        // a new status is added only when none with that name exists.
+        const existing = t.statuses.find(s => s.name === ns.name);
+        if (existing) {
+          if (ty === 'SET') {
+            existing.value = ns.value;
+            if (ns.times != null) existing.times = ns.times;
+            if (stDef.duration != null) existing.duration = ns.duration;
+          } else if (ty === 'TIMES') {
+            existing.times = (existing.times != null ? existing.times : 0) + (ns.times != null ? ns.times : ns.value);
+          } else { // CHANGE (default)
+            existing.value += ns.value;
+            if (ns.times != null) existing.times = (existing.times != null ? existing.times : 0) + ns.times;
+          }
+        } else {
+          t.statuses.push(ns);
+        }
+        m3fLog(`${t.name}: статус «${ns.name}».`);
+      });
+      break;
+    }
+    case 'INFO':
+      if (effect.message) m3fLog(effect.message);
+      break;
+    case 'FINISH':
+    case 'FINISH_BATTLE':
+    case 'FINISHBATTLE': {
+      // explicit battle end; `win` field (or type WIN/LOSE) decides outcome, default hero win
+      const w = (effect.win != null) ? !!effect.win
+        : ((effect.type || 'WIN').toUpperCase() !== 'LOSE');
+      m3fFinish(w);
+      break;
+    }
+    default:
+      // unknown command: ignore gracefully
+      break;
+  }
+}
+
+// ---------- ATTACK resolution (mirror ApplyAttackExecutor) ----------
+function m3fAttack(src, tgt, value, type, selfTarget) {
+  // value modifiers via statuses, in order: WEAK/STRONG (src), VUL/ARMOR (tgt), RESISTANCE (tgt)
+  let v = value;
+  src.statuses.forEach(s => { if (s.type === 'WEAK') v -= s.value; if (s.type === 'STRONG') v += s.value; });
+  tgt.statuses.forEach(s => {
+    if (s.type === 'VULNERABLE' || s.type === 'VUL') v += s.value;
+    if (s.type === 'ARMOR') { if (m3fRoll(s.probability)) v -= s.value; }
+  });
+  let resist = 0;
+  tgt.statuses.forEach(s => { if (s.type === 'RESISTANCE') resist += s.value; });
+  if (resist) v = Math.round(v * (1 - resist / 100));
+  if (v < 0) v = 0;
+
+  // hit chance (skip for self-target)
+  if (!selfTarget) {
+    let chance = 100;
+    tgt.statuses.forEach(s => { if (s.type === 'EVASION') chance -= s.value; });
+    src.statuses.forEach(s => { if (s.type === 'ACCURACY') chance += s.value; });
+    // miss/dodge: attack reached resolution but neither touch nor hit flag set
+    if (chance < (rng() * 100)) { m3fLog(`${src.name} → ${tgt.name}: Промах!`); return; }
+  }
+
+  // attack landed (not a miss/dodge): mark touched (mirror ApplyAttackExecutor.touch())
+  // Self-attacks (fromStatusOrSelfAttack) suppress touch/hit flags.
+  if (!selfTarget) {
+    tgt.wasTouchedByPreviousEffect = true;
+    tgt.touches = (tgt.touches || 0) + 1;
+  }
+
+  const ty = type || 'BOTH';
+  let hpDamage = 0;
+  if (ty === 'HP') {
+    hpDamage = v;
+  } else if (ty === 'SP') {
+    tgt.shield = Math.max(0, tgt.shield - v);
+  } else { // BOTH
+    const absorbed = Math.min(v, tgt.shield);
+    tgt.shield -= absorbed;
+    hpDamage = v - absorbed;
+  }
+  if (hpDamage > 0) {
+    tgt.hp = Math.max(0, tgt.hp - hpDamage);
+    // hit() only when HP actually reduced and target not dropped to exactly 0 (mirror damageHp)
+    if (tgt.hp !== 0 && !selfTarget) { tgt.wasHitByPreviousEffect = true; tgt.hits = (tgt.hits || 0) + 1; }
+    // hero stock decay on taking damage (damageKeepStrategy)
+    if (tgt === m3f.hero) m3fApplyDamageKeep();
+  }
+  m3fLog(`${src.name} → ${tgt.name}: ${v} урона${ty !== 'BOTH' ? ' (' + ty + ')' : ''}.`);
+}
+
+// ---------- Stock decay ----------
+function m3fApplyTurnKeep() {
+  Object.keys(m3f.stocks).forEach(gt => {
+    const gs = m3f.gemSettings[gt];
+    let keep = gs ? gs.turnKeepStrategy : 50;
+    // CHANGE_TURN_KEEP_STRATEGY status (hero)
+    m3f.hero.statuses.forEach(s => { if (s.type === 'CHANGE_TURN_KEEP_STRATEGY' && s.gemTypes.includes(+gt)) keep += s.value; });
+    if (keep < 0) keep = 0;
+    m3f.stocks[gt].value = Math.round(m3f.stocks[gt].value * keep / 100);
+  });
+}
+
+function m3fApplyDamageKeep() {
+  Object.keys(m3f.stocks).forEach(gt => {
+    const gs = m3f.gemSettings[gt];
+    const keep = gs ? gs.damageKeepStrategy : 100;
+    m3f.stocks[gt].value = Math.round(m3f.stocks[gt].value * keep / 100);
+  });
+  m3fUpdateStocksUI();
+}
+
+// ---------- Status ticking ----------
+function m3fTickStatuses(person, when) {
+  // when: 'start' (end:false) before turn, 'end' (end:true) after turn
+  const wantEnd = (when === 'end');
+  const survivors = [];
+  person.statuses.forEach(s => {
+    if (s.end !== wantEnd) { survivors.push(s); return; }
+    if (m3fRoll(s.probability)) {
+      switch (s.type) {
+        case 'DAMAGE': {
+          const absorbed = Math.min(s.value, person.shield);
+          person.shield -= absorbed;
+          person.hp = Math.max(0, person.hp - (s.value - absorbed));
+          m3fLog(`${person.name}: «${s.name}» ${s.value} урона.`);
+          break;
+        }
+        case 'DAMAGE_HP':
+          person.hp = Math.max(0, person.hp - s.value);
+          m3fLog(`${person.name}: «${s.name}» ${s.value} урона по HP.`);
+          break;
+        case 'HEAL':
+          person.hp = Math.min(person.maxHp, person.hp + s.value);
+          m3fLog(`${person.name}: «${s.name}» +${s.value} HP.`);
+          break;
+        case 'DEFEND':
+          person.shield += s.value;
+          break;
+        default: break; // STUN handled at turn level; passive types (ARMOR/WEAK/...) checked inline
+      }
+    }
+    // decrement duration at application (keep -1 = infinite)
+    if (s.duration > 0) s.duration -= 1;
+    if (s.duration === 0) { /* expired, drop */ } else { survivors.push(s); }
+  });
+  person.statuses = survivors;
+}
+
+function m3fIsStunned(person) {
+  return person.statuses.some(s => s.type === 'STUN');
+}
+
+// ---------- TimePerk ----------
+// No real-time timer in this turn-based port, so the turn-second counter (m3f.timeSec)
+// advances one unit per side-turn. On each advance, fire that side's TimePerks whose
+// `time == currentSeconds`. Stateless (may fire again if the counter revisits a value),
+// gated by perk.conditionsForDisplay — matching Android TimePerkExecutor semantics.
+function m3fRunTimePerks(owner) {
+  const list = owner === 'hero' ? m3f.heroTimePerks : m3f.enemyTimePerks;
+  if (!list || !list.length) return;
+  list.forEach(tp => {
+    if (tp.time !== m3f.timeSec) return;
+    if (!m3fCheckConditions(tp.perk.conditionsForDisplay, owner)) return;
+    if (tp.perk.charges != null && (m3f.perkCharges[tp.perk.name] || 0) <= 0) return;
+    m3fLog(`Время (${m3f.timeSec}): «${tp.perk.name}».`);
+    tp.perk.effects.forEach(eff => m3fApplyEffect(eff, owner));
+    if (tp.perk.charges != null) m3f.perkCharges[tp.perk.name] = Math.max(0, (m3f.perkCharges[tp.perk.name] || 0) - 1);
+  });
+}
+
+// ---------- Hands / perks UI ----------
+function m3fStockDot(gemType) {
+  const c = (m3f.gemSettings[gemType] || {}).colorHex || '#999';
+  return `<span class="m3f-stock-dot" style="background:${c}"></span>`;
+}
+
+function m3fPerkEnabled(perk, source) {
+  if (perk.charges != null && (m3f.perkCharges[perk.name] || 0) <= 0) return false;
+  if (perk.coolDown && (m3f.perkReload[perk.name] || 0) < perk.coolDown) return false;
+  if (perk.category && perk.coolDown === 1 && perk.reloadType === 'TURN' && m3f.categoryLocked[perk.category]) return false;
+  // perk-level conditionsForEnable: visible but blocked when conditions fail
+  if (!m3fCheckConditions(perk.conditionsForEnable, source)) return false;
+  // prices (hero stocks)
+  if (source === 'hero') {
+    for (const pr of perk.prices) {
+      const st = m3f.stocks[pr.gemType];
+      if (!st || st.value < pr.value) return false;
+    }
+  }
+  // resource cost (стрелы/заряды) — checked against the acting side's resources
+  const srcF = source === 'hero' ? m3f.hero : m3f.enemy;
+  for (const r of (perk.resources || [])) {
+    if (m3fResAmount(srcF, r.name) < r.amount) return false;
+  }
+  return true;
+}
+
+function m3fRenderHands() {
+  const wrap = document.getElementById('m3f-hands');
+  wrap.innerHTML = '';
+  const stunned = m3fIsStunned(m3f.hero);
+  m3f.heroHands.forEach(hand => {
+    // hand-level conditionsForDisplay: hide the WHOLE hand if conditions fail (AND)
+    if (!m3fCheckConditions(hand.conditionsForDisplay, 'hero')) return;
+    // perks visible after perk-level conditionsForDisplay filter
+    const visiblePerks = hand.perks.filter(p => m3fCheckConditions(p.conditionsForDisplay, 'hero'));
+    if (!visiblePerks.length) return;
+    const hEl = document.createElement('div');
+    hEl.className = 'm3f-hand';
+    const lbl = document.createElement('div');
+    lbl.className = 'm3f-hand-label';
+    lbl.innerHTML = `${m3fStockDot(hand.gemType)} ${hand.name || ('Тип ' + hand.gemType)}`;
+    hEl.appendChild(lbl);
+    const perksEl = document.createElement('div');
+    perksEl.className = 'm3f-perks';
+    visiblePerks.forEach(perk => {
+      const btn = document.createElement('button');
+      btn.className = 'm3f-perk';
+      const enabled = !stunned && !m3f.done && m3f.turn === 'hero' && m3fPerkEnabled(perk, 'hero');
+      btn.disabled = !enabled;
+      const costParts = perk.prices.map(pr => `${pr.value}${m3fStockDot(pr.gemType)}`)
+        .concat((perk.resources || []).map(rc => `${rc.amount} ${rc.name}`));
+      const costHtml = costParts.length ? costParts.join(' ') : 'бесплатно';
+      let extra = '';
+      if (perk.charges != null) extra += ` · заряды: ${m3f.perkCharges[perk.name] || 0}`;
+      btn.innerHTML = `<div class="m3f-perk-name">${perk.icon ? perk.icon + ' ' : ''}${perk.name}</div>` +
+        `<div class="m3f-perk-cost">${costHtml}${extra}</div>` +
+        (perk.description ? `<div class="m3f-perk-desc">${perk.description}</div>` : '');
+      btn.onclick = () => m3fUsePerk(perk);
+      perksEl.appendChild(btn);
+    });
+    hEl.appendChild(perksEl);
+    wrap.appendChild(hEl);
+  });
+}
+
+function m3fUsePerk(perk) {
+  if (m3f.done || m3f.turn !== 'hero' || m3fIsStunned(m3f.hero)) return;
+  if (!m3fPerkEnabled(perk, 'hero')) return;
+  // deduct prices
+  perk.prices.forEach(pr => { const st = m3f.stocks[pr.gemType]; if (st) st.value = Math.max(0, st.value - pr.value); });
+  // spend resource cost (стрелы/заряды)
+  (perk.resources || []).forEach(rc => { const r = (m3f.hero.resources || []).find(x => x.name === rc.name); if (r) r.amount = Math.max(0, r.amount - rc.amount); });
+  m3fLog(`Герой: «${perk.name}».`);
+  perk.effects.forEach(eff => m3fApplyEffect(eff, 'hero'));
+  // charges / cooldown / category
+  if (perk.charges != null) m3f.perkCharges[perk.name] = Math.max(0, (m3f.perkCharges[perk.name] || 0) - 1);
+  m3f.perkReload[perk.name] = 0;
+  if (perk.category && perk.coolDown === 1 && perk.reloadType === 'TURN') m3f.categoryLocked[perk.category] = true;
+  m3fUpdateAllUI();
+  if (m3fCheckEnd()) return;
+}
+
+// ---------- Turn flow ----------
+function m3fEndTurn() {
+  if (m3f.done || m3f.turn !== 'hero') return;
+  m3f.turn = 'enemy';
+  m3fTickStatuses(m3f.hero, 'end');
+  if (m3fCheckEnd()) return;
+  m3fApplyTurnKeep();
+  // advance hero perk reloads
+  m3f.heroHands.forEach(h => h.perks.forEach(p => { if (m3f.perkReload[p.name] != null) m3f.perkReload[p.name] += 1; }));
+  m3f.categoryLocked = {};
+  m3fUpdateAllUI();
+  setTimeout(m3fEnemyTurn, 600);
+}
+
+function m3fEnemyTurn() {
+  if (m3f.done) return;
+  // enemy turn begins: advance turn-second counter and fire enemy TimePerks
+  m3f.timeSec += 1;
+  m3fRunTimePerks('enemy');
+  if (m3fCheckEnd()) { return; }
+  m3fTickStatuses(m3f.enemy, 'start');
+  if (m3fCheckEnd()) { return; }
+  // advance enemy reloads at the start of its turn
+  m3f.enemyHands.forEach(h => h.perks.forEach(p => { if (m3f.perkReload[p.name] != null) m3f.perkReload[p.name] += 1; }));
+
+  if (m3fIsStunned(m3f.enemy)) {
+    m3fLog(`${m3f.enemy.name}: оглушён, пропускает ход.`);
+  } else {
+    // SimpleStrategy: first available perk top-to-bottom, gated by probability
+    let used = false;
+    outer:
+    for (const hand of m3f.enemyHands) {
+      // hand-level conditionsForDisplay gates the whole enemy hand
+      if (!m3fCheckConditions(hand.conditionsForDisplay, 'enemy')) continue;
+      for (const perk of hand.perks) {
+        // perk-level conditionsForDisplay hides the perk from the enemy's options
+        if (!m3fCheckConditions(perk.conditionsForDisplay, 'enemy')) continue;
+        if (!m3fPerkEnabled(perk, 'enemy')) continue;
+        if ((rng() * 100) > (perk.probability != null ? perk.probability : 100)) continue;
+        m3fLog(`${m3f.enemy.name}: «${perk.name}».`);
+        // deduct enemy prices (stocks) + resource cost
+        perk.prices.forEach(pr => { const st = m3f.stocks[pr.gemType]; if (st) st.value = Math.max(0, st.value - pr.value); });
+        (perk.resources || []).forEach(rc => { const r = (m3f.enemy.resources || []).find(x => x.name === rc.name); if (r) r.amount = Math.max(0, r.amount - rc.amount); });
+        perk.effects.forEach(eff => m3fApplyEffect(eff, 'enemy'));
+        if (perk.charges != null) m3f.perkCharges[perk.name] = Math.max(0, (m3f.perkCharges[perk.name] || 0) - 1);
+        m3f.perkReload[perk.name] = 0;
+        used = true;
+        break outer;
+      }
+    }
+    if (!used) m3fLog(`${m3f.enemy.name}: бездействует.`);
+  }
+  m3fTickStatuses(m3f.enemy, 'end');
+  m3fUpdateAllUI();
+  if (m3fCheckEnd()) return;
+
+  // back to hero
+  m3f.turn = 'hero';
+  m3f.turnNum += 1;
+  // hero turn begins: advance turn-second counter and fire hero TimePerks
+  m3f.timeSec += 1;
+  m3fRunTimePerks('hero');
+  if (m3fCheckEnd()) { m3fUpdateAllUI(); m3fRender(); return; }
+  m3fTickStatuses(m3f.hero, 'start');
+  m3fUpdateAllUI();
+  m3fRender();
+  m3fCheckEnd();
+}
+
+// ---------- Rendering of fighters / stocks ----------
+function m3fStatusChips(fighter) {
+  if (!fighter.statuses.length) return '';
+  const bad = ['DAMAGE','DAMAGE_HP','WEAK','VULNERABLE','VUL','STUN'];
+  return '<div class="m3f-statuses">' + fighter.statuses.map(s => {
+    const cls = bad.includes(s.type) ? 'm3f-status-chip bad' : 'm3f-status-chip';
+    const dur = s.duration === -1 ? '∞' : s.duration;
+    const e = s.end ? ' (E)' : '';
+    return `<span class="${cls}">${s.name}${e}: ${s.value}${dur !== '' ? ' ⏳' + dur : ''}</span>`;
+  }).join('') + '</div>';
+}
+
+function m3fRenderFighter(elId, f, isEnemy) {
+  const el = document.getElementById(elId);
+  const pct = Math.max(0, Math.min(100, f.hp / f.maxHp * 100));
+  const woundsHtml = (f.maxWounds != null)
+    ? ' · <span class="m3f-wounds" title="Раны">' + '✚'.repeat(Math.max(0, f.maxWounds - f.wounds)) + '✖'.repeat(Math.max(0, f.wounds)) + '</span>'
+    : '';
+  el.innerHTML =
+    `<div class="m3f-fighter-head"><span class="m3f-fighter-name">${isEnemy ? '👹 ' : '🛡 '}${f.name}</span>` +
+    `<span class="m3f-fighter-hp-text">HP ${f.hp}/${f.maxHp}${f.shield > 0 ? ' · <span class="m3f-shield">🛡 ' + f.shield + '</span>' : ''}${woundsHtml}</span></div>` +
+    `<div class="combat-hp-bar"><div class="combat-hp-fill" style="width:${pct}%"></div></div>` +
+    (isEnemy && f.info ? `<div class="m3f-info">${f.info}</div>` : '') +
+    ((f.resources && f.resources.length)
+      ? `<div class="m3f-resources">${f.resources.map(r => `<span class="m3f-res-chip">${r.name}: ${r.amount}${r.maxAmount != null ? '/' + r.maxAmount : ''}</span>`).join(' ')}</div>`
+      : '') +
+    m3fStatusChips(f);
+}
+
+function m3fUpdateStocksUI() {
+  const el = document.getElementById('m3f-stocks');
+  el.innerHTML = Object.keys(m3f.stocks).map(gt => {
+    const st = m3f.stocks[gt];
+    const gs = m3f.gemSettings[gt] || {};
+    return `<div class="m3f-stock">${m3fStockDot(+gt)}${st.value}<span style="font-weight:400;color:var(--tg-theme-hint-color,#aaa)">${gs.displayName || ''}</span></div>`;
+  }).join('');
+}
+
+function m3fUpdateAllUI() {
+  m3fRenderFighter('m3f-enemy', m3f.enemy, true);
+  m3fRenderFighter('m3f-hero', m3f.hero, false);
+  m3fUpdateStocksUI();
+  m3fRenderHands();
+  document.getElementById('m3f-endturn').disabled = (m3f.done || m3f.turn !== 'hero');
+}
+
+function m3fLog(msg) {
+  m3f.log.push(msg);
+  const el = document.getElementById('m3f-log');
+  el.innerHTML = m3f.log.slice(-6).map(m => `<div>${m}</div>`).join('');
+}
+
+// ---------- Wounds ----------
+// PARITY NOTE (verified against the Android source, not just the guide):
+//   `grep -rn wounds app/src/main/java` shows wounds/maxWounds appear ONLY as model
+//   fields on Person/Hero/Enemy and in two GameScreen render lines
+//   ("${it.wounds}/${it.maxWounds} Ран"). There is NO revive, NO hp-restore, and NO
+//   defeat-at-maxWounds anywhere in the engine. Defeat is decided SOLELY by hp <= 0.
+//   We deliberately do NOT add a wound-revive: doing so would DIVERGE from the Android
+//   engine and break the 1:1-parity mandate. wounds/maxWounds are display-only here too
+//   (parsed at load, rendered in m3fStatusChips), matching Android exactly.
+function m3fIsDefeated(person) {
+  // Sole defeat condition, identical to the Android engine.
+  return person.hp <= 0;
+}
+
+// ---------- Win / lose ----------
+function m3fCheckEnd() {
+  if (m3f.done) return true;
+  if (m3fIsDefeated(m3f.enemy)) { m3fFinish(true); return true; }
+  if (m3fIsDefeated(m3f.hero)) { m3fFinish(false); return true; }
+  return false;
+}
+
+function m3fFinish(win) {
+  if (m3f.done) return;
+  m3f.done = true;
+  m3f.animating = false;
+  const banner = document.getElementById('m3f-result');
+  banner.style.display = '';
+  banner.className = 'result-banner ' + (win ? 'result-good' : 'result-bad');
+  banner.textContent = win ? '⚔️ Победа!' : '💀 Поражение';
+  document.getElementById('m3f-endturn').disabled = true;
+  m3fRender();
+  m3fRenderHands();
+  setTimeout(() => sendResultToBot({
+    game: 'match3fight',
+    win: win,
+    outcome: win ? 'Победа' : 'Поражение',
+    turns: m3f.turnNum,
+    heroHpLeft: Math.max(0, m3f.hero.hp),
+    enemyHpLeft: Math.max(0, m3f.enemy.hp)
+  }), 900);
+}
+
+// ---------- Entry ----------
+function initM3F() {
+  document.getElementById('m3f-game').style.display = '';
+  document.getElementById('subtitle').textContent = 'Бой 3-в-ряд';
+  m3fLoadScene();
+  m3fInitBoard();
+  // first hero turn begins at timeSec=0: fire hero TimePerks with time:0
+  m3fRunTimePerks('hero');
+  m3fTickStatuses(m3f.hero, 'start'); // pre-turn statuses for hero's first turn
+  m3fRender();
+  m3fUpdateAllUI();
+  m3fLog('Бой начался. Собирай ряды, копи ресурсы, применяй навыки.');
+  m3fCheckEnd();
+}
+
+// Path implies the game: auto-start directly (no cross-game dispatch).
+setTimeout(initM3F, 0);
+</script>
+</body>
+</html>

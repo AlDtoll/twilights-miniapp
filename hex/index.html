@@ -1,0 +1,3450 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Twilights — Тактический бой</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="../shared/styles.css">
+<style>
+  /* HEX GAME */
+  #hx-battle { padding: 8px; width: 100%; max-width: 440px; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+  #hx-battle, #hx-battle * { -webkit-touch-callout: none; }
+  #hx-svg { display: block; width: 100%; height: auto; touch-action: none; user-select: none; -webkit-user-select: none; }
+  #hx-svg text { user-select: none; -webkit-user-select: none; pointer-events: none; }
+  .hx-log { max-height: 80px; overflow-y: auto; font-size: 0.8rem; padding: 4px 8px; background: rgba(0,0,0,0.3); border-radius: 6px; margin: 6px 0; line-height: 1.6; scroll-behavior: smooth; }
+  .hx-log::-webkit-scrollbar { width: 3px; }
+  .hx-log::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+  .hx-log-attack { color: #e74c3c; }
+  .hx-log-heal   { color: #2ecc71; }
+  .hx-log-special{ color: #9b59b6; }
+  .hx-log-info   { color: rgba(255,255,255,0.7); }
+  .hx-info { min-height: 44px; background: rgba(255,255,255,0.06); border-radius: 8px; padding: 6px 10px; font-size: 0.82rem; margin-bottom: 4px; }
+  .hx-info-main { flex:1; }
+  .hx-info-flavor { font-size:0.72rem; color:rgba(162,155,254,0.8); font-style:italic; margin-top:2px; }
+  .hx-actions { display:flex; gap:8px; margin-top:6px; }
+  .hx-end-btn { flex:1; padding: 10px; border-radius: 10px; border:none; background: #e74c3c; color:#fff; font-size:0.9rem; font-weight:700; cursor:pointer; }
+  .hx-skip-btn { padding: 10px 16px; border-radius: 10px; border:none; background: rgba(255,255,255,0.1); color:#fff; font-size:0.85rem; font-weight:600; cursor:pointer; }
+  .hx-skip-btn:disabled { opacity:0.35; cursor:default; }
+  .hx-turn-label { text-align:center; font-size:0.85rem; font-weight:700; padding:4px; color:#f39c12; margin-bottom:4px; }
+  .hx-turn-label.player-turn { color: #2ecc71; }
+  .hx-turn-label.enemy-turn  { color: #e74c3c; }
+  #hx-summary { text-align:center; font-size:0.78rem; color:rgba(255,255,255,0.6); margin-bottom:4px; }
+
+  /* FFT ABILITY PANEL */
+  #hx-ability-panel { display:none; overflow-x:auto; -webkit-overflow-scrolling:touch; margin-bottom:4px; padding-bottom:2px; min-height:86px; }
+  #hx-ability-panel::-webkit-scrollbar { height:3px; }
+  #hx-ability-panel::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.2); border-radius:2px; }
+  .hx-ability-row { display:flex; gap:5px; padding:2px 0; min-width:max-content; }
+  .hx-ability-btn {
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:5px 7px; border-radius:9px; border:1.5px solid rgba(255,255,255,0.15);
+    background:rgba(255,255,255,0.06); color:#fff; font-size:0.72rem; cursor:pointer;
+    min-width:52px; max-width:70px; text-align:center; gap:1px; transition:all 0.15s;
+    -webkit-tap-highlight-color:transparent; user-select:none; line-height:1.2;
+  }
+  .hx-ability-btn:active:not(:disabled) { transform:scale(0.93); }
+  .hx-ability-btn:disabled { opacity:0.35; cursor:default; }
+  .hx-ability-btn.active { border-color:#f39c12; background:rgba(243,156,18,0.2); }
+  .hx-ability-btn.move-btn { border-color:#3498db; background:rgba(52,152,219,0.1); }
+  .hx-ability-btn.move-btn.active { background:rgba(52,152,219,0.3); }
+  .hx-ability-icon { font-size:1.1rem; line-height:1; }
+  .hx-ability-name { font-size:0.6rem; color:rgba(255,255,255,0.8); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; }
+  .hx-ability-cd { font-size:0.58rem; color:#e74c3c; font-weight:700; }
+  .hx-ability-cd.ready { color:#2ecc71; }
+  .hx-ability-btn { position:relative; }
+  .cd-badge { position:absolute; top:-4px; right:-4px; font-size:10px; background:#e74c3c; border-radius:8px; padding:0 3px; color:#fff; line-height:1.4; pointer-events:none; }
+  .hx-ability-type-melee  { border-color:rgba(231,76,60,0.4); }
+  .hx-ability-type-ranged { border-color:rgba(52,152,219,0.4); }
+  .hx-ability-type-magic  { border-color:rgba(162,155,254,0.45); }
+  .hx-ability-type-heal   { border-color:rgba(0,184,148,0.45); }
+  .hx-ability-type-summon { border-color:rgba(155,89,182,0.5); }
+  .hx-ability-type-debuff { border-color:rgba(243,156,18,0.4); }
+  .hx-ab-tier { font-size:8px; vertical-align:super; margin-left:2px; }
+  .hx-ab-tier.mid { color:#a0a0d0; }
+  .hx-ab-tier.strong { color:#f0c040; }
+  .hx-ab-ap { font-size:9px; color:#f0c040; margin-left:2px; display:block; text-align:center; }
+  .hx-ab-dmg { font-size:10px; font-weight:700; color:#ff7675; display:block; text-align:center; }
+
+  @keyframes hxFlash { 0%{fill-opacity:0.9} 50%{fill-opacity:0.15} 100%{fill-opacity:0} }
+  @keyframes hxPulse { 0%,100%{r:16} 50%{r:20} }
+
+  /* ABILITY TOOLTIP */
+  #hx-ability-tooltip {
+    position: fixed; z-index: 999; pointer-events: none;
+    background: #1a1a2e; border: 1px solid #7f8c8d;
+    border-radius: 8px; padding: 8px 10px; font-size: 12px;
+    color: #fff; max-width: 180px; line-height: 1.5;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    display: none;
+  }
+  #hx-ability-tooltip .tip-name { font-weight: 700; font-size: 13px; margin-bottom: 3px; }
+  #hx-ability-tooltip .tip-row { color: rgba(255,255,255,0.75); font-size: 11px; }
+  #hx-ability-tooltip .tip-effect { color: #a29bfe; font-size: 11px; }
+  #hx-ability-tooltip .tip-cd-ready { color: #2ecc71; font-size: 11px; }
+  #hx-ability-tooltip .tip-cd-wait { color: #e74c3c; font-size: 11px; }
+
+  /* UNIT STATUS BAR */
+  #hx-unit-status-bar {
+    font-size: 0.72rem; color: rgba(255,255,255,0.75); padding: 3px 8px 2px;
+    min-height: 1.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+</style>
+</head>
+<body>
+<h1>⚔️ Twilights</h1>
+<p class="subtitle" id="subtitle">Загрузка...</p>
+
+<div id="hx-battle" style="display:none;position:relative;">
+  <div id="hx-intro-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:10px;text-align:center;overflow-y:auto;">
+    <div id="hx-intro-hero" style="font-size:2.2rem;"></div>
+    <div id="hx-intro-name" style="font-size:1.2rem;font-weight:700;"></div>
+    <div id="hx-intro-stats" style="font-size:0.85rem;color:rgba(255,255,255,0.65);"></div>
+    <div id="hx-intro-abilities" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%;max-width:280px;margin-top:4px;"></div>
+    <div id="hx-intro-legend" style="font-size:0.62rem;color:rgba(255,255,255,0.5);line-height:1.7;max-width:320px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.12);text-align:left;">
+      <div style="text-align:center;color:rgba(255,255,255,0.4);margin-bottom:3px;">— Легенда —</div>
+      🛡×N Броня (детали, шанс срабатывания)<br>
+      🛡N Щиты (ряд заслонов, 1 ход; удар снимает передний барьер)<br>
+      🌀 Уклонение · 🎯 Точность · 🟧 Зона контроля (уход = ⚔ атака вдогон) · 🔴 Окружение<br>
+      🌳 Дерево: 🛡+1 щит(15) / −15% точн. дальним · 🗿 Камни: +1 урон / +5% дальним<br>
+      🌿 Кусты / 🪨 Обломки: −15% точн. дальним · 🧱 Стена: блок движения и обзора<br>
+      🟫 Болото: движение ×2 · 🔥 Огонь: −20 HP · 〰 Мелководье ×2 · 🌊 Глуб. вода: нет атаки
+    </div>
+    <button id="hx-intro-btn" onclick="document.getElementById('hx-intro-overlay').style.display='none'" style="margin-top:8px;padding:10px 28px;border-radius:20px;border:none;background:var(--tg-theme-button-color,#6c5ce7);color:var(--tg-theme-button-text-color,#fff);font-size:1rem;font-weight:700;cursor:pointer;">В бой!</button>
+  </div>
+  <div class="hx-turn-label" id="hx-turn-label">Ход игрока</div>
+  <div id="hx-summary"></div>
+  <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:2px 6px;">
+    <span style="font-size:0.65rem;color:rgba(255,255,255,0.4);">Масштаб:</span>
+    <button onclick="hxZoomAdjust(-0.15)" style="padding:1px 8px;border-radius:6px;border:none;background:rgba(255,255,255,0.12);color:#fff;font-size:0.9rem;cursor:pointer;">−</button>
+    <button onclick="hxZoomAdjust(0.15)" style="padding:1px 8px;border-radius:6px;border:none;background:rgba(255,255,255,0.12);color:#fff;font-size:0.9rem;cursor:pointer;">+</button>
+  </div>
+  <div style="width:100%;overflow:hidden;">
+    <div id="hx-svg-wrap" style="width:100%;max-height:55vh;overflow:hidden;">
+      <svg id="hx-svg" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;height:auto;touch-action:none;"></svg>
+    </div>
+  </div>
+  <div class="hx-log" id="hx-log">Выбери юнит и действуй!</div>
+  <div class="hx-info" id="hx-info">
+    <div id="hx-info-name" style="font-weight:700; font-size:0.85rem;"></div>
+    <div id="hx-info-stats" style="font-size:0.75rem; color:rgba(255,255,255,0.7); margin-top:2px;"></div>
+    <div id="hx-info-status" style="font-size:0.7rem; margin-top:2px; color:#a29bfe;"></div>
+  </div>
+  <div id="hx-ability-panel">
+    <div class="hx-ability-row" id="hx-ability-row"></div>
+  </div>
+  <div id="hx-unit-status-bar"></div>
+  <div class="hx-actions">
+    <button class="hx-skip-btn" id="hx-skip-btn" onclick="hxSkipUnit()" disabled>Пропустить</button>
+    <button class="hx-end-btn" id="hx-end-btn" onclick="hxEndTurn()">Конец хода</button>
+  </div>
+</div>
+
+<script src="../shared/core.js"></script>
+<script>
+// ---- HEX GAME (FFT-style) ----
+const HEX_COLS = 11, HEX_ROWS = 11;
+const HEX_SIZE = 20;
+const _HEX_W = Math.sqrt(3) * HEX_SIZE;
+const HEX_SVG_W = Math.ceil(4 + _HEX_W / 2 + HEX_COLS * _HEX_W + HEX_SIZE);
+const HEX_SVG_H = Math.ceil(4 + HEX_SIZE + (HEX_ROWS - 1) * (HEX_SIZE * 1.5) + HEX_SIZE * 1.5);
+
+// ---- ABILITY LIBRARY ----
+// Weapon ability sets
+// school field groups abilities for shared cooldown ticking
+const HX_WEAPON_ABILITIES = {
+  sword: [
+    {id:'sword_strike',   name:'Удар',          icon:'⚔️', type:'melee',  range:1, aoe:0, damage:40, effect:null,                         maxCooldown:0, school:'sword'},
+    {id:'sword_heavy',    name:'Мощный удар',   icon:'🗡️', type:'melee',  range:1, aoe:0, damage:55, effect:null,                         maxCooldown:2, school:'sword'},
+    {id:'sword_stun',     name:'Оглушение',     icon:'🥊', type:'melee',  range:1, aoe:0, damage:25, effect:{type:'stun',turns:1},         maxCooldown:3, school:'sword'},
+    {id:'sword_swift',    name:'Быстрый удар',  icon:'⚡', type:'melee',  range:1, aoe:0, damage:25, ap:1, maxCooldown:2, school:'sword', effects:[{type:'damage',value:25},{type:'gain_ap',value:1,chance:50}], note:'25 урона; 50% шанс вернуть 1 очко действия'},
+  ],
+  axe: [
+    {id:'axe_strike',     name:'Рубящий удар',  icon:'🪓', type:'melee',  range:1, aoe:0, damage:45, effect:null,                         maxCooldown:0, school:'axe'},
+    {id:'axe_whirl',      name:'Вихрь',         icon:'🌀', type:'melee',  range:1, aoe:1, damage:25, effect:null,                         maxCooldown:3, school:'axe'},
+    {id:'axe_cleave',     name:'Раскол',        icon:'💥', type:'melee',  range:1, aoe:0, damage:50, effect:null,                         maxCooldown:2, school:'axe'},
+  ],
+  ranged: [
+    {id:'ranged_shot',    name:'Выстрел',       icon:'🏹', type:'ranged', range:6, aoe:0, damage:30, effect:null,  accByDist:[70,100,100,100,70,40], maxCooldown:0, school:'ranged'},
+    {id:'ranged_aim',     name:'Прицельный',    icon:'🎯', type:'ranged', range:4, aoe:0, damage:40, effect:null,                         maxCooldown:2, school:'ranged'},
+    {id:'ranged_pierce',  name:'Прострел',      icon:'➡️', type:'ranged', range:5, aoe:0, damage:35, effect:null,                         maxCooldown:3, school:'ranged'},
+  ],
+  heavy: [
+    {id:'heavy_strike',   name:'Дробящий',      icon:'🔨', type:'melee',  range:1, aoe:0, damage:45, effect:null,                         maxCooldown:0, school:'heavy'},
+    {id:'heavy_quake',    name:'Волновой удар', icon:'💫', type:'melee',  range:1, aoe:1, damage:30, effect:{type:'stun',turns:1},         maxCooldown:3, school:'heavy'},
+    {id:'heavy_death',    name:'Смерть молотом',icon:'💀', type:'melee',  range:1, aoe:0, damage:60, effect:null,                         maxCooldown:4, school:'heavy'},
+  ],
+  dual: [
+    {id:'dual_double',    name:'Двойной удар',  icon:'⚔️', type:'melee',  range:1, aoe:0, damage:40, effect:null,                         maxCooldown:0, school:'dual'},
+    {id:'dual_swift',     name:'Скользящий рывок',icon:'⚡',type:'melee', range:2, aoe:0, damage:35, effect:null,                         maxCooldown:2, school:'dual'},
+    {id:'dual_whirl',     name:'Вихрь клинков', icon:'🌀', type:'melee',  range:1, aoe:1, damage:25, effect:null,                         maxCooldown:3, school:'dual'},
+  ],
+  shield: [
+    {id:'shield_bash',    name:'Удар щитом',    icon:'🛡️', type:'melee',  range:1, aoe:0, damage:35, effect:null,                         maxCooldown:0, school:'shield'},
+    {id:'shield_push',    name:'Отбросить',     icon:'🏋️', type:'melee',  range:1, aoe:0, damage:25, effect:{type:'knockback'},            maxCooldown:2, school:'shield'},
+    {id:'shield_ward',    name:'Заслон',         icon:'🔰',type:'melee',  range:0, aoe:0, damage:0, effect:{type:'barrier',value:35,count:1}, maxCooldown:3, school:'shield'},
+  ],
+  unarmed: [
+    {id:'unarmed_punch',  name:'Серия ударов',  icon:'👊', type:'melee',  range:1, aoe:0, damage:35, effect:null,                         maxCooldown:0, school:'unarmed'},
+    {id:'unarmed_grab',   name:'Захват',        icon:'🤼', type:'melee',  range:1, aoe:0, damage:25, effect:{type:'stun',turns:1},         maxCooldown:2, school:'unarmed'},
+    {id:'unarmed_crush',  name:'Зеркальный удар',icon:'💢',type:'melee',  range:1, aoe:0, damage:60, effect:null,                         maxCooldown:4, school:'unarmed'},
+  ],
+  polearm: [
+    {id:'polearm_thrust', name:'Копейный удар', icon:'🔱', type:'melee',  range:2, aoe:0, damage:35, effect:null,                         maxCooldown:0, school:'polearm'},
+    {id:'polearm_lunge',  name:'Выпад',         icon:'➡️', type:'melee',  range:2, aoe:0, damage:45, effect:null,                         maxCooldown:2, school:'polearm'},
+    {id:'polearm_sweep',  name:'Тяжёлый замах', icon:'🌀', type:'melee',  range:1, aoe:1, damage:25, effect:{type:'stun',turns:1},         maxCooldown:3, school:'polearm'},
+  ],
+  chain: [
+    {id:'chain_whip',     name:'Хлыст',         icon:'⛓️', type:'melee',  range:2, aoe:0, damage:35, effect:null,                         maxCooldown:0, school:'chain'},
+    {id:'chain_pull',     name:'Зацеп и контроль',icon:'🪝',type:'melee', range:2, aoe:0, damage:25, effect:{type:'pull'},forcedMove:true, maxCooldown:2, school:'chain'},
+    {id:'chain_net',      name:'Волна кинетики',icon:'🕸️', type:'melee',  range:2, aoe:0, damage:40, effect:{type:'stun',turns:1},         maxCooldown:4, school:'chain'},
+  ],
+};
+
+// Magic ability sets — correct Twilights lore schools
+// Wizard: arcane energy (wand) — impulses, lightning, TK. NOT fire/ice (those are elementalist)
+// Pyromancer: fire branch of elementalist — flame, ignition, fire wave
+// Geomancer: earth branch — stone, shield, tremor
+// Aeromancer: air branch — gust, blade, hammer
+// Aquamancer: water branch — stream, water fist, sticky
+// Druid: contact life magic (roots/plants/heal)
+// Necromancer: dead-matter telekinesis + cadavers
+// Demonologist: shadows, rifts, chaos zones
+// Incenser: smoke compounds + alchemical effects
+// Adept: divine word of power
+const HX_MAGIC_ABILITIES = {
+  wizard: [
+    {id:'wiz_impulse',    name:'Смешанный импульс',icon:'✨',type:'magic', range:6, aoe:0, damage:20,   effect:null,            accByDist:[70,100,100,70,50,30], maxCooldown:0, school:'wizard'},
+    {id:'wiz_push',       name:'Импульсная волна', icon:'💨',type:'magic', range:2, aoe:1, damage:25,   effect:{type:'knockback'},                 maxCooldown:4, school:'wizard'},
+    {id:'wiz_lightning',  name:'Молния',           icon:'⚡',type:'magic', range:6, aoe:0, damage:40,   effect:{type:'chain',value:1},  accByDist:[70,100,100,70,50,30],           maxCooldown:4, school:'wizard'},
+  ],
+  pyromancer: [
+    {id:'pyro_flame',     name:'Сгусток огня',     icon:'🔥',type:'magic', range:4, aoe:0, damage:30,   effect:null,                               maxCooldown:0, school:'pyromancer'},
+    {id:'pyro_ignite',    name:'Возгорание',       icon:'💥',type:'magic', range:3, aoe:0, damage:35,   effect:{type:'ignite'},                    maxCooldown:4, school:'pyromancer'},
+    {id:'pyro_wave',      name:'Волна пламени',    icon:'🌋',type:'magic', range:2, aoe:2, damage:25,   effect:{type:'ignite'},                    maxCooldown:4, school:'pyromancer'},
+  ],
+  geomancer: [
+    {id:'geo_stone',      name:'Метание камня',    icon:'🪨',type:'magic', range:4, aoe:0, damage:30,   effect:null,                               maxCooldown:0, school:'geomancer'},
+    {id:'geo_shield',     name:'Заслон',           icon:'🏔️',type:'magic', range:0, aoe:0, damage:0,   effect:{type:'barrier',value:40,count:1},      maxCooldown:2, school:'geomancer'},
+    {id:'geo_quake',      name:'Сотрясение',       icon:'🌍',type:'magic', range:1, aoe:1, damage:25,   effect:{type:'stun',turns:1},             maxCooldown:4, school:'geomancer'},
+  ],
+  aeromancer: [
+    {id:'aero_gust',      name:'Воздушный поток',  icon:'🌬️',type:'magic', range:3, aoe:1, damage:20,   effect:{type:'knockback'},                 maxCooldown:0, school:'aeromancer'},
+    {id:'aero_blade',     name:'Лезвие ветра',     icon:'🌪️',type:'magic', range:4, aoe:0, damage:40,   effect:null,                               maxCooldown:2, school:'aeromancer'},
+    {id:'aero_hammer',    name:'Воздушный молот',  icon:'💨',type:'magic', range:3, aoe:0, damage:45,   effect:{type:'stun',turns:1},             maxCooldown:4, school:'aeromancer'},
+  ],
+  aquamancer: [
+    {id:'aqua_stream',    name:'Водный поток',     icon:'🌊',type:'magic', range:3, aoe:0, damage:30,   effect:null,                               maxCooldown:0, school:'aquamancer'},
+    {id:'aqua_fist',      name:'Взрыв воды',       icon:'💧',type:'magic', range:3, aoe:0, damage:35,   effect:{type:'knockback'},                 maxCooldown:2, school:'aquamancer'},
+    {id:'aqua_sticky',    name:'Прилипчая вода',   icon:'🫧',type:'debuff',range:2, aoe:0, damage:0,   effect:{type:'stun',turns:2},             maxCooldown:4, school:'aquamancer'},
+  ],
+  druid: [
+    {id:'druid_heal',     name:'Токи жизни',       icon:'🌿',type:'heal',  range:1, aoe:0, damage:0,   effect:{type:'heal',value:30},              maxCooldown:0, school:'druid'},
+    {id:'druid_thorns',   name:'Шипы',             icon:'🌵',type:'magic', range:2, aoe:1, damage:25,   effect:null,                               maxCooldown:2, school:'druid'},
+    {id:'druid_roots',    name:'Взрывной рост',    icon:'🌱',type:'debuff',range:2, aoe:0, damage:0,   effect:{type:'stun',turns:2},             maxCooldown:4, school:'druid'},
+  ],
+  necro: [
+    {id:'necro_drain',    name:'Витализм',         icon:'🩸',type:'magic', range:2, aoe:0, damage:30,   effect:{type:'lifesteal',value:10},         maxCooldown:0, school:'necro'},
+    {id:'necro_wave',     name:'Волна смерти',     icon:'🌑',type:'magic', range:2, aoe:1, damage:35,   effect:null,                               maxCooldown:2, school:'necro'},
+    {id:'necro_raise',    name:'Кукловодство',     icon:'💀',type:'summon',range:2, aoe:0, damage:0,   effect:{type:'summon',unitType:'cadaver'}, maxCooldown:4, school:'necro'},
+  ],
+  demon: [
+    {id:'demon_fist',     name:'Молот демонов',    icon:'🖤',type:'magic', range:2, aoe:0, damage:40,   effect:null,                               maxCooldown:0, school:'demon'},
+    {id:'demon_curse',    name:'Порча',            icon:'☠️',type:'debuff',range:3, aoe:0, damage:0,   effect:{type:'debuff',stat:'atk',value:2,turns:2}, maxCooldown:2, school:'demon'},
+    {id:'demon_shadow',   name:'Привязать Тень',   icon:'👁️',type:'summon',range:2, aoe:0, damage:0,   effect:{type:'summon',unitType:'shadow'},  maxCooldown:4, school:'demon'},
+  ],
+  incenser: [
+    {id:'inc_smoke',      name:'Дымовое облако',   icon:'💨',type:'debuff',range:3, aoe:2, damage:0,   effect:{type:'debuff',stat:'atk',value:1,turns:1}, maxCooldown:0, school:'incenser'},
+    {id:'inc_poison',     name:'Ядовитый дым',     icon:'🟢',type:'magic', range:2, aoe:1, damage:25,   effect:null,                               maxCooldown:2, school:'incenser'},
+    {id:'inc_blind',      name:'Слепота',          icon:'🙈',type:'debuff',range:3, aoe:0, damage:0,   effect:{type:'debuff',stat:'atk',value:2,turns:2}, maxCooldown:4, school:'incenser'},
+  ],
+  adept: [
+    {id:'adept_warmth',   name:'Слово Тепла',      icon:'✝️',type:'heal',  range:2, aoe:0, damage:0,   effect:{type:'heal',value:30},              maxCooldown:0, school:'adept'},
+    {id:'adept_light',    name:'Слово Света',      icon:'🌟',type:'magic', range:3, aoe:0, damage:40,   effect:null,                               maxCooldown:2, school:'adept'},
+    {id:'adept_fortune',  name:'Слово Удачи',      icon:'💫',type:'debuff',range:2, aoe:0, damage:0,   effect:{type:'buff',stat:'atk',value:2,turns:2}, maxCooldown:4, school:'adept'},
+  ],
+};
+
+// Enemy unit definitions (FFT style with abilities array)
+// ARMOR-STATUS MODEL: per-unit `statuses` is an array of armor pieces {name,type:'ARMOR',value,chance}.
+// Each piece rolls `chance`% to block `value` damage; pieces are NOT consumed (persist all battle).
+// Plus per-unit dodge (defense). HP fixed: humans 100, shadow 50, cadaver 85. shields[] is a row of 1-turn barriers (Заслон).
+const HEX_UNIT_DEFS = {
+  warrior:      {name:'Воин',        emoji:'🗡', hp:100, atk:40,  moveRange:2, atkRange:1, accuracy:75, defense:6,
+    statuses:[{name:'Шлем',value:30,chance:15},{name:'Кираса',value:20,chance:60},{name:'Наручи',value:10,chance:30},{name:'Поножи',value:10,chance:15},{name:'Щит',value:35,chance:20}],
+    abilities:[
+      {id:'e_sword_strike',name:'Удар',icon:'⚔️',type:'melee',range:1,aoe:0,damage:40,effect:null,cooldown:0,maxCooldown:0},
+      {id:'e_shield_ward', name:'Заслон',icon:'🛡️',type:'melee',range:0,aoe:0,damage:0,effect:{type:'barrier',value:35,count:1},cooldown:0,maxCooldown:2},
+    ]},
+  archer:       {name:'Лучник',      emoji:'🏹', hp:100, atk:30,  moveRange:2, atkRange:3, accuracy:72, defense:9,
+    statuses:[{name:'Кожаная куртка',value:15,chance:40},{name:'Наручи',value:10,chance:30}],
+    abilities:[
+      {id:'e_ranged_shot', name:'Выстрел',icon:'🏹',type:'ranged',range:6,aoe:0,damage:30,effect:null,accByDist:[70,100,100,100,70,40],cooldown:0,maxCooldown:0},
+      {id:'e_ranged_aim',  name:'Прицел', icon:'🎯',type:'ranged',range:3,aoe:0,damage:40,effect:null,cooldown:0,maxCooldown:2},
+    ]},
+  cavalry:      {name:'Всадник',     emoji:'⚔',  hp:100, atk:40,  moveRange:4, atkRange:1, accuracy:70, defense:7,
+    statuses:[{name:'Шлем',value:30,chance:15},{name:'Кираса',value:20,chance:60},{name:'Наручи',value:10,chance:30},{name:'Поножи',value:10,chance:15}],
+    abilities:[
+      {id:'e_charge',      name:'Натиск',icon:'🐴',type:'melee',range:1,aoe:0,damage:40,effect:{type:'knockback'},forcedMove:true,cooldown:0,maxCooldown:3},
+      {id:'e_sword_strike',name:'Удар',icon:'⚔️',type:'melee',range:1,aoe:0,damage:40,effect:null,cooldown:0,maxCooldown:0},
+    ]},
+  wizard:       {name:'Волшебник',   emoji:'🔮', hp:100, atk:20,  moveRange:2, atkRange:3, accuracy:65, defense:7,
+    statuses:[{name:'Роба',value:10,chance:40}],
+    abilities:[
+      {id:'e_wiz_lightning',name:'Молния',icon:'⚡',type:'magic',range:3,aoe:0,damage:30,effect:{type:'chain',value:1},cooldown:0,maxCooldown:0},
+      {id:'e_wiz_fireball', name:'Огненный шар',icon:'🔥',type:'magic',range:3,aoe:1,damage:30,effect:null,cooldown:0,maxCooldown:3},
+    ]},
+  druid:        {name:'Друид',       emoji:'🌿', hp:100, atk:20,  moveRange:2, atkRange:2, accuracy:62, defense:7,
+    statuses:[{name:'Роба',value:10,chance:40}],
+    abilities:[
+      {id:'e_druid_heal',  name:'Исцеление',icon:'🌿',type:'heal',range:1,aoe:0,damage:0,effect:{type:'heal',value:30},cooldown:0,maxCooldown:0},
+      {id:'e_druid_roots', name:'Корни',icon:'🌱',type:'debuff',range:2,aoe:0,damage:0,effect:{type:'stun',turns:2},cooldown:0,maxCooldown:3},
+    ]},
+  incenser:     {name:'Кадильщик',   emoji:'💨', hp:100, atk:20,  moveRange:2, atkRange:2, accuracy:62, defense:7,
+    statuses:[{name:'Роба',value:10,chance:40}],
+    abilities:[
+      {id:'e_inc_smoke',   name:'Дымовое облако',icon:'💨',type:'debuff',range:2,aoe:2,damage:0,effect:{type:'debuff',stat:'atk',value:1,turns:1},cooldown:0,maxCooldown:0},
+      {id:'e_inc_poison',  name:'Ядовитый дым',icon:'☠️',type:'magic',range:2,aoe:1,damage:25,effect:null,cooldown:0,maxCooldown:3},
+    ]},
+  demonologist: {name:'Демонолог',   emoji:'👁', hp:100, atk:30,  moveRange:2, atkRange:2, accuracy:65, defense:7,
+    statuses:[{name:'Роба',value:10,chance:40},{name:'Наручи',value:10,chance:20}],
+    abilities:[
+      {id:'e_demon_shadow',name:'Призвать Тень',icon:'👁️',type:'summon',range:2,aoe:0,damage:0,effect:{type:'summon',unitType:'shadow'},cooldown:0,maxCooldown:4},
+      {id:'e_demon_fist',  name:'Тёмный кулак',icon:'🖤',type:'magic',range:2,aoe:0,damage:40,effect:null,cooldown:0,maxCooldown:2},
+    ]},
+  necromancer:  {name:'Некромант',   emoji:'💀', hp:100, atk:20,  moveRange:2, atkRange:2, accuracy:63, defense:6,
+    statuses:[{name:'Роба',value:10,chance:40}],
+    abilities:[
+      {id:'e_necro_raise', name:'Поднять кадавр',icon:'💀',type:'summon',range:2,aoe:0,damage:0,effect:{type:'summon',unitType:'cadaver'},cooldown:0,maxCooldown:4},
+      {id:'e_necro_drain', name:'Иссушение',icon:'🩸',type:'magic',range:2,aoe:0,damage:30,effect:{type:'lifesteal',value:10},cooldown:0,maxCooldown:2},
+    ]},
+  adept:        {name:'Адепт',       emoji:'✝',  hp:100, atk:20,  moveRange:2, atkRange:2, accuracy:63, defense:7,
+    statuses:[{name:'Кираса',value:20,chance:50},{name:'Наручи',value:10,chance:30}],
+    abilities:[
+      {id:'e_adept_warmth',name:'Слово Тепла',icon:'✝️',type:'heal',range:2,aoe:0,damage:0,effect:{type:'heal',value:30},cooldown:0,maxCooldown:0},
+      {id:'e_adept_light', name:'Слово Света',icon:'🌟',type:'magic',range:2,aoe:0,damage:40,effect:null,cooldown:0,maxCooldown:2},
+    ]},
+  elementalist: {name:'Элементалист',emoji:'🌊', hp:100, atk:30,  moveRange:2, atkRange:3, accuracy:68, defense:8,
+    statuses:[{name:'Кираса',value:15,chance:40},{name:'Наручи',value:10,chance:30}],
+    abilities:[
+      {id:'e_elem_burst',  name:'Взрыв стихии',icon:'🌊',type:'magic',range:3,aoe:1,damage:30,effect:null,cooldown:0,maxCooldown:0},
+      {id:'e_elem_thunder',name:'Молния',icon:'⚡',type:'magic',range:4,aoe:0,damage:40,effect:null,cooldown:0,maxCooldown:4},
+    ]},
+  shadow:       {name:'Тень',        emoji:'👤', hp:50, atk:30,  moveRange:3, atkRange:1, accuracy:68, defense:10,
+    statuses:[],
+    abilities:[
+      {id:'e_shadow_strike',name:'Удар тьмы',icon:'👤',type:'melee',range:1,aoe:0,damage:30,effect:null,cooldown:0,maxCooldown:0},
+    ]},
+  cadaver:      {name:'Кадавр',      emoji:'💀', hp:85, atk:40,  moveRange:1, atkRange:1, accuracy:60, defense:5,
+    statuses:[{name:'Гнилая шкура',value:15,chance:40}],
+    abilities:[
+      {id:'e_cadaver_bite', name:'Укус',icon:'💀',type:'melee',range:1,aoe:0,damage:40,effect:null,cooldown:0,maxCooldown:0},
+    ]},
+  // Legacy aliases — kept IN SYNC with wizard / druid
+  mage:         {name:'Маг',         emoji:'🔥', hp:100, atk:20,  moveRange:2, atkRange:3, accuracy:65, defense:7,
+    statuses:[{name:'Роба',value:10,chance:40}],
+    abilities:[
+      {id:'e_wiz_lightning',name:'Молния',icon:'⚡',type:'magic',range:3,aoe:0,damage:30,effect:{type:'chain',value:1},cooldown:0,maxCooldown:0},
+      {id:'e_wiz_fireball', name:'Огненный шар',icon:'🔥',type:'magic',range:3,aoe:1,damage:30,effect:null,cooldown:0,maxCooldown:3},
+    ]},
+  healer:       {name:'Лекарь',      emoji:'💚', hp:100, atk:20,  moveRange:2, atkRange:2, accuracy:60, defense:7,
+    statuses:[{name:'Роба',value:10,chance:40}],
+    abilities:[
+      {id:'e_druid_heal',  name:'Исцеление',icon:'🌿',type:'heal',range:1,aoe:0,damage:0,effect:{type:'heal',value:30},cooldown:0,maxCooldown:0},
+      {id:'e_adept_warmth',name:'Слово Тепла',icon:'✝️',type:'heal',range:2,aoe:0,damage:0,effect:{type:'heal',value:30},cooldown:0,maxCooldown:2},
+    ]},
+};
+
+// Compute actual damage value for an ability given unit's atk
+function hxAbilityDamage(ability, unit) {
+  if(!ability.damage || ability.damage === 0) return 0;
+  const atk = Math.max(0, (unit.atk||0) - (unit.atkDebuff||0));
+  if(typeof ability.damage === 'number') return ability.damage;
+  // Safe parser for expressions like 'atk', 'atk*1.5', 'atk+2', 'atk*0.5'
+  const s = String(ability.damage).trim();
+  const mMul = s.match(/^atk\*(\d+(?:\.\d+)?)$/);
+  if(mMul) return Math.round(atk * parseFloat(mMul[1]));
+  const mAdd = s.match(/^atk\+(\d+(?:\.\d+)?)$/);
+  if(mAdd) return Math.round(atk + parseFloat(mAdd[1]));
+  const mSub = s.match(/^atk-(\d+(?:\.\d+)?)$/);
+  if(mSub) return Math.round(atk - parseFloat(mSub[1]));
+  if(s === 'atk') return atk;
+  const mNum = s.match(/^(\d+(?:\.\d+)?)$/);
+  if(mNum) return Math.round(parseFloat(mNum[1]));
+  return atk; // fallback
+}
+
+// Build ability array for a hero unit from weapon + magic params
+function hxBuildHeroAbilities(weapon, magic) {
+  const wArr = (HX_WEAPON_ABILITIES[weapon] || HX_WEAPON_ABILITIES.sword).map(a => ({...a, cooldown:0}));
+  const mArr = magic ? (HX_MAGIC_ABILITIES[magic] || []).map(a => ({...a, cooldown:0})) : [];
+  return [...wArr, ...mArr];
+}
+
+let hxs = {
+  units: [], turn: 'player', selected: null,
+  reachable: [], attackable: [],
+  abilityTargets: [], // targets for selected ability
+  activeAbilityIdx: null, // index into selected unit's abilities (null = none)
+  mode: 'select', // 'select' | 'move' | 'ability'
+  log: '', logs: [], turnNum: 1, ended: false,
+  rifts: [],
+  forests: [],
+  heights: [],
+  obstacles: [],
+  enemyIntents: {},
+  totalDamageDealt: 0,
+  totalDamageTaken: 0,
+  aoeHover: null, // {col, row} — hex hovered in AoE ability mode
+  abilitiesUsed: {}, // FFT: ability usage counter for hero
+  hero: null, // FFT hero definition reference
+  heroAP: 4, // PASS A: Action Points for hero (4 per turn)
+  confirming: null, // PASS B/C: {col, row} of hex pending confirmation
+};
+
+function hexToPixel(col, row) {
+  const w = Math.sqrt(3) * HEX_SIZE;
+  const h = 2 * HEX_SIZE;
+  const x = 4 + w/2 + col * w + (row % 2 === 1 ? w/2 : 0);
+  const y = 4 + HEX_SIZE + row * (h * 3/4);
+  return {x, y};
+}
+
+function hexPoints(cx, cy) {
+  const pts = [];
+  for(let i = 0; i < 6; i++) {
+    const angle = Math.PI / 180 * (60*i - 30);
+    pts.push(`${(cx + HEX_SIZE * Math.cos(angle)).toFixed(1)},${(cy + HEX_SIZE * Math.sin(angle)).toFixed(1)}`);
+  }
+  return pts.join(' ');
+}
+
+function toCube(col, row) {
+  const x = col - (row - (row & 1)) / 2;
+  const z = row;
+  return {x, y: -x-z, z};
+}
+
+function hexDist(c1, r1, c2, r2) {
+  const a = toCube(c1, r1), b = toCube(c2, r2);
+  return Math.max(Math.abs(a.x-b.x), Math.abs(a.y-b.y), Math.abs(a.z-b.z));
+}
+
+function hexNeighbors(col, row) {
+  const even = [[1,0],[-1,0],[0,-1],[0,1],[-1,-1],[-1,1]];
+  const odd  = [[1,0],[-1,0],[0,-1],[0,1],[1,-1],[1,1]];
+  const dirs = row % 2 === 0 ? even : odd;
+  return dirs.map(([dc,dr]) => [col+dc, row+dr])
+    .filter(([c,r]) => c>=0 && c<HEX_COLS && r>=0 && r<HEX_ROWS);
+}
+
+function hxObstAt(col, row) {
+  return (hxs.obstacles||[]).find(ob=>ob.col===col&&ob.row===row) || null;
+}
+
+// --- FLANKING / ZONE-OF-CONTROL helpers (BB-style) ---
+// Count living attackers of attackerTeam adjacent to target (includes the striker itself).
+function hxCountFlankers(target, attackerTeam) {
+  return hxs.units.filter(u => u.team===attackerTeam && u.hp>0 && hexDist(u.col,u.row,target.col,target.row)===1).length;
+}
+// True if any living enemy of `unit` is adjacent to (c,row).
+function hxIsInEnemyZoC(c, row, unit) {
+  return hxs.units.some(u => u.team!==unit.team && u.hp>0 && hexDist(u.col,u.row,c,row)===1);
+}
+
+// Returns true if a wall obstacle blocks line-of-sight between two hexes
+function hxLoSBlocked(c1, r1, c2, r2) {
+  const a = toCube(c1, r1), b = toCube(c2, r2);
+  const n = Math.max(Math.abs(a.x-b.x), Math.abs(a.y-b.y), Math.abs(a.z-b.z));
+  if(n <= 1) return false;
+  for(let i = 1; i < n; i++) {
+    const t = i / n;
+    const fx = a.x + (b.x-a.x)*t, fy = a.y + (b.y-a.y)*t, fz = a.z + (b.z-a.z)*t;
+    let rx = Math.round(fx), ry = Math.round(fy), rz = Math.round(fz);
+    const xd = Math.abs(rx-fx), yd = Math.abs(ry-fy), zd = Math.abs(rz-fz);
+    if(xd>yd&&xd>zd) rx=-ry-rz; else if(yd>zd) ry=-rx-rz; else rz=-rx-ry;
+    const mc = rx + (rz - (rz & 1)) / 2, mr = rz;
+    if(mc===c1&&mr===r1) continue;
+    if(mc===c2&&mr===r2) continue;
+    const ob = hxObstAt(mc, mr);
+    if(ob && ob.blocksLos) return true;
+  }
+  return false;
+}
+
+// Damage an obstacle; removes it when hp reaches 0
+function hxDamageObstacle(ob, dmg) {
+  ob.hp = Math.max(0, ob.hp - dmg);
+  hxLog(`💥 ${ob.type==='wall'?'🧱 Стена':'🪨 Обломки'}: ${dmg} урона (${ob.hp}/${ob.maxHp} HP)`, 'attack');
+  hxFlashHex(ob.col, ob.row, 'rgba(231,76,60,0.6)');
+  if(ob.hp <= 0) {
+    hxs.obstacles = hxs.obstacles.filter(x=>x!==ob);
+    hxLog(`🗑 ${ob.type==='wall'?'Стена разрушена':'Обломки расчищены'}!`, 'special');
+  }
+}
+
+function hexReachable(unit) {
+  const range = unit.remainingMove !== undefined ? unit.remainingMove : unit.moveRange;
+  const blocked = new Set([
+    ...hxs.units.filter(u=>u.id!==unit.id&&u.hp>0).map(u=>`${u.col},${u.row}`),
+    ...(hxs.obstacles||[]).map(ob=>`${ob.col},${ob.row}`),
+    // waters is legacy empty array; deep_water and shallow_water are passable
+  ]);
+  const swampSet = new Set((hxs.swamps||[]).map(([c,r])=>`${c},${r}`));
+  const shallowSet = new Set((hxs.shallow_waters||[]).map(([c,r])=>`${c},${r}`));
+  const deepWaterSet = new Set((hxs.deep_waters||[]).map(([c,r])=>`${c},${r}`));
+  // Dijkstra with move-cost: swamp/shallow_water/deep_water costs 2, everything else 1
+  const visited = new Map([[`${unit.col},${unit.row}`, 0]]);
+  const queue = [[0, unit.col, unit.row]]; // [cost, c, r]
+  const result = [];
+  while(queue.length) {
+    queue.sort((a,b)=>a[0]-b[0]);
+    const [d, c, r] = queue.shift();
+    if(d > 0 && !blocked.has(`${c},${r}`)) result.push([c, r]);
+    // ZoC: a hex adjacent to a living enemy is a terminal node — you may step onto it
+    // but cannot expand past it (sticky melee). Start hex (d===0) always expands.
+    const inZoC = d > 0 && hxIsInEnemyZoC(c, r, unit);
+    if(d < range && !blocked.has(`${c},${r}`) && !inZoC) {
+      for(const [nc, nr] of hexNeighbors(c, r)) {
+        const stepCost = (swampSet.has(`${nc},${nr}`) || shallowSet.has(`${nc},${nr}`) || deepWaterSet.has(`${nc},${nr}`)) ? 2 : 1;
+        const newCost = d + stepCost;
+        const key = `${nc},${nr}`;
+        if(newCost <= range && (!visited.has(key) || visited.get(key) > newCost)) {
+          visited.set(key, newCost); queue.push([newCost, nc, nr]);
+        }
+      }
+    }
+  }
+  return result;
+}
+
+// Shortest walkable path from (fromCol,fromRow) to (toCol,toRow) as ordered [col,row] steps
+// (destination inclusive, start exclusive). Respects obstacles/units/terrain cost. Straight-line fallback.
+function hexPath(fromCol, fromRow, toCol, toRow, ignoreUnitId) {
+  const blocked = new Set([
+    ...hxs.units.filter(u=>u.id!==ignoreUnitId&&u.hp>0).map(u=>`${u.col},${u.row}`),
+    ...(hxs.obstacles||[]).map(ob=>`${ob.col},${ob.row}`),
+  ]);
+  const costSet = new Set([
+    ...(hxs.swamps||[]).map(([c,r])=>`${c},${r}`),
+    ...(hxs.shallow_waters||[]).map(([c,r])=>`${c},${r}`),
+    ...(hxs.deep_waters||[]).map(([c,r])=>`${c},${r}`),
+  ]);
+  const start = `${fromCol},${fromRow}`, goal = `${toCol},${toRow}`;
+  const dist = new Map([[start, 0]]);
+  const prev = new Map();
+  const queue = [[0, fromCol, fromRow]];
+  while(queue.length) {
+    queue.sort((a,b)=>a[0]-b[0]);
+    const [d, c, r] = queue.shift();
+    const key = `${c},${r}`;
+    if(d > (dist.get(key) ?? Infinity)) continue;
+    if(key === goal) break;
+    for(const [nc, nr] of hexNeighbors(c, r)) {
+      const nkey = `${nc},${nr}`;
+      if(nkey !== goal && blocked.has(nkey)) continue;
+      const nd = d + (costSet.has(nkey) ? 2 : 1);
+      if(nd < (dist.get(nkey) ?? Infinity)) {
+        dist.set(nkey, nd); prev.set(nkey, key); queue.push([nd, nc, nr]);
+      }
+    }
+  }
+  if(!prev.has(goal)) return [[toCol, toRow]]; // unreachable graph-wise → glide straight
+  const path = [];
+  let cur = goal;
+  while(cur !== start) {
+    const [c, r] = cur.split(',').map(Number);
+    path.unshift([c, r]);
+    cur = prev.get(cur);
+  }
+  return path;
+}
+
+function hexAttackable(unit) {
+  const ranged = unit.atkRange > 1;
+  return hxs.units.filter(u => u.team !== unit.team && u.hp > 0
+    && hexDist(unit.col, unit.row, u.col, u.row) <= unit.atkRange
+    && (!ranged || !hxLoSBlocked(unit.col, unit.row, u.col, u.row)));
+}
+
+// Get targets for a specific ability from a unit position
+// PASS B: returns hex objects {col, row, isFreeHex?} for hero; unit-based for enemies
+function hxAbilityTargets(unit, ability) {
+  if(!ability || ability.range === 0) return [];
+  // PASS B: hero gets hex-based targeting — bright targets depend on ability type
+  if(unit.isHero) {
+    const result = [];
+    const isRangedMagic = ability.type === 'ranged' || ability.type === 'magic';
+    const inRange = (c,r) => hexDist(unit.col,unit.row,c,r) <= ability.range &&
+                              !hxObstAt(c,r) &&
+                              !(isRangedMagic && hxLoSBlocked(unit.col,unit.row,c,r));
+    if(ability.type === 'heal') {
+      hxs.units.filter(u=>u.team===unit.team&&u.hp>0&&inRange(u.col,u.row))
+               .forEach(u=>result.push({col:u.col,row:u.row,isFreeHex:false}));
+    } else if(ability.type === 'summon') {
+      const occupied = new Set(hxs.units.filter(u=>u.hp>0).map(u=>`${u.col},${u.row}`));
+      for(let r=0;r<HEX_ROWS;r++) for(let c=0;c<HEX_COLS;c++) {
+        if(inRange(c,r) && !occupied.has(`${c},${r}`)) result.push({col:c,row:r,isFreeHex:true});
+      }
+    } else {
+      // All abilities: free-aim any hex in range, LoS for ranged/magic
+      for(let r=0;r<HEX_ROWS;r++) for(let c=0;c<HEX_COLS;c++) {
+        const d = hexDist(unit.col,unit.row,c,r);
+        if(d === 0 || d > ability.range) continue;
+        if(isRangedMagic && hxLoSBlocked(unit.col,unit.row,c,r)) continue;
+        result.push({col:c,row:r,isFreeHex:true});
+      }
+    }
+    return result;
+  }
+  // Non-hero: unit-based targeting (existing logic)
+  const enemyNeedsLoS = ability.type === 'ranged' || ability.type === 'magic';
+  const enemyLoSok = (uc,ur) => !enemyNeedsLoS || !hxLoSBlocked(unit.col, unit.row, uc, ur);
+  if(ability.type === 'heal') {
+    return hxs.units.filter(u => u.team === unit.team && u.hp > 0
+      && hexDist(unit.col, unit.row, u.col, u.row) <= ability.range);
+  }
+  if(ability.type === 'summon') {
+    // return empty neighbor hexes as pseudo-targets
+    const occupied = new Set(hxs.units.filter(u=>u.hp>0).map(u=>`${u.col},${u.row}`));
+    const nbrs = hexNeighbors(unit.col, unit.row);
+    return nbrs.filter(([c,r])=>!occupied.has(`${c},${r}`)).map(([c,r])=>({isFreeHex:true,col:c,row:r,id:`free_${c}_${r}`,team:'free',hp:1}));
+  }
+  if(ability.type === 'debuff' && ability.effect?.stat) {
+    // targets enemies
+    return hxs.units.filter(u => u.team !== unit.team && u.hp > 0
+      && hexDist(unit.col, unit.row, u.col, u.row) <= ability.range
+      && enemyLoSok(u.col, u.row));
+  }
+  return hxs.units.filter(u => u.team !== unit.team && u.hp > 0
+    && hexDist(unit.col, unit.row, u.col, u.row) <= ability.range
+    && enemyLoSok(u.col, u.row));
+}
+
+function hexApplyMorale(deadUnit) {
+  // REBALANCE: at HP 5-9 every chip can kill, so morale is softened — only directly
+  // adjacent allies, and only −1 atk (capped at −2 total) so it doesn't spiral into constant routs.
+  const allies = hxs.units.filter(u => u.team === deadUnit.team && u.hp > 0);
+  const adjacent = allies.filter(u => hexDist(u.col, u.row, deadUnit.col, deadUnit.row) === 1);
+  if(adjacent.length === 0) return;
+  adjacent.forEach(u => { u.atkDebuff = Math.min(2, (u.atkDebuff||0) + 1); });
+  hxLog(`💔 Гибель ${deadUnit.name} подрывает боевой дух — соседние союзники −1 атк`, 'attack');
+}
+
+// PASS C: button handler — apply from current hxs.confirming state
+function hxConfirmApplyBtn() {
+  if(!hxs.confirming || hxs.selected === null) return;
+  const unit = hxs.units.find(u=>u.id===hxs.selected);
+  if(!unit||unit.hp<=0) return;
+  const ab = unit.abilities?.[hxs.activeAbilityIdx];
+  if(!ab) return;
+  const {col:cc, row:cr} = hxs.confirming;
+  hxConfirmApply(unit, ab, cc, cr);
+  // Restore skip button
+  const skipBtn = document.getElementById('hx-skip-btn');
+  if(skipBtn) { skipBtn.textContent = 'Пропустить'; skipBtn.onclick = () => hxSkipUnit(); }
+}
+
+// PASS B/C: confirm and apply hero ability at hex {col, row}
+function hxConfirmApply(unit, ab, col, row) {
+  const unitOnTarget = hxs.units.find(u=>u.hp>0&&u.col===col&&u.row===row);
+  const obstOnTarget = hxObstAt(col, row);
+  const primaryTarget = unitOnTarget
+    ? unitOnTarget
+    : obstOnTarget
+      ? {col:obstOnTarget.col, row:obstOnTarget.row, isFreeHex:true, isObstacle:true}
+      : {col, row, isFreeHex:true, isBurnable:!!(hxs.burnable||[]).find(([c,r])=>c===col&&r===row)};
+
+  const dmgForObst = () => {
+    const d = hxAbilityDamage(ab, unit);
+    return d > 0 ? d : Math.max(1, Math.round(unit.atk * 0.5));
+  };
+
+  if(ab.type === 'heal') {
+    const allyOnHex = hxs.units.find(u=>u.team===unit.team&&u.hp>0&&u.col===col&&u.row===row);
+    if(!allyOnHex) {
+      hxLog(`${ab.name}: нет союзника на этом гексе.`, 'info');
+      hxs.confirming = null; hxRender(); hexUpdateInfo(); return;
+    }
+    hxApplyAbility(unit, ab, allyOnHex);
+  } else if(ab.effect?.type === 'stun' && (ab.damage === 0 || !ab.damage)) {
+    if(!unitOnTarget || unitOnTarget.team === unit.team) {
+      hxLog(`${ab.name}: нет врага на этом гексе.`, 'info');
+      hxs.confirming = null; hxRender(); hexUpdateInfo(); return;
+    }
+    hxApplyAbility(unit, ab, unitOnTarget);
+  } else {
+    // For free hex: pass to hxApplyAbility — it handles isBurnable, isObstacle, or empty
+    if(!ab.aoe && obstOnTarget) {
+      hxDamageObstacle(obstOnTarget, dmgForObst());
+      hxMarkActed(unit, ab);
+      if(ab.maxCooldown > 0) ab.cooldown = ab.maxCooldown;
+      hexCheckEnd();
+    } else {
+      hxApplyAbility(unit, ab, primaryTarget);
+    }
+  }
+
+  hxs.confirming = null;
+  hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null; hxs.aoeHover = null;
+  if(unit.moved && unit.acted) hxs.selected = null;
+  hxRender(); hexUpdateInfo();
+}
+
+// School cooldown: using a strong spell (cd≥3) resets ALL other strong spells of same school
+// to full cooldown, and adds +2 cd to all strong spells of OTHER magic schools.
+function hxApplySchoolCooldown(caster, usedAbility) {
+  if(!usedAbility.school || usedAbility.maxCooldown < 3) return;
+  const school = usedAbility.school;
+  const isMagicAb = ab => ['magic','heal','summon','debuff'].includes(ab.type);
+  const usedIsMagic = isMagicAb(usedAbility);
+  (caster.abilities||[]).forEach(ab => {
+    if(ab.id === usedAbility.id) return;
+    if(ab.school === school && (ab.maxCooldown||0) >= 3) {
+      ab.cooldown = ab.maxCooldown; // Full reset — same school blocked
+      return;
+    }
+    if(usedIsMagic && isMagicAb(ab) && (ab.maxCooldown||0) >= 3) {
+      ab.cooldown = Math.min(ab.maxCooldown, (ab.cooldown||0) + 2); // +2 to other strong magic
+    }
+  });
+}
+
+// AP cost of an ability: explicit ab.ap (clamped 0-2), else derived (basic=1, anything with cooldown=2). Max 2.
+function hxAbilityAP(ab) {
+  if(ab.ap != null) return Math.max(0, Math.min(2, ab.ap));
+  return ab.maxCooldown === 0 ? 1 : 2;
+}
+
+// PASS A: helper — mark caster acted based on AP (hero) or directly (enemy/ally)
+function hxMarkActed(caster, ability) {
+  if(caster.isHero) {
+    const apCost = hxAbilityAP(ability);
+    hxs.heroAP = Math.max(0, hxs.heroAP - apCost);
+    caster.acted = hxs.heroAP === 0; // done when out of AP
+  } else {
+    caster.acted = true;
+  }
+  hxApplySchoolCooldown(caster, ability);
+}
+
+// Per-attack BASE accuracy at a given hex distance (before dodge / situational mods).
+//  - ability.accByDist: explicit array indexed by hex distance (accByDist[dist-1]); clamped to the last entry
+//    beyond its length. This is how an individual ranged/magic attack defines its own accuracy curve.
+//  - Otherwise a school-aware default: 95% point-blank → a per-school 'far' value at the ability's max range.
+//    Lore (skills/magic/wizard.md, distance_scale.md): wizard impulse stays usable to ~30-40m (soft falloff,
+//    ~70% at дальняя); elementalist branches drop faster after большая (~20m); bow reaches дальняя ~40m.
+function hxAbilityAccAt(ability, dist) {
+  if(Array.isArray(ability.accByDist) && ability.accByDist.length) {
+    const i = Math.min(ability.accByDist.length, Math.max(1, dist)) - 1;
+    return ability.accByDist[i];
+  }
+  const maxRange = ability.range || 1;
+  if(maxRange <= 1) return 95;
+  const sharp = ['pyromancer','geomancer','aeromancer','aquamancer'].includes(ability.school);
+  const far = sharp ? 60 : (ability.school === 'wizard' ? 72 : (ability.school === 'ranged' ? 75 : 70));
+  const f = Math.min(1, Math.max(0, (dist - 1) / (maxRange - 1)));
+  return Math.round(95 - f * (95 - far));
+}
+
+// Hit model (Данил's spec + lore):
+//  - MELEE (and any non-ranged) ALWAYS hits — 100% (контакт, ближняя).
+//  - RANGED / MAGIC: per-attack base accuracy at distance (hxAbilityAccAt), then − dodge − situational:
+//      − target base dodge (5-10)
+//      − situational = the LARGER of { target moved this turn: −5, target behind partial cover: −15 } (do NOT stack).
+// adjacentEnemies kept for signature compatibility (flanking now matters via guaranteed melee damage, not to-hit).
+function hxCalcHitChance(ability, attacker, target, adjacentEnemies) {
+  const isRangedType = ability.type === 'ranged' || ability.type === 'magic';
+  if(!isRangedType) return 100; // melee never misses
+  const dist = hexDist(attacker.col, attacker.row, target.col, target.row);
+  let hit = hxAbilityAccAt(ability, dist);               // per-attack base accuracy at this distance
+  hit -= (target.defense != null ? target.defense : 0);  // base dodge 5-10
+  const inBush = (hxs.bushes||[]).some(([bc,br])=>bc===target.col&&br===target.row);
+  const inForest = (hxs.forests||[]).some(([fc,fr])=>fc===target.col&&fr===target.row);
+  const hasCover = (hxs.obstacles||[]).some(ob=>ob.type==='rubble'&&hexDist(ob.col,ob.row,target.col,target.row)===1&&hexDist(ob.col,ob.row,attacker.col,attacker.row)>1);
+  const coverPen = (inBush || inForest || hasCover) ? 15 : 0;  // partial cover (куст/лес/обломки): −15 (ranged)
+  const movePen  = target.movedRecently ? 5 : 0;         // target moved this turn: −5 (ranged)
+  hit -= Math.max(coverPen, movePen);                    // do NOT stack
+  return Math.max(35, Math.min(95, Math.round(hit)));
+}
+
+// SHARED damage resolver — dodge already rolled by caller.
+// ORDER: shields(barriers) → armor(statuses, % chance) → HP.
+// Each incoming hit ALWAYS removes ONE front barrier (regardless of damage); damage passing = max(0, hit − barrierValue).
+// Barriers last 1 turn and are cleared at the unit's own turn-start; armor statuses are probabilistic and NOT consumed.
+// Returns hpDmg dealt. Used by every attack path (abilities, basic, AoE, chain, counter) so balance never diverges.
+function hxDealDamage(target, rawDmg, sourceTeam) {
+  if(rawDmg <= 0) return 0;
+  const prevHp = target.hp;
+  let D = rawDmg;
+  // (a) barrier (Заслон) — each hit strips ONE front barrier (always), passing damage = max(0, D − barrierValue)
+  if(Array.isArray(target.shields) && target.shields.length){
+    const v = target.shields.shift();
+    D = Math.max(0, D - v);
+    hxLog && hxLog(`🛡 ${target.name}: щит снят`, 'block');
+  }
+  // (b) armor statuses — each piece rolls its chance% to reduce; armor is NOT consumed, multiple can proc
+  if(D > 0 && Array.isArray(target.statuses)) {
+    for(const st of target.statuses) {
+      if(D <= 0) break;
+      if((st.type||'ARMOR') !== 'ARMOR') continue;
+      const chance = st.chance != null ? st.chance : 100;
+      if(Math.random()*100 < chance) {
+        const reduced = Math.min(D, st.value||0);
+        if(reduced > 0) {
+          D = D - reduced;
+          hxLog(`🛡 ${st.name||'Броня'} −${reduced}`, 'info');
+        }
+      }
+    }
+  }
+  D = Math.max(0, D);
+  // (c) remainder hits HP
+  const hpDmg = D;
+  target.hp = Math.max(0, target.hp - hpDmg);
+  if(sourceTeam === 'player') hxs.totalDamageDealt += hpDmg;
+  else hxs.totalDamageTaken += hpDmg;
+  if(target.hp <= 0 && prevHp > 0) hexApplyMorale(target);
+  return hpDmg;
+}
+
+function hxDistDmgMult(ability, dist) {
+  if(ability.type !== 'ranged') return 1.0;
+  const r = ability.range || 4;
+  if(dist >= r) return 0.8;
+  if(dist >= r - 1) return 0.9;
+  return 1.0;
+}
+
+// --- COMPOSABLE EFFECTS LAYER -------------------------------------------------
+// Build a working effect list for a LEGACY ability (no .effects[]): the damage
+// value becomes a {type:'damage'} effect, and the single ability.effect (if any)
+// becomes a rider. This is what keeps every pre-existing ability behaving exactly
+// as before when run through the effects[] executor.
+function hxLegacyEffects(ability) {
+  const fx = [];
+  if(ability.damage && ability.damage !== 0) fx.push({type:'damage', value:ability.damage});
+  if(ability.effect) fx.push({...ability.effect});
+  return fx;
+}
+
+// Evaluate an effect's condition gate. ctx = {caster, target, didHit, dist, adjacentEnemies}.
+// Hex-adapted vocabulary (NOT match3 gem points).
+function hxEvalEffectCond(cond, ctx) {
+  if(!cond) return true;
+  const c = ctx || {};
+  const tgt = c.target, cs = c.caster;
+  const pct = (u) => (u && u.maxHp) ? (u.hp / u.maxHp) * 100 : 0;
+  const inCover = (u) => {
+    if(!u) return false;
+    const inBush = (hxs.bushes||[]).some(([bc,br])=>bc===u.col&&br===u.row);
+    const inForest = (hxs.forests||[]).some(([fc,fr])=>fc===u.col&&fr===u.row);
+    const hasRubble = (hxs.obstacles||[]).some(ob=>ob.type==='rubble'&&hexDist(ob.col,ob.row,u.col,u.row)===1);
+    return inBush || inForest || hasRubble;
+  };
+  switch(cond.type) {
+    case 'always': return true;
+    case 'onHit': return !!c.didHit;
+    case 'targetHpBelow': return tgt ? pct(tgt) < (cond.value||0) : false;
+    case 'targetHpAbove': return tgt ? pct(tgt) > (cond.value||0) : false;
+    case 'selfHpBelow':   return cs ? pct(cs) < (cond.value||0) : false;
+    case 'selfHpAbove':   return cs ? pct(cs) > (cond.value||0) : false;
+    case 'isFlanked':     return tgt ? hxCountFlankers(tgt, cs ? cs.team : null) >= 2 : false;
+    case 'distGte':       return (c.dist||0) >= (cond.value||0);
+    case 'distLte':       return (c.dist||0) <= (cond.value||0);
+    case 'targetInCover': return inCover(tgt);
+    case 'targetType':    return tgt ? tgt.type === cond.value : false;
+    default: return true;
+  }
+}
+
+// Default landing side for a rider effect type.
+function hxEffectDefaultTo(type) {
+  switch(type) {
+    case 'barrier': case 'gain_ap': return 'self';
+    case 'heal': case 'buff': return 'ally';   // resolved to the ability's target (an ally) by caller
+    default: return 'target';
+  }
+}
+
+// Apply an ability effect from caster on primary target (handles AoE automatically)
+function hxApplyAbility(caster, ability, primaryTarget) {
+  // PASS D: Track ability usage for FFT hero
+  if(caster.isHero && ability.id) {
+    hxs.abilitiesUsed[ability.id] = (hxs.abilitiesUsed[ability.id] || 0) + 1;
+  }
+
+  // COMPOSABLE EFFECTS: abilities declaring .effects[] run through the generic
+  // executor. Legacy abilities (no .effects[]) keep their original code path below
+  // for byte-for-byte identical behavior. (The executor itself uses hxLegacyEffects
+  // as a fallback so it is a complete general implementation.)
+  if(Array.isArray(ability.effects)) {
+    return hxApplyAbilityFx(caster, ability, primaryTarget);
+  }
+
+  const dmg = hxAbilityDamage(ability, caster);
+  const eff = ability.effect;
+  const isRanged = ability.type === 'ranged' || ability.type === 'magic';
+
+  // Возвышенность бонус для дальних атак (+1, hit-side handled in hxCalcHitChance)
+  let bonusDmg = 0;
+  if(isRanged && hxs.heights.some(([hc,hr])=>hc===caster.col&&hr===caster.row)) {
+    bonusDmg = 1;
+  }
+  // Кусты: цель в кустах снижает урон дальних/магических атак
+  const inBushes = (hxs.bushes||[]).some(([bc,br])=>bc===primaryTarget.col&&br===primaryTarget.row);
+  if(inBushes && isRanged) bonusDmg -= 1;
+  // Укрытие: обломки рядом с целью снижают дальний урон
+  if(isRanged && !inBushes) {
+    const hasCover = (hxs.obstacles||[]).some(ob=>ob.type==='rubble'&&hexDist(ob.col,ob.row,primaryTarget.col,primaryTarget.row)===1&&hexDist(ob.col,ob.row,caster.col,caster.row)>1);
+    if(hasCover) { bonusDmg -= 1; }
+  }
+
+  // --- BARRIER self-buff (Заслон): grant a row of barriers that last until the unit's own next turn-start ---
+  if(eff?.type === 'barrier') {
+    if(!Array.isArray(caster.shields)) caster.shields = [];
+    const cnt = eff.count || 1;
+    for(let i=0;i<cnt;i++) caster.shields.push(eff.value);
+    hxLog(`${caster.icon||''} ${caster.name} — ${ability.name}: 🛡 ${cnt}×${eff.value} заслон!`, 'special');
+    hxMarkActed(caster, ability);
+    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    return;
+  }
+
+  // --- ATK BUFF for ally ---
+  if(eff?.type === 'buff' && eff.stat === 'atk') {
+    primaryTarget.atkBuff = (primaryTarget.atkBuff||0) + eff.value;
+    primaryTarget.atkBuffTurns = eff.turns||2;
+    hxLog(`${caster.name} — ${ability.name}: ${primaryTarget.name} +${eff.value} атк на ${eff.turns} хода!`, 'heal');
+    hxMarkActed(caster, ability);
+    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    return;
+  }
+
+  // --- SUMMON ---
+  if(eff?.type === 'summon') {
+    const sc = primaryTarget.col, sr = primaryTarget.row;
+    const unitType = eff.unitType || 'shadow';
+    const def = HEX_UNIT_DEFS[unitType] || HEX_UNIT_DEFS.shadow;
+    const nearRift = hxs.rifts.some(([rc,rr]) => hexDist(caster.col,caster.row,rc,rr) <= 1);
+    const sHp = nearRift ? Math.round(def.hp * 1.3) : def.hp;
+    const newUnit = {
+      id: hxs.units.length, type: unitType,
+      name: def.name, team: caster.team, originalTeam: caster.originalTeam||caster.team,
+      col: sc, row: sr,
+      hp: sHp, maxHp: sHp, atk: def.atk, moveRange: def.moveRange, atkRange: def.atkRange,
+      accuracy: def.accuracy, defense: def.defense,
+      statuses: (def.statuses||[]).map(s=>({...s})), shields: [],
+      hasShield: false,
+      moved: false, acted: true, atkDebuff:0, stunnedTurns:0,
+      emoji: def.emoji,
+      abilities: (def.abilities||[]).map(a=>({...a,cooldown:0})),
+    };
+    hxs.units.push(newUnit);
+    hxMarkActed(caster, ability);
+    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    hxLog(`${caster.name} — ${ability.name}: призвана ${def.name}${nearRift?' (Разлом +)':''}!`, 'special');
+    return;
+  }
+
+  // --- HEAL ---
+  if(ability.type === 'heal' && eff?.type === 'heal') {
+    const heal = eff.value || 0;
+    primaryTarget.hp = Math.min(primaryTarget.maxHp, primaryTarget.hp + heal);
+    hxLog(`${caster.name} — ${ability.name}: ${primaryTarget.name} +${heal} HP!`, 'heal');
+    hxFlashHex(primaryTarget.col, primaryTarget.row, 'rgba(46,213,115,0.7)');
+    hxMarkActed(caster, ability);
+    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    return;
+  }
+
+  // --- STUN-only (debuff, no damage) ---
+  if(eff?.type === 'stun' && dmg === 0) {
+    primaryTarget.stunnedTurns = (primaryTarget.stunnedTurns||0) + eff.turns;
+    hxLog(`${caster.name} — ${ability.name}: ${primaryTarget.name} оглушён на ${eff.turns} ход(а)!`, 'special');
+    hxFlashHex(primaryTarget.col, primaryTarget.row, 'rgba(243,156,18,0.7)');
+    hxMarkActed(caster, ability);
+    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    return;
+  }
+
+  // --- ATK DEBUFF (smoke etc.) ---
+  if(eff?.type === 'debuff' && eff.stat === 'atk') {
+    const targets = ability.aoe > 0
+      ? hxs.units.filter(u=>u.team!==caster.team&&u.hp>0&&hexDist(primaryTarget.col,primaryTarget.row,u.col,u.row)<=ability.aoe)
+      : [primaryTarget];
+    targets.forEach(t => { t.atkDebuff = (t.atkDebuff||0) + eff.value; });
+    hxLog(`${caster.name} — ${ability.name}: ${targets.length} цел. −${eff.value} атк!`, 'special');
+    hxMarkActed(caster, ability);
+    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    return;
+  }
+
+  // --- DIRECT IGNITE on burnable terrain hex (no damage, no hit check) ---
+  if(primaryTarget.isBurnable) {
+    if(!(hxs.fires||[]).some(f=>f.col===primaryTarget.col&&f.row===primaryTarget.row)) {
+      hxs.fires.push({col:primaryTarget.col,row:primaryTarget.row,duration:3});
+      hxLog(`🔥 Трава загорелась!`, 'special');
+    }
+    hxMarkActed(caster, ability);
+    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    hxRender(); hexUpdateInfo();
+    return;
+  }
+
+  // --- EMPTY HEX (no unit, no obstacle, not burnable) ---
+  if(primaryTarget.isFreeHex && !primaryTarget.isBurnable && !primaryTarget.isObstacle && !(primaryTarget.hp > 0)) {
+    if((ability.aoe||0) > 0) {
+      // AoE on empty hex — splash damage around it (fall through to damage block below)
+    } else {
+      hxLog(`${caster.icon||''} ${caster.name} — ${ability.icon||''} ${ability.name}: удар в пустоту`, 'info');
+      hxMarkActed(caster, ability);
+      if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+      hxRender(); hexUpdateInfo();
+      return;
+    }
+  }
+
+  // --- HIT CHANCE CHECK (now ALL attacks vs an enemy: melee, ranged, magic) ---
+  if(primaryTarget && primaryTarget.hp > 0 && primaryTarget.team !== caster.team && (dmg > 0 || (ability.type==='melee'||ability.type==='ranged'||ability.type==='magic'))) {
+    const _n = hxCountFlankers(primaryTarget, caster.team);
+    const _hitChance = hxCalcHitChance(ability, caster, primaryTarget, _n);
+    if(Math.random() * 100 >= _hitChance) {
+      hxLog(`${caster.icon||''} ${caster.name} — ${ability.icon||''} ${ability.name}: промах! (${_hitChance}%)`, 'damage');
+      hxFlashHex(primaryTarget.col, primaryTarget.row, 'rgba(150,150,150,0.5)');
+      hxMarkActed(caster, ability);
+      if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+      hxRender(); hexUpdateInfo();
+      return;
+    }
+  }
+
+  // --- DAMAGE-DEALING ability ---
+  if(dmg > 0) {
+    const _distMult = primaryTarget ? hxDistDmgMult(ability, hexDist(caster.col, caster.row, primaryTarget.col, primaryTarget.row)) : 1;
+    const totalDmg = Math.max(0, Math.round((dmg + bonusDmg) * _distMult));
+    const doHit = (target, hitDmg) => hxDealDamage(target, hitDmg, caster.team);
+
+    const actualDmg = doHit(primaryTarget, totalDmg);
+    let logMsg = `${caster.name} — ${ability.icon||''} ${ability.name}: ${actualDmg} урона → ${primaryTarget.name} (${primaryTarget.hp}/${primaryTarget.maxHp})`;
+    if(bonusDmg > 0) logMsg += ` [🗿+${bonusDmg}]`;
+    if(_distMult < 1.0) logMsg += ` [дальн.×${_distMult}]`;
+
+    hxFlashHex(primaryTarget.col, primaryTarget.row, 'rgba(231,76,60,0.75)');
+
+    // AoE splash
+    if(ability.aoe > 0) {
+      const splashTargets = hxs.units.filter(u=>u.team!==caster.team&&u.hp>0&&u.id!==primaryTarget.id&&hexDist(primaryTarget.col,primaryTarget.row,u.col,u.row)<=ability.aoe);
+      splashTargets.forEach(t => {
+        const sd = doHit(t, Math.round(totalDmg*0.6));
+        logMsg += `, ${sd}→${t.name}`;
+        hxFlashHex(t.col, t.row, 'rgba(231,76,60,0.5)');
+      });
+      // AoE also damages obstacles in radius
+      const aoeObst = (hxs.obstacles||[]).filter(ob=>hexDist(primaryTarget.col,primaryTarget.row,ob.col,ob.row)<=ability.aoe);
+      aoeObst.forEach(ob => {
+        const od = Math.round(totalDmg*0.6);
+        logMsg += `, ${od}→${ob.type==='wall'?'🧱':'🪨'}`;
+        hxDamageObstacle(ob, od);
+      });
+    }
+
+    // Fire ignition: pyromancer ignite abilities set burnable terrain on fire
+    if(ability.effect?.type === 'ignite') {
+      const igniteRange = ability.aoe > 0 ? ability.aoe : 0;
+      for(let dc=-igniteRange;dc<=igniteRange;dc++) for(let dr=-igniteRange;dr<=igniteRange;dr++) {
+        const ic=primaryTarget.col+dc, ir=primaryTarget.row+dr;
+        if(hexDist(primaryTarget.col,primaryTarget.row,ic,ir)>igniteRange) continue;
+        const burnIdx=(hxs.burnable||[]).findIndex(([bc,br])=>bc===ic&&br===ir);
+        if(burnIdx>=0&&!(hxs.fires||[]).some(f=>f.col===ic&&f.row===ir)) {
+          hxs.fires.push({col:ic,row:ir,duration:3});
+          hxLog(`🔥 Трава на (${ic},${ir}) загорелась!`, 'special');
+        }
+      }
+    }
+
+    // Chain (lightning)
+    if(eff?.type === 'chain') {
+      const chainT = hxs.units.filter(u=>u.team!==caster.team&&u.hp>0&&u.id!==primaryTarget.id)
+        .sort((a,b)=>hexDist(primaryTarget.col,primaryTarget.row,a.col,a.row)-hexDist(primaryTarget.col,primaryTarget.row,b.col,b.row))[0];
+      if(chainT) {
+        const cd = doHit(chainT, eff.value);
+        logMsg += ` ⚡ цепь ${cd}→${chainT.name}`;
+        hxFlashHex(chainT.col, chainT.row, 'rgba(162,155,254,0.7)');
+      }
+    }
+
+    // Lifesteal
+    if(eff?.type === 'lifesteal') {
+      caster.hp = Math.min(caster.maxHp, caster.hp + eff.value);
+      logMsg += ` (лечит ${caster.name} +${eff.value})`;
+    }
+
+    // Knockback — push target 1 hex away from caster
+    if(eff?.type === 'knockback') {
+      const dc = primaryTarget.col - caster.col;
+      const dr = primaryTarget.row - caster.row;
+      const nc = primaryTarget.col + Math.sign(dc);
+      const nr = primaryTarget.row + Math.sign(dr);
+      if(nc>=0&&nc<HEX_COLS&&nr>=0&&nr<HEX_ROWS&&!hxs.units.find(u=>u.col===nc&&u.row===nr&&u.hp>0)&&!hxObstAt(nc,nr)) {
+        primaryTarget.col = nc; primaryTarget.row = nr;
+        logMsg += ' [отбросил]';
+      }
+    }
+
+    // Pull — drag target 1 hex toward caster
+    if(eff?.type === 'pull') {
+      const dc = caster.col - primaryTarget.col;
+      const dr = caster.row - primaryTarget.row;
+      const nc = primaryTarget.col + Math.sign(dc);
+      const nr = primaryTarget.row + Math.sign(dr);
+      const occupied = hxs.units.find(u=>u.id!==primaryTarget.id&&u.col===nc&&u.row===nr&&u.hp>0);
+      if(nc>=0&&nc<HEX_COLS&&nr>=0&&nr<HEX_ROWS&&!occupied&&!hxObstAt(nc,nr)) {
+        primaryTarget.col = nc; primaryTarget.row = nr;
+        logMsg += ' [притянул]';
+      }
+    }
+
+    // Post-damage stun
+    if(eff?.type === 'stun' && dmg > 0 && primaryTarget.hp > 0) {
+      primaryTarget.stunnedTurns = (primaryTarget.stunnedTurns||0) + eff.turns;
+      logMsg += ` [оглушён ${eff.turns}ход]`;
+    }
+
+    // Warrior counter-attack when attacked at melee range (raw → shield-block+armor split)
+    if(primaryTarget.hp > 0 && primaryTarget.type === 'warrior' && hexDist(caster.col,caster.row,primaryTarget.col,primaryTarget.row) === 1) {
+      const counterRaw = Math.max(1, Math.floor(primaryTarget.atk * 0.5));
+      const counterDmg = hxDealDamage(caster, counterRaw, primaryTarget.team);
+      hxLog(`🗡 ${primaryTarget.name} контратакует: ${counterDmg} урона → ${caster.name}`, 'special');
+    }
+
+    hxLog(logMsg, ability.type === 'heal' ? 'heal' : 'attack');
+    hxMarkActed(caster, ability);
+    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    hexCheckEnd();
+  }
+}
+
+// ---- COMPOSABLE EFFECTS EXECUTOR --------------------------------------------
+// Drives off `fx = ability.effects || hxLegacyEffects(ability)`. Splits into
+// damage effects (applied first, with to-hit + AoE + terrain) and rider effects
+// (applied after, gated by chance + condition). Marks acted / sets cooldown ONCE.
+function hxApplyAbilityFx(caster, ability, primaryTarget) {
+  const fx = ability.effects || hxLegacyEffects(ability);
+  const isRanged = ability.type === 'ranged' || ability.type === 'magic';
+
+  // Terrain bonus to ranged/magic damage (height +1; bush/rubble cover −1) — same as legacy.
+  let bonusDmg = 0;
+  if(isRanged && hxs.heights.some(([hc,hr])=>hc===caster.col&&hr===caster.row)) bonusDmg = 1;
+  const inBushes = primaryTarget && (hxs.bushes||[]).some(([bc,br])=>bc===primaryTarget.col&&br===primaryTarget.row);
+  if(isRanged && inBushes) bonusDmg -= 1;
+  if(isRanged && !inBushes && primaryTarget) {
+    const hasCover = (hxs.obstacles||[]).some(ob=>ob.type==='rubble'&&hexDist(ob.col,ob.row,primaryTarget.col,primaryTarget.row)===1&&hexDist(ob.col,ob.row,caster.col,caster.row)>1);
+    if(hasCover) bonusDmg -= 1;
+  }
+
+  // mark/cooldown ONCE — guard so any helper path can't double-count.
+  let _finalized = false;
+  const finalize = () => {
+    if(_finalized) return;
+    _finalized = true;
+    hxMarkActed(caster, ability);
+    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    hxRender(); hexUpdateInfo(); hexCheckEnd();
+  };
+
+  const dist = primaryTarget ? hexDist(caster.col, caster.row, primaryTarget.col, primaryTarget.row) : 0;
+  const adjacentEnemies = primaryTarget ? hxCountFlankers(primaryTarget, caster.team) : 0;
+
+  const damageEffects = fx.filter(e => e.type === 'damage');
+  const riderEffects  = fx.filter(e => e.type !== 'damage');
+  const hasDamage = damageEffects.length > 0;
+
+  // --- Burnable / empty hex handling (utility "hits" with no live unit) ----------
+  if(primaryTarget && primaryTarget.isBurnable) {
+    if(!(hxs.fires||[]).some(f=>f.col===primaryTarget.col&&f.row===primaryTarget.row)) {
+      hxs.fires.push({col:primaryTarget.col,row:primaryTarget.row,duration:3});
+      hxLog(`🔥 Трава загорелась!`, 'special');
+    }
+    finalize();
+    return;
+  }
+  const emptyHex = primaryTarget && primaryTarget.isFreeHex && !primaryTarget.isObstacle && !(primaryTarget.hp > 0);
+  if(emptyHex && (ability.aoe||0) === 0 && hasDamage) {
+    hxLog(`${caster.icon||''} ${caster.name} — ${ability.icon||''} ${ability.name}: удар в пустоту`, 'info');
+    finalize();
+    return;
+  }
+
+  // --- DAMAGE PASS: apply all damage effects, recording which targets were HIT --
+  // Map of unit.id → {unit, didHit, dealt}
+  const hitTargets = {};
+  let logMsg = `${caster.icon||''} ${caster.name} — ${ability.icon||''} ${ability.name}:`;
+  let anyDamageLine = false;
+
+  for(const de of damageEffects) {
+    if(de.chance != null && Math.random()*100 >= de.chance) continue;
+    // Damage effect target set: primaryTarget + AoE neighbors.
+    const dmgBase = hxAbilityDamage({damage: de.value != null ? de.value : ability.damage, type: ability.type}, caster);
+    const distMult = primaryTarget ? hxDistDmgMult(ability, dist) : 1;
+    const mainDmg = Math.max(0, Math.round((dmgBase + bonusDmg) * distMult));
+
+    const applyToUnit = (unit, raw, isSplash) => {
+      if(!unit || unit.hp <= 0 || unit.team === caster.team) return;
+      let didHit = true;
+      if(isRanged) {
+        const flank = hxCountFlankers(unit, caster.team);
+        const hc = hxCalcHitChance(ability, caster, unit, flank);
+        if(Math.random()*100 >= hc) {
+          didHit = false;
+          hxLog(`${caster.icon||''} ${caster.name} — ${ability.icon||''} ${ability.name}: промах → ${unit.name} (${hc}%)`, 'damage');
+          hxFlashHex(unit.col, unit.row, 'rgba(150,150,150,0.5)');
+        }
+      }
+      const prev = hitTargets[unit.id] || {unit, didHit:false, dealt:0};
+      if(didHit) {
+        const dealt = hxDealDamage(unit, raw, caster.team);
+        prev.didHit = true;
+        prev.dealt += dealt;
+        logMsg += ` ${dealt}→${unit.name}(${unit.hp}/${unit.maxHp})`;
+        anyDamageLine = true;
+        hxFlashHex(unit.col, unit.row, isSplash ? 'rgba(231,76,60,0.5)' : 'rgba(231,76,60,0.75)');
+        // Warrior counter-attack at melee range
+        if(unit.hp > 0 && unit.type === 'warrior' && hexDist(caster.col,caster.row,unit.col,unit.row) === 1) {
+          const counterRaw = Math.max(1, Math.floor(unit.atk * 0.5));
+          const cd = hxDealDamage(caster, counterRaw, unit.team);
+          hxLog(`🗡 ${unit.name} контратакует: ${cd} урона → ${caster.name}`, 'special');
+        }
+      }
+      hitTargets[unit.id] = prev;
+    };
+
+    // primary
+    if(primaryTarget && primaryTarget.hp > 0) applyToUnit(primaryTarget, mainDmg, false);
+    // AoE splash
+    if((ability.aoe||0) > 0 && primaryTarget) {
+      const splash = hxs.units.filter(u=>u.team!==caster.team&&u.hp>0&&u.id!==primaryTarget.id&&hexDist(primaryTarget.col,primaryTarget.row,u.col,u.row)<=ability.aoe);
+      splash.forEach(t => applyToUnit(t, Math.round(mainDmg*0.6), true));
+      const aoeObst = (hxs.obstacles||[]).filter(ob=>hexDist(primaryTarget.col,primaryTarget.row,ob.col,ob.row)<=ability.aoe);
+      aoeObst.forEach(ob => { const od = Math.round(mainDmg*0.6); logMsg += ` ${od}→${ob.type==='wall'?'🧱':'🪨'}`; hxDamageObstacle(ob, od); anyDamageLine = true; });
+    }
+  }
+  if(bonusDmg !== 0 && anyDamageLine) logMsg += ` [терр.${bonusDmg>0?'+':''}${bonusDmg}]`;
+  if(anyDamageLine) hxLog(logMsg, 'attack');
+
+  // --- RIDER PASS: applied after all damage ------------------------------------
+  // Eligible damaged targets that were HIT (for target-side riders on a damaging ability).
+  const hitUnits = Object.values(hitTargets).filter(h => h.didHit).map(h => h.unit);
+  const ctxFor = (unit, didHit) => ({caster, target: unit, didHit, dist, adjacentEnemies});
+
+  for(const rider of riderEffects) {
+    const to = rider.to || hxEffectDefaultTo(rider.type);
+
+    // SELF-side riders (barrier, gain_ap, and explicit to:'self') — once on caster.
+    if(to === 'self') {
+      const didHit = hitUnits.length > 0;  // for onHit-style self riders
+      if(rider.chance != null && Math.random()*100 >= rider.chance) continue;
+      if(!hxEvalEffectCond(rider.condition, ctxFor(primaryTarget, didHit))) continue;
+      hxApplyRiderEffect(caster, ability, rider, caster, caster);
+      continue;
+    }
+
+    // TARGET / ALLY side riders.
+    // If the ability has damage effects → apply per HIT target. Otherwise (pure
+    // utility) → treat the resolved primaryTarget as eligible.
+    let recipients;
+    if(hasDamage) {
+      recipients = hitUnits.map(u => ({unit:u, didHit:true}));
+    } else {
+      recipients = primaryTarget ? [{unit: primaryTarget, didHit:false}] : [];
+    }
+    for(const r of recipients) {
+      if(rider.chance != null && Math.random()*100 >= rider.chance) continue;
+      if(!hxEvalEffectCond(rider.condition, ctxFor(r.unit, r.didHit))) continue;
+      hxApplyRiderEffect(caster, ability, rider, r.unit, primaryTarget);
+    }
+  }
+
+  finalize();
+}
+
+// Apply a single rider effect. recipient = where it lands; primaryTarget kept for
+// directional effects (knockback/pull) which always reference the caster↔primary axis.
+function hxApplyRiderEffect(caster, ability, rider, recipient, primaryTarget) {
+  switch(rider.type) {
+    case 'gain_ap': {
+      if(caster.isHero) {
+        const before = hxs.heroAP;
+        hxs.heroAP = Math.min(hxs.heroMaxAP || 4, hxs.heroAP + (rider.value||0));
+        if(hxs.heroAP > before) hxLog(`${caster.name} — ${ability.name}: +${hxs.heroAP-before} очко действия (⚡${hxs.heroAP})`, 'special');
+      }
+      break;
+    }
+    case 'barrier': {
+      const owner = recipient || caster;
+      if(!Array.isArray(owner.shields)) owner.shields = [];
+      const cnt = rider.count || 1;
+      for(let i=0;i<cnt;i++) owner.shields.push(rider.value);
+      hxLog(`${caster.name} — ${ability.name}: 🛡 ${cnt}×${rider.value} заслон!`, 'special');
+      break;
+    }
+    case 'heal': {
+      const t = recipient;
+      if(!t) break;
+      const heal = rider.value || 0;
+      t.hp = Math.min(t.maxHp, t.hp + heal);
+      hxLog(`${caster.name} — ${ability.name}: ${t.name} +${heal} HP!`, 'heal');
+      hxFlashHex(t.col, t.row, 'rgba(46,213,115,0.7)');
+      break;
+    }
+    case 'lifesteal': {
+      // heal caster by min(value, dealt to recipient this use) — keep legacy semantics
+      const v = rider.value || 0;
+      caster.hp = Math.min(caster.maxHp, caster.hp + v);
+      hxLog(`${caster.name} — ${ability.name}: жизнекража +${v} HP`, 'heal');
+      break;
+    }
+    case 'buff': {
+      const t = recipient; if(!t) break;
+      if((rider.stat||'atk') === 'atk') {
+        t.atkBuff = (t.atkBuff||0) + (rider.value||0);
+        t.atkBuffTurns = rider.turns || 2;
+        hxLog(`${caster.name} — ${ability.name}: ${t.name} +${rider.value} атк на ${rider.turns||2} хода!`, 'heal');
+      }
+      break;
+    }
+    case 'debuff': {
+      const t = recipient; if(!t) break;
+      if((rider.stat||'atk') === 'atk') {
+        t.atkDebuff = (t.atkDebuff||0) + (rider.value||0);
+        hxLog(`${caster.name} — ${ability.name}: ${t.name} −${rider.value} атк!`, 'special');
+      }
+      break;
+    }
+    case 'stun': {
+      const t = recipient; if(!t) break;
+      t.stunnedTurns = (t.stunnedTurns||0) + (rider.turns||1);
+      hxLog(`${caster.name} — ${ability.name}: ${t.name} оглушён на ${rider.turns||1} ход(а)!`, 'special');
+      hxFlashHex(t.col, t.row, 'rgba(243,156,18,0.7)');
+      break;
+    }
+    case 'knockback': {
+      const t = recipient; if(!t) break;
+      const dc = t.col - caster.col, dr = t.row - caster.row;
+      const nc = t.col + Math.sign(dc), nr = t.row + Math.sign(dr);
+      if(nc>=0&&nc<HEX_COLS&&nr>=0&&nr<HEX_ROWS&&!hxs.units.find(u=>u.col===nc&&u.row===nr&&u.hp>0)&&!hxObstAt(nc,nr)) {
+        t.col = nc; t.row = nr;
+        hxLog(`${caster.name} — ${ability.name}: ${t.name} отброшен`, 'special');
+      }
+      break;
+    }
+    case 'pull': {
+      const t = recipient; if(!t) break;
+      const dc = caster.col - t.col, dr = caster.row - t.row;
+      const nc = t.col + Math.sign(dc), nr = t.row + Math.sign(dr);
+      const occupied = hxs.units.find(u=>u.id!==t.id&&u.col===nc&&u.row===nr&&u.hp>0);
+      if(nc>=0&&nc<HEX_COLS&&nr>=0&&nr<HEX_ROWS&&!occupied&&!hxObstAt(nc,nr)) {
+        t.col = nc; t.row = nr;
+        hxLog(`${caster.name} — ${ability.name}: ${t.name} притянут`, 'special');
+      }
+      break;
+    }
+    case 'chain': {
+      const t = recipient; if(!t) break;
+      const chainT = hxs.units.filter(u=>u.team!==caster.team&&u.hp>0&&u.id!==t.id)
+        .sort((a,b)=>hexDist(t.col,t.row,a.col,a.row)-hexDist(t.col,t.row,b.col,b.row))[0];
+      if(chainT) {
+        const cd = hxDealDamage(chainT, rider.value||0, caster.team);
+        hxLog(`${caster.name} — ${ability.name}: ⚡ цепь ${cd}→${chainT.name}`, 'attack');
+        hxFlashHex(chainT.col, chainT.row, 'rgba(162,155,254,0.7)');
+      }
+      break;
+    }
+    case 'ignite': {
+      const t = recipient || primaryTarget; if(!t) break;
+      const igniteRange = (ability.aoe||0) > 0 ? ability.aoe : 0;
+      for(let dc=-igniteRange;dc<=igniteRange;dc++) for(let dr=-igniteRange;dr<=igniteRange;dr++) {
+        const ic=t.col+dc, ir=t.row+dr;
+        if(hexDist(t.col,t.row,ic,ir)>igniteRange) continue;
+        const burnIdx=(hxs.burnable||[]).findIndex(([bc,br])=>bc===ic&&br===ir);
+        if(burnIdx>=0&&!(hxs.fires||[]).some(f=>f.col===ic&&f.row===ir)) {
+          hxs.fires.push({col:ic,row:ir,duration:3});
+          hxLog(`🔥 Трава на (${ic},${ir}) загорелась!`, 'special');
+        }
+      }
+      break;
+    }
+    case 'summon': {
+      const t = recipient || primaryTarget || caster;
+      const unitType = rider.unitType || 'shadow';
+      const def = HEX_UNIT_DEFS[unitType] || HEX_UNIT_DEFS.shadow;
+      const nearRift = hxs.rifts.some(([rc,rr]) => hexDist(caster.col,caster.row,rc,rr) <= 1);
+      const sHp = nearRift ? Math.round(def.hp * 1.3) : def.hp;
+      const newUnit = {
+        id: hxs.units.length, type: unitType,
+        name: def.name, team: caster.team, originalTeam: caster.originalTeam||caster.team,
+        col: t.col, row: t.row,
+        hp: sHp, maxHp: sHp, atk: def.atk, moveRange: def.moveRange, atkRange: def.atkRange,
+        accuracy: def.accuracy, defense: def.defense,
+        statuses: (def.statuses||[]).map(s=>({...s})), shields: [],
+        hasShield: false, moved: false, acted: true, atkDebuff:0, stunnedTurns:0,
+        emoji: def.emoji, abilities: (def.abilities||[]).map(a=>({...a,cooldown:0})),
+      };
+      hxs.units.push(newUnit);
+      hxLog(`${caster.name} — ${ability.name}: призвана ${def.name}${nearRift?' (Разлом +)':''}!`, 'special');
+      break;
+    }
+  }
+}
+
+// Basic attack (fallback for enemies, free strikes, AoO). isAoO=true → free (no acted) and provokes nothing.
+function hexAttack(attacker, target, isAoO) {
+  const isRanged = (attacker.atkRange||1) >= 2;
+  // To-hit roll (dodge matters even on AoO/free strikes)
+  const shim = {range: attacker.atkRange||1, type: isRanged ? 'ranged' : 'melee'};
+  const n = hxCountFlankers(target, attacker.team);
+  const hitChance = hxCalcHitChance(shim, attacker, target, n);
+  if(Math.random() * 100 >= hitChance) {
+    hxLog(`${attacker.name}${isAoO?' (вдогон)':''}: промах по ${target.name}! (${hitChance}%)`, 'damage');
+    hxFlashHex(target.col, target.row, 'rgba(150,150,150,0.5)');
+    if(!isAoO) attacker.acted = true;
+    return;
+  }
+  let raw = Math.max(0, attacker.atk - (attacker.atkDebuff||0));
+  if(isRanged && hxs.heights.some(([hc,hr])=>hc===attacker.col&&hr===attacker.row)
+     && !hxs.heights.some(([hc,hr])=>hc===target.col&&hr===target.row)) raw += 1;
+  const dealt = hxDealDamage(target, raw, attacker.team);
+  hxLog(`${attacker.name}${isAoO?' ⚔ атака возможности':''} атакует ${target.name}: ${dealt} урона (${target.hp}/${target.maxHp})`, 'attack');
+  hxFlashHex(target.col, target.row, 'rgba(231,76,60,0.75)');
+  if(!isAoO) attacker.acted = true;
+  // Warrior counter (allowed even on AoO; counter itself does not chain into AoO)
+  if(target.hp > 0 && target.type === 'warrior' && hexDist(attacker.col,attacker.row,target.col,target.row) === 1) {
+    const counterRaw = Math.max(1, Math.floor(target.atk * 0.5));
+    const counterDmg = hxDealDamage(attacker, counterRaw, target.team);
+    hxLog(`🗡 ${target.name} контратакует: ${counterDmg} урона → ${attacker.name}`, 'special');
+  }
+  hexCheckEnd();
+}
+
+function hexStartPositions(count, col) {
+  const startRow = Math.floor((HEX_ROWS - count) / 2);
+  return Array.from({length: count}, (_, i) => ({col, row: startRow + i}));
+}
+
+// Flash a hex with a color briefly (ability animation)
+// ---- Animation utilities ----
+function hxDelay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function hxAnimateMove(unit, fromCol, fromRow, toCol, toRow) {
+  const svg = document.getElementById('hx-svg');
+  if(!svg || (fromCol===toCol && fromRow===toRow)) return;
+  // Walk hex-by-hex along the real path instead of gliding through walls
+  const waypoints = [[fromCol, fromRow], ...hexPath(fromCol, fromRow, toCol, toRow, unit.id)];
+  // Hide the real unit and redraw the board FIRST — hxRender() wipes svg.innerHTML,
+  // so the moving overlay must be appended AFTER the render or it gets erased.
+  unit._animating = true; hxRender();
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  const circ = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  circ.setAttribute('r', String(HEX_SIZE * 0.58));
+  circ.setAttribute('fill', unit.team==='enemy' ? 'rgba(192,57,43,0.92)' : 'rgba(41,128,185,0.92)');
+  circ.setAttribute('stroke', '#fff3'); circ.setAttribute('stroke-width', '1');
+  const lbl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  lbl.setAttribute('text-anchor', 'middle'); lbl.setAttribute('dominant-baseline', 'central');
+  lbl.setAttribute('font-size', String(Math.round(HEX_SIZE * 0.9)));
+  lbl.textContent = unit.emoji || unit.name.charAt(0);
+  g.appendChild(circ); g.appendChild(lbl); g.style.pointerEvents = 'none';
+  svg.appendChild(g);
+  const p0 = hexToPixel(fromCol, fromRow);
+  g.setAttribute('transform', `translate(${p0.x},${p0.y})`);
+  // Per-hex step duration: shorter when path is long so total time stays snappy
+  const perHex = Math.max(90, Math.min(150, 520 / Math.max(1, waypoints.length - 1)));
+  for(let i = 1; i < waypoints.length; i++) {
+    const a = hexToPixel(waypoints[i-1][0], waypoints[i-1][1]);
+    const b = hexToPixel(waypoints[i][0], waypoints[i][1]);
+    const t0 = performance.now();
+    await new Promise(resolve => {
+      const frame = (now) => {
+        const t = Math.min(1,(now-t0)/perHex), e = t<.5?2*t*t:-1+(4-2*t)*t;
+        g.setAttribute('transform',`translate(${a.x+(b.x-a.x)*e},${a.y+(b.y-a.y)*e})`);
+        t<1 ? requestAnimationFrame(frame) : resolve();
+      };
+      requestAnimationFrame(frame);
+    });
+  }
+  g.remove(); delete unit._animating;
+}
+
+async function hxAnimateProjectile(fromCol, fromRow, toCol, toRow, color) {
+  const svg = document.getElementById('hx-svg');
+  if(!svg) return;
+  const from = hexToPixel(fromCol, fromRow), to = hexToPixel(toCol, toRow);
+  const dur = 175, t0 = performance.now();
+  const circ = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  circ.setAttribute('r','5'); circ.setAttribute('fill', color||'#f1c40f');
+  circ.style.pointerEvents = 'none'; svg.appendChild(circ);
+  await new Promise(resolve => {
+    const frame = (now) => {
+      const t = Math.min(1,(now-t0)/dur);
+      circ.setAttribute('cx',String(from.x+(to.x-from.x)*t));
+      circ.setAttribute('cy',String(from.y+(to.y-from.y)*t));
+      t<1 ? requestAnimationFrame(frame) : resolve();
+    };
+    requestAnimationFrame(frame);
+  });
+  circ.remove();
+}
+
+async function hxAnimateMelee(unit, targetCol, targetRow) {
+  const svg = document.getElementById('hx-svg');
+  if(!svg) return;
+  const from = hexToPixel(unit.col, unit.row), to = hexToPixel(targetCol, targetRow);
+  const mid = {x:from.x+(to.x-from.x)*0.4, y:from.y+(to.y-from.y)*0.4};
+  const dur = 220, t0 = performance.now();
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  const circ = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  circ.setAttribute('r', String(HEX_SIZE * 0.55));
+  circ.setAttribute('fill', unit.team==='enemy' ? 'rgba(192,57,43,0.92)' : 'rgba(41,128,185,0.92)');
+  circ.setAttribute('stroke', '#fff3'); circ.setAttribute('stroke-width', '1');
+  const lbl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  lbl.setAttribute('text-anchor', 'middle'); lbl.setAttribute('dominant-baseline', 'central');
+  lbl.setAttribute('font-size', String(Math.round(HEX_SIZE * 0.9)));
+  lbl.textContent = unit.emoji || unit.name.charAt(0);
+  unit._animating = true; hxRender(); // render board first — hxRender wipes svg, so append overlay after
+  g.appendChild(circ); g.appendChild(lbl); g.style.pointerEvents = 'none'; svg.appendChild(g);
+  await new Promise(resolve => {
+    const frame = (now) => {
+      const el = now-t0;
+      let pos;
+      if(el < dur*.45){const t=el/(dur*.45),e=t<.5?2*t*t:-1+(4-2*t)*t;pos={x:from.x+(mid.x-from.x)*e,y:from.y+(mid.y-from.y)*e};}
+      else{const t=Math.min(1,(el-dur*.45)/(dur*.55));pos={x:mid.x+(from.x-mid.x)*t,y:mid.y+(from.y-mid.y)*t};}
+      g.setAttribute('transform',`translate(${pos.x},${pos.y})`);
+      el<dur ? requestAnimationFrame(frame) : resolve();
+    };
+    requestAnimationFrame(frame);
+  });
+  g.remove(); delete unit._animating;
+}
+
+async function hxMoveUnit(unit, toCol, toRow, forcedMove) {
+  const fromCol=unit.col, fromRow=unit.row;
+  unit.col=toCol; unit.row=toRow; unit.moved=true; unit.movedRecently=true; unit.shields=[]; // moving drops your guard (barriers cleared); harder to hit with ranged until its next turn
+  // --- ATTACK OF OPPORTUNITY: living hostiles adjacent to from-hex (but not to-hex) get a free strike ---
+  if(!forcedMove) {
+    const _aooFoes = hxs.units.filter(p=>p.team!==unit.team&&p.hp>0&&!p.stunnedTurns&&!p._aooUsed
+      &&hexDist(p.col,p.row,fromCol,fromRow)===1&&hexDist(p.col,p.row,toCol,toRow)>1);
+    for(const p of _aooFoes) { if(unit.hp>0){ hexAttack(p, unit, true); p._aooUsed = true; } }
+  }
+  await hxAnimateMove(unit, fromCol, fromRow, toCol, toRow);
+  hxRender();
+}
+
+async function hxEnemyBasicAtk(enemy, target) {
+  const isRanged = enemy.atkRange>1 || ['archer','wizard','elementalist','incenser'].includes(enemy.type);
+  if(isRanged) await hxAnimateProjectile(enemy.col,enemy.row,target.col,target.row,'#3498db');
+  else await hxAnimateMelee(enemy, target.col, target.row);
+  hexAttack(enemy, target);
+  await hxDelay(80);
+}
+
+async function hxEnemyUseAb(enemy, ability, target) {
+  const isRanged = ability.type==='ranged'||ability.type==='magic';
+  if(isRanged && target.col!==undefined) {
+    const colors={pyromancer:'#e74c3c',wizard:'#9b59b6',elementalist:'#e67e22',ranged:'#3498db'};
+    await hxAnimateProjectile(enemy.col,enemy.row,target.col,target.row,colors[ability.school]||'#f1c40f');
+  } else if(ability.type==='melee'&&target.col!==undefined) {
+    await hxAnimateMelee(enemy, target.col, target.row);
+  }
+  hxApplyAbility(enemy, ability, target);
+  await hxDelay(80);
+}
+
+function hxFlashHex(col, row, color) {
+  const svg = document.getElementById('hx-svg');
+  if(!svg) return;
+  const {x,y} = hexToPixel(col, row);
+  const flash = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  flash.setAttribute('cx', x); flash.setAttribute('cy', y); flash.setAttribute('r', '18');
+  flash.setAttribute('fill', color); flash.setAttribute('pointer-events','none');
+  flash.setAttribute('opacity','0.9');
+  svg.appendChild(flash);
+  const anim = document.createElementNS('http://www.w3.org/2000/svg','animate');
+  anim.setAttribute('attributeName','opacity');
+  anim.setAttribute('from','0.9'); anim.setAttribute('to','0');
+  anim.setAttribute('dur','0.45s'); anim.setAttribute('fill','freeze');
+  flash.appendChild(anim);
+  setTimeout(() => { try { svg.removeChild(flash); } catch(e){} }, 500);
+}
+
+function hexCheckEnd() {
+  const enemyStillFighting = hxs.units.some(u => u.originalTeam==='enemy' && u.team==='enemy' && u.hp>0);
+  const playerAlive = hxs.units.some(u => (u.originalTeam==='player' || u.originalTeam==='enemy' && u.team==='player') && u.hp>0);
+  if(!enemyStillFighting) { hexEnd(true); return; }
+  if(!playerAlive) { hexEnd(false); return; }
+
+}
+
+function hexEnd(won) {
+  hxs.ended = true;
+  document.getElementById('hx-end-btn').disabled = true;
+  document.getElementById('hx-skip-btn').disabled = true;
+  const playerUnitsAlive = hxs.units.filter(u=>u.originalTeam==='player'&&u.hp>0).length;
+  const totalPlayer = hxs.units.filter(u=>u.originalTeam==='player').length;
+  const enemies_defeated = hxs.units.filter(u=>u.originalTeam==='enemy'&&(u.hp<=0||u.team==='player')).length;
+  const enemies_total = hxs.units.filter(u=>u.originalTeam==='enemy').length;
+  hxLog(won ? '🏆 Победа! Все враги повержены.' : '💀 Поражение...', 'attack');
+  hxRender();
+  // Visual end-game overlay
+  const svg = document.getElementById('hx-svg');
+  const overlay = document.createElementNS('http://www.w3.org/2000/svg','rect');
+  overlay.setAttribute('x','0'); overlay.setAttribute('y','0');
+  overlay.setAttribute('width','408'); overlay.setAttribute('height','222');
+  overlay.setAttribute('fill', won ? 'rgba(46,213,115,0.25)' : 'rgba(231,76,60,0.25)');
+  svg.appendChild(overlay);
+  const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+  txt.setAttribute('x','204'); txt.setAttribute('y','111');
+  txt.setAttribute('text-anchor','middle'); txt.setAttribute('dominant-baseline','middle');
+  txt.setAttribute('font-size','28'); txt.setAttribute('font-weight','bold');
+  txt.setAttribute('fill', won ? '#2ecc71' : '#e74c3c');
+  txt.textContent = won ? '⚔ ПОБЕДА' : '💀 ПОРАЖЕНИЕ';
+  svg.appendChild(txt);
+  // PASS D: Build FFT result extras if hero mode
+  const _heroUnit = hxs.units.find(u => u.isHero);
+  const _fftExtras = _heroUnit ? {
+    mode: 'fft',
+    hero_name: _heroUnit.name,
+    hero_hp_remaining: Math.max(0, _heroUnit.hp),
+    hero_hp_max: _heroUnit.maxHp,
+    abilities_used: hxs.abilitiesUsed,
+    total_damage_dealt: hxs.totalDamageDealt,
+    total_damage_taken: hxs.totalDamageTaken,
+  } : {};
+  setTimeout(() => sendResultToBot({
+    game:'hex', win:won,
+    outcome: won ? 'Победа' : 'Поражение',
+    turns: hxs.turnNum,
+    player_units_alive: playerUnitsAlive,
+    player_units_total: totalPlayer,
+    enemies_defeated,
+    enemies_total,
+    damage_dealt: hxs.totalDamageDealt,
+    damage_taken: hxs.totalDamageTaken,
+    ..._fftExtras,
+  }), 1200);
+}
+
+// Focus fire: weakest HP% first; tie-break toward low-dodge / already-flanked targets so
+// the new defense layers actually matter (BB-style focus on the easiest kill).
+function hexFindBestTarget(unit, candidates) {
+  if(!candidates.length) return null;
+  const score = t => (t.hp/t.maxHp)
+    + (t.defense||0) * 0.01            // prefer low dodge
+    - (hxCountFlankers(t, unit.team) >= 2 ? 0.15 : 0); // pile onto the surrounded
+  return candidates.slice().sort((a,b) => score(a) - score(b))[0];
+}
+
+// Role-based enemy AI: pick ability based on unit type personality
+function hxPickEnemyAbility(enemy, players, allies) {
+  const abs = enemy.abilities || [];
+  if(!abs.length) return null;
+  const alive = hxs.units.filter(u=>u.hp>0);
+
+  // ---- HEALER role (druid, adept, healer) ----
+  if(['druid','adept','healer'].includes(enemy.type)) {
+    const healAb = abs.find(a=>a.type==='heal'&&a.cooldown===0);
+    if(healAb) {
+      // Find most wounded ally within heal range
+      const wounded = allies.filter(u=>u.hp<u.maxHp*0.5&&u.id!==enemy.id&&hexDist(enemy.col,enemy.row,u.col,u.row)<=healAb.range);
+      if(wounded.length) return {ability:healAb, target:wounded.reduce((a,b)=>a.hp<b.hp?a:b)};
+    }
+    // No heal needed — fall through to damage ability
+  }
+
+  // ---- SUMMONER role (demonologist, necromancer) ----
+  if(['demonologist','necromancer'].includes(enemy.type)) {
+    const summonAb = abs.find(a=>a.effect?.type==='summon'&&a.cooldown===0);
+    if(summonAb) {
+      const summonedTypes = ['shadow','cadaver'];
+      const summoned = alive.filter(u=>summonedTypes.includes(u.type)&&u.team===enemy.team);
+      if(summoned.length < 1) {
+        const occupied = new Set(alive.map(u=>`${u.col},${u.row}`));
+        const obst = new Set([...(hxs.obstacles||[]).map(ob=>`${ob.col},${ob.row}`),...(hxs.waters||[]).map(([c,r])=>`${c},${r}`),...(hxs.deep_waters||[]).map(([c,r])=>`${c},${r}`)]);
+        const freeHex = hexNeighbors(enemy.col,enemy.row).find(([nc,nr])=>!occupied.has(`${nc},${nr}`)&&!obst.has(`${nc},${nr}`));
+        if(freeHex) return {ability:summonAb, target:{isFreeHex:true,col:freeHex[0],row:freeHex[1],id:`free_${freeHex[0]}_${freeHex[1]}`,team:'free',hp:1}};
+      }
+    }
+  }
+
+  // ---- DEBUFFER role (incenser) — AoE smoke to cover 2+ players ----
+  if(enemy.type==='incenser') {
+    const smokeAb = abs.find(a=>a.type==='debuff'&&(a.aoe||0)>0&&a.cooldown===0);
+    if(smokeAb) {
+      // Find best anchor player that puts 2+ players in AoE
+      let bestSmoke = null, bestCount = 0;
+      players.forEach(p=>{
+        if(hexDist(enemy.col,enemy.row,p.col,p.row)<=smokeAb.range) {
+          const covered = players.filter(p2=>hexDist(p.col,p.row,p2.col,p2.row)<=smokeAb.aoe).length;
+          if(covered > bestCount) { bestCount=covered; bestSmoke=p; }
+        }
+      });
+      if(bestSmoke && bestCount >= 2) return {ability:smokeAb, target:bestSmoke};
+      // fallback: any player in range
+      const anyInRange = players.filter(p=>hexDist(enemy.col,enemy.row,p.col,p.row)<=smokeAb.range);
+      if(anyInRange.length) return {ability:smokeAb, target:anyInRange[0]};
+    }
+  }
+
+  // ---- TANK role (warrior, cavalry) — raise Заслон (barrier row) when HP low and no barriers up ----
+  if(['warrior','cavalry'].includes(enemy.type)) {
+    if(enemy.hp < enemy.maxHp*0.6 && (!enemy.shields || enemy.shields.length === 0)) {
+      const wardAb = abs.find(a=>a.effect?.type==='barrier'&&a.cooldown===0);
+      if(wardAb) return {ability:wardAb, target:enemy}; // self-buff (range=0)
+    }
+    // Cavalry knockback if target near edge
+    if(enemy.type==='cavalry') {
+      const knockAb = abs.find(a=>a.effect?.type==='knockback'&&a.cooldown===0);
+      if(knockAb) {
+        const edgeFoes = players.filter(p=>{
+          const dist = hexDist(enemy.col,enemy.row,p.col,p.row);
+          return dist<=knockAb.range&&(p.col<=1||p.col>=HEX_COLS-2||p.row<=0||p.row>=HEX_ROWS-1);
+        });
+        if(edgeFoes.length) return {ability:knockAb, target:edgeFoes[0]};
+      }
+    }
+  }
+
+  // ---- RANGED role (archer, wizard, elementalist, incenser) — prefer max-range targets ----
+  const isRangedType = ['archer','wizard','elementalist','incenser'].includes(enemy.type);
+
+  const abLoSok = (ab, p) => (ab.type!=='ranged'&&ab.type!=='magic') || !hxLoSBlocked(enemy.col,enemy.row,p.col,p.row);
+
+  // Debuff if 2+ players in range (fallback for non-incenser debuffers)
+  const debuffAbs = abs.filter(a=>a.type==='debuff'&&a.cooldown===0);
+  for(const ab of debuffAbs) {
+    const inRange = players.filter(p=>hexDist(enemy.col,enemy.row,p.col,p.row)<=ab.range && abLoSok(ab,p));
+    if(inRange.length >= 2) return {ability:ab, target:inRange[0]};
+  }
+
+  // Best damage ability
+  const dmgAbs = abs.filter(a=>a.cooldown===0&&a.type!=='heal'&&a.type!=='summon'&&(hxAbilityDamage(a,enemy)>0||a.effect?.type==='stun'));
+  if(dmgAbs.length) {
+    const best = dmgAbs.slice().sort((a,b)=>hxAbilityDamage(b,enemy)-hxAbilityDamage(a,enemy))[0];
+    let inRange = players.filter(p=>hexDist(enemy.col,enemy.row,p.col,p.row)<=best.range && abLoSok(best,p));
+    // Ranged units prefer farthest target within range (stay distant)
+    if(isRangedType && inRange.length > 1) {
+      inRange = inRange.slice().sort((a,b)=>hexDist(enemy.col,enemy.row,b.col,b.row)-hexDist(enemy.col,enemy.row,a.col,a.row));
+    }
+    if(inRange.length) return {ability:best, target:hexFindBestTarget(enemy,inRange)||inRange[0]};
+  }
+  return null;
+}
+
+// ---- Enemy Intent Pre-computation ----
+function hexComputeEnemyIntents() {
+  hxs.enemyIntents = {};
+  hxs.units.filter(u=>u.team==='enemy'&&u.hp>0).forEach(enemy=>{
+    const living = hxs.units.filter(u=>u.team==='player'&&u.hp>0);
+    if(!living.length) { hxs.enemyIntents[enemy.id]={action:'idle'}; return; }
+    const allies = hxs.units.filter(u=>u.team==='enemy'&&u.hp>0);
+    const pick = hxPickEnemyAbility(enemy, living, allies);
+    if(pick) {
+      hxs.enemyIntents[enemy.id] = {action:'ability', abilityId:pick.ability.id, targetId:pick.target.id};
+      return;
+    }
+    const attackable = hexAttackable(enemy);
+    const bestTarget = hexFindBestTarget(enemy, attackable);
+    if(bestTarget) {
+      hxs.enemyIntents[enemy.id] = {action:'attack', targetId:bestTarget.id}; return;
+    }
+    const target = hexFindBestTarget(enemy, living);
+    hxs.enemyIntents[enemy.id] = {action:'move', targetId:target?.id};
+  });
+}
+
+// Advance cooldowns for a unit
+function hxTickCooldowns(unit) {
+  (unit.abilities||[]).forEach(a=>{ if(a.cooldown > 0) a.cooldown--; });
+}
+
+// Turn-start reset for a side: barriers (Заслон) last only 1 turn, and evasion-from-moving clears.
+function hxRefreshBlock(team) {
+  hxs.units.filter(u=>u.team===team&&u.hp>0).forEach(u=>{
+    u.shields = []; // barriers expire at the unit's own turn start
+    // forest cover: one weak barrier per turn while the unit stays in a forest hex (granted AFTER the clear)
+    if((hxs.forests||[]).some(([c,r])=>c===u.col&&r===u.row)) u.shields.push(15);
+    u.movedRecently = false; // reset evasion-from-moving at the unit's own turn start (it persisted through the enemy turn)
+  });
+}
+
+// ---- Enemy AI (FFT-style) ----
+async function hexEnemyTurn() {
+  const _turnLabel = document.getElementById('hx-turn-label');
+  _turnLabel.className = 'hx-turn-label enemy-turn';
+  _turnLabel.textContent = 'Ход ' + hxs.turnNum + ' — ход врага...';
+  document.getElementById('hx-end-btn').disabled = true;
+  document.getElementById('hx-skip-btn').disabled = true;
+
+  // Shield-block refresh/decay + AoO flag reset for enemy units at their turn-start
+  hxRefreshBlock('enemy');
+  hxs.units.forEach(u => { u._aooUsed = false; });
+
+  // Archer free strike (ranged unit next to enemy triggers free shot)
+  hxs.units.filter(u=>u.team==='player'&&u.type==='archer'&&u.hp>0&&!u.acted).forEach(archer=>{
+    const adj = hxs.units.filter(e=>e.team==='enemy'&&e.hp>0&&hexDist(archer.col,archer.row,e.col,e.row)===1);
+    if(adj.length > 0) {
+      hxLog(`🏹 ${archer.name} — свободный выстрел!`, 'special');
+      hexAttack(archer, adj[0]);
+      hexCheckEnd(); if(hxs.ended) return;
+    }
+  });
+  if(hxs.ended) return;
+
+  // Necromancer cadaver aura for enemy necromancers
+  hxs.units.filter(u=>u.team==='enemy'&&u.type==='necromancer'&&u.hp>0).forEach(necro=>{
+    hxs.units.filter(u=>u.type==='cadaver'&&u.team==='enemy'&&u.hp>0&&hexDist(necro.col,necro.row,u.col,u.row)===1)
+      .forEach(cad=>{ cad.hp = Math.min(cad.maxHp, cad.hp+2); });
+  });
+
+  const enemies = hxs.units.filter(u=>u.team==='enemy'&&u.hp>0);
+  for(const enemy of enemies) {
+    if(hxs.ended) break;
+    if(enemy.stunnedTurns > 0) {
+      hxLog(`${enemy.name} оглушён — пропускает ход.`, 'info');
+      enemy.stunnedTurns--;
+      hxRender(); hexUpdateInfo();
+      await hxDelay(200);
+      continue;
+    }
+    const players = hxs.units.filter(u=>u.team==='player'&&u.hp>0);
+    if(!players.length) break;
+    const allies = hxs.units.filter(u=>u.team==='enemy'&&u.hp>0);
+    const nearest = hexFindBestTarget(enemy, players) || players[0];
+
+    const pick = !enemy.deepWaterStunned ? hxPickEnemyAbility(enemy, players, allies) : null;
+    if(pick) {
+      if(!enemy.moved) {
+        const reach = hexReachable(enemy);
+        if(reach.length > 0 && hexDist(enemy.col,enemy.row,pick.target.col,pick.target.row) > pick.ability.range) {
+          const spots = reach.filter(([c,r])=>hexDist(c,r,pick.target.col,pick.target.row)<=pick.ability.range);
+          const mv = spots.length ? spots.reduce((a,b)=>hexDist(a[0],a[1],pick.target.col,pick.target.row)<=hexDist(b[0],b[1],pick.target.col,pick.target.row)?a:b) : null;
+          if(mv) await hxMoveUnit(enemy, mv[0], mv[1]);
+        }
+      }
+      if(hexDist(enemy.col,enemy.row,pick.target.col,pick.target.row) <= pick.ability.range) {
+        await hxEnemyUseAb(enemy, pick.ability, pick.target);
+        if(hxs.ended) break;
+        continue;
+      }
+    }
+
+    const inRange = hexDist(enemy.col,enemy.row,nearest.col,nearest.row) <= enemy.atkRange
+      && (enemy.atkRange<=1 || !hxLoSBlocked(enemy.col,enemy.row,nearest.col,nearest.row));
+    const isRangedUnit = ['archer','wizard','elementalist','incenser'].includes(enemy.type);
+    const isSummonerUnit = ['demonologist','necromancer'].includes(enemy.type);
+    const isHealerUnit = ['druid','adept','healer'].includes(enemy.type);
+
+    if(inRange && !enemy.acted && !isRangedUnit && !enemy.deepWaterStunned) {
+      await hxEnemyBasicAtk(enemy, nearest);
+      if(hxs.ended) break;
+    } else if(!enemy.moved) {
+      const reach = hexReachable(enemy);
+
+      if(isHealerUnit && !enemy.acted) {
+        const woundedAllies = allies.filter(a=>a.hp<a.maxHp&&a.id!==enemy.id);
+        if(woundedAllies.length && reach.length) {
+          const healT = woundedAllies.reduce((a,b)=>a.hp<=b.hp?a:b);
+          if(hexDist(enemy.col,enemy.row,healT.col,healT.row) > 1) {
+            const mv = reach.reduce((a,b)=>hexDist(a[0],a[1],healT.col,healT.row)<=hexDist(b[0],b[1],healT.col,healT.row)?a:b);
+            await hxMoveUnit(enemy, mv[0], mv[1]);
+            hxLog(`${enemy.name} движется к раненому союзнику.`, 'info');
+            continue;
+          }
+        }
+      }
+
+      if(isRangedUnit) {
+        const tooClose = players.filter(p=>hexDist(enemy.col,enemy.row,p.col,p.row)<=1);
+        if(tooClose.length && reach.length) {
+          const safeSpot = reach.filter(([c,r])=>players.every(p=>hexDist(c,r,p.col,p.row)>1));
+          if(safeSpot.length) {
+            const retreatTo = safeSpot.reduce((a,b)=>{
+              const dA=players.reduce((m,p)=>Math.min(m,hexDist(a[0],a[1],p.col,p.row)),99);
+              const dB=players.reduce((m,p)=>Math.min(m,hexDist(b[0],b[1],p.col,p.row)),99);
+              return dA>=dB?a:b;
+            });
+            await hxMoveUnit(enemy, retreatTo[0], retreatTo[1]);
+            hxLog(`${enemy.name} отступает, сохраняя дистанцию.`, 'info');
+            const newPick = hxPickEnemyAbility(enemy, players, allies);
+            if(newPick && hexDist(enemy.col,enemy.row,newPick.target.col,newPick.target.row)<=newPick.ability.range) {
+              await hxEnemyUseAb(enemy, newPick.ability, newPick.target);
+              if(hxs.ended) break;
+            } else if(hexDist(enemy.col,enemy.row,nearest.col,nearest.row)<=enemy.atkRange && (enemy.atkRange<=1||!hxLoSBlocked(enemy.col,enemy.row,nearest.col,nearest.row)) && !enemy.acted) {
+              await hxEnemyBasicAtk(enemy, nearest);
+              if(hxs.ended) break;
+            }
+            continue;
+          }
+        }
+        if(!enemy.moved) {
+          const atkSpots = reach.filter(([c,r])=>hexDist(c,r,nearest.col,nearest.row)<=enemy.atkRange && (enemy.atkRange<=1||!hxLoSBlocked(c,r,nearest.col,nearest.row)));
+          if(atkSpots.length) {
+            const safeAtk = atkSpots.filter(([c,r])=>players.every(p=>hexDist(c,r,p.col,p.row)>1));
+            const pool = safeAtk.length ? safeAtk : atkSpots;
+            const best = pool.reduce((a,b)=>{
+              const dA=players.reduce((m,p)=>Math.min(m,hexDist(a[0],a[1],p.col,p.row)),99);
+              const dB=players.reduce((m,p)=>Math.min(m,hexDist(b[0],b[1],p.col,p.row)),99);
+              return dA>=dB?a:b;
+            });
+            await hxMoveUnit(enemy, best[0], best[1]);
+            if(!enemy.acted) {
+              const newPick = hxPickEnemyAbility(enemy, players, allies);
+              if(newPick && hexDist(enemy.col,enemy.row,newPick.target.col,newPick.target.row)<=newPick.ability.range) {
+                await hxEnemyUseAb(enemy, newPick.ability, newPick.target);
+                if(hxs.ended) break;
+              } else { await hxEnemyBasicAtk(enemy, nearest); if(hxs.ended) break; }
+            }
+          } else if(reach.length) {
+            const best = reach.reduce((a,b)=>hexDist(a[0],a[1],nearest.col,nearest.row)<=hexDist(b[0],b[1],nearest.col,nearest.row)?a:b);
+            await hxMoveUnit(enemy, best[0], best[1]);
+            hxLog(`${enemy.name} движется к ${nearest.name}.`, 'info');
+          }
+        }
+        continue;
+      }
+
+      if(isSummonerUnit && !enemy.acted && reach.length) {
+        let summonerTarget = null;
+        if(enemy.type==='necromancer') {
+          const deadPlayers = hxs.units.filter(u=>u.originalTeam==='player'&&u.hp<=0);
+          if(deadPlayers.length) summonerTarget = deadPlayers.reduce((a,b)=>hexDist(enemy.col,enemy.row,a.col,a.row)<=hexDist(enemy.col,enemy.row,b.col,b.row)?a:b);
+        } else if(enemy.type==='demonologist') {
+          if(hxs.rifts.length) { const r=hxs.rifts.reduce((a,b)=>hexDist(enemy.col,enemy.row,a[0],a[1])<=hexDist(enemy.col,enemy.row,b[0],b[1])?a:b); summonerTarget={col:r[0],row:r[1]}; }
+        }
+        if(summonerTarget) {
+          const mv = reach.reduce((a,b)=>hexDist(a[0],a[1],summonerTarget.col,summonerTarget.row)<=hexDist(b[0],b[1],summonerTarget.col,summonerTarget.row)?a:b);
+          await hxMoveUnit(enemy, mv[0], mv[1]);
+          hxLog(`${enemy.name} движется к позиции для призыва.`, 'info');
+          continue;
+        }
+      }
+
+      const atkSpots = reach.filter(([c,r])=>hexDist(c,r,nearest.col,nearest.row)<=enemy.atkRange && (enemy.atkRange<=1||!hxLoSBlocked(c,r,nearest.col,nearest.row)));
+      if(atkSpots.length) {
+        const best = atkSpots.reduce((a,b)=>hexDist(a[0],a[1],nearest.col,nearest.row)<=hexDist(b[0],b[1],nearest.col,nearest.row)?a:b);
+        await hxMoveUnit(enemy, best[0], best[1]);
+        if(!enemy.acted) { await hxEnemyBasicAtk(enemy, nearest); if(hxs.ended) break; }
+      } else if(reach.length) {
+        const best = reach.reduce((a,b)=>hexDist(a[0],a[1],nearest.col,nearest.row)<=hexDist(b[0],b[1],nearest.col,nearest.row)?a:b);
+        await hxMoveUnit(enemy, best[0], best[1]);
+        hxLog(`${enemy.name} движется к ${nearest.name}.`, 'info');
+      }
+    }
+
+    if(isRangedUnit && inRange && !enemy.acted && !enemy.moved && !enemy.deepWaterStunned) {
+      await hxEnemyBasicAtk(enemy, nearest);
+      if(hxs.ended) break;
+    }
+  }
+
+  // Reset for next player turn
+  hxs.units.forEach(u => {
+    u.moved = false; u.acted = false; u.atkDebuff = 0; u.remainingMove = u.moveRange; u.freeMoveDone = false;
+    u._aooUsed = false; // reset attack-of-opportunity flag
+    u.deepWaterStunned = false; // reset deep water stun (re-applied each turn if still in deep water)
+    // Tick buff durations
+    if(u.atkBuffTurns > 0) { u.atkBuffTurns--; if(u.atkBuffTurns <= 0) u.atkBuff = 0; }
+    // Tick ability cooldowns
+    hxTickCooldowns(u);
+  });
+
+  // Shield-block refresh/decay for player units at their turn-start
+  hxRefreshBlock('player');
+
+  // Fire terrain: deal 2 dmg to units standing on it, reduce duration
+  const _expiredFires = [];
+  (hxs.fires||[]).forEach(fire => {
+    const onFire = hxs.units.filter(u=>u.hp>0&&u.col===fire.col&&u.row===fire.row);
+    onFire.forEach(u => {
+      u.hp = Math.max(0, u.hp - 20);
+      hxLog(`🔥 ${u.name} горит! −20 HP`, 'attack');
+      if(u.hp <= 0) hexApplyMorale(u);
+    });
+    fire.duration--;
+    if(fire.duration <= 0) _expiredFires.push(fire);
+  });
+  if(_expiredFires.length) {
+    hxs.fires = hxs.fires.filter(f=>!_expiredFires.includes(f));
+  }
+
+  // Swamp terrain: movement cost only (×2 ОД), no HP damage
+
+  // Deep water: units standing in deep water cannot act this turn
+  const _deepWaterSetTick = new Set((hxs.deep_waters||[]).map(([c,r])=>`${c},${r}`));
+  hxs.units.filter(u=>u.hp>0&&_deepWaterSetTick.has(`${u.col},${u.row}`)).forEach(u=>{
+    u.deepWaterStunned = true;
+    hxLog(`🌊 ${u.name} в глубокой воде — не может атаковать или использовать способности!`, 'info');
+  });
+
+  // Forest cover barriers are granted at each unit's own turn-start inside hxRefreshBlock (after the clear), not here.
+
+  // Necromancer cadaver aura for player necromancers
+  hxs.units.filter(u=>u.team==='player'&&u.type==='necromancer'&&u.hp>0).forEach(necro=>{
+    hxs.units.filter(u=>u.type==='cadaver'&&u.team==='player'&&u.hp>0&&hexDist(necro.col,necro.row,u.col,u.row)===1)
+      .forEach(cad=>{ cad.hp=Math.min(cad.maxHp,cad.hp+2); hxLog(`💀 ${necro.name} поддерживает кадавр (+2 HP)`, 'heal'); });
+  });
+
+  hxs.turnNum++;
+  hxs.turn = 'player';
+  hxs.selected = null;
+  hxs.reachable = [];
+  hxs.attackable = [];
+  hxs.abilityTargets = [];
+  hxs.activeAbilityIdx = null;
+  hxs.mode = 'select';
+  hxs.aoeHover = null;
+  hxs.heroAP = 4; // PASS A: reset hero AP each player turn
+  hxs.confirming = null; // PASS B: reset confirmation
+  // Handle stunned player units — mark them as done so they skip this turn
+  hxs.units.filter(u=>u.team==='player'&&u.hp>0&&(u.stunnedTurns||0)>0).forEach(u=>{
+    hxLog(`${u.name} оглушён — пропускает ход.`, 'info');
+    u.stunnedTurns--;
+    u.moved = true; u.acted = true;
+  });
+  if(!hxs.ended) hxLog(`Ход ${hxs.turnNum}. Твой ход!`, 'info');
+  const _pLabel = document.getElementById('hx-turn-label');
+  _pLabel.className = 'hx-turn-label player-turn';
+  _pLabel.textContent = `Ход ${hxs.turnNum} — твой ход`;
+  document.getElementById('hx-end-btn').disabled = false;
+  document.getElementById('hx-skip-btn').disabled = false;
+  hexComputeEnemyIntents();
+  hxRender();
+  hexUpdateInfo();
+}
+
+// ---- Logging ----
+function hxLog(msg, type) {
+  type = type || 'info';
+  hxs.log = msg;
+  hxs.logs.push('<span class="hx-log-' + type + '">' + msg + '</span>');
+  if(hxs.logs.length > 10) hxs.logs.shift();
+  const el = document.getElementById('hx-log');
+  if(el) {
+    el.innerHTML = hxs.logs.join('<br>');
+    el.scrollTop = el.scrollHeight;
+  }
+}
+
+// ---- Rendering ----
+function hxRender() {
+  const svg = document.getElementById('hx-svg');
+  svg.innerHTML = '';
+  // Dark background rect so highlight colors are consistent regardless of Telegram theme
+  const bgR = document.createElementNS('http://www.w3.org/2000/svg','rect');
+  bgR.setAttribute('x','0'); bgR.setAttribute('y','0'); bgR.setAttribute('width', HEX_SVG_W); bgR.setAttribute('height', HEX_SVG_H);
+  bgR.setAttribute('fill','#1a1a2e'); bgR.setAttribute('pointer-events','none');
+  svg.appendChild(bgR);
+  const reachSet = new Set(hxs.reachable.map(([c,r])=>`${c},${r}`));
+  // abilityTargets can contain units or free hexes
+  const abilityTargetSet = new Set(hxs.abilityTargets.map(t=>`${t.col},${t.row}`));
+  // Active ability info for coloring
+  const selUnit = hxs.selected !== null ? hxs.units.find(u=>u.id===hxs.selected) : null;
+  const activeAbility = (selUnit && hxs.activeAbilityIdx !== null) ? selUnit.abilities?.[hxs.activeAbilityIdx] : null;
+  const isHealAbility = activeAbility?.type === 'heal';
+  const isSummonAbility = activeAbility?.type === 'summon';
+
+  // Compute ability range set (all hexes within range of caster, shown as light tint)
+  const abilityRangeSet = new Set();
+  if(activeAbility && selUnit && hxs.mode === 'ability') {
+    for(let r=0;r<HEX_ROWS;r++) for(let c=0;c<HEX_COLS;c++) {
+      if(hexDist(selUnit.col,selUnit.row,c,r) <= activeAbility.range) abilityRangeSet.add(`${c},${r}`);
+    }
+  }
+
+  // AoE preview: show from confirming hex (after first tap) — no hover re-render on mobile
+  const activeAoe = (activeAbility && (activeAbility.aoe||0) > 0) ? activeAbility.aoe : 0;
+  const aoeCenter = hxs.confirming || null;
+  const aoePreviewSet = new Set();
+  if(activeAoe > 0 && aoeCenter) {
+    for(let r=0;r<HEX_ROWS;r++) for(let c=0;c<HEX_COLS;c++) {
+      if(hexDist(aoeCenter.col, aoeCenter.row, c, r) <= activeAoe) aoePreviewSet.add(`${c},${r}`);
+    }
+  }
+
+  // Draw hexes
+  const riftSet = new Set(hxs.rifts.map(([c,r])=>`${c},${r}`));
+  const forestSet2 = new Set(hxs.forests.map(([c,r])=>`${c},${r}`));
+  const heightSet = new Set(hxs.heights.map(([c,r])=>`${c},${r}`));
+  const bushSet = new Set((hxs.bushes||[]).map(([c,r])=>`${c},${r}`));
+  for(let row=0; row<HEX_ROWS; row++) {
+    for(let col=0; col<HEX_COLS; col++) {
+      const {x,y} = hexToPixel(col,row);
+      const key = `${col},${row}`;
+      let fill = riftSet.has(key) ? 'rgba(138,43,226,0.25)' : forestSet2.has(key) ? 'rgba(34,139,34,0.3)' : heightSet.has(key) ? 'rgba(100,100,100,0.3)' : bushSet.has(key) ? 'rgba(34,80,34,0.3)' : 'rgba(255,255,255,0.04)';
+      let stroke = riftSet.has(key) ? '#9b59b6' : forestSet2.has(key) ? '#27ae60' : heightSet.has(key) ? '#777' : bushSet.has(key) ? '#3d8b40' : '#444';
+      let sw = (riftSet.has(key)||forestSet2.has(key)||heightSet.has(key)||bushSet.has(key)) ? '1.2' : '0.8';
+      if(reachSet.has(key) && hxs.mode === 'move') { fill='rgba(52,152,219,0.28)'; stroke='#3498db'; sw='1.2'; }
+      if(abilityRangeSet.has(key) && hxs.mode === 'ability' && !abilityTargetSet.has(key)) { fill='rgba(255,235,0,0.12)'; stroke='rgba(255,235,0,0.4)'; sw='0.9'; }
+      if(abilityTargetSet.has(key) && hxs.mode === 'ability') {
+        fill = isHealAbility ? 'rgba(0,255,120,0.45)' : isSummonAbility ? 'rgba(180,100,255,0.45)' : 'rgba(255,235,0,0.55)';
+        stroke = isHealAbility ? '#00ff88' : isSummonAbility ? '#cc66ff' : '#ffee00';
+        sw = '2';
+      }
+      // AoE splash preview overlay (over ability target highlight)
+      if(aoePreviewSet.has(key) && hxs.mode === 'ability') {
+        fill = 'rgba(255,140,0,0.5)';
+        stroke = '#ff9900'; sw = '2';
+      }
+      const poly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+      poly.setAttribute('points', hexPoints(x,y));
+      poly.setAttribute('fill', fill);
+      poly.setAttribute('stroke', stroke);
+      poly.setAttribute('stroke-width', sw);
+      poly.setAttribute('style', 'pointer-events:all;cursor:pointer;');
+      poly.addEventListener('click', () => hxClickHex(col,row));
+      svg.appendChild(poly);
+      // ZoC marker: reachable hex adjacent to an enemy = "движение кончается здесь / уход провоцирует"
+      if(reachSet.has(key) && hxs.mode === 'move') {
+        const _selU = hxs.selected !== null ? hxs.units.find(u=>u.id===hxs.selected) : null;
+        if(_selU && hxs.units.some(e=>e.team!==_selU.team&&e.hp>0&&hexDist(e.col,e.row,col,row)===1)) {
+          const zoc = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+          zoc.setAttribute('points', hexPoints(x,y));
+          zoc.setAttribute('fill','none'); zoc.setAttribute('stroke','#e67e22');
+          zoc.setAttribute('stroke-width','2'); zoc.setAttribute('stroke-dasharray','3,2');
+          zoc.setAttribute('pointer-events','none');
+          svg.appendChild(zoc);
+        }
+      }
+      // Terrain labels
+      if(riftSet.has(key)) {
+        const riftLbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+        riftLbl.setAttribute('x', x); riftLbl.setAttribute('y', y+1);
+        riftLbl.setAttribute('text-anchor','middle'); riftLbl.setAttribute('dominant-baseline','middle');
+        riftLbl.setAttribute('font-size','10'); riftLbl.setAttribute('fill','rgba(155,89,182,0.7)');
+        riftLbl.setAttribute('pointer-events','none');
+        riftLbl.textContent = '⌖';
+        svg.appendChild(riftLbl);
+      }
+      if(forestSet2.has(key)) {
+        const fLbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+        fLbl.setAttribute('x', x); fLbl.setAttribute('y', y+1);
+        fLbl.setAttribute('text-anchor','middle'); fLbl.setAttribute('dominant-baseline','middle');
+        fLbl.setAttribute('font-size','10'); fLbl.setAttribute('fill','rgba(39,174,96,0.8)');
+        fLbl.setAttribute('pointer-events','none');
+        fLbl.textContent = '🌳';
+        svg.appendChild(fLbl);
+      }
+      if(heightSet.has(key)) {
+        const hLbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+        hLbl.setAttribute('x', x); hLbl.setAttribute('y', y+1);
+        hLbl.setAttribute('text-anchor','middle'); hLbl.setAttribute('dominant-baseline','middle');
+        hLbl.setAttribute('font-size','10'); hLbl.setAttribute('fill','rgba(150,150,150,0.9)');
+        hLbl.setAttribute('pointer-events','none');
+        hLbl.textContent = '🗿';
+        svg.appendChild(hLbl);
+      }
+      if(bushSet.has(key)) {
+        const bLbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+        bLbl.setAttribute('x', x); bLbl.setAttribute('y', y+1);
+        bLbl.setAttribute('text-anchor','middle'); bLbl.setAttribute('dominant-baseline','middle');
+        bLbl.setAttribute('font-size','10'); bLbl.setAttribute('fill','rgba(61,139,64,0.9)');
+        bLbl.setAttribute('pointer-events','none');
+        bLbl.textContent = '🌿';
+        svg.appendChild(bLbl);
+      }
+    }
+  }
+
+  // Draw units into a dedicated layer (ug) appended AFTER all terrain/obstacles,
+  // so character icons + HP bars are always on the very top layer and never shaded.
+  const ug = document.createElementNS('http://www.w3.org/2000/svg','g');
+  hxs.units.forEach(unit => {
+    if(unit._animating) return; // skip — animation overlay draws this unit
+    const {x,y} = hexToPixel(unit.col, unit.row);
+
+    // Dead units shown as corpses (💀), grey, non-interactive
+    if(unit.dead || unit.hp <= 0) {
+      if(unit.team !== 'enemy') return; // only show enemy corpses
+      const corpseCircle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      corpseCircle.setAttribute('cx', x); corpseCircle.setAttribute('cy', y); corpseCircle.setAttribute('r', '12');
+      corpseCircle.setAttribute('fill', 'rgba(60,60,60,0.5)');
+      corpseCircle.setAttribute('stroke', '#555'); corpseCircle.setAttribute('stroke-width', '1');
+      corpseCircle.setAttribute('pointer-events','none');
+      ug.appendChild(corpseCircle);
+      const corpseLbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+      corpseLbl.setAttribute('x', x); corpseLbl.setAttribute('y', y+1);
+      corpseLbl.setAttribute('text-anchor','middle'); corpseLbl.setAttribute('dominant-baseline','middle');
+      corpseLbl.setAttribute('font-size','11'); corpseLbl.setAttribute('pointer-events','none');
+      corpseLbl.textContent = '💀';
+      ug.appendChild(corpseLbl);
+      return;
+    }
+
+    const isSelected = unit.id === hxs.selected;
+    const isDone = unit.moved && unit.acted;
+    const isPlayer = unit.team === 'player';
+
+    // Unit circle
+    const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    circle.setAttribute('cx', x); circle.setAttribute('cy', y); circle.setAttribute('r', 15);
+    circle.setAttribute('fill', isPlayer ? (isDone ? '#1a5276' : '#2980b9') : (isDone ? '#7b241c' : '#c0392b'));
+    circle.setAttribute('stroke', isSelected ? '#f1c40f' : (isPlayer ? '#3498db' : '#e74c3c'));
+    circle.setAttribute('stroke-width', isSelected ? '3' : '1.5');
+    circle.setAttribute('opacity', isDone ? '0.6' : '1');
+    circle.setAttribute('style', 'pointer-events:all;cursor:pointer;');
+    circle.addEventListener('click', () => hxClickUnit(unit.id));
+    ug.appendChild(circle);
+
+    // Flank/encirclement indicator: red ring when surrounded by 2+ hostiles (active team)
+    const _flankTeam = unit.team === 'player' ? 'enemy' : 'player';
+    if(hxCountFlankers(unit, _flankTeam) >= 2) {
+      const fr = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      fr.setAttribute('cx', x); fr.setAttribute('cy', y); fr.setAttribute('r', 17);
+      fr.setAttribute('fill','none'); fr.setAttribute('stroke','#e74c3c');
+      fr.setAttribute('stroke-width','2'); fr.setAttribute('stroke-dasharray','3,2');
+      fr.setAttribute('pointer-events','none');
+      ug.appendChild(fr);
+    }
+
+    // Emoji/letter label
+    const label = document.createElementNS('http://www.w3.org/2000/svg','text');
+    label.setAttribute('x', x); label.setAttribute('y', y+1);
+    label.setAttribute('text-anchor','middle'); label.setAttribute('dominant-baseline','middle');
+    label.setAttribute('font-size','11'); label.setAttribute('fill','#fff');
+    label.setAttribute('pointer-events','none');
+    label.textContent = unit.name.charAt(0);
+    ug.appendChild(label);
+
+    // HP bar
+    const barW = 26, barH = 4;
+    const bx = x - barW/2, by = y + 17;
+    const bgRect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    bgRect.setAttribute('x',bx); bgRect.setAttribute('y',by);
+    bgRect.setAttribute('width',barW); bgRect.setAttribute('height',barH);
+    bgRect.setAttribute('rx','2'); bgRect.setAttribute('fill','rgba(0,0,0,0.5)');
+    bgRect.setAttribute('pointer-events','none');
+    ug.appendChild(bgRect);
+    const hpFill = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    const hpPct = Math.max(0, unit.hp/unit.maxHp);
+    hpFill.setAttribute('x',bx); hpFill.setAttribute('y',by);
+    hpFill.setAttribute('width', (barW*hpPct).toFixed(1)); hpFill.setAttribute('height',barH);
+    hpFill.setAttribute('rx','2');
+    hpFill.setAttribute('fill', hpPct>0.5 ? '#2ecc71' : hpPct>0.25 ? '#f39c12' : '#e74c3c');
+    hpFill.setAttribute('pointer-events','none');
+    ug.appendChild(hpFill);
+
+    // Terrain badge — small glyph in the hex corner so you can tell what the unit stands on
+    const _terr = hxTerrainEmojiAt(unit.col, unit.row);
+    if(_terr) {
+      const tb = document.createElementNS('http://www.w3.org/2000/svg','text');
+      tb.setAttribute('x', x-12); tb.setAttribute('y', y-10);
+      tb.setAttribute('font-size','9'); tb.setAttribute('text-anchor','middle');
+      tb.setAttribute('dominant-baseline','middle'); tb.setAttribute('pointer-events','none');
+      tb.textContent = _terr;
+      ug.appendChild(tb);
+    }
+
+    // Status effect icons — armor (degrading), block (renewable), dodge tag
+    let statusOffset = 0;
+    const _addTag = (txt, fill) => {
+      const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+      t.setAttribute('x', x+12+statusOffset); t.setAttribute('y', y-14);
+      t.setAttribute('font-size','8'); t.setAttribute('fill', fill);
+      t.setAttribute('text-anchor','middle'); t.setAttribute('dominant-baseline','middle');
+      t.setAttribute('pointer-events','none');
+      t.textContent = txt;
+      ug.appendChild(t);
+      statusOffset += 13;
+    };
+    const _armorN = Array.isArray(unit.statuses) ? unit.statuses.filter(s=>(s.type||'ARMOR')==='ARMOR').length : 0;
+    if(_armorN > 0) _addTag(`🛡×${_armorN}`, '#bdc3c7');
+    if((unit.defense||0) > 0) _addTag(`🌀${unit.defense}`, '#a29bfe');
+    if(unit.shields?.length) _addTag(`🛡${unit.shields.length}`, '#74b9ff');
+    if(unit.atkDebuff > 0) {
+      const deb = document.createElementNS('http://www.w3.org/2000/svg','text');
+      deb.setAttribute('x', x+12+statusOffset); deb.setAttribute('y', y-14);
+      deb.setAttribute('font-size','9'); deb.setAttribute('fill','#9b59b6');
+      deb.setAttribute('text-anchor','middle'); deb.setAttribute('dominant-baseline','middle');
+      deb.setAttribute('pointer-events','none');
+      deb.textContent = '💨';
+      ug.appendChild(deb);
+      statusOffset += 11;
+    }
+    // (aimBonus removed — old ranged system replaced by FFT abilities)
+
+    // Animated selection ring for selected unit
+    if(unit.id === hxs.selected) {
+      const ring = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      ring.setAttribute('cx', x); ring.setAttribute('cy', y); ring.setAttribute('r', '20');
+      ring.setAttribute('fill','none'); ring.setAttribute('stroke','#f39c12');
+      ring.setAttribute('stroke-width','2.5'); ring.setAttribute('opacity','0.9');
+      ring.setAttribute('stroke-dasharray','8,4'); ring.setAttribute('pointer-events','none');
+      const anim = document.createElementNS('http://www.w3.org/2000/svg','animate');
+      anim.setAttribute('attributeName','stroke-dashoffset');
+      anim.setAttribute('from','0'); anim.setAttribute('to','24');
+      anim.setAttribute('dur','1s'); anim.setAttribute('repeatCount','indefinite');
+      ring.appendChild(anim);
+      ug.appendChild(ring);
+    }
+
+    // Done-turn checkmark
+    if(unit.team==='player' && unit.moved && unit.acted) {
+      const check = document.createElementNS('http://www.w3.org/2000/svg','text');
+      check.setAttribute('x', x+14); check.setAttribute('y', y-14);
+      check.setAttribute('font-size','11'); check.setAttribute('fill','#2ecc71');
+      check.setAttribute('text-anchor','middle'); check.setAttribute('pointer-events','none');
+      check.textContent = '✓';
+      ug.appendChild(check);
+    }
+
+    // Larger invisible tap target (mobile UX)
+    const tapArea = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    tapArea.setAttribute('cx', x); tapArea.setAttribute('cy', y); tapArea.setAttribute('r', '22');
+    tapArea.setAttribute('fill', 'transparent');
+    tapArea.setAttribute('style', 'pointer-events:all; cursor:pointer;');
+    tapArea.addEventListener('click', () => hxClickUnit(unit.id));
+    ug.appendChild(tapArea);
+  });
+
+  // PASS C: Draw confirmation ring on hxs.confirming hex
+  const _skipBtn = document.getElementById('hx-skip-btn');
+  if(hxs.confirming) {
+    const {x:cx2, y:cy2} = hexToPixel(hxs.confirming.col, hxs.confirming.row);
+    const ring2 = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    ring2.setAttribute('cx', cx2); ring2.setAttribute('cy', cy2);
+    ring2.setAttribute('r', '17');
+    ring2.setAttribute('fill', 'none');
+    ring2.setAttribute('stroke', '#ff4444');
+    ring2.setAttribute('stroke-width', '2.5');
+    ring2.setAttribute('stroke-dasharray', '6,3');
+    ring2.setAttribute('pointer-events','none');
+    const anim2 = document.createElementNS('http://www.w3.org/2000/svg','animateTransform');
+    anim2.setAttribute('attributeName','transform');
+    anim2.setAttribute('type','rotate');
+    anim2.setAttribute('from',`0 ${cx2} ${cy2}`);
+    anim2.setAttribute('to',`360 ${cx2} ${cy2}`);
+    anim2.setAttribute('dur','1.5s');
+    anim2.setAttribute('repeatCount','indefinite');
+    ring2.appendChild(anim2);
+    svg.appendChild(ring2);
+    // Repurpose skip button as "Apply" button
+    if(_skipBtn) {
+      _skipBtn.textContent = '✓ Применить';
+      _skipBtn.disabled = false;
+      _skipBtn.onclick = () => hxConfirmApplyBtn();
+    }
+  } else {
+    // Restore skip button if it was overridden
+    if(_skipBtn && _skipBtn.textContent === '✓ Применить') {
+      _skipBtn.textContent = 'Пропустить';
+      _skipBtn.onclick = () => hxSkipUnit();
+    }
+  }
+
+  // Draw obstacle hexes (with HP bar)
+  (hxs.obstacles||[]).forEach(ob => {
+    const {x,y} = hexToPixel(ob.col, ob.row);
+    const isWall = ob.type === 'wall';
+    const hpPct = ob.hp / ob.maxHp;
+    const fillColor = isWall ? `rgba(80,80,80,${0.5+0.3*hpPct})` : `rgba(120,80,40,${0.4+0.3*hpPct})`;
+    const strokeColor = isWall ? '#666' : '#8b5e3c';
+    const obstPoly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    obstPoly.setAttribute('points', hexPoints(x,y));
+    obstPoly.setAttribute('fill', fillColor);
+    obstPoly.setAttribute('stroke', strokeColor);
+    obstPoly.setAttribute('stroke-width', '1.5');
+    obstPoly.setAttribute('pointer-events','none');
+    svg.appendChild(obstPoly);
+    const obstLbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+    obstLbl.setAttribute('x', x); obstLbl.setAttribute('y', y+5);
+    obstLbl.setAttribute('text-anchor','middle'); obstLbl.setAttribute('font-size','16');
+    obstLbl.setAttribute('pointer-events','none');
+    obstLbl.textContent = isWall ? '🧱' : '🪨';
+    svg.appendChild(obstLbl);
+    // HP bar (only if damaged)
+    if(ob.hp < ob.maxHp) {
+      const barW = HEX_SIZE * 1.2, barH = 4;
+      const barX = x - barW/2, barY = y + HEX_SIZE*0.55;
+      const bg = document.createElementNS('http://www.w3.org/2000/svg','rect');
+      bg.setAttribute('x', barX); bg.setAttribute('y', barY);
+      bg.setAttribute('width', barW); bg.setAttribute('height', barH);
+      bg.setAttribute('fill','#333'); bg.setAttribute('rx','2'); bg.setAttribute('pointer-events','none');
+      svg.appendChild(bg);
+      const fg = document.createElementNS('http://www.w3.org/2000/svg','rect');
+      fg.setAttribute('x', barX); fg.setAttribute('y', barY);
+      fg.setAttribute('width', barW * hpPct); fg.setAttribute('height', barH);
+      fg.setAttribute('fill', hpPct > 0.5 ? '#e67e22' : '#e74c3c'); fg.setAttribute('rx','2'); fg.setAttribute('pointer-events','none');
+      svg.appendChild(fg);
+    }
+  });
+
+  // Draw burnable terrain (light green, passable grass)
+  (hxs.burnable||[]).filter(([bc,br])=>!(hxs.fires||[]).some(f=>f.col===bc&&f.row===br)).forEach(([bc,br]) => {
+    const {x,y} = hexToPixel(bc,br);
+    const p = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    p.setAttribute('points', hexPoints(x,y)); p.setAttribute('fill','rgba(100,180,60,0.18)');
+    p.setAttribute('stroke','rgba(100,180,60,0.3)'); p.setAttribute('stroke-width','0.5'); p.setAttribute('pointer-events','none');
+    svg.appendChild(p);
+    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x',x); t.setAttribute('y',y+6); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('pointer-events','none');
+    t.textContent='🌾'; svg.appendChild(t);
+  });
+
+  // Draw swamp terrain (dark brown, passable but slow + tick dmg)
+  (hxs.swamps||[]).forEach(([sc,sr]) => {
+    const {x,y} = hexToPixel(sc,sr);
+    const p = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    p.setAttribute('points', hexPoints(x,y)); p.setAttribute('fill','rgba(90,60,20,0.4)');
+    p.setAttribute('stroke','#6b4226'); p.setAttribute('stroke-width','1'); p.setAttribute('pointer-events','none');
+    svg.appendChild(p);
+    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x',x); t.setAttribute('y',y+6); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','13'); t.setAttribute('pointer-events','none');
+    t.textContent='🟫'; svg.appendChild(t);
+  });
+
+  // Draw water terrain (blue, impassable)
+  (hxs.waters||[]).forEach(([wc,wr]) => {
+    const {x,y} = hexToPixel(wc,wr);
+    const p = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    p.setAttribute('points', hexPoints(x,y)); p.setAttribute('fill','rgba(30,100,200,0.5)');
+    p.setAttribute('stroke','#1a6cbd'); p.setAttribute('stroke-width','1.5'); p.setAttribute('pointer-events','none');
+    svg.appendChild(p);
+    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x',x); t.setAttribute('y',y+6); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','13'); t.setAttribute('pointer-events','none');
+    t.textContent='💧'; svg.appendChild(t);
+  });
+
+  // Draw shallow water terrain (light blue, passable but costs 2 AP to enter)
+  (hxs.shallow_waters||[]).forEach(([wc,wr]) => {
+    const {x,y} = hexToPixel(wc,wr);
+    const p = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    p.setAttribute('points', hexPoints(x,y)); p.setAttribute('fill','rgba(100,180,255,0.35)');
+    p.setAttribute('stroke','#5bc0de'); p.setAttribute('stroke-width','1.2'); p.setAttribute('pointer-events','none');
+    svg.appendChild(p);
+    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x',x); t.setAttribute('y',y+6); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('pointer-events','none');
+    t.textContent='〰'; svg.appendChild(t);
+  });
+
+  // Draw deep water terrain (dark blue, passable but no attack/abilities this turn)
+  (hxs.deep_waters||[]).forEach(([wc,wr]) => {
+    const {x,y} = hexToPixel(wc,wr);
+    const p = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    p.setAttribute('points', hexPoints(x,y)); p.setAttribute('fill','rgba(10,50,160,0.6)');
+    p.setAttribute('stroke','#0a3296'); p.setAttribute('stroke-width','1.5'); p.setAttribute('pointer-events','none');
+    svg.appendChild(p);
+    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x',x); t.setAttribute('y',y+6); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('pointer-events','none');
+    t.textContent='🌊'; svg.appendChild(t);
+  });
+
+  // Draw fire terrain (orange-red, deals 2 dmg/turn, fades by duration)
+  (hxs.fires||[]).forEach(fire => {
+    const {x,y} = hexToPixel(fire.col,fire.row);
+    const alpha = 0.3 + 0.2*(fire.duration/3);
+    const p = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    p.setAttribute('points', hexPoints(x,y)); p.setAttribute('fill',`rgba(220,80,0,${alpha})`);
+    p.setAttribute('stroke','#ff6600'); p.setAttribute('stroke-width','1.5'); p.setAttribute('pointer-events','none');
+    svg.appendChild(p);
+    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x',x); t.setAttribute('y',y+6); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','13'); t.setAttribute('pointer-events','none');
+    t.textContent='🔥'; svg.appendChild(t);
+  });
+
+  // Unit layer on top of all terrain/obstacles so icons + HP are never shaded
+  svg.appendChild(ug);
+
+  // Draw enemy intent indicators — only during player turn
+  if(hxs.turn === 'player' && hxs.enemyIntents) {
+    hxs.units.filter(u=>u.team==='enemy'&&u.hp>0).forEach(enemy=>{
+      const intent = hxs.enemyIntents[enemy.id];
+      if(!intent || intent.action === 'idle') return;
+      const {x:cx, y:cy} = hexToPixel(enemy.col, enemy.row);
+      // Show ability icon if available, else default
+      let intentEmoji = intent.action==='attack' ? '⚔' : intent.action==='move' ? '→' : '·';
+      if(intent.action === 'ability' && intent.abilityId) {
+        const ab = (enemy.abilities||[]).find(a=>a.id===intent.abilityId);
+        intentEmoji = ab?.icon?.charAt(0) || ab?.icon || '✨';
+      }
+      // Draw dashed attack line from enemy to intended target
+      if((intent.action==='attack'||intent.action==='ability') && intent.targetId !== undefined) {
+        const target = hxs.units.find(u=>u.id===intent.targetId);
+        if(target) {
+          const {x:tx, y:ty} = hexToPixel(target.col, target.row);
+          const intentLine = document.createElementNS('http://www.w3.org/2000/svg','line');
+          intentLine.setAttribute('x1', cx); intentLine.setAttribute('y1', cy);
+          intentLine.setAttribute('x2', tx); intentLine.setAttribute('y2', ty);
+          intentLine.setAttribute('stroke', 'rgba(231,76,60,0.3)');
+          intentLine.setAttribute('stroke-width', '2');
+          intentLine.setAttribute('stroke-dasharray', '4,3');
+          intentLine.setAttribute('pointer-events','none');
+          svg.appendChild(intentLine);
+        }
+      }
+      // Intent icon near the unit
+      const intentTxt = document.createElementNS('http://www.w3.org/2000/svg','text');
+      intentTxt.setAttribute('x', cx+16); intentTxt.setAttribute('y', cy-16);
+      intentTxt.setAttribute('font-size','12'); intentTxt.setAttribute('text-anchor','middle');
+      intentTxt.setAttribute('pointer-events','none');
+      intentTxt.textContent = intentEmoji;
+      svg.appendChild(intentTxt);
+    });
+  }
+
+  // Rift glow indicator (for units ON a rift)
+  hxs.rifts.forEach(([rc,rr]) => {
+    const onRift = hxs.units.find(u=>u.hp>0&&u.col===rc&&u.row===rr&&u.type==='shadow');
+    if(onRift) {
+      const {x,y} = hexToPixel(rc,rr);
+      const glw = document.createElementNS('http://www.w3.org/2000/svg','text');
+      glw.setAttribute('x', x-13); glw.setAttribute('y', y-14);
+      glw.setAttribute('font-size','8'); glw.setAttribute('fill','#9b59b6');
+      glw.setAttribute('text-anchor','middle'); glw.setAttribute('dominant-baseline','middle');
+      glw.setAttribute('pointer-events','none');
+      glw.textContent = '⚡';
+      svg.appendChild(glw);
+    }
+  });
+
+  // Update log (hxLog handles this, but sync on render if needed)
+  const logEl = document.getElementById('hx-log');
+  if(logEl && hxs.logs.length > 0) logEl.innerHTML = hxs.logs.join('<br>');
+  else if(logEl && hxs.logs.length === 0) logEl.innerHTML = '<span class="hx-log-info">Выбери юнит.</span>';
+
+  // Update battle summary — emoji per unit, faded if dead
+  const sumEl = document.getElementById('hx-summary');
+  if(sumEl) {
+    const playerEmojis = hxs.units.filter(u=>u.originalTeam==='player').map(u=>`<span style="opacity:${u.hp>0?1:0.3}">${u.emoji||'?'}</span>`).join('');
+    const enemyEmojis = hxs.units.filter(u=>u.originalTeam==='enemy').map(u=>`<span style="opacity:${u.hp>0?1:0.3}">${u.emoji||'?'}</span>`).join('');
+    sumEl.innerHTML = playerEmojis + ' <span style="opacity:0.4">vs</span> ' + enemyEmojis;
+  }
+}
+
+// ---- Ability Tooltip (long press >400ms) ----
+let _hxTooltipTimer = null;
+function hxShowAbilityTooltip(btn, ab) {
+  const tip = document.getElementById('hx-ability-tooltip');
+  if(!tip) return;
+  const schoolNames = {sword:'Меч',ranged:'Дальний бой',shield:'Щит',unarmed:'Рукопашный',polearm:'Древковое',chain:'Хлыст',pyromancer:'Пиромант',wizard:'Волшебник',elementalist:'Элементалист',summon:'Призыв',healer:'Целитель',incenser:'Инквизитор',adept:'Адепт',demon:'Демонолог'};
+  const typeNames = {melee:'Ближний бой',ranged:'Дальний бой',magic:'Магия',heal:'Лечение',summon:'Призыв',debuff:'Дебафф'};
+  const magicTier = (ab.maxCooldown||0) >= 3 ? 'Сильное мерцание' : 'Слабое мерцание';
+  const schoolLabel = ab.school ? (schoolNames[ab.school]||ab.school) : null;
+  const typeLabel = ab.type==='magic' ? `${schoolLabel||'Магия'} — ${magicTier}` : (schoolLabel||(typeNames[ab.type]||ab.type));
+  let html = `<div class="tip-name">${ab.icon||''} ${ab.name}</div>`;
+  const dmgVal = ab.damage && ab.damage !== 0 ? (typeof ab.damage==='string'?ab.damage:ab.damage) : 0;
+  if(dmgVal && dmgVal !== 0) html += `<div class="tip-row">Урон: ${dmgVal}</div>`;
+  html += `<div class="tip-row">Тип: ${typeLabel}</div>`;
+  if(ab.range > 0) html += `<div class="tip-row">Дальность: ${ab.range} гекс.</div>`;
+  if((ab.aoe||0) > 0) html += `<div class="tip-row">Радиус AoE: ${ab.aoe}</div>`;
+  if(Array.isArray(ab.effects)) {
+    // Composable effects: list each effect line.
+    const effLabels = {damage:'Урон',stun:'Оглушение',heal:'Лечение',lifesteal:'Жизнекража',knockback:'Отбрасывание',barrier:'Заслон',buff:'Усиление',summon:'Призыв',chain:'Цепь',ignite:'Поджог',debuff:'Ослабление',pull:'Притягивание',gain_ap:'+Очко действия'};
+    const condLabels = {always:'',onHit:'при попадании',targetHpBelow:'если HP цели <',targetHpAbove:'если HP цели >',selfHpBelow:'если своё HP <',selfHpAbove:'если своё HP >',isFlanked:'если цель в окружении',distGte:'если дистанция ≥',distLte:'если дистанция ≤',targetInCover:'если цель в укрытии',targetType:'если тип цели ='};
+    for(const e of ab.effects) {
+      let line = effLabels[e.type] || e.type;
+      if(e.value != null && e.type!=='knockback' && e.type!=='pull') line += `: ${e.value}`;
+      if(e.turns != null) line += ` (${e.turns} х.)`;
+      if(e.chance != null && e.chance < 100) line += ` (${e.chance}%)`;
+      if(e.condition) {
+        const cl = condLabels[e.condition.type];
+        if(cl != null && cl !== '') line += ` — ${cl}${e.condition.value!=null?' '+e.condition.value:''}`;
+      }
+      html += `<div class="tip-effect">${line}</div>`;
+    }
+  } else {
+    if(ab.effect?.type==='stun') html += `<div class="tip-effect">Эффект: Оглушение ${ab.effect.turns} хода</div>`;
+    if(ab.effect?.type==='heal') html += `<div class="tip-effect">Лечит: ${ab.effect.value} HP</div>`;
+    if(ab.effect?.type==='lifesteal') html += `<div class="tip-effect">Жизнекража: ${ab.effect.value} HP</div>`;
+    if(ab.effect?.type==='chain') html += `<div class="tip-effect">Цепная молния: ${ab.effect.value} урон</div>`;
+    if(ab.effect?.type==='knockback') html += `<div class="tip-effect">Отбрасывание</div>`;
+    if(ab.effect?.type==='barrier') html += `<div class="tip-effect">Заслон: ${ab.effect.count||1}×${ab.effect.value}</div>`;
+  }
+  html += `<div class="tip-row">Стоимость: ${hxAbilityAP(ab)} ОД</div>`;
+  if(ab.type==='ranged' || ab.type==='magic') {
+    html += `<div class="tip-row">Точность: вблизи ${hxAbilityAccAt(ab,1)}% / на дистанции ${hxAbilityAccAt(ab,ab.range)}%</div>`;
+  }
+  if((ab.maxCooldown||0) > 0) {
+    html += ab.cooldown > 0
+      ? `<div class="tip-cd-wait">Кулдаун: ${ab.maxCooldown} хода (ост. ${ab.cooldown})</div>`
+      : `<div class="tip-cd-ready">Доступна</div>`;
+  } else {
+    html += `<div class="tip-cd-ready">Нет кулдауна</div>`;
+  }
+  tip.innerHTML = html;
+  const rect = btn.getBoundingClientRect();
+  tip.style.display = 'block';
+  const tipH = 80;
+  tip.style.left = Math.max(4, Math.min(rect.left, window.innerWidth - 190)) + 'px';
+  tip.style.top = Math.max(4, rect.top - tipH - 6) + 'px';
+}
+function hxHideAbilityTooltip() {
+  const tip = document.getElementById('hx-ability-tooltip');
+  if(tip) tip.style.display = 'none';
+  if(_hxTooltipTimer) { clearTimeout(_hxTooltipTimer); _hxTooltipTimer = null; }
+}
+function hxAttachAbilityTooltip(btn, ab) {
+  btn.addEventListener('touchstart', (e) => {
+    _hxTooltipTimer = setTimeout(() => hxShowAbilityTooltip(btn, ab), 400);
+  }, {passive:true});
+  btn.addEventListener('touchend', hxHideAbilityTooltip, {passive:true});
+  btn.addEventListener('touchmove', hxHideAbilityTooltip, {passive:true});
+  btn.addEventListener('mousedown', () => { _hxTooltipTimer = setTimeout(() => hxShowAbilityTooltip(btn, ab), 400); });
+  btn.addEventListener('mouseup', hxHideAbilityTooltip);
+  btn.addEventListener('mouseleave', hxHideAbilityTooltip);
+}
+
+// ---- Unit Status Bar (active cooldowns) ----
+function hxUpdateStatusBar(unit) {
+  const el = document.getElementById('hx-unit-status-bar');
+  if(!el) return;
+  if(!unit || unit.hp <= 0 || unit.team !== 'player') { el.textContent = ''; return; }
+  const cdParts = (unit.abilities||[]).map(ab=>{
+    if((ab.maxCooldown||0) === 0) return null;
+    return ab.cooldown > 0 ? `${ab.icon||ab.name} cd:${ab.cooldown}` : `${ab.icon||ab.name} cd:0`;
+  }).filter(Boolean);
+  // PASS A: show AP for hero
+  let apLine = '';
+  if(unit.isHero) {
+    const ap = hxs.heroAP || 0;
+    const maxAp = hxs.heroMaxAP || 4;
+    apLine = `  AP: ${ap}/${maxAp}`;
+  }
+  el.textContent = `${unit.emoji||'?'} ${unit.name} | HP: ${unit.hp}/${unit.maxHp}${cdParts.length?' | '+cdParts.join(' | '):''}${apLine}`;
+}
+
+function hexUpdateInfo(unit) {
+  if(!unit && hxs.inspecting != null) unit = hxs.units.find(u=>u.id===hxs.inspecting&&u.hp>0);
+  if(!unit && hxs.selected !== null) unit = hxs.units.find(u=>u.id===hxs.selected);
+  const nameEl   = document.getElementById('hx-info-name');
+  const statsEl  = document.getElementById('hx-info-stats');
+  const statusEl = document.getElementById('hx-info-status');
+  const skipBtn  = document.getElementById('hx-skip-btn');
+
+  const panel = document.getElementById('hx-ability-panel');
+  const row   = document.getElementById('hx-ability-row');
+
+  if(!unit || unit.hp <= 0) {
+    if(nameEl)   nameEl.textContent  = 'Выбери персонажа';
+    if(statsEl)  statsEl.textContent  = '';
+    if(statusEl) statusEl.textContent = '';
+    if(panel)    panel.style.display  = 'block';
+    if(row)      row.innerHTML = '';
+    if(skipBtn)  skipBtn.disabled = true;
+    return;
+  }
+  const done = unit.moved && unit.acted;
+  if(nameEl) nameEl.textContent = `${unit.emoji||'?'} ${unit.name}${done?' ✓':''}`;
+  const hpPct = Math.round(unit.hp/unit.maxHp*100);
+  const atkEff = Math.max(0, unit.atk + (unit.atkBuff||0) - (unit.atkDebuff||0));
+  const apStr = unit.isHero ? `  ⚡ AP: ${hxs.heroAP}/${hxs.heroMaxAP||4}` : '';
+  const _armorPieces = Array.isArray(unit.statuses) ? unit.statuses.filter(s=>(s.type||'ARMOR')==='ARMOR') : [];
+  const _armorStr = _armorPieces.length
+    ? '🛡 ' + _armorPieces.map(s=>`${s.name||'Броня'} ${s.value||0} (${s.chance!=null?s.chance:100}%)`).join(' · ')
+    : '🛡 нет брони';
+  if(statsEl) statsEl.textContent =
+    `❤ HP: ${unit.hp}/${unit.maxHp} (${hpPct}%)  ⚔ ${atkEff}  👣 ${unit.moveRange}${apStr}\n` +
+    `${_armorStr}\n` +
+    `🌀 Уклонение: ${unit.defense||0}  🎯 Точность: ${unit.accuracy||0}` +
+    (unit.shields?.length ? `   🛡 Щиты: ${unit.shields.join('·')}` : '');
+  if(statsEl) statsEl.style.whiteSpace = 'pre-line';
+  const statuses = [];
+  if(unit.shields?.length) statuses.push(`🛡 ${unit.shields.join('·')}`);
+  if(unit.atkDebuff > 0) statuses.push(`💨 −${unit.atkDebuff}`);
+  if(unit.atkBuff > 0) statuses.push(`✨ +${unit.atkBuff}`);
+  if(unit.stunnedTurns > 0) statuses.push(`⚡ оглушён ${unit.stunnedTurns}`);
+  if(statusEl) statusEl.textContent = statuses.join('  ');
+
+  // Hit chance + damage preview when in ability targeting mode (now incl. MELEE).
+  // Armor is probabilistic now, so we show hit% + raw damage + the target's AVERAGE expected armor reduction.
+  if(hxs.mode === 'ability' && hxs.confirming && hxs.activeAbilityIdx !== null && statusEl) {
+    const _ab = unit.abilities?.[hxs.activeAbilityIdx];
+    const _tgt = hxs.units.find(u=>u.col===hxs.confirming.col&&u.row===hxs.confirming.row&&u.hp>0);
+    if(_ab && _tgt && _tgt.team !== unit.team && (hxAbilityDamage(_ab, unit) > 0 || ['melee','ranged','magic'].includes(_ab.type))) {
+      const _n = hxCountFlankers(_tgt, unit.team);
+      const _acc = hxCalcHitChance(_ab, unit, _tgt, _n);
+      const _dist = hexDist(unit.col, unit.row, _tgt.col, _tgt.row);
+      const _raw = Math.max(0, Math.round(hxAbilityDamage(_ab, unit) * hxDistDmgMult(_ab, _dist)));
+      // average expected armor reduction = Σ(value × chance/100) over the target's armor pieces
+      const _avgArmor = Array.isArray(_tgt.statuses)
+        ? Math.round(_tgt.statuses.filter(s=>(s.type||'ARMOR')==='ARMOR').reduce((a,s)=>a + (s.value||0)*((s.chance!=null?s.chance:100)/100), 0))
+        : 0;
+      const _prev = statuses.length ? statuses.join('  ') + '   ' : '';
+      let _line = `🎯 ${_acc}% • ~${_raw} урона`;
+      if(_tgt.shields?.length) _line += ` • 🛡${_tgt.shields.length} (передний щит снимется первым)`;
+      if(_avgArmor > 0) _line += ` • ср. броня ~${_avgArmor}`;
+      if(_n > 1) _line += `  +${Math.min(24,(_n-1)*8)}% окружение`;
+      statusEl.textContent = _prev + _line;
+    }
+  }
+
+  // Append the terrain the unit stands on — character and tile are different layers,
+  // both shown together so the player doesn't have to guess from the legend.
+  const _terrUnder = hxTerrainDescAt(unit.col, unit.row);
+  if(_terrUnder && statusEl) {
+    const _base = statusEl.textContent;
+    statusEl.innerHTML = (_base ? _base + '<br>' : '') +
+      `<span style="color:#8fd1a0">${_terrUnder.emoji} ${_terrUnder.name} — ${_terrUnder.effect}</span>`;
+  }
+
+  // Show skip button only for non-hero player units (hero ends turn via "Конец хода")
+  // PASS A: hero doesn't skip — uses "Конец хода" button instead
+  if(skipBtn) skipBtn.disabled = unit.team !== 'player' || hxs.turn !== 'player' || hxs.ended || done || unit.isHero;
+
+  // Build ability panel (only for player units; show enemy abilities as read-only if inspecting)
+  if(!panel || !row) return;
+  if(unit.team !== 'player' || hxs.turn !== 'player' || hxs.ended) {
+    panel.style.display = 'block';
+    row.innerHTML = '';
+    // Show enemy ability list as read-only
+    if(unit.team === 'enemy' && unit.abilities?.length) {
+      unit.abilities.forEach(ab => {
+        const btn = document.createElement('button');
+        btn.className = `hx-ability-btn hx-ability-type-${ab.type}`;
+        btn.disabled = true;
+        const tier = ab.maxCooldown===0?'':ab.maxCooldown<=2?'<span class="hx-ab-tier mid">◆</span>':'<span class="hx-ab-tier strong">★</span>';
+        btn.innerHTML = `<span class="hx-ability-icon">${ab.icon||'?'}</span><span class="hx-ability-name">${ab.name}${tier}</span><span class="hx-ability-cd" style="color:#aaa">rng:${ab.range}</span>`;
+        row.appendChild(btn);
+      });
+    }
+    return;
+  }
+  panel.style.display = 'block';
+  row.innerHTML = '';
+
+  // Move button
+  const moveBtn = document.createElement('button');
+  moveBtn.className = 'hx-ability-btn move-btn' + (hxs.mode === 'move' ? ' active' : '');
+  const remMove = unit.remainingMove ?? unit.moveRange;
+  const moveBlocked = remMove === 0 || (unit.isHero && unit.freeMoveDone && hxs.heroAP <= 0);
+  moveBtn.disabled = moveBlocked;
+  const moveApHint = unit.isHero && unit.freeMoveDone ? '<span class="hx-ab-ap">1ap/гекс</span>' : '<span class="hx-ab-ap">бесплатно</span>';
+  moveBtn.innerHTML = `<span class="hx-ability-icon">🚶</span><span class="hx-ability-name">Движение</span>${moveApHint}`;
+  moveBtn.onclick = () => hxSelectMoveMode();
+  row.appendChild(moveBtn);
+
+  // Ability buttons
+  (unit.abilities || []).forEach((ab, idx) => {
+    const btn = document.createElement('button');
+    const isActive = hxs.activeAbilityIdx === idx && hxs.mode === 'ability';
+    const onCd = ab.cooldown > 0;
+    // PASS A: AP-based disable for hero
+    const apCost = hxAbilityAP(ab);
+    const cantAct = unit.deepWaterStunned || (unit.isHero ? hxs.heroAP < apCost : unit.acted);
+    btn.className = `hx-ability-btn hx-ability-type-${ab.type}${isActive ? ' active' : ''}`;
+    btn.disabled = onCd || cantAct;
+    const cdText = onCd ? `<span class="hx-ability-cd">⏳${ab.cooldown}</span>` : `<span class="hx-ability-cd ready">✓</span>`;
+    const cdBadge = onCd ? `<span class="cd-badge">⏳${ab.cooldown}</span>` : '';
+    const tier = ab.maxCooldown === 0 ? '' : ab.maxCooldown <= 2 ? '<span class="hx-ab-tier mid">◆</span>' : '<span class="hx-ab-tier strong">★</span>';
+    // Damage / effect value shown right on the button
+    const dmgBadge = ab.damage > 0
+      ? `<span class="hx-ab-dmg">⚔${ab.damage}${ab.aoe>0?'⊕':''}</span>`
+      : ab.effect?.type==='heal'    ? `<span class="hx-ab-dmg" style="color:#2ecc71">＋${ab.effect.value}</span>`
+      : ab.effect?.type==='barrier' ? `<span class="hx-ab-dmg" style="color:#74b9ff">🛡${ab.effect.value}</span>`
+      : '';
+    // PASS A: show AP cost indicator
+    const apBadge = unit.isHero ? `<span class="hx-ab-ap">${apCost}AP</span>` : '';
+    btn.innerHTML = `${cdBadge}<span class="hx-ability-icon">${ab.icon||'?'}</span><span class="hx-ability-name">${ab.name}${tier}</span>${dmgBadge}${cdText}${apBadge}`;
+    btn.onclick = () => hxSelectAbility(idx);
+    // Long-press tooltip
+    hxAttachAbilityTooltip(btn, ab);
+    row.appendChild(btn);
+  });
+  hxUpdateStatusBar(unit);
+}
+
+// ---- Click handlers ----
+function hxSelectMoveMode() {
+  if(hxs.ended || hxs.turn!=='player' || hxs.selected===null) return;
+  const unit = hxs.units.find(u=>u.id===hxs.selected);
+  if(!unit||unit.hp<=0||unit.moved) return;
+  if(hxs.mode === 'move') {
+    // Cancel move mode
+    hxs.mode = 'select'; hxs.reachable = []; hxs.abilityTargets = []; hxs.activeAbilityIdx = null; hxs.confirming = null;
+    hxRender(); hexUpdateInfo(); return;
+  }
+  hxs.mode = 'move';
+  hxs.confirming = null; // PASS B: reset confirmation on move
+  hxs.reachable = hexReachable(unit);
+  hxs.abilityTargets = [];
+  hxs.activeAbilityIdx = null;
+  hxLog('Выбери гекс для перемещения.', 'info');
+  hxRender(); hexUpdateInfo();
+}
+
+function hxSelectAbility(idx) {
+  if(hxs.ended || hxs.turn!=='player' || hxs.selected===null) return;
+  const unit = hxs.units.find(u=>u.id===hxs.selected);
+  if(!unit||unit.hp<=0) return;
+  // Deep water: cannot use abilities
+  if(unit.deepWaterStunned) { hxLog(`🌊 ${unit.name} в глубокой воде — не может использовать способности!`, 'info'); return; }
+  // PASS A: for hero check AP, for others check acted
+  if(unit.isHero) {
+    // will be checked per-ability below
+  } else if(unit.acted) return;
+  const ab = unit.abilities?.[idx];
+  if(!ab || ab.cooldown > 0) return;
+  // PASS A: check hero AP cost
+  if(unit.isHero) {
+    const apCost = hxAbilityAP(ab);
+    if(hxs.heroAP < apCost) return;
+  }
+  // Toggle off if already selected
+  if(hxs.mode === 'ability' && hxs.activeAbilityIdx === idx) {
+    hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null; hxs.aoeHover = null; hxs.confirming = null;
+    hxRender(); hexUpdateInfo(); return;
+  }
+  hxs.mode = 'ability';
+  hxs.activeAbilityIdx = idx;
+  hxs.confirming = null; // PASS B: reset confirmation on new ability select
+  hxs.reachable = [];
+  hxs.abilityTargets = hxAbilityTargets(unit, ab);
+  if(hxs.abilityTargets.length === 0 && ab.range > 0) {
+    hxLog(`${ab.name}: нет целей в радиусе ${ab.range}.`, 'info');
+    hxs.mode = 'select'; hxs.activeAbilityIdx = null;
+    hxRender(); hexUpdateInfo(); return;
+  }
+  // Block ability with range=0 (self-buff): apply immediately
+  if(ab.range === 0) {
+    hxApplyAbility(unit, ab, unit);
+    hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null; hxs.confirming = null;
+    // auto end unit if both done
+    if(unit.moved && unit.acted) { hxs.selected = null; hxs.reachable = []; }
+    hxRender(); hexUpdateInfo(); return;
+  }
+  hxLog(`${ab.icon||''} ${ab.name}: выбери цель (дальность ${ab.range}${ab.aoe > 0 ? `, AoE ${ab.aoe}` : ''}).`, 'special');
+  hxRender(); hexUpdateInfo();
+}
+
+function hxClickUnit(unitId) {
+  if(hxs.ended || hxs.turn!=='player') return;
+  const unit = hxs.units.find(u=>u.id===unitId);
+  if(!unit||unit.hp<=0) return;
+
+  // In ability targeting mode — click on target unit
+  if(hxs.mode === 'ability' && hxs.selected !== null) {
+    const sel = hxs.units.find(u=>u.id===hxs.selected);
+    if(sel) {
+      if(sel.isHero) {
+        // PASS B: hero uses hex-based targeting — delegate to hxClickHex
+        hxClickHex(unit.col, unit.row);
+        return;
+      }
+      // Non-hero: unit-based ability targeting
+      if(hxs.abilityTargets.some(t=>t.id===unitId)) {
+        const ab = sel.abilities?.[hxs.activeAbilityIdx];
+        if(ab) {
+          hxApplyAbility(sel, ab, unit);
+          hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null;
+          hxs.reachable = []; hxs.aoeHover = null; hxs.confirming = null;
+          if(sel.moved && sel.acted) { hxs.selected = null; }
+          hxRender(); hexUpdateInfo();
+        }
+        return;
+      }
+    }
+  }
+
+  // Tap enemy unit — show its info
+  if(unit.team === 'enemy') {
+    hxs.inspecting = unitId;
+    hexUpdateInfo(unit);
+    return;
+  }
+
+  // Select own player unit
+  if(unit.team === 'player') {
+    hxs.inspecting = null;
+    if(hxs.selected === unitId) {
+      hxs.selected = null; hxs.reachable = []; hxs.abilityTargets = [];
+      hxs.mode = 'select'; hxs.activeAbilityIdx = null; hxs.confirming = null;
+      hxRender(); hexUpdateInfo(); return;
+    }
+    hxs.selected = unitId;
+    hxs.confirming = null; // PASS B: reset confirmation on unit change
+    const canMove = (unit.remainingMove ?? unit.moveRange) > 0;
+    hxs.mode = canMove ? 'move' : 'select';
+    hxs.reachable = canMove ? hexReachable(unit) : [];
+    hxs.abilityTargets = [];
+    hxs.activeAbilityIdx = null;
+    hxRender(); hexUpdateInfo();
+  }
+  // Click on enemy while in select mode — nothing (must choose ability first)
+}
+
+function hxClickHex(col, row) {
+  if(hxs.ended) return;
+  if(hxs.turn !== 'player' || hxs.selected === null) {
+    // Still show terrain info on empty hex tap
+    hxTerrainInfoAt(col, row);
+    return;
+  }
+  const unit = hxs.units.find(u=>u.id===hxs.selected);
+  if(!unit || unit.hp <= 0) return;
+
+  // Move mode: click on reachable hex
+  if(hxs.mode === 'move') {
+    if(hxs.reachable.some(([c,r])=>c===col&&r===row)) {
+      const dist = hexDist(unit.col, unit.row, col, row);
+      // First 1 hex is free; additional hexes cost 1 AP each (hero only)
+      if(unit.isHero) {
+        const freeLeft = unit.freeMoveDone ? 0 : 1;
+        const paidHexes = Math.max(0, dist - freeLeft);
+        if(paidHexes > 0 && hxs.heroAP < paidHexes) {
+          // Not enough AP — move only as far as AP allows
+          hxLog(`Недостаточно AP для движения.`, 'info');
+          hxRender(); hexUpdateInfo(); return;
+        }
+        if(!unit.freeMoveDone) unit.freeMoveDone = true;
+        hxs.heroAP = Math.max(0, hxs.heroAP - paidHexes);
+      }
+      const fromCol = unit.col, fromRow = unit.row;
+      unit.col = col; unit.row = row; unit.movedRecently = true; unit.shields = []; // moving drops your guard (barriers cleared); harder to hit with ranged until its next turn
+      unit.remainingMove = Math.max(0, (unit.remainingMove ?? unit.moveRange) - dist);
+      unit.moved = unit.remainingMove === 0;
+      // --- ATTACK OF OPPORTUNITY: enemies adjacent to the from-hex (but not to-hex) get a free strike ---
+      const _moverTeam = unit.team;
+      const _aooEnemies = hxs.units.filter(e=>e.team!==_moverTeam&&e.hp>0&&!e.stunnedTurns&&!e._aooUsed
+        &&hexDist(e.col,e.row,fromCol,fromRow)===1&&hexDist(e.col,e.row,col,row)>1);
+      if(_aooEnemies.length) hxLog(`⚠ Атака вдогон! Уход из ближнего боя провоцирует ${_aooEnemies.length} удар(ов).`, 'damage');
+      _aooEnemies.forEach(e=>{ if(unit.hp>0){ hexAttack(e, unit, true); e._aooUsed = true; } });
+      if(unit.hp <= 0) {
+        // mover died to AoO — abort move logic
+        hxs.mode = 'select'; hxs.reachable = []; hxs.selected = null;
+        hxAnimateMove(unit, fromCol, fromRow, col, row).then(()=>{ hxRender(); hexUpdateInfo(); });
+        return;
+      }
+      // Stay in move mode if remaining moves left AND hero has AP, else switch to select
+      const canKeepMoving = unit.remainingMove > 0 && (!unit.isHero || hxs.heroAP > 0 || !unit.freeMoveDone);
+      if(canKeepMoving) {
+        hxs.reachable = hexReachable(unit);
+        hxs.mode = 'move';
+      } else {
+        hxs.mode = 'select'; hxs.reachable = [];
+      }
+      if(unit.moved && unit.acted) { hxs.selected = null; }
+      // Animate player unit movement
+      hxAnimateMove(unit, fromCol, fromRow, col, row).then(() => {
+        hxRender(); hexUpdateInfo();
+      });
+    } else {
+      // Cancel move mode on non-reachable hex click
+      hxs.mode = 'select'; hxs.reachable = [];
+      hxRender(); hexUpdateInfo();
+    }
+    return;
+  }
+
+  // Ability mode: click on hex
+  if(hxs.mode === 'ability') {
+    const isTarget = hxs.abilityTargets.some(t=>t.col===col&&t.row===row);
+    if(isTarget) {
+      if(unit.isHero) {
+        // PASS B/C: hero uses double-tap confirmation
+        if(hxs.confirming && hxs.confirming.col===col && hxs.confirming.row===row) {
+          // Second tap — apply
+          const ab = unit.abilities?.[hxs.activeAbilityIdx];
+          if(ab) {
+            hxConfirmApply(unit, ab, col, row);
+          }
+        } else {
+          // First tap — show confirmation ring
+          hxs.confirming = {col, row};
+          hxRender(); hexUpdateInfo();
+        }
+        return;
+      }
+      // Non-hero: apply immediately (existing behaviour for summon free hex etc.)
+      const freeTarget = hxs.abilityTargets.find(t=>t.isFreeHex&&t.col===col&&t.row===row);
+      if(freeTarget) {
+        const ab = unit.abilities?.[hxs.activeAbilityIdx];
+        if(ab) {
+          hxApplyAbility(unit, ab, freeTarget);
+          hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null; hxs.reachable = []; hxs.aoeHover = null;
+          hxs.confirming = null;
+          if(unit.moved && unit.acted) { hxs.selected = null; }
+          hxRender(); hexUpdateInfo();
+        }
+        return;
+      }
+      return;
+    }
+    // Clicking non-target hex cancels ability mode
+    hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null; hxs.aoeHover = null;
+    hxs.confirming = null;
+    hxRender(); hexUpdateInfo();
+    return;
+  }
+
+  if(hxs.mode === 'select') hxTerrainInfoAt(col, row);
+}
+
+// Small terrain glyph for a cell (for the corner badge under a unit). null = plain ground.
+function hxTerrainEmojiAt(col, row) {
+  if((hxs.rifts||[]).some(([c,r])=>c===col&&r===row)) return '⌖';
+  if((hxs.forests||[]).some(([c,r])=>c===col&&r===row)) return '🌳';
+  if((hxs.bushes||[]).some(([c,r])=>c===col&&r===row)) return '🌿';
+  if((hxs.heights||[]).some(([c,r])=>c===col&&r===row)) return '🗿';
+  if((hxs.swamps||[]).some(([c,r])=>c===col&&r===row)) return '🟫';
+  if((hxs.shallow_waters||[]).some(([c,r])=>c===col&&r===row)) return '〰';
+  if((hxs.deep_waters||[]).some(([c,r])=>c===col&&r===row)) return '🌊';
+  if((hxs.waters||[]).some(([c,r])=>c===col&&r===row)) return '💧';
+  if((hxs.fires||[]).some(f=>f.col===col&&f.row===row)) return '🔥';
+  if((hxs.burnable||[]).some(([c,r])=>c===col&&r===row)) return '🌾';
+  return null;
+}
+
+// Full terrain description for a cell: {emoji, name, effect}. null = plain ground.
+function hxTerrainDescAt(col, row) {
+  const has = (arr) => (hxs[arr]||[]).some(([c,r])=>c===col&&r===row);
+  if(has('rifts'))   return {emoji:'⌖',  name:'Разлом',         effect:'Демонолог рядом: +HP к призыву'};
+  if(has('forests')) return {emoji:'🌳', name:'Дерево',         effect:'🛡 +1 щит (15) в начале хода; −15% точности по тебе (дальние)'};
+  if(has('bushes'))  return {emoji:'🌿', name:'Кусты',          effect:'Укрытие: −1 урон, −15% точности по цели'};
+  if(has('heights')) return {emoji:'🗿', name:'Камни',          effect:'+1 урон и +5% точности дальним атакам'};
+  const ob = hxObstAt(col,row);
+  if(ob) return ob.type==='wall'
+    ? {emoji:'🧱', name:`Стена (${ob.hp}/${ob.maxHp})`,    effect:'Блокирует движение и дальний обзор'}
+    : {emoji:'🪨', name:`Обломки (${ob.hp}/${ob.maxHp})`,  effect:'Укрытие: −1 урон, −15% точности; разрушаемо'};
+  if(has('swamps'))         return {emoji:'🟫', name:'Болото',         effect:'Движение стоит 2 ОД (без урона)'};
+  if(has('waters'))         return {emoji:'💧', name:'Вода',           effect:'Непроходимо'};
+  if(has('shallow_waters')) return {emoji:'〰', name:'Мелководье',     effect:'Движение стоит 2 ОД'};
+  if(has('deep_waters'))    return {emoji:'🌊', name:'Глубокая вода',  effect:'Нельзя атаковать и использовать способности в этом ходу'};
+  const f = (hxs.fires||[]).find(f=>f.col===col&&f.row===row);
+  if(f) return {emoji:'🔥', name:`Огонь (${f.duration} хода)`, effect:'−20 HP в конце каждого хода'};
+  if(has('burnable'))       return {emoji:'🌾', name:'Трава',          effect:'Горючая — поджигается огненными заклинаниями'};
+  return null;
+}
+
+function hxTerrainInfoAt(col, row) {
+  const nameEl = document.getElementById('hx-info-name');
+  const statsEl = document.getElementById('hx-info-stats');
+  if(!nameEl || !statsEl) return;
+  const t = hxTerrainDescAt(col, row);
+  if(t) { nameEl.textContent = `${t.emoji} ${t.name}`; statsEl.textContent = t.effect; }
+  else  { nameEl.textContent = '▫ Ровная земля'; statsEl.textContent = 'Без особых свойств'; }
+}
+
+function hxSkipUnit() {
+  if(hxs.ended || hxs.turn!=='player' || hxs.selected===null) return;
+  const unit = hxs.units.find(u=>u.id===hxs.selected);
+  if(!unit||unit.hp<=0) return;
+  unit.moved = true; unit.acted = true;
+  hxLog(`${unit.name} пропускает ход.`, 'info');
+  hxs.selected = null; hxs.reachable = []; hxs.abilityTargets = [];
+  hxs.mode = 'select'; hxs.activeAbilityIdx = null; hxs.confirming = null;
+  hxRender(); hexUpdateInfo();
+}
+
+let _hxZoomLevel = 1.0;
+let _hxPanX = 0, _hxPanY = 0;
+function _hxApplyZoom() {
+  const svg = document.getElementById('hx-svg');
+  if(!svg) return;
+  const w = HEX_SVG_W / _hxZoomLevel;
+  const h = HEX_SVG_H / _hxZoomLevel;
+  const maxPanX = HEX_SVG_W - w, maxPanY = HEX_SVG_H - h;
+  _hxPanX = Math.max(0, Math.min(_hxPanX, maxPanX));
+  _hxPanY = Math.max(0, Math.min(_hxPanY, maxPanY));
+  svg.setAttribute('viewBox', `${_hxPanX} ${_hxPanY} ${w} ${h}`);
+}
+function hxZoomAdjust(delta) {
+  _hxZoomLevel = Math.max(1.0, Math.min(3.0, _hxZoomLevel + delta));
+  _hxApplyZoom();
+}
+
+let _hxPinchDist0 = null, _hxPinchLevel0 = 1.0, _hxPinchInited = false;
+function hxInitPinchZoom() {
+  if(_hxPinchInited) return;
+  _hxPinchInited = true;
+  const svg = document.getElementById('hx-svg');
+  const wrap = document.getElementById('hx-svg-wrap');
+  if(!svg || !wrap) return;
+  const tDist = (t) => Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY);
+  let _panStart = null, _panActive = false;
+
+  svg.addEventListener('touchstart', (e) => {
+    if(e.touches.length === 2) {
+      e.preventDefault();
+      _hxPinchDist0 = tDist(e.touches); _hxPinchLevel0 = _hxZoomLevel; _panStart = null;
+    } else if(e.touches.length === 1) {
+      _panStart = {x:e.touches[0].clientX, y:e.touches[0].clientY, px:_hxPanX, py:_hxPanY};
+      _panActive = false;
+    }
+  }, {passive:false});
+
+  svg.addEventListener('touchmove', (e) => {
+    if(e.touches.length === 2 && _hxPinchDist0 !== null) {
+      e.preventDefault();
+      _hxZoomLevel = Math.max(1.0, Math.min(3.0, _hxPinchLevel0 * tDist(e.touches) / _hxPinchDist0));
+      _hxApplyZoom();
+    } else if(e.touches.length === 1 && _panStart && _hxZoomLevel > 1.0) {
+      const svgEl = document.getElementById('hx-svg');
+      const svgW = svgEl ? svgEl.clientWidth : 300;
+      const scale = HEX_SVG_W / (svgW * _hxZoomLevel);
+      const dx = (_panStart.x - e.touches[0].clientX) * scale;
+      const dy = (_panStart.y - e.touches[0].clientY) * scale;
+      if(!_panActive && (Math.abs(dx)>2 || Math.abs(dy)>2)) _panActive = true;
+      if(_panActive) {
+        e.preventDefault();
+        _hxPanX = _panStart.px + dx; _hxPanY = _panStart.py + dy;
+        _hxApplyZoom();
+      }
+    }
+  }, {passive:false});
+
+  svg.addEventListener('touchend', (e) => {
+    if(e.touches.length < 2) _hxPinchDist0 = null;
+    if(_panActive) { e.preventDefault(); _panActive = false; }
+    _panStart = null;
+  }, {passive:false});
+}
+
+function hxEndTurn() {
+  if(hxs.ended || hxs.turn!=='player') return;
+  hxs.selected = null; hxs.reachable = []; hxs.abilityTargets = [];
+  hxs.mode = 'select'; hxs.activeAbilityIdx = null; hxs.aoeHover = null;
+  hxs.heroAP = 0; // PASS A: consume remaining AP on end turn
+  hxs.confirming = null; // PASS B: reset confirmation
+  hxs.turn = 'enemy';
+  document.getElementById('hx-skip-btn').disabled = true;
+  hxRender(); hexUpdateInfo();
+  setTimeout(hexEnemyTurn, 300);
+}
+
+function initHex() {
+  document.getElementById('hx-battle').style.display='';
+  // Hide global app header/subtitle on the battle map — maximize space for the board
+  const _h1 = document.querySelector('h1'); if(_h1) _h1.style.display = 'none';
+  const _sub = document.getElementById('subtitle'); if(_sub) _sub.style.display = 'none';
+  // Pin content to the top and trim body padding so the turn label sits near the top
+  document.body.style.justifyContent = 'flex-start';
+  document.body.style.padding = '6px 8px';
+
+  // Support hero param: {name, hp, atk, weapon, magic, level, emoji}
+  const heroDef = gameData.hero || null;
+  const companionDefs = Array.isArray(gameData.companions) ? gameData.companions : [];
+  // Fall back to player_units if no hero
+  const playerDefs = heroDef ? null : (Array.isArray(gameData.player_units) ? gameData.player_units : [{type:'warrior',name:'Воин'}]);
+  const enemyDefs  = Array.isArray(gameData.enemy_units)  ? gameData.enemy_units  : [{type:'warrior',name:'Страж'}];
+
+  hxs = {units:[], turn:'player', selected:null, inspecting:null, reachable:[], attackable:[], abilityTargets:[], activeAbilityIdx:null, mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, ended:false, rifts:[], forests:[], heights:[], obstacles:[], bushes:[], swamps:[], waters:[], shallow_waters:[], deep_waters:[], fires:[], burnable:[], enemyIntents:{}, totalDamageDealt:0, totalDamageTaken:0, aoeHover:null, abilitiesUsed:{}, hero: heroDef, heroAP: 4, heroMaxAP: 4, confirming: null};
+  _hxZoomLevel = 1.0; _hxPanX = 0; _hxPanY = 0;
+  const _initSvg = document.getElementById('hx-svg');
+  if(_initSvg) {
+    _initSvg.setAttribute('viewBox', `0 0 ${HEX_SVG_W} ${HEX_SVG_H}`);
+    _hxApplyZoom();
+  }
+  hxInitPinchZoom();
+
+  let idCtr = 0;
+
+  // Build player-side units
+  const allPlayerDefs = heroDef
+    ? [{_heroData: heroDef}, ...companionDefs.map(c => ({_companionData: c}))]
+    : playerDefs;
+
+  const pPositions = hexStartPositions(allPlayerDefs.length, 0);
+  allPlayerDefs.forEach((def, i) => {
+    let unit;
+    if(def._heroData) {
+      // FFT hero from data.hero
+      const h = def._heroData;
+      // HP default 100 (clamp 60-160). Scene may override via h.hp.
+      const baseHp  = Math.min(160, Math.max(60, h.hp || 100));
+      const baseAtk = h.atk || (4 + Math.floor((h.level||1) * 0.3));
+      const hasShield = h.weapon === 'shield';
+      // Armor loadout: scene override (h.statuses) else class default; shield weapon adds a Щит piece.
+      let heroStatuses;
+      if(Array.isArray(h.statuses)) {
+        heroStatuses = h.statuses.map(s=>({...s}));
+      } else {
+        heroStatuses = [
+          {name:'Шлем',value:30,chance:15},
+          {name:'Кираса',value:20,chance:60},
+          {name:'Наручи',value:10,chance:30},
+          {name:'Поножи',value:10,chance:15},
+        ];
+        if(hasShield) heroStatuses.push({name:'Щит',value:35,chance:20});
+      }
+      unit = {
+        id: idCtr++, type: 'hero',
+        name: h.name || 'Герой', team:'player', originalTeam:'player',
+        col: pPositions[i].col, row: pPositions[i].row,
+        hp: baseHp, maxHp: baseHp, atk: baseAtk,
+        moveRange: 3, atkRange: 1,
+        accuracy: 65, defense: 8,
+        statuses: heroStatuses, shields: [], hasShield: hasShield,
+        moved: false, acted: false,
+        emoji: h.emoji || '🧙',
+        abilities: hxBuildHeroAbilities(h.weapon || 'sword', h.magic || null),
+        isHero: true,
+      };
+    } else if(def._companionData) {
+      // Companion unit
+      const c = def._companionData;
+      const base = HEX_UNIT_DEFS[c.type] || HEX_UNIT_DEFS.warrior;
+      const _hp = c.hp || base.hp;
+      unit = {
+        id: idCtr++, type: c.type||'warrior',
+        name: c.name || base.name, team:'player', originalTeam:'player',
+        col: pPositions[i].col, row: pPositions[i].row,
+        hp: _hp, maxHp: _hp, atk: c.atk||base.atk,
+        moveRange: base.moveRange, atkRange: base.atkRange,
+        accuracy: base.accuracy, defense: base.defense,
+        statuses: (Array.isArray(c.statuses) ? c.statuses : (base.statuses||[])).map(s=>({...s})), shields: [],
+        hasShield: ['warrior','cavalry'].includes(c.type||'warrior'),
+        moved: false, acted: false,
+        emoji: base.emoji,
+        abilities: (base.abilities||[]).map(a=>({...a, cooldown:0})),
+      };
+    } else {
+      // Legacy player_units mode
+      const base = HEX_UNIT_DEFS[def.type] || HEX_UNIT_DEFS.warrior;
+      const _hp = def.hp || base.hp;
+      unit = {
+        id: idCtr++, type: def.type||'warrior',
+        name: def.name || base.name, team:'player', originalTeam:'player',
+        col: pPositions[i].col, row: pPositions[i].row,
+        hp: _hp, maxHp: _hp, atk: def.atk||base.atk,
+        moveRange: base.moveRange, atkRange: base.atkRange,
+        accuracy: base.accuracy, defense: base.defense,
+        statuses: (Array.isArray(def.statuses) ? def.statuses : (base.statuses||[])).map(s=>({...s})), shields: [],
+        hasShield: ['warrior','cavalry'].includes(def.type||'warrior'),
+        moved: false, acted: false,
+        emoji: base.emoji,
+        abilities: (base.abilities||[]).map(a=>({...a, cooldown:0})),
+      };
+    }
+    hxs.units.push(unit);
+  });
+
+  const ePositions = hexStartPositions(enemyDefs.length, HEX_COLS-1);
+  enemyDefs.forEach((def, i) => {
+    const base = HEX_UNIT_DEFS[def.type] || HEX_UNIT_DEFS.warrior;
+    const _ehp = def.hp || base.hp;
+    hxs.units.push({
+      id: idCtr++, type: def.type||'warrior',
+      name: def.name || base.name, team:'enemy', originalTeam:'enemy',
+      col: ePositions[i].col, row: ePositions[i].row,
+      hp: _ehp, maxHp: _ehp, atk: def.atk||base.atk,
+      moveRange: base.moveRange, atkRange: base.atkRange,
+      accuracy: base.accuracy, defense: base.defense,
+      statuses: (Array.isArray(def.statuses) ? def.statuses : (base.statuses||[])).map(s=>({...s})), shields: [],
+      hasShield: ['warrior','cavalry'].includes(def.type||'warrior'),
+      moved: false, acted: false,
+      emoji: base.emoji,
+      abilities: (base.abilities||[]).map(a=>({...a, cooldown:0})),
+    });
+  });
+
+  // Read terrain config from gameData if provided (PASS F)
+  const _terrainCfg = gameData.terrain || {};
+  const _numForests = _terrainCfg.forests !== undefined ? _terrainCfg.forests : 2;
+  const _numHeights = _terrainCfg.heights !== undefined ? _terrainCfg.heights : 1;
+  const _numRifts   = _terrainCfg.rifts   !== undefined ? _terrainCfg.rifts   : 0;
+
+  // Place rifts in the center area, not on any unit
+  const _occupied = new Set(hxs.units.map(u=>`${u.col},${u.row}`));
+  const _riftCandidates = [];
+  for(let r=3; r<=7; r++) for(let c=4; c<=6; c++) {
+    if(!_occupied.has(`${c},${r}`)) _riftCandidates.push([c,r]);
+  }
+  const _placed = new Set();
+  for(let ri=0; ri<_numRifts && _riftCandidates.length; ri++) {
+    const idx = Math.floor(Math.random() * _riftCandidates.length);
+    const [rc,rr] = _riftCandidates.splice(idx,1)[0];
+    hxs.rifts.push([rc,rr]);
+    _placed.add(`${rc},${rr}`);
+    _occupied.add(`${rc},${rr}`);
+  }
+
+  // PASS A: Place forests — left flank (col 1-2) and right flank (col 8-9)
+  const _forestColCandidates = [];
+  for(let r=1;r<HEX_ROWS-1;r++) { _forestColCandidates.push([1,r],[2,r],[8,r],[9,r]); }
+  const _forestCandidates = _forestColCandidates.filter(([c,r])=>!_occupied.has(`${c},${r}`));
+  const _fcLeft = _forestCandidates.filter(([c])=>c<=2);
+  const _fcRight = _forestCandidates.filter(([c])=>c>=8);
+  let _forestsToPlace = _numForests;
+  if(_fcLeft.length && _forestsToPlace > 0) {
+    const pick = _fcLeft[Math.floor(Math.random()*_fcLeft.length)];
+    hxs.forests.push(pick); _occupied.add(`${pick[0]},${pick[1]}`); _forestsToPlace--;
+  }
+  if(_fcRight.length && _forestsToPlace > 0) {
+    const pick = _fcRight[Math.floor(Math.random()*_fcRight.length)];
+    hxs.forests.push(pick); _occupied.add(`${pick[0]},${pick[1]}`); _forestsToPlace--;
+  }
+
+  // PASS A: Place heights — top/bottom rows, middle columns
+  const _heightCandidates = [[3,0],[4,0],[5,0],[6,0],[7,0],[3,HEX_ROWS-1],[4,HEX_ROWS-1],[5,HEX_ROWS-1],[6,HEX_ROWS-1],[7,HEX_ROWS-1]].filter(([c,r])=>!_occupied.has(`${c},${r}`));
+  for(let hi=0; hi<_numHeights && _heightCandidates.length; hi++) {
+    const idx = Math.floor(Math.random() * _heightCandidates.length);
+    const pick = _heightCandidates.splice(idx,1)[0];
+    hxs.heights.push(pick); _occupied.add(`${pick[0]},${pick[1]}`);
+  }
+
+  // Forest cover barriers are granted at each unit's own turn-start inside hxRefreshBlock (after the clear), not at spawn.
+
+  // PASS C: Place obstacles — 1 wall (blocks LoS) + 2 rubble (destructible, cover)
+  const _allBlocked = new Set([
+    ...hxs.units.map(u=>`${u.col},${u.row}`),
+    ...(hxs.rifts||[]).map(([c,r])=>`${c},${r}`),
+    ...(hxs.forests||[]).map(([c,r])=>`${c},${r}`),
+    ...(hxs.heights||[]).map(([c,r])=>`${c},${r}`),
+  ]);
+  hxs.obstacles = [];
+  // Explicit walls from gameData.walls = [[col,row], ...] — overrides random obstacle placement
+  const _customWalls = Array.isArray(gameData.walls) ? gameData.walls : null;
+  if(_customWalls) {
+    _customWalls.forEach(w => {
+      const c = Array.isArray(w) ? w[0] : w.col, r = Array.isArray(w) ? w[1] : w.row;
+      if(c==null||r==null||c<0||c>=HEX_COLS||r<0||r>=HEX_ROWS) return;
+      if(_allBlocked.has(`${c},${r}`)) return;
+      hxs.obstacles.push({col:c,row:r,hp:50,maxHp:50,type:'wall',blocksLos:true});
+      _allBlocked.add(`${c},${r}`);
+    });
+  } else {
+    const _obstCandidates = [];
+    for(let r=2;r<HEX_ROWS-2;r++) for(let c=3;c<=7;c++) {
+      if(!_allBlocked.has(`${c},${r}`)) _obstCandidates.push([c,r]);
+    }
+    // 1 wall
+    if(_obstCandidates.length) {
+      const idx=Math.floor(Math.random()*_obstCandidates.length);
+      const [oc,or]=_obstCandidates.splice(idx,1)[0];
+      hxs.obstacles.push({col:oc,row:or,hp:50,maxHp:50,type:'wall',blocksLos:true});
+      _allBlocked.add(`${oc},${or}`);
+    }
+    // 2 rubble (from wider area)
+    const _rubbleCandidates = [];
+    for(let r=2;r<HEX_ROWS-2;r++) for(let c=2;c<=8;c++) {
+      if(!_allBlocked.has(`${c},${r}`)) _rubbleCandidates.push([c,r]);
+    }
+    for(let i=0;i<2&&_rubbleCandidates.length;i++){
+      const idx=Math.floor(Math.random()*_rubbleCandidates.length);
+      const [oc,or]=_rubbleCandidates.splice(idx,1)[0];
+      hxs.obstacles.push({col:oc,row:or,hp:5,maxHp:5,type:'rubble',blocksLos:false});
+      _allBlocked.add(`${oc},${or}`);
+    }
+  }
+
+  // PASS E: Place bushes — passable, ranged/magic target gets -2 dmg
+  const _bushCandidates = [];
+  for(let r=1;r<HEX_ROWS-1;r++) {
+    if(!_allBlocked.has(`2,${r}`)) _bushCandidates.push([2,r]);
+    if(!_allBlocked.has(`3,${r}`)) _bushCandidates.push([3,r]);
+    if(!_allBlocked.has(`7,${r}`)) _bushCandidates.push([7,r]);
+    if(!_allBlocked.has(`8,${r}`)) _bushCandidates.push([8,r]);
+  }
+  hxs.bushes = [];
+  for(let i=0; i<3 && _bushCandidates.length; i++) {
+    const idx = Math.floor(Math.random()*_bushCandidates.length);
+    const pick = _bushCandidates.splice(idx,1)[0];
+    hxs.bushes.push(pick);
+    _allBlocked.add(`${pick[0]},${pick[1]}`);
+  }
+
+  // PASS F: Place swamp hexes (passable, -1 dmg/turn, extra move cost)
+  const _swampCandidates = [];
+  for(let r=3;r<HEX_ROWS-3;r++) for(let c=1;c<HEX_COLS-1;c++) {
+    if(!_allBlocked.has(`${c},${r}`)) _swampCandidates.push([c,r]);
+  }
+  hxs.swamps = [];
+  for(let i=0;i<3&&_swampCandidates.length;i++) {
+    const idx=Math.floor(Math.random()*_swampCandidates.length);
+    const pick=_swampCandidates.splice(idx,1)[0];
+    // Make sure swamp hexes are adjacent for a realistic swamp cluster
+    if(i===0 || hxs.swamps.some(([sc,sr])=>hexDist(sc,sr,pick[0],pick[1])<=1)) {
+      hxs.swamps.push(pick);
+    } else { _swampCandidates.unshift(pick); } // put back, try another
+  }
+  hxs.swamps.forEach(([c,r])=>_allBlocked.add(`${c},${r}_passable`)); // mark as occupied by terrain (not blocked)
+
+  // PASS G: Place deep_water hexes (passable, no attack) — 2-3 connected hexes in the middle
+  hxs.waters = []; // legacy, kept empty
+  const _waterCandidates = [];
+  for(let r=4;r<HEX_ROWS-3;r++) for(let c=3;c<HEX_COLS-3;c++) {
+    if(!_allBlocked.has(`${c},${r}`) && !hxs.swamps.some(([sc,sr])=>sc===c&&sr===r)) _waterCandidates.push([c,r]);
+  }
+  if(_waterCandidates.length >= 2) {
+    const idx=Math.floor(Math.random()*_waterCandidates.length);
+    const [wc,wr]=_waterCandidates.splice(idx,1)[0];
+    hxs.deep_waters = hxs.deep_waters||[]; hxs.deep_waters.push([wc,wr]); _allBlocked.add(`${wc},${wr}_passable`);
+    const adj=hexNeighbors(wc,wr).filter(([c,r])=>!_allBlocked.has(`${c},${r}`));
+    if(adj.length) { const [nc,nr]=adj[Math.floor(Math.random()*adj.length)]; hxs.deep_waters.push([nc,nr]); _allBlocked.add(`${nc},${nr}_passable`); }
+  }
+
+  // Place shallow_water (passable, costs 2 AP) — adjacent to impassable water or standalone
+  hxs.shallow_waters = [];
+  const _shallowCandidates = [];
+  for(let r=3;r<HEX_ROWS-3;r++) for(let c=2;c<HEX_COLS-2;c++) {
+    if(!_allBlocked.has(`${c},${r}`) && !hxs.swamps.some(([sc,sr])=>sc===c&&sr===r)) {
+      // Prefer hexes adjacent to water
+      const nearWater = hxs.waters.some(([wc,wr])=>hexDist(wc,wr,c,r)===1);
+      if(nearWater) _shallowCandidates.unshift([c,r]); else _shallowCandidates.push([c,r]);
+    }
+  }
+  for(let i=0;i<2&&_shallowCandidates.length;i++){
+    const pick=_shallowCandidates.shift();
+    hxs.shallow_waters.push(pick);
+    _allBlocked.add(`${pick[0]},${pick[1]}_passable`);
+  }
+
+  // Place deep_water (passable but no attack/abilities) — 1-2 hexes
+  hxs.deep_waters = [];
+  const _deepCandidates = [];
+  for(let r=3;r<HEX_ROWS-3;r++) for(let c=2;c<HEX_COLS-2;c++) {
+    if(!_allBlocked.has(`${c},${r}`) && !hxs.swamps.some(([sc,sr])=>sc===c&&sr===r) && !hxs.shallow_waters.some(([sc,sr])=>sc===c&&sr===r)) {
+      const nearWater = hxs.waters.some(([wc,wr])=>hexDist(wc,wr,c,r)<=2) || hxs.shallow_waters.some(([wc,wr])=>hexDist(wc,wr,c,r)===1);
+      if(nearWater) _deepCandidates.unshift([c,r]); else _deepCandidates.push([c,r]);
+    }
+  }
+  for(let i=0;i<1&&_deepCandidates.length;i++){
+    const pick=_deepCandidates.shift();
+    hxs.deep_waters.push(pick);
+    _allBlocked.add(`${pick[0]},${pick[1]}_passable`);
+  }
+
+  // PASS H: Place burnable hexes (grass, ignitable by fire spells)
+  hxs.burnable = [];
+  for(let r=2;r<HEX_ROWS-2;r++) for(let c=0;c<HEX_COLS;c++) {
+    if(!_allBlocked.has(`${c},${r}`) && Math.random()<0.15) {
+      hxs.burnable.push([c,r]);
+    }
+  }
+  hxs.fires = [];
+
+  const _initLabel = document.getElementById('hx-turn-label');
+  _initLabel.className = 'hx-turn-label player-turn';
+  _initLabel.textContent = 'Ход 1 — твой ход';
+  document.getElementById('hx-end-btn').disabled = false;
+  hxLog('Ход 1. Твой ход!', 'info');
+  // Pre-compute initial enemy intents
+  hexComputeEnemyIntents();
+  hxRender();
+  hexUpdateInfo();
+
+  // PASS A: FFT Intro overlay
+  if(heroDef) {
+    const heroUnit = hxs.units.find(u => u.isHero);
+    if(heroUnit) {
+      const overlay = document.getElementById('hx-intro-overlay');
+      document.getElementById('hx-intro-hero').textContent = heroUnit.emoji || '🧙';
+      document.getElementById('hx-intro-name').textContent = heroUnit.name;
+      document.getElementById('hx-intro-stats').textContent = `HP: ${heroUnit.hp}  Атк: ${heroUnit.atk}`;
+      const abPanel = document.getElementById('hx-intro-abilities');
+      abPanel.innerHTML = '';
+      (heroUnit.abilities || []).forEach(ab => {
+        const el = document.createElement('div');
+        el.style.cssText = 'padding:5px 8px;background:rgba(255,255,255,0.07);border-radius:8px;font-size:0.75rem;display:flex;align-items:center;gap:4px;';
+        el.innerHTML = `<span style="font-size:1rem;">${ab.icon||'✦'}</span><span>${ab.name}</span>`;
+        abPanel.appendChild(el);
+      });
+      overlay.style.display = 'flex';
+    }
+  }
+}
+
+// ---- AUTO-START (per-page entry; replaces monolith game dispatch) ----
+// Path implies game='hex'. gameData (decoded in core.js) supplies scene params;
+// when absent/empty, initHex() falls back to its built-in defaults.
+setTimeout(initHex, 0);
+</script>
+</body>
+</html>
