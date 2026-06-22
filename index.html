@@ -3172,7 +3172,7 @@ const HX_WEAPON_ABILITIES = {
     {id:'axe_cleave',     name:'Раскол',        icon:'💥', type:'melee',  range:1, aoe:0, damage:4, effect:null,                         maxCooldown:2, school:'axe'},
   ],
   ranged: [
-    {id:'ranged_shot',    name:'Выстрел',       icon:'🏹', type:'ranged', range:4, aoe:0, damage:3, effect:null,                         maxCooldown:0, school:'ranged'},
+    {id:'ranged_shot',    name:'Выстрел',       icon:'🏹', type:'ranged', range:4, aoe:0, damage:3, effect:null,  accByDist:[95,90,82,72], maxCooldown:0, school:'ranged'},
     {id:'ranged_aim',     name:'Прицельный',    icon:'🎯', type:'ranged', range:4, aoe:0, damage:4, effect:null,                         maxCooldown:2, school:'ranged'},
     {id:'ranged_pierce',  name:'Прострел',      icon:'➡️', type:'ranged', range:5, aoe:0, damage:3, effect:null,                         maxCooldown:3, school:'ranged'},
   ],
@@ -3221,7 +3221,7 @@ const HX_WEAPON_ABILITIES = {
 // Adept: divine word of power
 const HX_MAGIC_ABILITIES = {
   wizard: [
-    {id:'wiz_impulse',    name:'Смешанный импульс',icon:'✨',type:'magic', range:4, aoe:0, damage:1,   effect:null,                               maxCooldown:0, school:'wizard'},
+    {id:'wiz_impulse',    name:'Смешанный импульс',icon:'✨',type:'magic', range:4, aoe:0, damage:1,   effect:null,            accByDist:[95,88,80,70], maxCooldown:0, school:'wizard'},
     {id:'wiz_push',       name:'Импульсная волна', icon:'💨',type:'magic', range:2, aoe:1, damage:2,   effect:{type:'knockback'},                 maxCooldown:4, school:'wizard'},
     {id:'wiz_lightning',  name:'Молния',           icon:'⚡',type:'magic', range:4, aoe:0, damage:3,   effect:{type:'chain',value:1},             maxCooldown:4, school:'wizard'},
   ],
@@ -3714,23 +3714,37 @@ function hxMarkActed(caster, ability) {
   hxApplySchoolCooldown(caster, ability);
 }
 
-// Hit model (Данил's spec + lore: skills/magic/wizard.md "Дистанция", distance_scale.md):
+// Per-attack BASE accuracy at a given hex distance (before dodge / situational mods).
+//  - ability.accByDist: explicit array indexed by hex distance (accByDist[dist-1]); clamped to the last entry
+//    beyond its length. This is how an individual ranged/magic attack defines its own accuracy curve.
+//  - Otherwise a school-aware default: 95% point-blank → a per-school 'far' value at the ability's max range.
+//    Lore (skills/magic/wizard.md, distance_scale.md): wizard impulse stays usable to ~30-40m (soft falloff,
+//    ~70% at дальняя); elementalist branches drop faster after большая (~20m); bow reaches дальняя ~40m.
+function hxAbilityAccAt(ability, dist) {
+  if(Array.isArray(ability.accByDist) && ability.accByDist.length) {
+    const i = Math.min(ability.accByDist.length, Math.max(1, dist)) - 1;
+    return ability.accByDist[i];
+  }
+  const maxRange = ability.range || 1;
+  if(maxRange <= 1) return 95;
+  const sharp = ['pyromancer','geomancer','aeromancer','aquamancer'].includes(ability.school);
+  const far = sharp ? 60 : (ability.school === 'wizard' ? 72 : (ability.school === 'ranged' ? 75 : 70));
+  const f = Math.min(1, Math.max(0, (dist - 1) / (maxRange - 1)));
+  return Math.round(95 - f * (95 - far));
+}
+
+// Hit model (Данил's spec + lore):
 //  - MELEE (and any non-ranged) ALWAYS hits — 100% (контакт, ближняя).
-//  - RANGED / MAGIC: distance-scaled base, then − dodge − situational:
-//      base = 95% point-blank → ~75% at the ability's max range (lore: дальняя ~40m ≈ 70% impulse hit).
+//  - RANGED / MAGIC: per-attack base accuracy at distance (hxAbilityAccAt), then − dodge − situational:
 //      − target base dodge (5-10)
 //      − situational = the LARGER of { target moved this turn: −5, target behind partial cover: −15 } (do NOT stack).
-//    So an archer (dodge7 target) ≈ 88% point-blank, ~68% at max range, ~53% at max range behind cover.
 // adjacentEnemies kept for signature compatibility (flanking now matters via guaranteed melee damage, not to-hit).
 function hxCalcHitChance(ability, attacker, target, adjacentEnemies) {
   const isRangedType = ability.type === 'ranged' || ability.type === 'magic';
   if(!isRangedType) return 100; // melee never misses
-  const maxRange = ability.range || 1;
   const dist = hexDist(attacker.col, attacker.row, target.col, target.row);
-  // Distance falloff over the ability's reach: 95 at dist 1 → 75 at max range.
-  const f = maxRange > 1 ? Math.min(1, Math.max(0, (dist - 1) / (maxRange - 1))) : 0;
-  let hit = 95 - Math.round(f * 20);
-  hit -= (target.defense != null ? target.defense : 0); // base dodge 5-10
+  let hit = hxAbilityAccAt(ability, dist);               // per-attack base accuracy at this distance
+  hit -= (target.defense != null ? target.defense : 0);  // base dodge 5-10
   const inBush = (hxs.bushes||[]).some(([bc,br])=>bc===target.col&&br===target.row);
   const hasCover = (hxs.obstacles||[]).some(ob=>ob.type==='rubble'&&hexDist(ob.col,ob.row,target.col,target.row)===1&&hexDist(ob.col,ob.row,attacker.col,attacker.row)>1);
   const coverPen = (inBush || hasCover) ? 15 : 0;        // partial cover: −15 (ranged)
