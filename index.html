@@ -3493,8 +3493,10 @@ function hexReachable(unit) {
 }
 
 function hexAttackable(unit) {
+  const ranged = unit.atkRange > 1;
   return hxs.units.filter(u => u.team !== unit.team && u.hp > 0
-    && hexDist(unit.col, unit.row, u.col, u.row) <= unit.atkRange);
+    && hexDist(unit.col, unit.row, u.col, u.row) <= unit.atkRange
+    && (!ranged || !hxLoSBlocked(unit.col, unit.row, u.col, u.row)));
 }
 
 // Get targets for a specific ability from a unit position
@@ -3528,6 +3530,8 @@ function hxAbilityTargets(unit, ability) {
     return result;
   }
   // Non-hero: unit-based targeting (existing logic)
+  const enemyNeedsLoS = ability.type === 'ranged' || ability.type === 'magic';
+  const enemyLoSok = (uc,ur) => !enemyNeedsLoS || !hxLoSBlocked(unit.col, unit.row, uc, ur);
   if(ability.type === 'heal') {
     return hxs.units.filter(u => u.team === unit.team && u.hp > 0
       && hexDist(unit.col, unit.row, u.col, u.row) <= ability.range);
@@ -3541,10 +3545,12 @@ function hxAbilityTargets(unit, ability) {
   if(ability.type === 'debuff' && ability.effect?.stat) {
     // targets enemies
     return hxs.units.filter(u => u.team !== unit.team && u.hp > 0
-      && hexDist(unit.col, unit.row, u.col, u.row) <= ability.range);
+      && hexDist(unit.col, unit.row, u.col, u.row) <= ability.range
+      && enemyLoSok(u.col, u.row));
   }
   return hxs.units.filter(u => u.team !== unit.team && u.hp > 0
-    && hexDist(unit.col, unit.row, u.col, u.row) <= ability.range);
+    && hexDist(unit.col, unit.row, u.col, u.row) <= ability.range
+    && enemyLoSok(u.col, u.row));
 }
 
 function hexApplyMorale(deadUnit) {
@@ -4222,10 +4228,12 @@ function hxPickEnemyAbility(enemy, players, allies) {
   // ---- RANGED role (archer, wizard, elementalist, incenser) — prefer max-range targets ----
   const isRangedType = ['archer','wizard','elementalist','incenser'].includes(enemy.type);
 
+  const abLoSok = (ab, p) => (ab.type!=='ranged'&&ab.type!=='magic') || !hxLoSBlocked(enemy.col,enemy.row,p.col,p.row);
+
   // Debuff if 2+ players in range (fallback for non-incenser debuffers)
   const debuffAbs = abs.filter(a=>a.type==='debuff'&&a.cooldown===0);
   for(const ab of debuffAbs) {
-    const inRange = players.filter(p=>hexDist(enemy.col,enemy.row,p.col,p.row)<=ab.range);
+    const inRange = players.filter(p=>hexDist(enemy.col,enemy.row,p.col,p.row)<=ab.range && abLoSok(ab,p));
     if(inRange.length >= 2) return {ability:ab, target:inRange[0]};
   }
 
@@ -4233,7 +4241,7 @@ function hxPickEnemyAbility(enemy, players, allies) {
   const dmgAbs = abs.filter(a=>a.cooldown===0&&a.type!=='heal'&&a.type!=='summon'&&(hxAbilityDamage(a,enemy)>0||a.effect?.type==='stun'));
   if(dmgAbs.length) {
     const best = dmgAbs.slice().sort((a,b)=>hxAbilityDamage(b,enemy)-hxAbilityDamage(a,enemy))[0];
-    let inRange = players.filter(p=>hexDist(enemy.col,enemy.row,p.col,p.row)<=best.range);
+    let inRange = players.filter(p=>hexDist(enemy.col,enemy.row,p.col,p.row)<=best.range && abLoSok(best,p));
     // Ranged units prefer farthest target within range (stay distant)
     if(isRangedType && inRange.length > 1) {
       inRange = inRange.slice().sort((a,b)=>hexDist(enemy.col,enemy.row,b.col,b.row)-hexDist(enemy.col,enemy.row,a.col,a.row));
@@ -4327,7 +4335,8 @@ async function hexEnemyTurn() {
       }
     }
 
-    const inRange = hexDist(enemy.col,enemy.row,nearest.col,nearest.row) <= enemy.atkRange;
+    const inRange = hexDist(enemy.col,enemy.row,nearest.col,nearest.row) <= enemy.atkRange
+      && (enemy.atkRange<=1 || !hxLoSBlocked(enemy.col,enemy.row,nearest.col,nearest.row));
     const isRangedUnit = ['archer','wizard','elementalist','incenser'].includes(enemy.type);
     const isSummonerUnit = ['demonologist','necromancer'].includes(enemy.type);
     const isHealerUnit = ['druid','adept','healer'].includes(enemy.type);
@@ -4367,7 +4376,7 @@ async function hexEnemyTurn() {
             if(newPick && hexDist(enemy.col,enemy.row,newPick.target.col,newPick.target.row)<=newPick.ability.range) {
               await hxEnemyUseAb(enemy, newPick.ability, newPick.target);
               if(hxs.ended) break;
-            } else if(hexDist(enemy.col,enemy.row,nearest.col,nearest.row)<=enemy.atkRange && !enemy.acted) {
+            } else if(hexDist(enemy.col,enemy.row,nearest.col,nearest.row)<=enemy.atkRange && (enemy.atkRange<=1||!hxLoSBlocked(enemy.col,enemy.row,nearest.col,nearest.row)) && !enemy.acted) {
               await hxEnemyBasicAtk(enemy, nearest);
               if(hxs.ended) break;
             }
@@ -4375,7 +4384,7 @@ async function hexEnemyTurn() {
           }
         }
         if(!enemy.moved) {
-          const atkSpots = reach.filter(([c,r])=>hexDist(c,r,nearest.col,nearest.row)<=enemy.atkRange);
+          const atkSpots = reach.filter(([c,r])=>hexDist(c,r,nearest.col,nearest.row)<=enemy.atkRange && (enemy.atkRange<=1||!hxLoSBlocked(c,r,nearest.col,nearest.row)));
           if(atkSpots.length) {
             const safeAtk = atkSpots.filter(([c,r])=>players.every(p=>hexDist(c,r,p.col,p.row)>1));
             const pool = safeAtk.length ? safeAtk : atkSpots;
@@ -4417,7 +4426,7 @@ async function hexEnemyTurn() {
         }
       }
 
-      const atkSpots = reach.filter(([c,r])=>hexDist(c,r,nearest.col,nearest.row)<=enemy.atkRange);
+      const atkSpots = reach.filter(([c,r])=>hexDist(c,r,nearest.col,nearest.row)<=enemy.atkRange && (enemy.atkRange<=1||!hxLoSBlocked(c,r,nearest.col,nearest.row)));
       if(atkSpots.length) {
         const best = atkSpots.reduce((a,b)=>hexDist(a[0],a[1],nearest.col,nearest.row)<=hexDist(b[0],b[1],nearest.col,nearest.row)?a:b);
         await hxMoveUnit(enemy, best[0], best[1]);
