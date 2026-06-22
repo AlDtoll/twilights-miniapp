@@ -413,6 +413,7 @@
   .hx-ab-tier.mid { color:#a0a0d0; }
   .hx-ab-tier.strong { color:#f0c040; }
   .hx-ab-ap { font-size:9px; color:#f0c040; margin-left:2px; display:block; text-align:center; }
+  .hx-ab-dmg { font-size:10px; font-weight:700; color:#ff7675; display:block; text-align:center; }
 
   @keyframes hxFlash { 0%{fill-opacity:0.9} 50%{fill-opacity:0.15} 100%{fill-opacity:0} }
   @keyframes hxPulse { 0%,100%{r:16} 50%{r:20} }
@@ -3722,10 +3723,16 @@ function hxApplySchoolCooldown(caster, usedAbility) {
   });
 }
 
+// AP cost of an ability: explicit ab.ap (clamped 0-2), else derived (basic=1, anything with cooldown=2). Max 2.
+function hxAbilityAP(ab) {
+  if(ab.ap != null) return Math.max(0, Math.min(2, ab.ap));
+  return ab.maxCooldown === 0 ? 1 : 2;
+}
+
 // PASS A: helper — mark caster acted based on AP (hero) or directly (enemy/ally)
 function hxMarkActed(caster, ability) {
   if(caster.isHero) {
-    const apCost = ability.maxCooldown === 0 ? 1 : ability.maxCooldown <= 2 ? 2 : 3;
+    const apCost = hxAbilityAP(ability);
     hxs.heroAP = Math.max(0, hxs.heroAP - apCost);
     caster.acted = hxs.heroAP === 0; // done when out of AP
   } else {
@@ -5379,16 +5386,22 @@ function hexUpdateInfo(unit) {
     const isActive = hxs.activeAbilityIdx === idx && hxs.mode === 'ability';
     const onCd = ab.cooldown > 0;
     // PASS A: AP-based disable for hero
-    const apCost = ab.maxCooldown === 0 ? 1 : ab.maxCooldown <= 2 ? 2 : 3;
+    const apCost = hxAbilityAP(ab);
     const cantAct = unit.deepWaterStunned || (unit.isHero ? hxs.heroAP < apCost : unit.acted);
     btn.className = `hx-ability-btn hx-ability-type-${ab.type}${isActive ? ' active' : ''}`;
     btn.disabled = onCd || cantAct;
     const cdText = onCd ? `<span class="hx-ability-cd">⏳${ab.cooldown}</span>` : `<span class="hx-ability-cd ready">✓</span>`;
     const cdBadge = onCd ? `<span class="cd-badge">⏳${ab.cooldown}</span>` : '';
     const tier = ab.maxCooldown === 0 ? '' : ab.maxCooldown <= 2 ? '<span class="hx-ab-tier mid">◆</span>' : '<span class="hx-ab-tier strong">★</span>';
+    // Damage / effect value shown right on the button
+    const dmgBadge = ab.damage > 0
+      ? `<span class="hx-ab-dmg">⚔${ab.damage}${ab.aoe>0?'⊕':''}</span>`
+      : ab.effect?.type==='heal'    ? `<span class="hx-ab-dmg" style="color:#2ecc71">＋${ab.effect.value}</span>`
+      : ab.effect?.type==='barrier' ? `<span class="hx-ab-dmg" style="color:#74b9ff">🛡${ab.effect.value}</span>`
+      : '';
     // PASS A: show AP cost indicator
     const apBadge = unit.isHero ? `<span class="hx-ab-ap">${apCost}AP</span>` : '';
-    btn.innerHTML = `${cdBadge}<span class="hx-ability-icon">${ab.icon||'?'}</span><span class="hx-ability-name">${ab.name}${tier}</span>${cdText}${apBadge}`;
+    btn.innerHTML = `${cdBadge}<span class="hx-ability-icon">${ab.icon||'?'}</span><span class="hx-ability-name">${ab.name}${tier}</span>${dmgBadge}${cdText}${apBadge}`;
     btn.onclick = () => hxSelectAbility(idx);
     // Long-press tooltip
     hxAttachAbilityTooltip(btn, ab);
@@ -5430,7 +5443,7 @@ function hxSelectAbility(idx) {
   if(!ab || ab.cooldown > 0) return;
   // PASS A: check hero AP cost
   if(unit.isHero) {
-    const apCost = ab.maxCooldown === 0 ? 1 : ab.maxCooldown <= 2 ? 2 : 3;
+    const apCost = hxAbilityAP(ab);
     if(hxs.heroAP < apCost) return;
   }
   // Toggle off if already selected
