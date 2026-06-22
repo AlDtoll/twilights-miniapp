@@ -488,8 +488,40 @@ function m3fMkStatus(s) {
     duration: (s.duration != null ? parseInt(s.duration) : 1),
     gemTypes: Array.isArray(s.gemTypes) ? s.gemTypes.map(Number) : [],
     times: (s.times != null ? +s.times : null),
+    smartValue: (s.smartValue != null ? +s.smartValue : null),
+    // REACTION status payload: full perk (preferred) or legacy single effect.
+    reactionPerk: s.reactionPerk ? m3fMkPerk(s.reactionPerk) : null,
+    reactionEffect: s.reactionEffect || null,
     end: !!s.end
   };
+}
+
+// ---------- Status lifecycle primitives (mirror model/Status.kt) ----------
+// Status types whose `value` may be negative/zero-meaningful (NEUTRAL_STATUS). For these
+// compareValue() only requires value!=0; all others (GOOD/BAD) require value>0.
+const M3F_NEUTRAL_STATUS_TYPES = {
+  GENERATE: 1, CHANGE_STOCK: 1, CHANGE_TURN_KEEP_STRATEGY: 1,
+  ACCURACY: 1, EVASION: 1, CHANGE_DEFEND: 1, RESISTANCE: 1, INFO: 1
+};
+
+// Status.compareValue(): NEUTRAL types need value!=0; GOOD/BAD types need value>0.
+function m3fCompareValue(s) {
+  const ty = (s.type || '').toUpperCase();
+  return M3F_NEUTRAL_STATUS_TYPES[ty] ? (s.value !== 0) : (s.value > 0);
+}
+
+// Status.isActive(): (duration==-1 || duration>0) && compareValue() && (times==null||times>0).
+function m3fIsActive(s) {
+  if (!s) return false;
+  const haveValue = m3fCompareValue(s);
+  const haveTimes = (s.times == null) ? haveValue : (haveValue && s.times > 0);
+  if (s.duration === -1) return haveTimes;       // INFINITY
+  return s.duration > 0 && haveTimes;
+}
+
+// Status.decreaseTimes(): consume one use; only when `times` is tracked and positive.
+function m3fDecreaseTimes(s) {
+  if (s && s.times != null && s.times > 0) s.times = s.times - 1;
 }
 
 // ---------- Board engine (adapted copies of m3* — originals untouched) ----------
@@ -728,7 +760,8 @@ function m3fCascade(onSettle) {
 }
 
 // ---------- Stock accumulation pipeline ----------
-function m3fRoll(prob) { return (rng() * 100) <= (prob || 0); }
+// Discrete roll over 0..100 (101 buckets), matching Android Random.nextInt(0,101) <= probability.
+function m3fRoll(prob) { return Math.floor(rng() * 101) <= (prob || 0); }
 
 // Select the stock pool of a side. Android: heroStockListInteractor vs
 // enemyStockListInteractor, switched on isHeroTarget (EditStockExecutor).
@@ -771,8 +804,8 @@ function m3fAccumulateStocks(cells, runs, owner) {
   owner = owner || 'hero';
   // GENERATE / CHANGE_STOCK statuses on the ACTING side (heroTurn flag).
   const actor = owner === 'hero' ? m3f.hero : m3f.enemy;
-  const genStatuses = actor.statuses.filter(s => s.type === 'GENERATE');
-  const changeStatuses = actor.statuses.filter(s => s.type === 'CHANGE_STOCK');
+  const genStatuses = actor.statuses.filter(s => s.type === 'GENERATE' && m3fIsActive(s));
+  const changeStatuses = actor.statuses.filter(s => s.type === 'CHANGE_STOCK' && m3fIsActive(s));
 
   cells.forEach(({ r, c }) => {
     const g = m3f.grid[r][c];
@@ -909,6 +942,13 @@ function m3fStatusValue(person, name) {
 function m3fHasStatus(person, name) {
   return person.statuses.some(s => s.name === name);
 }
+// Android CheckConditionExecutor.getPersonParameter STATUS branch:
+//   statuses.find { it.name == name && it.isActive() }?.value ?: 0
+// First ACTIVE status of that name; honors duration/times/neutral-vs-positive via m3fIsActive.
+function m3fActiveStatusValue(person, name) {
+  const s = person.statuses.find(x => x.name === name && m3fIsActive(x));
+  return s ? s.value : 0;
+}
 
 // Read a raw segment parameter value for a person (used by pFunc/func segments).
 // owner: side owning the effect ('hero'|'enemy').
@@ -971,17 +1011,22 @@ function m3fConditionPersons(target, owner) {
 }
 
 // Live numeric value of a condition parameter for a person.
-// owner: side evaluating the condition ('hero'|'enemy') — selects the STOCK pool.
+// Mirrors Android CheckConditionExecutor.getPersonParameter (per the EVALUATED person).
+// owner: side evaluating the condition ('hero'|'enemy') — kept for signature parity, but
+// pool/person selection is driven by the person object itself (Android resolves by `this`).
 function m3fConditionParamValue(param, person, cond, owner) {
   switch (param) {
     case 'HP': return person.hp;
+    case 'SP': return person.shield || 0;                       // G3: Android SP -> this.shield
     case 'HP_P': return person.maxHp ? Math.round(person.hp / person.maxHp * 100) : 0;
-    case 'STATUS': return m3fStatusValue(person, cond.name);
+    case 'STATUS': return m3fActiveStatusValue(person, cond.name); // G4: first active status value
     case 'TURN': return m3f.turnNum;
     case 'TIME': return m3f.timeSec;
+    case 'ATTEMPT': return m3f.attempt || 0;                     // G7: Android attemptCounterInteractor
     case 'TOUCHES': return person.touches || 0;
     case 'HITS': return person.hits || 0;
-    case 'STOCK': { const st = m3fStockPool(m3fTargetOwner(cond.target, owner))[parseInt(cond.gemType)]; return st ? st.value : 0; }
+    // G6: STOCK pool from the EVALUATED person's own side, not cond.target.
+    case 'STOCK': { const st = m3fStockPool(person === m3f.enemy ? 'enemy' : 'hero')[parseInt(cond.gemType)]; return st ? st.value : 0; }
     case 'RES': return m3fResAmount(person, cond.name);
     case 'TOUCHED': return person.wasTouchedByPreviousEffect ? 1 : 0;
     case 'HIT': return person.wasHitByPreviousEffect ? 1 : 0;
@@ -995,19 +1040,20 @@ function m3fEvalConditionOne(cond, person, owner) {
   const param = (cond.parameter || 'STATUS').toUpperCase();
   const sym = (cond.symbol || 'HAVE').toUpperCase();
   const cmpVal = (cond.value != null ? +cond.value : 0);
-  // Status-existence symbols (HAVE/EXIST/EMPTY) only meaningful for STATUS param.
+  // STATUS param. Android getPersonParameter STATUS = first ACTIVE status's value (else 0),
+  // so an absent / inactive (expired duration, depleted times, neutral-vs-positive failing
+  // compareValue) status yields 0. checkConditionForPerson then applies the same symbol set
+  // as every other parameter: HAVE => val>0, EXIST => val!=0, EMPTY => val==0. (G4 + G5)
   if (param === 'STATUS') {
-    const val = m3fStatusValue(person, cond.name);
-    // A status with value 0 (e.g. skipZero "Цель: X" SET to 0) counts as NOT present —
-    // matches Android isActive(): HAVE/EXIST require an active (non-zero) status, EMPTY = inactive/absent.
-    const present = m3fHasStatus(person, cond.name) && val !== 0;
+    const val = m3fActiveStatusValue(person, cond.name);
     switch (sym) {
-      case 'HAVE': case 'EXIST': return present;
-      case 'EMPTY': return !present;
       case 'MORE': return val > cmpVal;
       case 'LESS': return val < cmpVal;
       case 'EQUALS': return val === cmpVal;
       case 'NOT': return val !== cmpVal;
+      case 'HAVE': return val > 0;
+      case 'EXIST': return val !== 0;
+      case 'EMPTY': return val === 0;
       default: return true;
     }
   }
@@ -1018,18 +1064,19 @@ function m3fEvalConditionOne(cond, person, owner) {
     case 'EQUALS': return val === cmpVal;
     case 'NOT': return val !== cmpVal;
     case 'HAVE': return val > 0;
-    case 'EXIST': return val != null;
-    case 'EMPTY': return !val;
+    case 'EXIST': return val !== 0;   // G2: Android EXIST => valueForCompare != 0 (not always-true)
+    case 'EMPTY': return val === 0;   // mirror Android valueForCompare == 0
     default: return true;
   }
 }
 
-// Evaluate one condition over its target(s). For ALL, true if ANY person satisfies
-// (mirrors Android target resolution where ALL maps to hero||enemy for flags).
+// Evaluate one condition over its target(s). Android CheckConditionExecutor.execute:
+// ALL => enemy.check && hero.check (AND across BOTH persons). HERO/ENEMY/SELF/FOE resolve
+// to a single person, for which .every is equivalent to .some. (G1)
 function m3fEvalCondition(cond, owner) {
   if (!cond) return true;
   const persons = m3fConditionPersons(cond.target, owner);
-  return persons.some(p => m3fEvalConditionOne(cond, p, owner));
+  return persons.every(p => m3fEvalConditionOne(cond, p, owner));
 }
 
 // AND over an array of conditions. Empty/absent => true.
@@ -1180,12 +1227,12 @@ function m3fApplyEffectOnce(effect, source) {
 
   switch (cmd) {
     case 'ATTACK':
-      targets.forEach(t => m3fAttack(srcF, t, baseValue, (effect.type || 'BOTH').toUpperCase(), t === srcF));
+      targets.forEach(t => m3fAttack(srcF, t, baseValue, (effect.type || 'BOTH').toUpperCase(), t === srcF, source, effect));
       break;
     case 'DEFEND':
       targets.forEach(t => {
         let v = baseValue;
-        srcF.statuses.forEach(s => { if (s.type === 'CHANGE_DEFEND') v += s.value; });
+        srcF.statuses.forEach(s => { if (m3fIsActive(s) && s.type === 'CHANGE_DEFEND') { v += s.value; m3fDecreaseTimes(s); } });
         t.shield += Math.max(0, v);
         m3fLog(`${t.name}: +${Math.max(0,v)} щитов.`);
         if (v > 0) m3fFloat(t, '+' + v + '🛡', 'shield');
@@ -1282,30 +1329,123 @@ function m3fApplyEffectOnce(effect, source) {
   }
 }
 
-// ---------- ATTACK resolution (mirror ApplyAttackExecutor) ----------
-function m3fAttack(src, tgt, value, type, selfTarget) {
-  // value modifiers via statuses, in order: WEAK/STRONG (src), VUL/ARMOR (tgt), RESISTANCE (tgt)
-  let v = value;
-  src.statuses.forEach(s => { if (s.type === 'WEAK') v -= s.value; if (s.type === 'STRONG') v += s.value; });
-  tgt.statuses.forEach(s => {
-    if (s.type === 'VULNERABLE' || s.type === 'VUL') v += s.value;
-    if (s.type === 'ARMOR') { if (m3fRoll(s.probability)) v -= s.value; }
-  });
-  let resist = 0;
-  tgt.statuses.forEach(s => { if (s.type === 'RESISTANCE') resist += s.value; });
-  if (resist) v = Math.round(v * (1 - resist / 100));
-  if (v < 0) v = 0;
+// ---------- ATTACK resolution (mirror PerkExecutor.attackPerson +
+// changeEffectByPersonsStatuses + ApplyAttackExecutor) ----------
+//
+// `srcOwner` is the acting side ('hero'|'enemy') — Android's isHeroPerk = (srcOwner==='hero').
+// `effect` carries the help/ignore* flags (Effect.Attack):
+//   help, ignoreEvasion, ignoreAcc, ignoreWeak, ignoreStrong, ignoreVul, ignoreArmor,
+//   ignoreDodge, ignoreCounterAttacks, ignoreAnswer.
+//
+// `ignoreAnswer` is set by counterattacks (answerOnAttack) to suppress recursion.
 
-  // hit chance (skip for self-target)
+// isWork(): roll Random(0..100) <= probability AND status currently active. Mirrors
+// Status.isWork(). One fresh roll per call; `times` is NOT consumed here (caller does it
+// only on a successful application).
+function m3fIsWork(s) { return m3fIsActive(s) && m3fRoll(s.probability); }
+
+// shouldApplyStatusEffect: does an effect targeting scope `target` (from owner `srcOwner`)
+// apply to the person on side `pIsHero`? Mirrors PerkExecutor.effectChangeByPersonStatuses.
+function m3fShouldApplyStatusEffect(target, pIsHero, srcIsHero) {
+  switch ((target || 'SELF').toUpperCase()) {
+    case 'ALL': return true;
+    case 'SELF': return pIsHero === srcIsHero;
+    case 'FOE': return pIsHero !== srcIsHero;
+    case 'HERO': return pIsHero;
+    case 'ENEMY': return !pIsHero;
+    default: return pIsHero === srcIsHero; // SELF default
+  }
+}
+
+function m3fAttack(src, tgt, value, type, selfTarget, srcOwner, effect) {
+  srcOwner = srcOwner || (src === m3f.hero ? 'hero' : 'enemy');
+  effect = effect || {};
+  const help = !!effect.help;
+  const srcIsHero = (srcOwner === 'hero');
+  const target = effect.target;
+
+  let v = value;
+  // changeEffectByPersonsStatuses — SKIPPED ENTIRELY for self-attacks (B7): raw value.
   if (!selfTarget) {
-    let chance = 100;
-    tgt.statuses.forEach(s => { if (s.type === 'EVASION') chance -= s.value; });
-    src.statuses.forEach(s => { if (s.type === 'ACCURACY') chance += s.value; });
-    // miss/dodge: attack reached resolution but neither touch nor hit flag set
-    if (chance < (rng() * 100)) { m3fLog(`${src.name} → ${tgt.name}: Промах!`); m3fFloat(tgt, 'Промах', 'miss'); return; }
+    // WEAK/STRONG keyed to the attack SOURCE side; VUL/ARMOR keyed to effect.target scope.
+    // Iterate BOTH persons (mirror effectChangeByPersonStatuses called for hero then enemy).
+    [m3f.hero, m3f.enemy].forEach(p => {
+      const pIsHero = (p === m3f.hero);
+      const isPersonPerk = (pIsHero === srcIsHero); // p is the source side
+      const inScope = m3fShouldApplyStatusEffect(target, pIsHero, srcIsHero);
+      p.statuses.forEach(s => {
+        if (!m3fIsWork(s)) return; // active + probability roll
+        // WEAK/STRONG: only on the attack source's statuses; skip under help/ignore.
+        if (isPersonPerk) {
+          if (s.type === 'WEAK') { if (!help && !effect.ignoreWeak) { v -= s.value; m3fDecreaseTimes(s); } }
+          else if (s.type === 'STRONG') { if (!help && !effect.ignoreStrong) { v += s.value; m3fDecreaseTimes(s); } }
+        }
+        // VUL/ARMOR: gated by target scope; skip under ignoreVul/ignoreArmor.
+        if (inScope) {
+          if (s.type === 'VULNERABLE' || s.type === 'VUL') { if (!effect.ignoreVul) { v += s.value; m3fDecreaseTimes(s); } }
+          else if (s.type === 'ARMOR') { if (!effect.ignoreArmor) { v -= s.value; m3fDecreaseTimes(s); } }
+        }
+      });
+    });
+    if (v < 0) v = 0; // coerceAtLeast(0) before resistance (Effect.Attack)
+    // RESISTANCE multiplier on the TARGET (non-source) person. Mirror applyResistanceMultiplier:
+    // sum isWork RESISTANCE values, multiplier=1-total/100, value=(value*mult).toInt().coerceAtLeast(0).
+    // Android does NOT consume `times` for resistance, and ignoreArmor does not gate it.
+    let totalResistance = 0;
+    tgt.statuses.forEach(s => { if (s.type === 'RESISTANCE' && m3fIsWork(s)) totalResistance += s.value; });
+    if (totalResistance) v = Math.max(0, Math.trunc(v * (1 - totalResistance / 100)));
+  } else {
+    if (v < 0) v = 0;
   }
 
-  // attack landed (not a miss/dodge): mark touched (mirror ApplyAttackExecutor.touch())
+  // hit chance + dodge (skip for self-target). countHitChance: EVASION (target, unless
+  // ignoreEvasion) decreases; ACCURACY (source, unless help/ignoreAcc) increases.
+  // A miss or a dodge negates the damage but counterattacks STILL fire (Android runs the
+  // answerOnAttack block outside the hit/miss branch), so we flow to the shared counter call.
+  let landed = true;
+  if (!selfTarget) {
+    let chance = 100;
+    if (!effect.ignoreEvasion) {
+      tgt.statuses.forEach(s => { if (s.type === 'EVASION' && m3fIsWork(s)) { chance -= s.value; m3fDecreaseTimes(s); } });
+    }
+    if (!help && !effect.ignoreAcc) {
+      src.statuses.forEach(s => { if (s.type === 'ACCURACY' && m3fIsWork(s)) { chance += s.value; m3fDecreaseTimes(s); } });
+    }
+    if (chance < (rng() * 100)) {
+      m3fLog(`${src.name} → ${tgt.name}: Промах!`); m3fFloat(tgt, 'Промах', 'miss');
+      landed = false;
+    } else {
+      // applyAttackOrUseDodge: after the hit succeeds, target SMART_DODGE then DODGE negates it.
+      // SMART_DODGE fires only when smartValue != null && attack.value (post-mods) > smartValue.
+      const smart = tgt.statuses.find(s => (s.type === 'SMART_DODGE') && m3fIsWork(s) && s.smartValue != null && v > s.smartValue);
+      if (smart) {
+        m3fDecreaseTimes(smart);
+        m3fLog(`${tgt.name} уворачивается.`); m3fFloat(tgt, 'Уворот', 'miss');
+        landed = false;
+      } else {
+        const dodge = tgt.statuses.find(s => (s.type === 'DODGE') && m3fIsActive(s));
+        if (dodge && !effect.ignoreDodge) {
+          m3fDecreaseTimes(dodge);
+          m3fLog(`${tgt.name} уворачивается.`); m3fFloat(tgt, 'Уворот', 'miss');
+          landed = false;
+        }
+      }
+    }
+  }
+
+  if (landed) m3fAttackDealDamage(src, tgt, v, type, selfTarget, help);
+
+  // answerOnAttack: counterattacks fire after a non-self, non-help,
+  // non-ignoreCounterAttacks, non-ignoreAnswer attack — whether it hit, missed, or was dodged.
+  if (!selfTarget && !help && !effect.ignoreCounterAttacks && !effect.ignoreAnswer) {
+    m3fAnswerOnAttacks(src, tgt, srcOwner, effect);
+  }
+}
+
+// Shield/HP application + VAMP. Split out so a missed/dodged attack can still run
+// counterattacks without dealing damage.
+function m3fAttackDealDamage(src, tgt, v, type, selfTarget, help) {
+  // attack landed (not a miss/dodge): mark touched (mirror ApplyAttackExecutor.touch()).
   // Self-attacks (fromStatusOrSelfAttack) suppress touch/hit flags.
   if (!selfTarget) {
     tgt.wasTouchedByPreviousEffect = true;
@@ -1335,7 +1475,68 @@ function m3fAttack(src, tgt, value, type, selfTarget) {
   } else if (blocked > 0) {
     m3fFloat(tgt, '🛡−' + blocked, 'block');
   }
+  // VAMP (restoreHpByVamp): runs on ANY landed non-self, non-help attack — Android calls it
+  // regardless of damage amount, so a 0-HP-damage hit still consumes VAMP times (heal=0).
+  if (!selfTarget && !help) {
+    tgt.statuses.forEach(s => {
+      if (s.type !== 'VAMP' || !m3fIsWork(s)) return;
+      const heal = Math.floor(hpDamage * s.value / 100);
+      if (heal > 0) tgt.hp = Math.min(tgt.maxHp, tgt.hp + heal);
+      m3fDecreaseTimes(s);
+      m3fLog(`${tgt.name} высасывает ${heal} здоровья (${s.name}).`);
+      if (heal > 0) m3fFloat(tgt, '+' + heal, 'heal');
+    });
+  }
   m3fLog(`${src.name} → ${tgt.name}: ${v} урона${ty !== 'BOTH' ? ' (' + ty + ')' : ''}.`);
+}
+
+// answerOnAttack (PerkExecutor.kt:1153) — the target's active COUNTERATTACK/HARM/REACTION
+// statuses retaliate. COUNTERATTACK/HARM return a BOTH attack at the original attacker
+// (HARM as help => no source-status amplification, no vamp, no re-counter); REACTION runs
+// its reactionPerk/reactionEffect through the executeIfAvailable gate.
+// `times`: decremented for COUNTERATTACK on each fire (1156-1158) and for REACTION only
+// after a successful availability check (1210); HARM never decrements times in this path.
+function m3fAnswerOnAttacks(src, tgt, srcOwner, effect) {
+  if (effect && effect.ignoreAnswer) return;
+  const tgtOwner = (tgt === m3f.hero) ? 'hero' : 'enemy';
+  // snapshot — answer effects may push/remove statuses
+  const answers = tgt.statuses.filter(s =>
+    (s.type === 'COUNTERATTACK' || s.type === 'HARM' || s.type === 'REACTION') && m3fIsWork(s));
+  answers.forEach(s => {
+    if (s.type === 'COUNTERATTACK' || s.type === 'HARM') {
+      // Android answerOnAttack (PerkExecutor.kt:1156-1158): times consumed ONLY for
+      // COUNTERATTACK. HARM never calls decreaseTimes() in this path.
+      if (s.type === 'COUNTERATTACK') m3fDecreaseTimes(s);
+      m3fLog(`У ${tgt.name} срабатывает ${s.name}(${s.value}).`);
+      // counter targets the original attacker; HARM is a "help" attack.
+      m3fAttack(tgt, src, s.value, 'BOTH', false, tgtOwner,
+        { target: (src === m3f.hero ? 'HERO' : 'ENEMY'), help: (s.type === 'HARM'), ignoreAnswer: true });
+    } else if (s.type === 'REACTION') {
+      // REACTION fires reactionPerk (preferred) or reactionEffect (legacy) with the
+      // target as the acting owner. Android (PerkExecutor.kt:1190-1219) routes this
+      // through executeIfAvailable / canExecuteLikeRegularPerk: canShow
+      // (conditionsForDisplay) THEN the full availability gate (probability+pFunc,
+      // charges, cooldown, conditionsForEnable, resources, prices). Effects fire,
+      // charges are spent and `times` is decremented ONLY when the perk is available.
+      const rp = s.reactionPerk || (s.reactionEffect ? { name: s.name, effects: [s.reactionEffect] } : null);
+      if (!rp || !Array.isArray(rp.effects) || !rp.effects.length) return;
+      // canShow: conditionsForDisplay
+      if (!m3fCheckConditions(rp.conditionsForDisplay, tgtOwner)) return;
+      // executeIfAvailable / canExecuteLikeRegularPerk:
+      //  1) probability roll (+pFunc) — mirror canExecuteLikeRegularPerk (1105-1116)
+      let prob = (rp.probability != null ? rp.probability : 100);
+      prob += m3fFuncValue(rp.pFunc, tgtOwner);
+      if (!((rng() * 100) <= prob)) return;
+      //  2) charges / cooldown / conditionsForEnable / resources / prices
+      if (!m3fPerkEnabled(rp, tgtOwner)) return;
+      // available — pay charges/cooldown (decreaseCharges, set reload), fire, consume times
+      if (rp.charges != null) m3f.perkCharges[rp.name] = Math.max(0, (m3f.perkCharges[rp.name] || 0) - 1);
+      if (rp.coolDown) m3f.perkReload[rp.name] = 0;
+      m3fDecreaseTimes(s);
+      m3fLog(`У ${tgt.name} срабатывает ${s.name}(${s.value}).`);
+      rp.effects.forEach(eff => m3fApplyEffect(eff, tgtOwner));
+    }
+  });
 }
 
 // ---------- Stock decay ----------
@@ -1351,7 +1552,7 @@ function m3fApplyTurnKeep(owner) {
     const gs = m3f.gemSettings[gt];
     let keep = gs ? gs.turnKeepStrategy : 50;
     // CHANGE_TURN_KEEP_STRATEGY statuses on the acting side
-    actor.statuses.forEach(s => { if (s.type === 'CHANGE_TURN_KEEP_STRATEGY' && s.gemTypes.includes(+gt)) keep += s.value; });
+    actor.statuses.forEach(s => { if (m3fIsActive(s) && s.type === 'CHANGE_TURN_KEEP_STRATEGY' && s.gemTypes.includes(+gt)) keep += s.value; });
     if (keep < 0) keep = 0;
     pool[gt].value = Math.round(pool[gt].value * keep / 100);
   });
@@ -1381,6 +1582,7 @@ function m3fTickStatuses(person, when) {
   typeOrder.forEach(type => {
     active.forEach(s => {
       if (s.type !== type) return;
+      if (!m3fIsActive(s)) return;
       if (!m3fRoll(s.probability)) return;
       switch (s.type) {
         case 'DEFEND':
@@ -1419,18 +1621,33 @@ function m3fTickStatuses(person, when) {
   });
   // STUN / passive types (ARMOR/WEAK/...) are handled at turn level / checked inline.
 
-  // Separate duration pass (mirrors Android's separate updatePersonStatus call):
-  // decrement durations of THIS phase's statuses after all effects fired, drop expired,
-  // keep everything else (other-phase statuses untouched, -1 = infinite).
-  person.statuses = person.statuses.filter(s => {
-    if (s.end !== wantEnd) return true;
-    if (s.duration > 0) s.duration -= 1;
-    return s.duration !== 0;
+  // Separate duration pass (mirrors Android updatePersonStatus): decrement duration ONLY
+  // for statuses that are isActive() AND scheduled for this phase. At duration 0 set
+  // value=0 and KEEP the object in the list (Condition STATUS HAVE/EMPTY checks rely on
+  // the object still existing). Other-phase / inactive / infinite (-1) statuses untouched.
+  person.statuses.forEach(s => {
+    if (s.end !== wantEnd) return;
+    if (!m3fIsActive(s)) return;
+    if (s.duration > 0) {
+      s.duration -= 1;
+      if (s.duration === 0) s.value = 0;
+    }
   });
 }
 
+// Active STUN gate: only stuns that pass isActive() (duration/value/times) count.
 function m3fIsStunned(person) {
-  return person.statuses.some(s => s.type === 'STUN');
+  return person.statuses.some(s => s.type === 'STUN' && m3fIsActive(s));
+}
+
+// Consume one use of each active STUN on a person — call once per attempted/suppressed
+// action (mirrors PerkExecutor decreaseTimes on the stun). Returns true if any stun fired.
+function m3fConsumeStun(person) {
+  let stunned = false;
+  person.statuses.forEach(s => {
+    if (s.type === 'STUN' && m3fIsActive(s)) { stunned = true; m3fDecreaseTimes(s); }
+  });
+  return stunned;
 }
 
 // ---------- Real-time scene timer + TimePerks ----------
