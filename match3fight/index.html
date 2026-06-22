@@ -436,23 +436,33 @@ function m3fLoadScene() {
     timerRunning: false,  // true while the hero's board is OPEN (decision phase, before the swap)
     turnStockSnap: null,  // {gemType->value} snapshot of HERO stocks at hero-turn start ("За ход" baseline)
     perkCharges: {},      // name -> remaining charges
-    perkReload: {},       // name -> turns since last use (>= coolDown => ready)
-    categoryLocked: {},   // category -> true if a perk of category used this turn
+    perkReload: {},       // name -> reload counter; isReloading() === reload < coolDown
     log: []
   };
 
-  // initialize charges & reload trackers (incl. trigger/time/stock perks so charges work)
+  // initialize charges & reload trackers (incl. trigger/time/stock perks so charges work).
+  // Reload init mirrors Perk.init() (Perk.kt:167-183): startReload ?? (COMBO -> 0 else coolDown).
   const allPerkSources = [...m3f.heroHands, ...m3f.enemyHands];
   allPerkSources.forEach(h => h.perks.forEach(p => {
     if (p.charges != null) m3f.perkCharges[p.name] = p.charges;
-    m3f.perkReload[p.name] = p.coolDown; // ready at start
+    m3fInitPerkReload(p);
   }));
   [...m3f.heroTimePerks, ...m3f.enemyTimePerks, ...m3f.heroStockPerks, ...m3f.enemyStockPerks]
-    .forEach(tp => { if (tp.perk && tp.perk.charges != null) m3f.perkCharges[tp.perk.name] = tp.perk.charges; });
+    .forEach(tp => { if (tp.perk) { if (tp.perk.charges != null) m3f.perkCharges[tp.perk.name] = tp.perk.charges; m3fInitPerkReload(tp.perk); } });
   Object.keys(m3f.cells).forEach(k => {
     const cp = m3f.cells[k].triggerPerk;
-    if (cp && cp.charges != null) m3f.perkCharges[cp.name] = cp.charges;
+    if (cp) { if (cp.charges != null) m3f.perkCharges[cp.name] = cp.charges; m3fInitPerkReload(cp); }
   });
+}
+
+// Initialize a perk's reload counter (Perk.init / Perk.kt:172-175): use startReload when set,
+// otherwise COMBO perks start ON COOLDOWN (reload=0) and TURN/PERK perks start READY (reload=coolDown).
+function m3fInitPerkReload(perk) {
+  if (!perk || !perk.name) return;
+  let start;
+  if (perk.startReload != null) start = perk.startReload;
+  else start = (perk.reloadType === 'COMBO') ? 0 : (perk.coolDown || 0);
+  m3f.perkReload[perk.name] = start;
 }
 
 // Build a full perk object from raw JSON (shared by hands, time/stock perks, trigger cells).
@@ -469,8 +479,13 @@ function m3fMkPerk(p) {
     category: p.category || null,
     coolDown: (p.coolDown != null ? +p.coolDown : 0),
     reloadType: p.reloadType || 'TURN',
+    // startReload: optional initial reload state (Perk.kt:64). When unset, init() picks
+    // 0 for COMBO (on cooldown) else coolDown (ready) — applied in m3fInitPerkReload.
+    startReload: (p.startReload != null ? +p.startReload : null),
     charges: (p.charges != null ? +p.charges : null),
     probability: (p.probability != null ? +p.probability : 100),
+    // pFunc: probability-modifier function for the availability roll (canExecuteLikeRegularPerk 1105).
+    pFunc: p.pFunc || null,
     conditionsForDisplay: Array.isArray(p.conditionsForDisplay) ? p.conditionsForDisplay : null,
     conditionsForEnable: Array.isArray(p.conditionsForEnable) ? p.conditionsForEnable : null,
     place: !!p.place
@@ -535,18 +550,25 @@ function m3fGem() { return Math.floor(rng() * m3f.settings.types); }
 function m3fMkGemMeta(g) {
   const primary = g + 1;
   const gs = m3f.gemSettings[primary] || {};
-  const meta = { extra: null, bonus: false, half: false };
-  if (m3fRoll(gs.halfProbability)) {
+  const types = m3f.settings.types;
+  // `bonusType` is a SEPARATE random color (Android Gem.generateNewGem: Random.nextInt(1,until),
+  // kept only when != primary) that carries that color's bonusValue into the BONUS color's pool.
+  const meta = { extra: null, bonusType: null, half: false };
+  // bonus (independent roll, distinct color) — Gem.kt order: bonus, then extra, then half.
+  // F9: gem rolls use the STRICT `<` comparison (m3fRollStrict), unlike combat/perk rolls.
+  if (m3fRollStrict(gs.bonusProbability)) {
+    const bt = Math.floor(rng() * types) + 1;
+    if (bt !== primary) meta.bonusType = bt;
+  }
+  if (m3fRollStrict(gs.halfProbability)) {
     meta.half = true; // EMPTY_COLOR sentinel => no extra color when half-debuffed
-  } else if (m3fRoll(gs.extraProbability)) {
+  } else if (m3fRollStrict(gs.extraProbability)) {
     // pick a different color in 1..types as the additional matchable color
-    const types = m3f.settings.types;
     if (types > 1) {
       let e; do { e = Math.floor(rng() * types) + 1; } while (e === primary);
       meta.extra = e;
     }
   }
-  if (m3fRoll(gs.bonusProbability)) meta.bonus = true;
   return meta;
 }
 
@@ -602,7 +624,7 @@ function m3fRender() {
             const ec = (m3f.gemSettings[meta.extra] || {}).colorHex || M3F_COLORS[(meta.extra - 1) % M3F_COLORS.length];
             cell.style.background = `linear-gradient(135deg, ${cell.style.background} 50%, ${ec} 50%)`;
           }
-          if (meta.bonus) cell.classList.add('m3f-bonus');
+          if (meta.bonusType) cell.classList.add('m3f-bonus');
           if (meta.half) cell.classList.add('m3f-half');
         }
         if (m3f.sel && m3f.sel.r === r && m3f.sel.c === c) cell.classList.add('selected');
@@ -637,7 +659,12 @@ function m3fClick(r, c) {
   setTimeout(m3fCascade, 150);
 }
 
-// Returns {cells:[{r,c}], runs:[{gemType,size,orientation,cells}]}
+// Returns {cells:[{r,c}], unique:[{r,c}], groups:[{gemType,size,orientation}]}
+// `cells` carries MULTIPLICITY — Android findMatches() adds (row,col) once per matched triplet,
+// so an H/V intersection cell appears in BOTH runs and is scored twice (UpdateStockExecutor
+// iterates the raw crushedCells list, not the de-duped set — see F5). `unique` is the de-duped
+// position set used for board removal and for BFS group construction (computeMatchGroups uses
+// matchedPositions.toMutableSet()). `groups` are the BFS connected components for HeroRules (F1).
 // Dual-color aware: a gem matches a run of color `color` if its primary OR extra color is `color`.
 function m3fCellColor(r, c) { return m3f.grid[r][c] >= 0 ? m3f.grid[r][c] + 1 : -1; }
 function m3fCellMatchesColor(r, c, color) {
@@ -645,38 +672,88 @@ function m3fCellMatchesColor(r, c, color) {
   if (prim < 0) return false;
   return m3fGemMatchesColor(prim, m3f.gmeta[r][c], color);
 }
+// Android GameBoard.matches: two gems match if any of {type,extraType} of one equals
+// type/extraType of the other. Used for findMatches triplet detection.
+function m3fGemsMatch(r1, c1, r2, c2) {
+  const p1 = m3fCellColor(r1, c1), p2 = m3fCellColor(r2, c2);
+  if (p1 < 0 || p2 < 0) return false;
+  const e1 = (m3f.gmeta[r1][c1] || {}).extra, e2 = (m3f.gmeta[r2][c2] || {}).extra;
+  return p1 === p2 || e1 === p2 || p1 === e2;
+}
 function m3fFindMatches() {
-  const set = new Set();
-  const runs = [];
+  // raw matched positions WITH multiplicity (Android: matchedPositions adds each triplet member)
+  const cells = [];
+  const uniq = new Set();
+  // Horizontal triplets anchored at (r,c): Android scans col in 0..columnSize-2 and adds the
+  // sliding triplet (c,c+1,c+2) whenever all three mutually match the anchor.
   for (let r = 0; r < M3F_SIZE; r++) {
     for (let c = 0; c <= M3F_SIZE - 3; c++) {
-      const color = m3fCellColor(r, c);
-      if (color < 0) continue;
-      // run color anchored on this cell's primary color
-      if (m3fCellMatchesColor(r, c+1, color) && m3fCellMatchesColor(r, c+2, color)) {
-        let len = 3; while (c+len < M3F_SIZE && m3fCellMatchesColor(r, c+len, color)) len++;
-        const cells = [];
-        for (let i = 0; i < len; i++) { set.add(r+'_'+(c+i)); cells.push({ r, c: c+i }); }
-        runs.push({ gemType: color, size: len, orientation: 'HORIZONTAL', cells });
-        c += len - 1;
+      if (m3fCellColor(r, c) < 0) continue;
+      if (m3fGemsMatch(r, c, r, c+1) && m3fGemsMatch(r, c, r, c+2)) {
+        cells.push({ r, c }); cells.push({ r, c: c+1 }); cells.push({ r, c: c+2 });
+        uniq.add(r+'_'+c); uniq.add(r+'_'+(c+1)); uniq.add(r+'_'+(c+2));
       }
     }
   }
-  for (let c = 0; c < M3F_SIZE; c++) {
-    for (let r = 0; r <= M3F_SIZE - 3; r++) {
-      const color = m3fCellColor(r, c);
-      if (color < 0) continue;
-      if (m3fCellMatchesColor(r+1, c, color) && m3fCellMatchesColor(r+2, c, color)) {
-        let len = 3; while (r+len < M3F_SIZE && m3fCellMatchesColor(r+len, c, color)) len++;
-        const cells = [];
-        for (let i = 0; i < len; i++) { set.add((r+i)+'_'+c); cells.push({ r: r+i, c }); }
-        runs.push({ gemType: color, size: len, orientation: 'VERTICAL', cells });
-        r += len - 1;
+  // Vertical triplets anchored at (r,c).
+  for (let r = 0; r <= M3F_SIZE - 3; r++) {
+    for (let c = 0; c < M3F_SIZE; c++) {
+      if (m3fCellColor(r, c) < 0) continue;
+      if (m3fGemsMatch(r, c, r+1, c) && m3fGemsMatch(r, c, r+2, c)) {
+        cells.push({ r, c }); cells.push({ r: r+1, c }); cells.push({ r: r+2, c });
+        uniq.add(r+'_'+c); uniq.add((r+1)+'_'+c); uniq.add((r+2)+'_'+c);
       }
     }
   }
-  const cells = [...set].map(s => { const p = s.split('_'); return { r:+p[0], c:+p[1] }; });
-  return { cells, runs };
+  const unique = [...uniq].map(s => { const p = s.split('_'); return { r:+p[0], c:+p[1] }; });
+  const groups = m3fComputeMatchGroups(uniq);
+  return { cells, unique, groups };
+}
+
+// BFS 4-neighbour connected components over the matched set, grouped by PRIMARY color
+// (Android computeMatchGroups: neighbour kept only when gameBoard[n].type == type — primary type,
+// NOT dual-color). One MatchGroupInfo per component with size + orientation (F1/F2).
+function m3fComputeMatchGroups(uniqSet) {
+  const visited = new Set();
+  const groups = [];
+  uniqSet.forEach(key => {
+    if (visited.has(key)) return;
+    const [r0, c0] = key.split('_').map(Number);
+    const type = m3fCellColor(r0, c0); // primary color of the seed
+    const queue = [[r0, c0]];
+    visited.add(key);
+    const component = [];
+    while (queue.length) {
+      const [r, c] = queue.shift();
+      component.push({ r, c });
+      const nbrs = [[r-1,c],[r+1,c],[r,c-1],[r,c+1]];
+      for (const [nr, nc] of nbrs) {
+        const nk = nr + '_' + nc;
+        if (!uniqSet.has(nk) || visited.has(nk)) continue;
+        if (nr < 0 || nr >= M3F_SIZE || nc < 0 || nc >= M3F_SIZE) continue;
+        if (m3fCellColor(nr, nc) !== type) continue; // primary type only
+        visited.add(nk);
+        queue.push([nr, nc]);
+      }
+    }
+    // orientation (Android MatchOrientation derivation)
+    const rowsMap = {}, colsMap = {};
+    component.forEach(({ r, c }) => {
+      rowsMap[r] = (rowsMap[r] || 0) + 1;
+      colsMap[c] = (colsMap[c] || 0) + 1;
+    });
+    const rowKeys = Object.keys(rowsMap), colKeys = Object.keys(colsMap);
+    const maxRowLen = Math.max(0, ...Object.values(rowsMap));
+    const maxColLen = Math.max(0, ...Object.values(colsMap));
+    let orientation;
+    if (rowKeys.length === 1 && component.length >= 3) orientation = 'HORIZONTAL';
+    else if (colKeys.length === 1 && component.length >= 3) orientation = 'VERTICAL';
+    else if (maxRowLen >= 3 && maxColLen >= 3) orientation = 'T_SHAPE';
+    else if (maxRowLen >= 2 && maxColLen >= 2) orientation = 'L_SHAPE';
+    else orientation = 'OTHER';
+    groups.push({ gemType: type, orientation, size: component.length });
+  });
+  return groups;
 }
 
 function m3fFallAnim(cb) {
@@ -736,7 +813,7 @@ function m3fFallAnim(cb) {
 // Cascade loop. `onSettle` (optional) runs once when cascades fully settle (no matches).
 // Used by the enemy board move to chain perk casting AFTER its cascades resolve.
 function m3fCascade(onSettle) {
-  const { cells: matches, runs } = m3fFindMatches();
+  const { cells: matches, unique, groups } = m3fFindMatches();
   if (!matches.length) {
     m3f.animating = false; m3fRender();
     if (typeof onSettle === 'function') { onSettle(); return; }
@@ -745,23 +822,31 @@ function m3fCascade(onSettle) {
     m3fUpdateAllUI();
     return;
   }
-  m3fAccumulateStocks(matches, runs);
+  // Scoring uses `matches` (with multiplicity); board removal uses `unique` (de-duped).
+  m3fAccumulateStocks(matches, groups);
   m3fUpdateStocksUI();
 
   const board = document.getElementById('m3f-board');
-  matches.forEach(({ r, c }) => {
+  unique.forEach(({ r, c }) => {
     const el = board.children[r * M3F_SIZE + c];
     if (el) el.classList.add('removing');
   });
   setTimeout(() => {
-    matches.forEach(({ r, c }) => { m3f.grid[r][c] = -1; m3f.gmeta[r][c] = null; });
+    unique.forEach(({ r, c }) => { m3f.grid[r][c] = -1; m3f.gmeta[r][c] = null; });
     m3fFallAnim(() => setTimeout(() => m3fCascade(onSettle), 60));
   }, 250);
 }
 
 // ---------- Stock accumulation pipeline ----------
 // Discrete roll over 0..100 (101 buckets), matching Android Random.nextInt(0,101) <= probability.
+// Combat-modifier / perk / effect / status probability roll. Android uses `roll <= probability`
+// (Status.isWork, PerkExecutor canExecuteLikeRegularPerk `roll > p => fail`, effect-probability
+// `roll <= p`). Discrete 0..100 (101 buckets). NOTE: this stays `<=` — only GEM generation uses
+// strict `<` (see m3fRollStrict / F9).
 function m3fRoll(prob) { return Math.floor(rng() * 101) <= (prob || 0); }
+// F9 — Gem.generateNewGem bonus/extra/half use `Random.nextInt(0,101) < probability` (STRICT <):
+// prob=0 never fires; the operator differs from the combat/perk/effect/status rolls above.
+function m3fRollStrict(prob) { return Math.floor(rng() * 101) < (prob || 0); }
 
 // Select the stock pool of a side. Android: heroStockListInteractor vs
 // enemyStockListInteractor, switched on isHeroTarget (EditStockExecutor).
@@ -775,10 +860,12 @@ function m3fAddStock(gemType, pts, owner) {
   const st = pool[gemType];
   if (!st) return;
   const prev = st.value;
+  // pts is already an integer (single Math.trunc at commit time — F6). Android increaseStock
+  // adds without re-rounding; clamp to maxValue, keep >=0 floor for non-scoring callers.
   let v = st.value + pts;
   if (v < 0) v = 0;
   if (st.maxValue != null) v = Math.min(v, st.maxValue);
-  st.value = Math.round(v);
+  st.value = Math.trunc(v);
   // StockPerk: fire on upward threshold crossing (prev < threshold && cur >= threshold)
   // against the OWNER's own pool / own stock-perk list.
   m3fCheckStockPerks(gemType, prev, st.value, owner);
@@ -794,98 +881,146 @@ function m3fCheckStockPerks(gemType, prev, cur, owner) {
   list.forEach(sp => {
     if (sp.gemType !== gemType) return;
     if (!(prev < sp.threshold && cur >= sp.threshold)) return;
+    // E1/E4 — StockPerkExecutor: canShow (conditionsForDisplay) THEN executeIfAvailable
+    // (probability+pFunc, charges, reload, conditionsForEnable, resources, prices); only on
+    // pass are charges spent, prices paid, reload set, and effects applied.
     if (!m3fCheckConditions(sp.perk.conditionsForDisplay, owner)) return;
-    m3fLog(`Порог ресурса (${gemType}≥${sp.threshold}): «${sp.perk.name}».`);
-    sp.perk.effects.forEach(eff => m3fApplyEffect(eff, owner));
+    if (m3fExecuteIfAvailable(sp.perk, owner)) {
+      m3fLog(`Порог ресурса (${gemType}≥${sp.threshold}): «${sp.perk.name}».`);
+    }
   });
 }
 
-function m3fAccumulateStocks(cells, runs, owner) {
+// Android UpdateStockExecutor.addValueFromCrushedGems. `cells` carries MULTIPLICITY (one entry
+// per matched-triplet membership — F5). Contributions are summed per gemType as floats, each
+// clamped >=0 (coerceAtLeast(0.0)) before summation, then committed ONCE per gemType with a
+// single Math.trunc (F6) — never Math.round per add.
+function m3fAccumulateStocks(cells, groups, owner) {
   owner = owner || 'hero';
-  // GENERATE / CHANGE_STOCK statuses on the ACTING side (heroTurn flag).
+  // CHANGE_STOCK statuses on the ACTING side (heroTurn flag). GENERATE is NOT applied here:
+  // Android's addValueFromCrushedGems has no GENERATE branch — GENERATE points come solely
+  // from applyPersonStatus (m3fTickStatuses) at turn start/end.
   const actor = owner === 'hero' ? m3f.hero : m3f.enemy;
-  const genStatuses = actor.statuses.filter(s => s.type === 'GENERATE' && m3fIsActive(s));
   const changeStatuses = actor.statuses.filter(s => s.type === 'CHANGE_STOCK' && m3fIsActive(s));
+
+  // Match rules fire BEFORE point accrual on the hero's turn (Android calls matchPerkExecutor
+  // before the stock loop). HeroRules only on the hero's turn (MatchPerkExecutor: heroTurn==true).
+  if (owner === 'hero') m3fRunMatchRules(groups);
+
+  // pointsForGemType: gem fullValue + sum of work CHANGE_STOCK values for that color.
+  const pointsForGemType = gt => {
+    const gs = m3f.gemSettings[gt];
+    let v = gs ? gs.fullValue : 10;
+    changeStatuses.forEach(s => { if (s.gemTypes.includes(gt)) v += s.value; });
+    return v;
+  };
+  // applyCellModifier: MULTIPLIER scales, ADDITIVE/TRIGGER offset; clamp >=0.
+  const applyCellModifier = (base, cell) => {
+    let v = base;
+    if (cell) {
+      if (cell.cellType === 'MULTIPLIER') v = v * cell.modifierValue;
+      else if (cell.cellType === 'ADDITIVE' || cell.cellType === 'TRIGGER') v += cell.modifierValue;
+    }
+    return v < 0 ? 0 : v;
+  };
+
+  const stockDelta = {};   // by gemType (primary + extra), float
+  const bonusDelta = {};   // by bonusType color, float
 
   cells.forEach(({ r, c }) => {
     const g = m3f.grid[r][c];
     if (g < 0) return;
     const gemType = g + 1;
-    const gs = m3f.gemSettings[gemType];
-    if (!gs) return;
     const meta = m3f.gmeta[r][c] || {};
-    // base points: half-debuff (meta.half) halves the award; bonus adds bonusValue
-    let pts = meta.half ? Math.floor(gs.fullValue / 2) : gs.fullValue;
-    if (meta.bonus) pts += gs.bonusValue;
-    // CHANGE_STOCK: +status.value for matching gemTypes
-    changeStatuses.forEach(s => { if (s.gemTypes.includes(gemType)) pts += s.value; });
-
-    // special-cell point modifier (MULTIPLIER / ADDITIVE; TRIGGER treated as ADDITIVE for
-    // the point calc — UpdateStockExecutor.applyCellModifier). Result clamped >= 0
-    // (coerceAtLeast(0.0)) per contribution, before summation.
     const cell = m3f.cells[r + '_' + c];
-    if (cell) {
-      if (cell.cellType === 'MULTIPLIER') pts = pts * cell.modifierValue;
-      else if (cell.cellType === 'ADDITIVE' || cell.cellType === 'TRIGGER') pts += cell.modifierValue;
-      if (pts < 0) pts = 0;
+
+    // F3: dual-color OR half-debuff => primary weight 0.5 (Android: extraType != null, where a
+    // half gem sets extraType=EMPTY_COLOR so it is also !=null). Plain gem => weight 1.0.
+    const dual = (meta.extra != null) || meta.half;
+    const mainWeight = dual ? 0.5 : 1.0;
+    if (gemType !== 0) {
+      const mainResult = applyCellModifier(pointsForGemType(gemType) * mainWeight, cell);
+      stockDelta[gemType] = (stockDelta[gemType] || 0) + mainResult;
     }
 
-    m3fAddStock(gemType, pts, owner);
-    // dual-color gem: also score its extra color (extraType) with that color's fullValue.
-    // The SAME cell modifier applies to this contribution too (UpdateStockExecutor passes
-    // each per-gem-type contribution through applyCellModifier with the same cell).
-    if (meta.extra) {
-      const egs = m3f.gemSettings[meta.extra];
-      if (egs) {
-        let epts = egs.fullValue;
-        changeStatuses.forEach(s => { if (s.gemTypes.includes(meta.extra)) epts += s.value; });
-        if (cell) {
-          if (cell.cellType === 'MULTIPLIER') epts = epts * cell.modifierValue;
-          else if (cell.cellType === 'ADDITIVE' || cell.cellType === 'TRIGGER') epts += cell.modifierValue;
-          if (epts < 0) epts = 0;
-        }
-        m3fAddStock(meta.extra, epts, owner);
-      }
+    // F3: extra color also scored at 0.5 (only a real color; half's EMPTY_COLOR yields no pool).
+    if (meta.extra != null && meta.extra !== 0) {
+      const extraResult = applyCellModifier(pointsForGemType(meta.extra) * 0.5, cell);
+      stockDelta[meta.extra] = (stockDelta[meta.extra] || 0) + extraResult;
     }
-    // GENERATE: flat add per gem
-    genStatuses.forEach(s => { if (s.gemTypes.includes(gemType)) m3fAddStock(gemType, s.value, owner); });
 
-    // TRIGGER cell: fire its embedded perk once per gem cleared here
-    if (cell && cell.cellType === 'TRIGGER' && cell.triggerPerk) m3fFireCellTrigger(cell.triggerPerk, owner);
+    // F4: bonus goes to the SEPARATE bonusType color's pool, using THAT color's bonusValue,
+    // through the same cell modifier.
+    if (meta.bonusType != null && meta.bonusType !== 0) {
+      const bgs = m3f.gemSettings[meta.bonusType];
+      const bonusVal = bgs ? bgs.bonusValue : 2;
+      const bonusResult = applyCellModifier(bonusVal, cell);
+      bonusDelta[meta.bonusType] = (bonusDelta[meta.bonusType] || 0) + bonusResult;
+    }
   });
 
-  // Match rules — HeroRules only on the hero's turn (Android MatchPerkExecutor: heroTurn==true).
-  if (owner === 'hero') m3fRunMatchRules(runs);
+  // Commit each gemType's summed contributions ONCE with Math.trunc (F6).
+  const commit = (map) => {
+    Object.keys(map).forEach(k => {
+      const gt = +k;
+      if (gt === 0) return;
+      m3fAddStock(gt, Math.trunc(map[gt]), owner);
+    });
+  };
+  commit(stockDelta);
+  commit(bonusDelta);
+
+  // F10: TRIGGER cells fire at most ONCE per crush batch, keyed by (row,col) — dedup so the F5
+  // multiplicity fix does not refire a trigger for the same cell in two overlapping runs.
+  const processedTriggers = new Set();
+  cells.forEach(({ r, c }) => {
+    const key = r + '_' + c;
+    if (processedTriggers.has(key)) return;
+    const cell = m3f.cells[key];
+    if (cell && cell.cellType === 'TRIGGER' && cell.triggerPerk) {
+      processedTriggers.add(key);
+      m3fFireCellTrigger(cell.triggerPerk, owner);
+    }
+  });
 
   // Board crush changed stocks/HP -> re-evaluate auto-statuses (GameScreenViewModel.crushGems,
   // line 115: stock-threshold conditions may have flipped).
   m3fUpdatePersonsStates();
 }
 
-// Fire a TRIGGER cell's embedded perk (gated by conditionsForDisplay + charges).
+// Fire a TRIGGER cell's embedded perk through the full availability gate.
+// E1 — TRIGGER cells route through executeIfAvailable (canShow conditionsForDisplay first,
+// then probability+pFunc/charges/reload/conditionsForEnable/resources/prices); charges spent,
+// prices paid, reload set, and effects applied only on pass. m3fExecuteIfAvailable already
+// calls m3fUpdatePersonsStates after applying effects.
 function m3fFireCellTrigger(perk, owner) {
   owner = owner || 'hero';
   if (!m3fCheckConditions(perk.conditionsForDisplay, owner)) return;
-  if (perk.charges != null && (m3f.perkCharges[perk.name] || 0) <= 0) return;
-  // respect cooldown (mirror perkExecutor.executeIfAvailable)
-  if (perk.coolDown && (m3f.perkReload[perk.name] || 0) < perk.coolDown) return;
-  m3fLog(`Клетка: «${perk.name}».`);
-  perk.effects.forEach(eff => m3fApplyEffect(eff, owner));
-  m3fUpdatePersonsStates(); // re-eval auto-statuses after the trigger cell's perk effects
-  if (perk.charges != null) m3f.perkCharges[perk.name] = Math.max(0, (m3f.perkCharges[perk.name] || 0) - 1);
-  if (perk.coolDown) m3f.perkReload[perk.name] = 0;
+  if (m3fExecuteIfAvailable(perk, owner)) {
+    m3fLog(`Клетка: «${perk.name}».`);
+  }
 }
 
-function m3fRunMatchRules(runs) {
+// F1/F2 — Android MatchPerkExecutor.execute(groups). Iterates BFS connected components (one per
+// match group, with size + orientation). Each HeroRule whose orientation/gemType/minSize match
+// fires its perk ONCE per group (an L/T 5-match is a single size-5 group, not two size-3 runs).
+// FIRING faithfulness: Android fires each matched rule via perkExecutor.execute(rule.perk,
+// heroTurn) — the FULL execute() bookkeeping pipeline (reloadPerksAfterUse, usePerkCharge,
+// usePerkResources, ifPerkHasReloadDownTimeIt, payPriceForPerk, STUN suppression of effects),
+// NOT executeIfAvailable (match rules have no probability/charges/reload gate on whether they
+// fire). We route through m3fExecutePerk so a charged rule-perk decrements charges, a priced one
+// pays, category siblings reset, and a stunned hero's rule effects are suppressed (one STUN
+// consumed) — instead of the raw effects.forEach that bypassed all of it.
+function m3fRunMatchRules(groups) {
   if (!m3f.heroRules.length) return;
-  runs.forEach(run => {
+  groups.forEach(group => {
     m3f.heroRules.forEach(rule => {
-      if (run.size < rule.minSize) return;
-      if (rule.orientation && rule.orientation !== run.orientation) return;
-      if (rule.gemType != null && rule.gemType !== run.gemType) return;
+      if (rule.orientation != null && rule.orientation !== group.orientation) return;
+      if (rule.gemType != null && rule.gemType !== group.gemType) return;
+      if (group.size < (rule.minSize != null ? rule.minSize : 3)) return;
       if (rule.perk && Array.isArray(rule.perk.effects)) {
-        rule.perk.effects.forEach(eff => m3fApplyEffect(eff, 'hero'));
-        m3fLog(`Правило «${rule.perk.name || '?'}» сработало (${run.size} в ряд).`);
+        m3fExecutePerk(rule.perk, 'hero');
+        m3fLog(`Правило «${rule.perk.name || '?'}» сработало (${group.size} в ряд, ${group.orientation}).`);
       }
     });
   });
@@ -1157,11 +1292,30 @@ function m3fApplyEffect(effect, source, disableUndo) {
 function m3fApplyEffectUnit(effect, source, disableUndo) {
   // reset previous-effect contact flags unless chained (disableUndo)
   if (!disableUndo) { m3fResetContactFlags(); }
-  // probability gate
+  // C4: effect-level charges (Android applyEffect:489-497). If the effect declares
+  // `charges`, track a mutable `currentCharges` on the effect object: when it reaches 0
+  // the effect is SKIPPED entirely (no probability roll, no FAIL branch), else one charge
+  // is consumed before dispatch (separate from perk-level charges).
+  if (effect.charges != null) {
+    if (effect.currentCharges == null) effect.currentCharges = effect.charges;
+    if (effect.currentCharges === 0) return;        // depleted -> skip
+    if (effect.currentCharges > 0) effect.currentCharges -= 1; // decreaseCharges()
+  }
+  // probability gate. One draw is used both to decide success and to derive the integer
+  // shown by the showFail log («Выпало N»), keeping the existing probability semantics.
   let p = (effect.probability != null ? effect.probability : 100);
   p += m3fFuncValue(effect.pFunc, source);
-  const rolled = (rng() * 100) <= p;
+  const draw = rng();
+  const rolledNum = Math.floor(draw * 101); // 0..100, for the showFail technical log
+  const rolled = (draw * 100) <= p;
   if (!rolled) {
+    // C10: on failure, when showFail !== false, log the technical line; and if FAIL
+    // additionalEffects exist, log the «Но неудача дала эффекты:» header before they run.
+    const showFail = (effect.showFail !== false);
+    if (showFail) m3fLog(`Эффект не сработал. Выпало ${rolledNum}`);
+    const hasFailAddl = Array.isArray(effect.additionalEffects)
+      && effect.additionalEffects.some(ae => (ae.successType ? ae.successType.toUpperCase() : '') === 'FAIL');
+    if (showFail && hasFailAddl) m3fLog('Но неудача дала эффекты:');
     // FAIL branch: only additionalEffects with successType==FAIL fire
     m3fRunAdditionalEffects(effect, source, false, false, true);
     return;
@@ -1178,6 +1332,15 @@ function m3fResetContactFlags() {
   m3f.hero.wasHitByPreviousEffect = false;
   m3f.enemy.wasTouchedByPreviousEffect = false;
   m3f.enemy.wasHitByPreviousEffect = false;
+}
+
+// D5 — clearHitsAndTouches (Person.kt:55): zero the per-turn HITS/TOUCHES accumulators.
+// This is DISTINCT from undo()/m3fResetContactFlags (which only flips the contact booleans).
+// Android calls it on the HERO at the start of EndTurnExecutor.execute() and on the ENEMY in
+// afterEnemyAction(); HITS/TOUCHES conditions read these per-turn counts.
+function m3fClearHitsAndTouches(person) {
+  person.hits = 0;
+  person.touches = 0;
 }
 
 // Run additionalEffects of a parent effect.
@@ -1231,10 +1394,19 @@ function m3fApplyEffectOnce(effect, source) {
       break;
     case 'DEFEND':
       targets.forEach(t => {
+        // CHANGE_DEFEND status (C2): mirror effectChangeByPersonStatuses — applied only when
+        // status.isWork() (active + probability roll) AND it belongs to the ACTING side
+        // (isPersonPerk); each application consumes one `times` (decreaseTimes).
         let v = baseValue;
-        srcF.statuses.forEach(s => { if (m3fIsActive(s) && s.type === 'CHANGE_DEFEND') { v += s.value; m3fDecreaseTimes(s); } });
-        t.shield += Math.max(0, v);
-        m3fLog(`${t.name}: +${Math.max(0,v)} щитов.`);
+        srcF.statuses.forEach(s => {
+          if (s.type === 'CHANGE_DEFEND' && m3fIsWork(s)) { v += s.value; m3fDecreaseTimes(s); }
+        });
+        // DEFEND honors effect.type (C1): SET => shield = value (absolute, no >=0 clamp);
+        // CHANGE (default) => shield += value. Mirrors DefendEffectHandler.defendPerson.
+        const ty = (effect.type || 'CHANGE').toUpperCase();
+        if (ty === 'SET') t.shield = v;
+        else t.shield += v;
+        m3fLog(`${t.name}: получает ${v} щитов. (${t.shield})`);
         if (v > 0) m3fFloat(t, '+' + v + '🛡', 'shield');
       });
       break;
@@ -1252,31 +1424,52 @@ function m3fApplyEffectOnce(effect, source) {
     case 'EDIT_STOCK': {
       const ty = (effect.type || 'CHANGE').toUpperCase();
       const gts = Array.isArray(effect.gemTypes) ? effect.gemTypes : [];
-      // Pool chosen by the EFFECT TARGET side (Android EditStockExecutor isHeroTarget).
-      const stockOwner = m3fTargetOwner(effect.target, source);
+      // C6: Android EditStockHandler maps the target side as ENEMY=>enemy, HERO=>hero,
+      // ALL=>HERO (the enemy branch is a //todo and is NOT handled), SELF=>acting side,
+      // FOE=>opposite. ADD/REMOVE (C7) always operate on the HERO pool only.
+      const etgt = (effect.target || 'SELF').toUpperCase();
+      let stockOwner;
+      if (ty === 'ADD' || ty === 'REMOVE') stockOwner = 'hero';
+      else if (etgt === 'ALL') stockOwner = 'hero';
+      else stockOwner = m3fTargetOwner(effect.target, source);
       const pool = m3fStockPool(stockOwner);
       gts.forEach(gt => {
         gt = parseInt(gt);
         const st = pool[gt];
-        if (!st) return;
-        const prev = st.value;
-        if (ty === 'SET') st.value = Math.max(0, baseValue);
-        else st.value = Math.max(0, st.value + baseValue);
+        const prev = st ? st.value : 0;
+        if (ty === 'ADD') {
+          // ADD a scale entry (hero pool). Our pool is keyed by gemType, so an entry for
+          // every active color already exists — set its value to the effect value.
+          if (st) st.value = baseValue;
+          else pool[gt] = { value: baseValue, gemType: gt, maxValue: null };
+        } else if (ty === 'REMOVE') {
+          // REMOVE a scale entry (hero pool) — drop it from the pool.
+          if (st) delete pool[gt];
+        } else if (st) {
+          // SET => set (coerced >=0); CHANGE (default) => add (coerced >=0).
+          if (ty === 'SET') st.value = Math.max(0, baseValue);
+          else st.value = Math.max(0, st.value + baseValue);
+        } else {
+          return;
+        }
         // StockPerks fire on any resource change, incl. EDIT_STOCK (Android parity)
-        m3fCheckStockPerks(gt, prev, st.value, stockOwner);
+        const cur = (pool[gt] ? pool[gt].value : 0);
+        m3fCheckStockPerks(gt, prev, cur, stockOwner);
       });
       m3fUpdateStocksUI();
       break;
     }
     case 'EDIT_RES': {
       // Named resources (стрелы/заряды): SET overwrites, CHANGE adds (Android EditResourcesExecutor).
+      // C8: Android editPersonResources has NO maxAmount clamp (a CHANGE may go negative) and
+      // EditResourcesExecutor maps ALL -> ENEMY only (editPersonResources(effect, false)), not both.
       const ty = (effect.type || 'CHANGE').toUpperCase();
       const rn = (effect.resName != null ? effect.resName : effect.name);
-      targets.forEach(t => {
+      const resTargets = ((effect.target || 'SELF').toUpperCase() === 'ALL') ? [m3f.enemy] : targets;
+      resTargets.forEach(t => {
         const r = (t.resources || []).find(x => x.name === rn);
         if (!r) return; // only edits an existing resource
         r.amount = (ty === 'SET') ? baseValue : r.amount + baseValue;
-        if (r.maxAmount != null && r.amount > r.maxAmount) r.amount = r.maxAmount;
         m3fLog(`${t.name}: ${rn} = ${r.amount}.`);
       });
       m3fUpdateStocksUI();
@@ -1294,15 +1487,23 @@ function m3fApplyEffectOnce(effect, source) {
         // a new status is added only when none with that name exists.
         const existing = t.statuses.find(s => s.name === ns.name);
         if (existing) {
+          // C5: Android updateExistingStatus — for ANY existing status first overwrite
+          // duration with the incoming status's duration. Then by type:
+          //   SET    => value = effectValue; times = effectStatus.times (even if null).
+          //   CHANGE => value += effectValue (times untouched).
+          //   TIMES  => only when effectStatus.times != null: value = effectValue AND
+          //             times = existing.times?.plus(timesToAdd) (null existing stays null).
+          existing.duration = ns.duration;
           if (ty === 'SET') {
             existing.value = ns.value;
-            if (ns.times != null) existing.times = ns.times;
-            if (stDef.duration != null) existing.duration = ns.duration;
+            existing.times = ns.times; // allow null
           } else if (ty === 'TIMES') {
-            existing.times = (existing.times != null ? existing.times : 0) + (ns.times != null ? ns.times : ns.value);
+            if (ns.times != null) {
+              existing.value = ns.value;
+              if (existing.times != null) existing.times = existing.times + ns.times;
+            }
           } else { // CHANGE (default)
             existing.value += ns.value;
-            if (ns.times != null) existing.times = (existing.times != null ? existing.times : 0) + ns.times;
           }
         } else {
           t.statuses.push(ns);
@@ -1312,7 +1513,10 @@ function m3fApplyEffectOnce(effect, source) {
       break;
     }
     case 'INFO':
-      if (effect.message) m3fLog(effect.message);
+      // C9: Android Info branch — when title != null, emit a dash/separator entry
+      // («Прочерк» CUSTOM_MESSAGE), regardless of message; otherwise log message if present.
+      if (effect.title != null) m3fLog('—');
+      else if (effect.message) m3fLog(effect.message);
       break;
     case 'FINISH':
     case 'FINISH_BATTLE':
@@ -1520,21 +1724,16 @@ function m3fAnswerOnAttacks(src, tgt, srcOwner, effect) {
       // charges are spent and `times` is decremented ONLY when the perk is available.
       const rp = s.reactionPerk || (s.reactionEffect ? { name: s.name, effects: [s.reactionEffect] } : null);
       if (!rp || !Array.isArray(rp.effects) || !rp.effects.length) return;
-      // canShow: conditionsForDisplay
+      // E1 — REACTION (deferred from block B) routes through the shared availability gate.
+      // canShow (conditionsForDisplay) THEN m3fExecuteIfAvailable (probability+pFunc, charges,
+      // reload, conditionsForEnable, resources, prices). The reaction-perk's charges, prices,
+      // reload and effects are all handled inside the gate; the REACTION status `times` is
+      // decremented ONLY on a successful fire (PerkExecutor.kt:1208-1210).
       if (!m3fCheckConditions(rp.conditionsForDisplay, tgtOwner)) return;
-      // executeIfAvailable / canExecuteLikeRegularPerk:
-      //  1) probability roll (+pFunc) — mirror canExecuteLikeRegularPerk (1105-1116)
-      let prob = (rp.probability != null ? rp.probability : 100);
-      prob += m3fFuncValue(rp.pFunc, tgtOwner);
-      if (!((rng() * 100) <= prob)) return;
-      //  2) charges / cooldown / conditionsForEnable / resources / prices
-      if (!m3fPerkEnabled(rp, tgtOwner)) return;
-      // available — pay charges/cooldown (decreaseCharges, set reload), fire, consume times
-      if (rp.charges != null) m3f.perkCharges[rp.name] = Math.max(0, (m3f.perkCharges[rp.name] || 0) - 1);
-      if (rp.coolDown) m3f.perkReload[rp.name] = 0;
-      m3fDecreaseTimes(s);
-      m3fLog(`У ${tgt.name} срабатывает ${s.name}(${s.value}).`);
-      rp.effects.forEach(eff => m3fApplyEffect(eff, tgtOwner));
+      if (m3fExecuteIfAvailable(rp, tgtOwner)) {
+        m3fDecreaseTimes(s);
+        m3fLog(`У ${tgt.name} срабатывает ${s.name}(${s.value}).`);
+      }
     }
   });
 }
@@ -1554,7 +1753,8 @@ function m3fApplyTurnKeep(owner) {
     // CHANGE_TURN_KEEP_STRATEGY statuses on the acting side
     actor.statuses.forEach(s => { if (m3fIsActive(s) && s.type === 'CHANGE_TURN_KEEP_STRATEGY' && s.gemTypes.includes(+gt)) keep += s.value; });
     if (keep < 0) keep = 0;
-    pool[gt].value = Math.round(pool[gt].value * keep / 100);
+    // F7 — Android Int arithmetic stock.value*keep/100 truncates toward zero.
+    pool[gt].value = Math.trunc(pool[gt].value * keep / 100);
   });
 }
 
@@ -1562,7 +1762,8 @@ function m3fApplyDamageKeep() {
   Object.keys(m3f.stocks).forEach(gt => {
     const gs = m3f.gemSettings[gt];
     const keep = gs ? gs.damageKeepStrategy : 100;
-    m3f.stocks[gt].value = Math.round(m3f.stocks[gt].value * keep / 100);
+    // F7 — truncate toward zero (Int division), not round.
+    m3f.stocks[gt].value = Math.trunc(m3f.stocks[gt].value * keep / 100);
   });
   m3fUpdateStocksUI();
 }
@@ -1606,8 +1807,9 @@ function m3fTickStatuses(person, when) {
         case 'GENERATE': {
           // Start/end-of-turn auto-points (Android applyPersonStatus GENERATE branch,
           // EndTurnExecutor lines 272-281): grant a flat s.value per gemType to the acting
-          // side's own stock pool, routed by which person owns this status. This is distinct
-          // from the per-crushed-gem board GENERATE bonus in m3fAccumulateStocks.
+          // side's own stock pool, routed by which person owns this status. This is the ONLY
+          // place GENERATE grants points — m3fAccumulateStocks has no GENERATE branch (parity
+          // with Android addValueFromCrushedGems).
           const genOwner = (person === m3f.enemy) ? 'enemy' : 'hero';
           (s.gemTypes || []).forEach(gt => {
             m3fAddStock(gt, s.value, genOwner);
@@ -1640,14 +1842,30 @@ function m3fIsStunned(person) {
   return person.statuses.some(s => s.type === 'STUN' && m3fIsActive(s));
 }
 
-// Consume one use of each active STUN on a person — call once per attempted/suppressed
-// action (mirrors PerkExecutor decreaseTimes on the stun). Returns true if any stun fired.
+// Consume one use of the FIRST active STUN on a person — call once per attempted/suppressed
+// action (mirrors PerkExecutor: findActiveStatus(STUN) then decreaseTimes on that one stun).
+// Returns true if a stun was present (and consumed).
 function m3fConsumeStun(person) {
-  let stunned = false;
-  person.statuses.forEach(s => {
-    if (s.type === 'STUN' && m3fIsActive(s)) { stunned = true; m3fDecreaseTimes(s); }
-  });
-  return stunned;
+  const stun = person.statuses.find(s => s.type === 'STUN' && m3fIsActive(s));
+  if (stun) { m3fDecreaseTimes(stun); return true; }
+  return false;
+}
+
+// C3 — STUN-at-perk-time. Mirror PerkExecutor.execute (lines 200-205): the perk's COST
+// has already been paid by the caller (prices/charges/resources/reload bookkeeping); here
+// we run the perk's EFFECTS only when the acting side is NOT stunned. If it IS stunned,
+// the effects are SUPPRESSED (logged «Оглушение не позволило применить навык») and ONE
+// active STUN is consumed (decreaseTimes). This is the per-perk layer, distinct from the
+// turn-level stun handling. Use for every perk whose effects fire through execute() in
+// Android (hero hand perk, enemy action, TimePerk, StockPerk, sector perk, TRIGGER cell).
+function m3fApplyPerkEffects(perk, owner) {
+  const actor = owner === 'hero' ? m3f.hero : m3f.enemy;
+  if (m3fIsStunned(actor)) {
+    m3fLog('Оглушение не позволило применить навык');
+    m3fConsumeStun(actor);
+    return;
+  }
+  (perk.effects || []).forEach(eff => m3fApplyEffect(eff, owner));
 }
 
 // ---------- Real-time scene timer + TimePerks ----------
@@ -1667,12 +1885,12 @@ function m3fRunTimePerks(owner) {
   if (!list || !list.length) return;
   list.forEach(tp => {
     if (tp.time !== m3f.timeSec) return;
+    // E1 — TimePerkExecutor: canShow (conditionsForDisplay) THEN executeIfAvailable
+    // (probability+pFunc, charges, reload, conditionsForEnable, resources, prices).
     if (!m3fCheckConditions(tp.perk.conditionsForDisplay, owner)) return;
-    if (tp.perk.charges != null && (m3f.perkCharges[tp.perk.name] || 0) <= 0) return;
-    m3fLog(`Время (${m3f.timeSec}с): «${tp.perk.name}».`);
-    tp.perk.effects.forEach(eff => m3fApplyEffect(eff, owner));
-    m3fUpdatePersonsStates(); // re-eval auto-statuses after the time-perk's effects
-    if (tp.perk.charges != null) m3f.perkCharges[tp.perk.name] = Math.max(0, (m3f.perkCharges[tp.perk.name] || 0) - 1);
+    if (m3fExecuteIfAvailable(tp.perk, owner)) {
+      m3fLog(`Время (${m3f.timeSec}с): «${tp.perk.name}».`);
+    }
   });
 }
 
@@ -1748,10 +1966,138 @@ function m3fStockDot(gemType) {
   return `<span class="m3f-stock-dot" style="background:${c}"></span>`;
 }
 
+// ---------- BLOCK E: perk reload / category / availability gate ----------
+
+// E2 — reloadType-aware isReloading() (Perk.isReloading, Perk.kt:112-118): with no coolDown a
+// perk is never reloading; otherwise it is reloading while reload < coolDown. The reload counter
+// itself is advanced per reloadType (TURN per round, PERK reset per round, COMBO per action /
+// reset to 0 at end of turn). The predicate is identical for every type.
+function m3fIsReloading(perk) {
+  if (!perk.coolDown) return false;
+  return (m3f.perkReload[perk.name] || 0) < perk.coolDown;
+}
+
+// E3 — category exclusivity (PerkExecutor.ifPerkHasReloadDownTimeIt, lines 228-248): on ANY use of
+// a perk (hero, enemy, auto, reaction, trigger, sector), set reload=0 for the used perk AND every
+// perk that shares its `category` — across BOTH hands, any coolDown, any reloadType. Siblings are
+// then blocked by their own coolDown via the shared reload counter (no separate categoryLocked map).
+function m3fSetCategoryReload(perk) {
+  m3f.perkReload[perk.name] = 0;
+  const cat = perk.category;
+  if (!cat) return;
+  [...m3f.heroHands, ...m3f.enemyHands].forEach(h => h.perks.forEach(p => {
+    if (p.category === cat) m3f.perkReload[p.name] = 0;
+  }));
+}
+
+// E2 — per-action reload advance (Perk.reloadPerkAfterUse, Perk.kt:195-210), invoked for EVERY perk
+// on every perk use (PerkExecutor.reloadPerksAfterUse): TURN does nothing; PERK and COMBO advance
+// reload by 1 when the perk is shown AND still reloading. Mirrors counting other actions in the turn.
+function m3fReloadAfterUse(actorOwner) {
+  const advance = (perk, owner) => {
+    if (perk.reloadType === 'TURN') return;
+    const shown = m3fCheckConditions(perk.conditionsForDisplay, owner);
+    if (shown && m3fIsReloading(perk)) m3f.perkReload[perk.name] = (m3f.perkReload[perk.name] || 0) + 1;
+  };
+  m3f.heroHands.forEach(h => h.perks.forEach(p => advance(p, 'hero')));
+  m3f.enemyHands.forEach(h => h.perks.forEach(p => advance(p, 'enemy')));
+}
+
+// E5/E6 — single round-boundary reload step (EndTurnExecutor.reloadPerksWithTurn, lines 142-182),
+// run once inside m3fGiveTurnToHero after the turn-number increment, for BOTH sides:
+//   TURN  -> reload += 1 only when show && isReloading() (capped at coolDown);
+//   PERK  -> reset to coolDown (ready) when reloading;
+//   COMBO -> hero side resets to 0 (on cooldown); enemy side resets to coolDown (Android `else` branch).
+function m3fReloadPerksWithTurn() {
+  m3f.heroHands.forEach(h => h.perks.forEach(p => {
+    if (p.reloadType === 'TURN') {
+      if (m3fCheckConditions(p.conditionsForDisplay, 'hero') && m3fIsReloading(p)) {
+        m3f.perkReload[p.name] = Math.min((m3f.perkReload[p.name] || 0) + 1, p.coolDown || 0);
+      }
+    } else if (p.reloadType === 'PERK') {
+      if (m3fIsReloading(p)) m3f.perkReload[p.name] = p.coolDown || 0;
+    } else { // COMBO
+      m3f.perkReload[p.name] = 0;
+    }
+  }));
+  m3f.enemyHands.forEach(h => h.perks.forEach(p => {
+    if (p.reloadType === 'TURN') {
+      if (m3fCheckConditions(p.conditionsForDisplay, 'enemy') && m3fIsReloading(p)) {
+        m3f.perkReload[p.name] = Math.min((m3f.perkReload[p.name] || 0) + 1, p.coolDown || 0);
+      }
+    } else { // PERK and COMBO: enemy `else` branch -> reset to coolDown
+      if (m3fIsReloading(p)) m3f.perkReload[p.name] = p.coolDown || 0;
+    }
+  }));
+}
+
+// E1/E4 — shared availability gate + execution for AUTO and TRIGGER/REACTION-style perks
+// (PerkExecutor.executeIfAvailable + canExecuteLikeRegularPerk, lines 89-163). Enforces the FULL
+// gate: probability (+pFunc) roll, currentCharges != 0, !isReloading() (by reloadType),
+// conditionsForEnable, resource sufficiency, price vs the owner's stocks. ONLY on pass does it:
+// per-action reload advance for all perks, decrement this perk's charges, set reload=0 for the perk
+// and its category siblings, pay prices, spend resources, then apply effects (STUN-suppressed via
+// m3fApplyPerkEffects). Returns true iff the perk fired. Hand-perk hero/enemy paths keep their own
+// inline cost flow (animation-driven); this routes the auto/sector/trigger perks through one gate.
+function m3fExecuteIfAvailable(perk, owner) {
+  owner = owner || 'hero';
+  // 1) probability (+pFunc) roll — canExecuteLikeRegularPerk 1104-1116 (Random.nextInt(0,101) > prob)
+  let prob = (perk.probability != null ? perk.probability : 100);
+  prob += m3fFuncValue(perk.pFunc, owner);
+  if (!(Math.floor(rng() * 101) <= prob)) return false;
+  // 2) charges != 0 (null = unlimited)
+  if (perk.charges != null && (m3f.perkCharges[perk.name] || 0) <= 0) return false;
+  // 3) not reloading (per reloadType)
+  if (m3fIsReloading(perk)) return false;
+  // 4) conditionsForEnable (AND)
+  if (!m3fCheckConditions(perk.conditionsForEnable, owner)) return false;
+  // 5) resource sufficiency
+  const actorF = owner === 'hero' ? m3f.hero : m3f.enemy;
+  for (const r of (perk.resources || [])) {
+    if (m3fResAmount(actorF, r.name) < r.amount) return false;
+  }
+  // 6) prices vs the owner's own stock pool
+  const pool = m3fStockPool(owner);
+  for (const pr of (perk.prices || [])) {
+    if (pr.value === 0) continue;
+    const st = pool[pr.gemType];
+    if (!st || st.value < pr.value) return false;
+  }
+  // --- passed: execute exactly like PerkExecutor.execute (lines 178-216) ---
+  m3fReloadAfterUse(owner);                 // reloadPerksAfterUse (per-action advance of others)
+  if (perk.charges != null) m3f.perkCharges[perk.name] = Math.max(0, (m3f.perkCharges[perk.name] || 0) - 1); // decreaseCharges
+  (perk.resources || []).forEach(rc => { const r = (actorF.resources || []).find(x => x.name === rc.name); if (r) r.amount = Math.max(0, r.amount - rc.amount); }); // spend resources
+  m3fSetCategoryReload(perk);               // ifPerkHasReloadDownTimeIt (reload=0 + category siblings)
+  (perk.prices || []).forEach(pr => { const st = pool[pr.gemType]; if (st) st.value = Math.max(0, st.value - pr.value); }); // payPriceForPerk
+  m3fApplyPerkEffects(perk, owner);         // effects (STUN-suppressed inside)
+  m3fUpdatePersonsStates();
+  return true;
+}
+
+// PerkExecutor.execute (PerkExecutor.kt:178-216) WITHOUT the availability gate — the
+// unconditional execution path used by MatchPerkExecutor.execute (MatchPerkExecutor.kt:22-24),
+// which fires each matched HeroRule via perkExecutor.execute(rule.perk, heroTurn) directly (NOT
+// executeIfAvailable — match rules have no probability/charges/reload gate on FIRING). It still
+// runs the FULL bookkeeping: reloadPerksAfterUse (per-action advance of others), usePerkCharge
+// (decreaseCharges if charged), usePerkResources, ifPerkHasReloadDownTimeIt (reload=0 + category
+// siblings, both hands), payPriceForPerk, and STUN suppression of effects (a stunned actor's
+// effects are skipped and one STUN is consumed via m3fApplyPerkEffects).
+function m3fExecutePerk(perk, owner) {
+  owner = owner || 'hero';
+  m3fReloadAfterUse(owner);                 // reloadPerksAfterUse
+  if (perk.charges != null) m3f.perkCharges[perk.name] = Math.max(0, (m3f.perkCharges[perk.name] || 0) - 1); // usePerkCharge / decreaseCharges
+  const actorF = owner === 'hero' ? m3f.hero : m3f.enemy;
+  (perk.resources || []).forEach(rc => { const r = (actorF.resources || []).find(x => x.name === rc.name); if (r) r.amount = Math.max(0, r.amount - rc.amount); }); // usePerkResources
+  m3fSetCategoryReload(perk);               // ifPerkHasReloadDownTimeIt (reload=0 + category siblings)
+  const pool = m3fStockPool(owner);
+  (perk.prices || []).forEach(pr => { const st = pool[pr.gemType]; if (st) st.value = Math.max(0, st.value - pr.value); }); // payPriceForPerk
+  m3fApplyPerkEffects(perk, owner);         // effects (STUN-suppressed inside)
+  m3fUpdatePersonsStates();
+}
+
 function m3fPerkEnabled(perk, source) {
   if (perk.charges != null && (m3f.perkCharges[perk.name] || 0) <= 0) return false;
-  if (perk.coolDown && (m3f.perkReload[perk.name] || 0) < perk.coolDown) return false;
-  if (perk.category && perk.coolDown === 1 && perk.reloadType === 'TURN' && m3f.categoryLocked[perk.category]) return false;
+  if (m3fIsReloading(perk)) return false;
   // perk-level conditionsForEnable: visible but blocked when conditions fail
   if (!m3fCheckConditions(perk.conditionsForEnable, source)) return false;
   // prices — checked against the ACTING side's own stock pool
@@ -1774,12 +2120,17 @@ function m3fPerkEnabled(perk, source) {
 function m3fRenderHands() {
   const wrap = document.getElementById('m3f-hands');
   wrap.innerHTML = '';
-  const stunned = m3fIsStunned(m3f.hero);
+  // D3: a stunned hero may STILL click a perk (cost paid, effects suppressed in m3fApplyPerkEffects,
+  // one STUN consumed). Android does not disable the button on stun, so it is NOT part of `enabled`.
   m3f.heroHands.forEach(hand => {
     // hand-level conditionsForDisplay: hide the WHOLE hand if conditions fail (AND)
     if (!m3fCheckConditions(hand.conditionsForDisplay, 'hero')) return;
-    // perks visible after perk-level conditionsForDisplay filter
-    const visiblePerks = hand.perks.filter(p => m3fCheckConditions(p.conditionsForDisplay, 'hero'));
+    // perks visible after perk-level conditionsForDisplay filter.
+    // E7 — a perk at 0 charges is HIDDEN, not visible-disabled (UpdatePerksStateExecutor
+    // .changePerkDisplay sets show=false when currentCharges==0).
+    const visiblePerks = hand.perks.filter(p =>
+      !(p.charges != null && (m3f.perkCharges[p.name] || 0) <= 0)
+      && m3fCheckConditions(p.conditionsForDisplay, 'hero'));
     if (!visiblePerks.length) return;
     const hEl = document.createElement('div');
     hEl.className = 'm3f-hand';
@@ -1792,7 +2143,7 @@ function m3fRenderHands() {
     visiblePerks.forEach(perk => {
       const btn = document.createElement('button');
       btn.className = 'm3f-perk';
-      const enabled = !stunned && !m3f.done && m3f.turn === 'hero' && m3fPerkEnabled(perk, 'hero');
+      const enabled = !m3f.done && m3f.turn === 'hero' && m3fPerkEnabled(perk, 'hero');
       btn.disabled = !enabled;
       const costParts = perk.prices.map(pr => `${pr.value}${m3fStockDot(pr.gemType)}`)
         .concat((perk.resources || []).map(rc => `${rc.amount} ${rc.name}`));
@@ -1811,7 +2162,9 @@ function m3fRenderHands() {
 }
 
 function m3fUsePerk(perk) {
-  if (m3f.done || m3f.turn !== 'hero' || m3fIsStunned(m3f.hero)) return;
+  // C3: a stunned hero may still CLICK a perk — the cost is paid and one STUN consumed,
+  // but the effects are suppressed (handled in m3fApplyPerkEffects). No early stun return.
+  if (m3f.done || m3f.turn !== 'hero') return;
   if (!m3fPerkEnabled(perk, 'hero')) return;
   // deduct prices
   perk.prices.forEach(pr => { const st = m3f.stocks[pr.gemType]; if (st) st.value = Math.max(0, st.value - pr.value); });
@@ -1820,12 +2173,14 @@ function m3fUsePerk(perk) {
   m3fLog(`Герой: «${perk.name}».`);
   m3fUpdateAllUI(); // reflect the cost deduction before the cast flies
   // Fly the skill icon, then apply effects on arrival.
+  // E2/E3 — per-action reload advance for all perks (reloadPerksAfterUse) BEFORE this perk's
+  // own reset, then decrement charges, set reload=0 for the perk + its category siblings.
+  m3fReloadAfterUse('hero');
   m3fCastAnim('hero', perk, () => {
-    perk.effects.forEach(eff => m3fApplyEffect(eff, 'hero'));
+    m3fApplyPerkEffects(perk, 'hero'); // C3: suppress effects + consume STUN if stunned
     m3fUpdatePersonsStates(); // PerkExecutor.execute line 207: re-eval auto-statuses after effects
     if (perk.charges != null) m3f.perkCharges[perk.name] = Math.max(0, (m3f.perkCharges[perk.name] || 0) - 1);
-    m3f.perkReload[perk.name] = 0;
-    if (perk.category && perk.coolDown === 1 && perk.reloadType === 'TURN') m3f.categoryLocked[perk.category] = true;
+    m3fSetCategoryReload(perk); // E3: reload=0 for this perk AND every category sibling (both sides)
     m3fUpdateAllUI();
     m3fCheckEnd();
   });
@@ -1836,12 +2191,14 @@ function m3fEndTurn() {
   if (m3f.done || m3f.turn !== 'hero') return;
   m3f.turn = 'enemy';
   m3fStopTurnTimer(); // board closed; per-turn scene timer must not tick during enemy turn
+  // D5: EndTurnExecutor.execute() line 66 — clear the HERO's per-turn HITS/TOUCHES counters
+  // (the hero just finished acting) before applying end-of-turn statuses.
+  m3fClearHitsAndTouches(m3f.hero);
   m3fTickStatuses(m3f.hero, 'end');
   if (m3fCheckEnd()) return;
   m3fApplyTurnKeep();
-  // advance hero perk reloads
-  m3f.heroHands.forEach(h => h.perks.forEach(p => { if (m3f.perkReload[p.name] != null) m3f.perkReload[p.name] += 1; }));
-  m3f.categoryLocked = {};
+  // E6 — reload advancement is NOT done here anymore; it is consolidated into a single
+  // round-boundary step in m3fGiveTurnToHero (after the turn-number increment), per reloadType.
   m3fUpdateAllUI();
   setTimeout(m3fEnemyTurn, 600);
 }
@@ -1876,6 +2233,10 @@ function m3fEnemyBoardMove(then) {
   if (!moves.length) { then(); return; }
   const mv = moves[Math.floor(rng() * moves.length)];
   m3f.animating = true;
+  // D6: two-stage makeMove log (GameScreenViewModel.messageAboutEvaluateMove / messageAboutMakeMove):
+  // first «Противник думает...», then «Противник ходит» when the swap is actually performed.
+  m3fLog('Противник думает...');
+  m3fLog('Противник ходит');
   [m3f.grid[mv.r1][mv.c1], m3f.grid[mv.r2][mv.c2]] = [m3f.grid[mv.r2][mv.c2], m3f.grid[mv.r1][mv.c1]];
   [m3f.gmeta[mv.r1][mv.c1], m3f.gmeta[mv.r2][mv.c2]] = [m3f.gmeta[mv.r2][mv.c2], m3f.gmeta[mv.r1][mv.c1]];
   m3fLog(`${m3f.enemy.name}: совмещение.`);
@@ -1887,18 +2248,18 @@ function m3fEnemyBoardMove(then) {
 // Cascade loop in ENEMY mode (heroTurn=false): awards enemy stocks, fires enemy rules,
 // suppresses HeroRules. Mirrors m3fCascade but routes accumulation through owner='enemy'.
 function m3fEnemyCascade(onSettle) {
-  const { cells: matches, runs } = m3fFindMatches();
+  const { cells: matches, unique, groups } = m3fFindMatches();
   if (!matches.length) {
     m3f.animating = false; m3fRender();
     if (typeof onSettle === 'function') onSettle();
     return;
   }
-  m3fAccumulateStocks(matches, runs, 'enemy');
+  m3fAccumulateStocks(matches, groups, 'enemy');
   m3fUpdateStocksUI();
   const board = document.getElementById('m3f-board');
-  matches.forEach(({ r, c }) => { const el = board.children[r * M3F_SIZE + c]; if (el) el.classList.add('removing'); });
+  unique.forEach(({ r, c }) => { const el = board.children[r * M3F_SIZE + c]; if (el) el.classList.add('removing'); });
   setTimeout(() => {
-    matches.forEach(({ r, c }) => { m3f.grid[r][c] = -1; m3f.gmeta[r][c] = null; });
+    unique.forEach(({ r, c }) => { m3f.grid[r][c] = -1; m3f.gmeta[r][c] = null; });
     m3fFallAnim(() => setTimeout(() => m3fEnemyCascade(onSettle), 60));
   }, 250);
 }
@@ -1918,11 +2279,14 @@ function m3fEnemyTurn() {
   m3fTickStatuses(m3f.enemy, 'start');
   m3fUpdatePersonsStates(); // enemy turn start: re-eval auto-statuses
   if (m3fCheckEnd()) { return; }
-  // advance enemy reloads at the start of its turn
-  m3f.enemyHands.forEach(h => h.perks.forEach(p => { if (m3f.perkReload[p.name] != null) m3f.perkReload[p.name] += 1; }));
+  // E6 — enemy reloads are NO LONGER advanced here; the single round-boundary reload step
+  // lives in m3fGiveTurnToHero (handles both hero and enemy hands per reloadType).
 
   // BRANCH on makeEnemyMove: with a board move (swap+cascades) BEFORE perks, or straight to perks.
-  if (m3f.settings.makeEnemyMove && !m3fIsStunned(m3f.enemy)) {
+  // D4: a stunned enemy STILL performs its board move — Android chooses makeMove() purely on
+  // BattleSettings.MAKE_ENEMY_MOVE and never gates the swap on stun (stun only suppresses the
+  // subsequent perk effects in enemyActions). So no !m3fIsStunned guard here.
+  if (m3f.settings.makeEnemyMove) {
     m3fEnemyBoardMove(() => { if (!m3fCheckEnd()) m3fEnemyActions(); });
   } else {
     m3fEnemyActions();
@@ -1933,11 +2297,10 @@ function m3fEnemyTurn() {
 // top-to-bottom and perks top-to-bottom. No early break / no "pick one" (Android parity).
 function m3fEnemyActions() {
   if (m3f.done) return;
-  if (m3fIsStunned(m3f.enemy)) {
-    m3fLog(`${m3f.enemy.name}: оглушён, пропускает ход.`);
-    m3fEnemyFinish();
-    return;
-  }
+  // D2: NO whole-turn stun skip. Android's enemyActions() iterates every eligible perk even when
+  // the enemy is stunned — PerkExecutor.execute still pays prices/charges/resources and reloads,
+  // and only SUPPRESSES the effects (decrementing one STUN per attempted perk). That per-perk
+  // suppression lives in m3fApplyPerkEffects (C3), so we do NOT early-return here.
   // Ordered candidate list (hands top-to-bottom, perks top-to-bottom). Fired SEQUENTIALLY with a
   // delay so the player sees each action's animation; eligibility re-checked at fire time.
   const queue = [];
@@ -1950,19 +2313,23 @@ function m3fEnemyActions() {
     if (m3f.done) return;
     if (i >= queue.length) { if (!used) m3fLog(`${m3f.enemy.name}: бездействует.`); m3fEnemyFinish(); return; }
     const perk = queue[i];
-    if (!m3fCheckConditions(perk.conditionsForDisplay, 'enemy') || !m3fPerkEnabled(perk, 'enemy')
-        || (rng() * 100) > (perk.probability != null ? perk.probability : 100)) { step(i + 1); return; }
+    // D1: NO extra per-perk probability roll. Android enemyActions() fires every show&&enable perk
+    // deterministically (perk.probability only decorates the displayed name); effect-level
+    // probability is handled inside m3fApplyEffect, not as a gate on casting.
+    if (!m3fCheckConditions(perk.conditionsForDisplay, 'enemy') || !m3fPerkEnabled(perk, 'enemy')) { step(i + 1); return; }
     m3fLog(`${m3f.enemy.name}: «${perk.name}».`);
     perk.prices.forEach(pr => { const st = m3f.enemyStocks[pr.gemType]; if (st) st.value = Math.max(0, st.value - pr.value); });
     (perk.resources || []).forEach(rc => { const r = (m3f.enemy.resources || []).find(x => x.name === rc.name); if (r) r.amount = Math.max(0, r.amount - rc.amount); });
     used = true;
+    // E2/E3 — per-action reload advance for all perks (reloadPerksAfterUse).
+    m3fReloadAfterUse('enemy');
     m3fUpdateAllUI();
     // Fly the enemy's skill icon, then apply effects on arrival — shows the enemy's move.
     m3fCastAnim('enemy', perk, () => {
-      perk.effects.forEach(eff => m3fApplyEffect(eff, 'enemy'));
+      m3fApplyPerkEffects(perk, 'enemy'); // C3: suppress effects + consume STUN if stunned
       m3fUpdatePersonsStates();
       if (perk.charges != null) m3f.perkCharges[perk.name] = Math.max(0, (m3f.perkCharges[perk.name] || 0) - 1);
-      m3f.perkReload[perk.name] = 0;
+      m3fSetCategoryReload(perk); // E3: reload=0 for this perk AND every category sibling (both sides)
       m3fUpdateAllUI();
       if (m3fCheckEnd()) { m3fRender(); return; }
       setTimeout(() => step(i + 1), 450); // пауза между действиями врага
@@ -1973,6 +2340,9 @@ function m3fEnemyActions() {
 
 // afterEnemyAction: enemy end-of-turn statuses, then hand the turn back to the hero.
 function m3fEnemyFinish() {
+  // D5: afterEnemyAction() line 372 — clear the ENEMY's per-turn HITS/TOUCHES counters
+  // (e.g. hits accrued via counterattacks) before its end-of-turn statuses.
+  m3fClearHitsAndTouches(m3f.enemy);
   m3fTickStatuses(m3f.enemy, 'end');
   m3fUpdateAllUI();
   if (m3fCheckEnd()) return;
@@ -1984,6 +2354,10 @@ function m3fGiveTurnToHero() {
   m3f.turn = 'hero';
   m3f.matchDone = false; // новый ход — снова доступно одно совмещение
   m3f.turnNum += 1;
+  // E5/E6 — single round-boundary reload step (EndTurnExecutor.giveTurnToHero: increment THEN
+  // reloadPerksWithTurn). Advances BOTH hero and enemy hands per reloadType, gating the TURN
+  // `+1` on show && isReloading() so hidden perks stay frozen.
+  m3fReloadPerksWithTurn();
   // hero stock decay at turn handover (turnKeepStrategy), then snapshot baseline for "За ход".
   m3fSnapshotHeroStocks();
   // zero hero shield BEFORE re-applying hero start statuses (Android clearPersonShield(true)
@@ -2116,10 +2490,13 @@ function m3fTapSector(i) {
   if (m3f.done || m3f.turn !== 'hero') return;
   const s = (m3f.enemySectors || [])[i];
   if (!s || !s.perk) return;
+  // E1 — sector perks route through the full availability gate (canShow conditionsForDisplay
+  // first, then probability+pFunc/charges/reload/conditionsForEnable/resources/prices); charges
+  // spent, prices paid, reload set, effects applied only on pass.
   if (!m3fCheckConditions(s.perk.conditionsForDisplay, 'hero')) return;
-  m3fLog(`Цель: «${s.name}».`);
-  s.perk.effects.forEach(eff => m3fApplyEffect(eff, 'hero'));
-  m3fUpdatePersonsStates();
+  if (m3fExecuteIfAvailable(s.perk, 'hero')) {
+    m3fLog(`Цель: «${s.name}».`);
+  }
   m3fUpdateAllUI();
   m3fCheckEnd();
 }
