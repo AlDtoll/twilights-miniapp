@@ -62,6 +62,79 @@
   .m3f-hands { display: flex; flex-direction: column; gap: 8px; }
   .m3f-hand { padding: 7px 10px; border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); }
   .m3f-hand-label { font-size: 0.74rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 5px; display: flex; align-items: center; gap: 5px; }
+
+  /* ===== SLIDE-OUT HAND PANELS (plane 1 edges) ===== */
+  /* A thin vertical tab anchored to each screen edge; tapping slides a panel out. */
+  .m3f-handtab { position: fixed; top: 50%; transform: translateY(-50%); z-index: 40;
+    width: 30px; min-height: 120px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; user-select: none;
+    background: rgba(162,155,254,0.22); border: 1.5px solid rgba(162,155,254,0.5);
+    color: #c8c2ff; font-weight: 700; font-size: 0.74rem; letter-spacing: 1px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.4); transition: background 0.15s; }
+  .m3f-handtab:active { background: rgba(162,155,254,0.4); }
+  .m3f-handtab span { writing-mode: vertical-rl; text-orientation: mixed; padding: 8px 0; white-space: nowrap; }
+  .m3f-handtab.left { left: 0; border-left: none; border-radius: 0 12px 12px 0; }
+  .m3f-handtab.right { right: 0; border-right: none; border-radius: 12px 0 0 12px;
+    background: rgba(231,76,60,0.18); border-color: rgba(231,76,60,0.5); color: #ffb3aa; }
+  .m3f-handtab.right:active { background: rgba(231,76,60,0.32); }
+
+  .m3f-slideout { position: fixed; top: 0; bottom: 0; z-index: 60; width: min(78vw, 320px);
+    background: var(--tg-theme-bg-color, #17171f); box-shadow: 0 0 24px rgba(0,0,0,0.6);
+    display: flex; flex-direction: column; padding: 14px 12px; gap: 10px;
+    transition: transform 0.32s cubic-bezier(0.4,0,0.2,1); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .m3f-slideout.left  { left: 0;  transform: translateX(-105%); border-right: 1.5px solid rgba(162,155,254,0.4); }
+  .m3f-slideout.right { right: 0; transform: translateX(105%);  border-left: 1.5px solid rgba(231,76,60,0.4); }
+  .m3f-slideout.open { transform: translateX(0); }
+  .m3f-slideout-head { display: flex; align-items: center; justify-content: space-between;
+    font-weight: 800; font-size: 1.02rem; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+  .m3f-slideout-head .m3f-readonly { font-size: 0.68rem; font-weight: 600; color: var(--tg-theme-hint-color,#aaa); }
+  .m3f-slideout-close { width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer;
+    background: rgba(255,255,255,0.1); color: var(--tg-theme-text-color,#fff); font-size: 1.1rem; line-height: 1; }
+  .m3f-slideout-close:active { background: rgba(255,255,255,0.22); }
+  /* a hand entry shown in the slide-out list (tap to open its perks) */
+  .m3f-handcard { width: 100%; text-align: left; padding: 12px 12px; border-radius: 12px; cursor: pointer;
+    border: 1.5px solid rgba(162,155,254,0.4); background: rgba(162,155,254,0.1);
+    color: var(--tg-theme-text-color,#fff); display: flex; align-items: center; gap: 10px; transition: background 0.15s; }
+  .m3f-handcard:active { background: rgba(162,155,254,0.28); }
+  .m3f-handcard.ro { border-color: rgba(231,76,60,0.4); background: rgba(231,76,60,0.08); cursor: default; }
+  .m3f-handcard.ro:active { background: rgba(231,76,60,0.08); }
+  .m3f-handcard .m3f-hc-name { font-weight: 700; font-size: 0.96rem; }
+  .m3f-handcard .m3f-hc-sub { font-size: 0.72rem; color: var(--tg-theme-hint-color,#aaa); margin-top: 2px; }
+  .m3f-handcard .m3f-stock-dot { width: 14px; height: 14px; }
+  .m3f-slideout-empty { font-size: 0.82rem; color: var(--tg-theme-hint-color,#aaa); padding: 14px 4px; }
+
+  /* ===== PERKS OVERLAY (plane 2 — covers the board) ===== */
+  .m3f-overlay { position: absolute; inset: 0; z-index: 70; display: none; flex-direction: column;
+    background: rgba(12,12,20,0.92); border-radius: 8px; padding: 12px 10px; gap: 8px;
+    overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .m3f-overlay.show { display: flex; }
+  .m3f-overlay-head { display: flex; align-items: center; justify-content: space-between;
+    font-weight: 800; font-size: 0.98rem; gap: 8px; }
+  .m3f-overlay-head .m3f-stock-dot { width: 13px; height: 13px; }
+  .m3f-overlay-title { display: flex; align-items: center; gap: 7px; }
+  /* the board is dimmed (but visible) under any overlay/targeting */
+  .m3f-board-wrap.m3f-dimmed .m3f-board { filter: brightness(0.45) saturate(0.6); pointer-events: none; }
+
+  /* ===== TARGETING OVERLAY (plane 2 — pick an enemy limb / the enemy panel) ===== */
+  .m3f-target-overlay { position: absolute; inset: 0; z-index: 70; display: none;
+    flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    background: rgba(12,12,20,0.78); border-radius: 8px; padding: 16px; text-align: center; }
+  .m3f-target-overlay.show { display: flex; }
+  .m3f-target-overlay .m3f-target-title { font-weight: 800; font-size: 1.05rem; color: #ffd9d4; }
+  .m3f-target-overlay .m3f-target-hint { font-size: 0.8rem; color: var(--tg-theme-hint-color,#ccc); }
+  .m3f-target-sectors { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+  .m3f-target-sectors .m3f-tgt { padding: 12px 16px; border-radius: 12px; cursor: pointer;
+    border: 2px solid #ff6b5e; background: rgba(231,76,60,0.2); color: #ffd9d4; font-weight: 700; font-size: 0.92rem;
+    animation: m3fTgtPulse 1.1s ease-in-out infinite; }
+  .m3f-target-sectors .m3f-tgt:active { background: rgba(231,76,60,0.4); }
+  @keyframes m3fTgtPulse { 0%,100%{box-shadow:0 0 0 0 rgba(255,107,94,0.5)} 50%{box-shadow:0 0 0 7px rgba(255,107,94,0)} }
+  .m3f-target-cancel { margin-top: 4px; padding: 9px 22px; border-radius: 10px; border: 1.5px solid rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.06); color: var(--tg-theme-text-color,#fff); cursor: pointer; font-weight: 600; }
+  .m3f-target-cancel:active { background: rgba(255,255,255,0.16); }
+  /* highlight the enemy panel as a tappable target while aiming */
+  .m3f-fighter.m3f-aim-target { cursor: pointer; box-shadow: 0 0 0 2px #ff6b5e, 0 0 16px rgba(255,107,94,0.5);
+    animation: m3fAimGlow 1.1s ease-in-out infinite; }
+  @keyframes m3fAimGlow { 0%,100%{box-shadow:0 0 0 2px #ff6b5e, 0 0 8px rgba(255,107,94,0.35)} 50%{box-shadow:0 0 0 2px #ff6b5e, 0 0 20px rgba(255,107,94,0.7)} }
   .m3f-perks { display: flex; flex-direction: column; gap: 5px; }
   .m3f-perk { width: 100%; text-align: left; padding: 7px 10px; border-radius: 9px; border: 1.5px solid rgba(162,155,254,0.4); background: rgba(162,155,254,0.1); color: var(--tg-theme-text-color, #fff); cursor: pointer; transition: all 0.15s; }
   .m3f-perk:active:not(:disabled) { background: rgba(162,155,254,0.3); }
@@ -85,15 +158,51 @@
 <div id="m3f-game" style="display:none">
   <div class="m3f-fighter" id="m3f-enemy"></div>
   <div class="m3f-stocks" id="m3f-stocks"></div>
-  <div class="m3f-board-wrap">
+  <div class="m3f-board-wrap" id="m3f-board-wrap">
     <div class="m3f-board" id="m3f-board"></div>
     <div class="m3f-board-cover" id="m3f-board-cover"><span>Ход сделан</span></div>
+    <!-- plane 2: perks overlay over the board (opened from a slide-out hand) -->
+    <div class="m3f-overlay" id="m3f-perks-overlay">
+      <div class="m3f-overlay-head">
+        <div class="m3f-overlay-title" id="m3f-perks-overlay-title"></div>
+        <button class="m3f-slideout-close" onclick="m3fClosePerksOverlay()">✕</button>
+      </div>
+      <div class="m3f-perks" id="m3f-perks-overlay-list"></div>
+    </div>
+    <!-- plane 2: enemy-targeting overlay -->
+    <div class="m3f-target-overlay" id="m3f-target-overlay">
+      <div class="m3f-target-title">🎯 Выбери цель</div>
+      <div class="m3f-target-hint" id="m3f-target-hint"></div>
+      <div class="m3f-target-sectors" id="m3f-target-sectors"></div>
+      <button class="m3f-target-cancel" onclick="m3fCancelTargeting()">← Отмена</button>
+    </div>
   </div>
   <div class="m3f-fighter" id="m3f-hero"></div>
-  <div class="m3f-hands" id="m3f-hands"></div>
+  <!-- old always-expanded hands list — REPLACED by slide-out panels + overlay (kept hidden for compat) -->
+  <div class="m3f-hands" id="m3f-hands" style="display:none"></div>
   <button class="btn btn-primary" id="m3f-endturn" onclick="m3fEndTurn()" style="width:100%;padding:12px;border-radius:12px">Завершить ход</button>
   <div class="combat-log" id="m3f-log"></div>
   <div class="result-banner" id="m3f-result" style="display:none"></div>
+</div>
+
+<!-- ===== SLIDE-OUT HAND PANELS (anchored to screen edges) ===== -->
+<!-- LEFT edge: hero's hands (tappable). RIGHT edge: enemy's hands (read-only). -->
+<div class="m3f-handtab left"  id="m3f-handtab-left"  onclick="m3fToggleSlideout('hero')"  style="display:none"><span>МОИ РУКИ ▸</span></div>
+<div class="m3f-handtab right" id="m3f-handtab-right" onclick="m3fToggleSlideout('enemy')" style="display:none"><span>◂ ВРАГ</span></div>
+
+<div class="m3f-slideout left" id="m3f-slideout-hero">
+  <div class="m3f-slideout-head">
+    <span>🛡 Мои руки</span>
+    <button class="m3f-slideout-close" onclick="m3fCloseSlideout('hero')">✕</button>
+  </div>
+  <div id="m3f-slideout-hero-list"></div>
+</div>
+<div class="m3f-slideout right" id="m3f-slideout-enemy">
+  <div class="m3f-slideout-head">
+    <span>👹 Руки врага <span class="m3f-readonly">(просмотр)</span></span>
+    <button class="m3f-slideout-close" onclick="m3fCloseSlideout('enemy')">✕</button>
+  </div>
+  <div id="m3f-slideout-enemy-list"></div>
 </div>
 
 <script src="../shared/core.js"></script>
@@ -2161,10 +2270,221 @@ function m3fRenderHands() {
   });
 }
 
-function m3fUsePerk(perk) {
+// ============================================================
+// SLIDE-OUT HAND PANELS + PERKS OVERLAY + TWO-STEP TARGETING
+// New presentation layer over the existing engine. Selection/aiming is the ONLY thing that
+// changes; application still goes through m3fUsePerk -> m3fApplyPerkEffects. State machine:
+//   plane1 (board+panels) -> slideout(hand list) -> perks overlay -> [targeting] -> apply.
+// ============================================================
+// Targeting state: { perk, hand } while we wait for the player to pick an enemy limb/panel.
+let m3fAim = null;
+// Which slide-out (if any) is open: 'hero' | 'enemy' | null.
+let m3fSlideoutOpen = null;
+
+// A hero perk needs an ENEMY target if it is offensive (m3fPerkAimedAtFoe) OR it gates on a
+// "Цель: X" sector status (a condition naming one of the enemySectors' perk names). Returns
+// the list of gating sector indices (possibly empty even when targeting is required).
+function m3fPerkSectorDeps(perk) {
+  const sectorNames = (m3f.enemySectors || []).map(s => s.perk && s.perk.name).filter(Boolean);
+  const deps = [];
+  const scan = conds => (conds || []).forEach(c => {
+    if (!c || !c.name) return;
+    const param = (c.parameter || 'STATUS').toUpperCase();
+    if (param !== 'STATUS') return;
+    const idx = (m3f.enemySectors || []).findIndex(s => s.perk && s.perk.name === c.name);
+    if (idx >= 0 && deps.indexOf(idx) < 0) deps.push(idx);
+  });
+  scan(perk.conditionsForDisplay); scan(perk.conditionsForEnable);
+  return deps;
+}
+// True when using this perk should enter ENEMY-targeting mode (vs. apply-to-self immediately).
+function m3fPerkNeedsEnemyTarget(perk) {
+  if ((m3f.enemySectors || []).length && m3fPerkSectorDeps(perk).length) return true;
+  return m3fPerkAimedAtFoe(perk);
+}
+
+// ---- Slide-out open/close ----
+function m3fToggleSlideout(side) {
+  if (m3fSlideoutOpen === side) { m3fCloseSlideout(side); return; }
+  if (m3fSlideoutOpen) m3fCloseSlideout(m3fSlideoutOpen);
+  m3fOpenSlideout(side);
+}
+function m3fOpenSlideout(side) {
+  m3fCancelTargeting(true); m3fClosePerksOverlay(true);
+  m3fRenderSlideout(side);
+  document.getElementById(side === 'hero' ? 'm3f-slideout-hero' : 'm3f-slideout-enemy').classList.add('open');
+  m3fSlideoutOpen = side;
+}
+function m3fCloseSlideout(side) {
+  document.getElementById(side === 'hero' ? 'm3f-slideout-hero' : 'm3f-slideout-enemy').classList.remove('open');
+  if (m3fSlideoutOpen === side) m3fSlideoutOpen = null;
+}
+
+// Render the list of a side's hands into its slide-out. Hero hands are tappable (open perks);
+// enemy hands are read-only (open a greyed, non-applying perks overlay).
+function m3fRenderSlideout(side) {
+  const isHero = side === 'hero';
+  const hands = isHero ? m3f.heroHands : m3f.enemyHands;
+  const owner = isHero ? 'hero' : 'enemy';
+  const listEl = document.getElementById(isHero ? 'm3f-slideout-hero-list' : 'm3f-slideout-enemy-list');
+  listEl.innerHTML = '';
+  let any = false;
+  hands.forEach((hand, hi) => {
+    if (!m3fCheckConditions(hand.conditionsForDisplay, owner)) return;
+    const visiblePerks = hand.perks.filter(p =>
+      !(p.charges != null && (m3f.perkCharges[p.name] || 0) <= 0)
+      && m3fCheckConditions(p.conditionsForDisplay, owner));
+    if (!visiblePerks.length) return;
+    any = true;
+    const card = document.createElement('button');
+    card.className = 'm3f-handcard' + (isHero ? '' : ' ro');
+    card.innerHTML = `${m3fStockDot(hand.gemType)}` +
+      `<div><div class="m3f-hc-name">${hand.name || ('Тип ' + hand.gemType)}</div>` +
+      `<div class="m3f-hc-sub">приёмов: ${visiblePerks.length}${isHero ? '' : ' · просмотр'}</div></div>`;
+    card.onclick = () => m3fOpenPerksOverlay(side, hi);
+    listEl.appendChild(card);
+  });
+  if (!any) listEl.innerHTML = '<div class="m3f-slideout-empty">Нет доступных рук.</div>';
+}
+
+// ---- Perks overlay (plane 2) ----
+function m3fOpenPerksOverlay(side, handIndex) {
+  const isHero = side === 'hero';
+  const hand = (isHero ? m3f.heroHands : m3f.enemyHands)[handIndex];
+  if (!hand) return;
+  m3fCloseSlideout(side);
+  m3fCancelTargeting(true);
+  const owner = isHero ? 'hero' : 'enemy';
+  const titleEl = document.getElementById('m3f-perks-overlay-title');
+  titleEl.innerHTML = `${m3fStockDot(hand.gemType)} <span>${hand.name || ('Тип ' + hand.gemType)}</span>` +
+    (isHero ? '' : ' <span class="m3f-readonly">(просмотр)</span>');
+  const listEl = document.getElementById('m3f-perks-overlay-list');
+  listEl.innerHTML = '';
+  const visiblePerks = hand.perks.filter(p =>
+    !(p.charges != null && (m3f.perkCharges[p.name] || 0) <= 0)
+    && m3fCheckConditions(p.conditionsForDisplay, owner));
+  if (!visiblePerks.length) { listEl.innerHTML = '<div class="m3f-slideout-empty">Нет видимых приёмов.</div>'; }
+  visiblePerks.forEach(perk => {
+    // Reuse the existing perk-button rendering (same markup/classes as m3fRenderHands).
+    const btn = document.createElement('button');
+    btn.className = 'm3f-perk';
+    const enabled = isHero && !m3f.done && m3f.turn === 'hero' && m3fPerkEnabled(perk, 'hero');
+    btn.disabled = !enabled; // enemy perks always disabled (read-only inspection)
+    const costParts = perk.prices.map(pr => `${pr.value}${m3fStockDot(pr.gemType)}`)
+      .concat((perk.resources || []).map(rc => `${rc.amount} ${rc.name}`));
+    const costHtml = costParts.length ? costParts.join(' ') : 'бесплатно';
+    let extra = '';
+    if (perk.charges != null) extra += ` · заряды: ${m3f.perkCharges[perk.name] || 0}`;
+    const aim = isHero && m3fPerkNeedsEnemyTarget(perk) ? ' · 🎯 цель' : '';
+    btn.innerHTML = `<div class="m3f-perk-name">${perk.icon ? perk.icon + ' ' : ''}${perk.name}</div>` +
+      `<div class="m3f-perk-cost">${costHtml}${extra}${aim}</div>` +
+      (perk.description ? `<div class="m3f-perk-desc">${perk.description}</div>` : '');
+    if (isHero) btn.onclick = () => m3fChoosePerk(perk);
+    listEl.appendChild(btn);
+  });
+  document.getElementById('m3f-perks-overlay').classList.add('show');
+  document.getElementById('m3f-board-wrap').classList.add('m3f-dimmed');
+}
+function m3fClosePerksOverlay(silent) {
+  document.getElementById('m3f-perks-overlay').classList.remove('show');
+  if (!silent && !m3fAim) document.getElementById('m3f-board-wrap').classList.remove('m3f-dimmed');
+}
+
+// A hero perk was tapped in the overlay. Self-targeted -> apply now. Enemy-targeted -> aim.
+function m3fChoosePerk(perk) {
+  if (m3f.done || m3f.turn !== 'hero') return;
+  if (m3fPerkNeedsEnemyTarget(perk)) {
+    m3fClosePerksOverlay(true);
+    m3fStartTargeting(perk);
+  } else {
+    m3fClosePerksOverlay(true);
+    document.getElementById('m3f-board-wrap').classList.remove('m3f-dimmed');
+    m3fUsePerk(perk);
+  }
+}
+
+// ---- Two-step targeting (plane 2) ----
+function m3fStartTargeting(perk) {
+  m3fAim = { perk: perk };
+  const deps = m3fPerkSectorDeps(perk);
+  const overlay = document.getElementById('m3f-target-overlay');
+  const hint = document.getElementById('m3f-target-hint');
+  const secWrap = document.getElementById('m3f-target-sectors');
+  hint.textContent = `Приём: «${perk.name}»`;
+  secWrap.innerHTML = '';
+  const sectors = m3f.enemySectors || [];
+  // If the perk gates on specific limbs, offer exactly those; else offer all sectors (if any).
+  const offered = deps.length ? deps : sectors.map((_, i) => i);
+  offered.forEach(i => {
+    const s = sectors[i]; if (!s) return;
+    const icon = M3F_SECTOR_ICONS[s.iconResName] || '🎯';
+    const b = document.createElement('button');
+    b.className = 'm3f-tgt';
+    b.textContent = `${icon} ${s.name}`;
+    b.onclick = () => m3fPickTarget(i);
+    secWrap.appendChild(b);
+  });
+  // No sectors at all -> the enemy PANEL itself is the target (highlight + tap).
+  if (!sectors.length) {
+    const ee = document.getElementById('m3f-enemy');
+    if (ee) { ee.classList.add('m3f-aim-target'); ee.onclick = m3fPickEnemyPanel; }
+  }
+  overlay.classList.add('show');
+  document.getElementById('m3f-board-wrap').classList.add('m3f-dimmed');
+}
+// Limb chosen: run that sector's target-setter, then apply the aimed perk.
+function m3fPickTarget(sectorIndex) {
+  if (!m3fAim) return;
+  const perk = m3fAim.perk;
+  m3fExitTargeting();
+  m3fUsePerk(perk, sectorIndex);
+}
+// Enemy panel chosen (no sector needed): apply the aimed perk directly at the enemy.
+function m3fPickEnemyPanel() {
+  if (!m3fAim) return;
+  const perk = m3fAim.perk;
+  m3fExitTargeting();
+  m3fUsePerk(perk);
+}
+function m3fCancelTargeting(silent) {
+  if (!m3fAim && silent) return;
+  m3fExitTargeting();
+  if (!silent) document.getElementById('m3f-board-wrap').classList.remove('m3f-dimmed');
+}
+// Tear down targeting UI (overlay, panel highlight) without applying anything.
+function m3fExitTargeting() {
+  m3fAim = null;
+  document.getElementById('m3f-target-overlay').classList.remove('show');
+  const ee = document.getElementById('m3f-enemy');
+  if (ee) { ee.classList.remove('m3f-aim-target'); ee.onclick = null; }
+  document.getElementById('m3f-board-wrap').classList.remove('m3f-dimmed');
+}
+// Show/hide the edge tabs (called from m3fUpdateAllUI). Hidden when the game is over.
+function m3fUpdateHandTabs() {
+  const show = m3f && !m3f.done;
+  const lt = document.getElementById('m3f-handtab-left'), rt = document.getElementById('m3f-handtab-right');
+  if (lt) lt.style.display = show ? 'flex' : 'none';
+  if (rt) rt.style.display = (m3f && m3f.enemyHands && m3f.enemyHands.length) ? 'flex' : 'none';
+}
+
+// Apply a hero perk. `preSector` (optional): an enemySectors index to run FIRST (sets the
+// matching "Цель: X" status) before this perk's own effects — used by the two-step targeting
+// flow. The cost/charges/reload/effect logic below is identical to the original; preSector
+// only injects the limb-selection step that a direct sector tap would otherwise have done.
+function m3fUsePerk(perk, preSector) {
   // C3: a stunned hero may still CLICK a perk — the cost is paid and one STUN consumed,
   // but the effects are suppressed (handled in m3fApplyPerkEffects). No early stun return.
   if (m3f.done || m3f.turn !== 'hero') return;
+  // run the chosen limb's target-setting perk first (mirrors a manual m3fTapSector), so the
+  // perk's "Цель: X" gate is satisfied before we check/apply it.
+  if (preSector != null) {
+    const sec = (m3f.enemySectors || [])[preSector];
+    if (sec && sec.perk && m3fCheckConditions(sec.perk.conditionsForDisplay, 'hero')) {
+      if (m3fExecuteIfAvailable(sec.perk, 'hero')) m3fLog(`Цель: «${sec.name}».`);
+      m3fUpdateAllUI();
+      if (m3fCheckEnd()) return;
+    }
+  }
   if (!m3fPerkEnabled(perk, 'hero')) return;
   // deduct prices
   perk.prices.forEach(pr => { const st = m3f.stocks[pr.gemType]; if (st) st.value = Math.max(0, st.value - pr.value); });
@@ -2515,6 +2835,9 @@ function m3fUpdateAllUI() {
   m3fRenderFighter('m3f-hero', m3f.hero, false);
   m3fUpdateStocksUI();
   m3fRenderHands();
+  m3fUpdateHandTabs();
+  // keep an open slide-out list in sync with engine state (charges/conditions may change).
+  if (m3fSlideoutOpen) m3fRenderSlideout(m3fSlideoutOpen);
   const etb = document.getElementById('m3f-endturn');
   // Завершить ход нельзя, пока не сделано совмещение (как allowEndTurn в Android).
   etb.disabled = (m3f.done || m3f.turn !== 'hero' || !m3f.matchDone);
@@ -2568,6 +2891,9 @@ function m3fFinish(win) {
   m3f.done = true;
   m3f.animating = false;
   m3fStopTurnTimer(); // game over: stop & clear the per-turn scene timer
+  // tear down any open selection/aim UI from the new presentation layer
+  m3fCancelTargeting(true); m3fClosePerksOverlay(true);
+  if (m3fSlideoutOpen) m3fCloseSlideout(m3fSlideoutOpen);
   const banner = document.getElementById('m3f-result');
   banner.style.display = '';
   banner.className = 'result-banner ' + (win ? 'result-good' : 'result-bad');
