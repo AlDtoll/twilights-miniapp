@@ -30,6 +30,13 @@
   .m3f-stock { display: flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 8px; background: rgba(255,255,255,0.06); font-size: 0.82rem; font-weight: 600; }
   .m3f-stock-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
   .m3f-board { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; touch-action: none; }
+  .m3f-board-wrap { position: relative; }
+  .m3f-board-cover { position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+    background: rgba(10,10,20,0.62); border-radius: 8px; backdrop-filter: blur(1.5px); z-index: 5;
+    pointer-events: all; cursor: default; }
+  .m3f-board-cover.show { display: flex; }
+  .m3f-board-cover span { font-size: 0.95rem; font-weight: 700; color: #fff; background: rgba(0,0,0,0.45);
+    padding: 6px 16px; border-radius: 16px; letter-spacing: 0.5px; }
   .m3f-cell { aspect-ratio: 1; border-radius: 50%; cursor: pointer; transition: transform 0.12s, box-shadow 0.12s; }
   .m3f-cell.selected { transform: scale(1.18); box-shadow: 0 0 0 3px #fff, 0 0 10px rgba(255,255,255,0.5); }
   .m3f-cell.removing { transition: transform 0.22s cubic-bezier(0.4,0,1,1), opacity 0.22s ease-in !important; transform: scale(0) !important; opacity: 0 !important; }
@@ -58,7 +65,10 @@
 <div id="m3f-game" style="display:none">
   <div class="m3f-fighter" id="m3f-enemy"></div>
   <div class="m3f-stocks" id="m3f-stocks"></div>
-  <div class="m3f-board" id="m3f-board"></div>
+  <div class="m3f-board-wrap">
+    <div class="m3f-board" id="m3f-board"></div>
+    <div class="m3f-board-cover" id="m3f-board-cover"><span>Ход сделан</span></div>
+  </div>
   <div class="m3f-fighter" id="m3f-hero"></div>
   <div class="m3f-hands" id="m3f-hands"></div>
   <button class="btn btn-primary" id="m3f-endturn" onclick="m3fEndTurn()" style="width:100%;padding:12px;border-radius:12px">Завершить ход</button>
@@ -468,6 +478,7 @@ function m3fRender() {
       board.appendChild(cell);
     }
   }
+  m3fUpdateCover();
 }
 
 function m3fClick(r, c) {
@@ -1695,6 +1706,18 @@ function m3fUpdateAllUI() {
   etb.textContent = (m3f.turn === 'hero' && !m3f.matchDone)
     ? 'Сделай совмещение'
     : 'Завершить ход ▶';
+  m3fUpdateCover();
+}
+
+// Полупрозрачная крышка над доской, когда поле «закрыто» (ход сделан или ходит враг) — coverBoard.
+function m3fUpdateCover() {
+  const cover = document.getElementById('m3f-board-cover');
+  if (!cover) return;
+  const enemyTurn = m3f.turn === 'enemy';
+  const locked = m3f.done || enemyTurn || m3f.matchDone;
+  cover.classList.toggle('show', !!locked);
+  const sp = cover.querySelector('span');
+  if (sp) sp.textContent = m3f.done ? 'Бой окончен' : (enemyTurn ? 'Ход противника' : 'Ход сделан');
 }
 
 function m3fLog(msg) {
