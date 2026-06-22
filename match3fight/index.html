@@ -293,7 +293,7 @@ function m3fLoadScene() {
       makeEnemyMove: !!settings.makeEnemyMove,
       animateEnemy: !!settings.animateEnemy
     },
-    grid: [], gmeta: [], sel: null, animating: false, done: false, turn: 'hero',
+    grid: [], gmeta: [], sel: null, animating: false, done: false, turn: 'hero', matchDone: false,
     turnNum: 1,
     timeSec: 0,           // per-turn second counter (advanced each effect-loop tick)
     perkCharges: {},      // name -> remaining charges
@@ -443,7 +443,7 @@ function m3fRender() {
 }
 
 function m3fClick(r, c) {
-  if (m3f.done || m3f.animating || m3f.turn !== 'hero' || m3f.grid[r][c] < 0) return;
+  if (m3f.done || m3f.animating || m3f.turn !== 'hero' || m3f.matchDone || m3f.grid[r][c] < 0) return;
   if (!m3f.sel) { m3f.sel = { r, c }; m3fRender(); return; }
   if (m3f.sel.r === r && m3f.sel.c === c) { m3f.sel = null; m3fRender(); return; }
   if (Math.abs(m3f.sel.r - r) + Math.abs(m3f.sel.c - c) !== 1) { m3f.sel = { r, c }; m3fRender(); return; }
@@ -458,6 +458,7 @@ function m3fClick(r, c) {
     [m3f.gmeta[r][c], m3f.gmeta[sr][sc]] = [m3f.gmeta[sr][sc], m3f.gmeta[r][c]];
     m3f.animating = false; m3fRender(); return;
   }
+  m3f.matchDone = true; // одно совмещение за ход — доска блокируется до следующего хода
   m3fRender();
   setTimeout(m3fCascade, 150);
 }
@@ -1313,6 +1314,7 @@ function m3fEnemyTurn() {
 
   // back to hero
   m3f.turn = 'hero';
+  m3f.matchDone = false; // новый ход — снова доступно одно совмещение
   m3f.turnNum += 1;
   // hero turn begins: advance turn-second counter and fire hero TimePerks
   m3f.timeSec += 1;
@@ -1367,7 +1369,12 @@ function m3fUpdateAllUI() {
   m3fRenderFighter('m3f-hero', m3f.hero, false);
   m3fUpdateStocksUI();
   m3fRenderHands();
-  document.getElementById('m3f-endturn').disabled = (m3f.done || m3f.turn !== 'hero');
+  const etb = document.getElementById('m3f-endturn');
+  etb.disabled = (m3f.done || m3f.turn !== 'hero');
+  // подсказка: одно совмещение за ход
+  etb.textContent = (m3f.turn === 'hero' && m3f.matchDone)
+    ? 'Совмещение сделано — заверши ход ▶'
+    : 'Завершить ход';
 }
 
 function m3fLog(msg) {
