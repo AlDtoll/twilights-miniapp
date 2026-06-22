@@ -4015,6 +4015,9 @@ async function hxAnimateMove(unit, fromCol, fromRow, toCol, toRow) {
   if(!svg || (fromCol===toCol && fromRow===toRow)) return;
   // Walk hex-by-hex along the real path instead of gliding through walls
   const waypoints = [[fromCol, fromRow], ...hexPath(fromCol, fromRow, toCol, toRow, unit.id)];
+  // Hide the real unit and redraw the board FIRST — hxRender() wipes svg.innerHTML,
+  // so the moving overlay must be appended AFTER the render or it gets erased.
+  unit._animating = true; hxRender();
   const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
   const circ = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
   circ.setAttribute('r', String(HEX_SIZE * 0.58));
@@ -4028,7 +4031,6 @@ async function hxAnimateMove(unit, fromCol, fromRow, toCol, toRow) {
   svg.appendChild(g);
   const p0 = hexToPixel(fromCol, fromRow);
   g.setAttribute('transform', `translate(${p0.x},${p0.y})`);
-  unit._animating = true; hxRender();
   // Per-hex step duration: shorter when path is long so total time stays snappy
   const perHex = Math.max(90, Math.min(150, 520 / Math.max(1, waypoints.length - 1)));
   for(let i = 1; i < waypoints.length; i++) {
@@ -4082,8 +4084,8 @@ async function hxAnimateMelee(unit, targetCol, targetRow) {
   lbl.setAttribute('text-anchor', 'middle'); lbl.setAttribute('dominant-baseline', 'central');
   lbl.setAttribute('font-size', String(Math.round(HEX_SIZE * 0.9)));
   lbl.textContent = unit.emoji || unit.name.charAt(0);
+  unit._animating = true; hxRender(); // render board first — hxRender wipes svg, so append overlay after
   g.appendChild(circ); g.appendChild(lbl); g.style.pointerEvents = 'none'; svg.appendChild(g);
-  unit._animating = true; hxRender();
   await new Promise(resolve => {
     const frame = (now) => {
       const el = now-t0;
