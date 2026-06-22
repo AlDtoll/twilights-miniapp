@@ -4700,7 +4700,9 @@ function hxRender() {
     }
   }
 
-  // Draw units
+  // Draw units into a dedicated layer (ug) appended AFTER all terrain/obstacles,
+  // so character icons + HP bars are always on the very top layer and never shaded.
+  const ug = document.createElementNS('http://www.w3.org/2000/svg','g');
   hxs.units.forEach(unit => {
     if(unit._animating) return; // skip — animation overlay draws this unit
     const {x,y} = hexToPixel(unit.col, unit.row);
@@ -4713,13 +4715,13 @@ function hxRender() {
       corpseCircle.setAttribute('fill', 'rgba(60,60,60,0.5)');
       corpseCircle.setAttribute('stroke', '#555'); corpseCircle.setAttribute('stroke-width', '1');
       corpseCircle.setAttribute('pointer-events','none');
-      svg.appendChild(corpseCircle);
+      ug.appendChild(corpseCircle);
       const corpseLbl = document.createElementNS('http://www.w3.org/2000/svg','text');
       corpseLbl.setAttribute('x', x); corpseLbl.setAttribute('y', y+1);
       corpseLbl.setAttribute('text-anchor','middle'); corpseLbl.setAttribute('dominant-baseline','middle');
       corpseLbl.setAttribute('font-size','11'); corpseLbl.setAttribute('pointer-events','none');
       corpseLbl.textContent = '💀';
-      svg.appendChild(corpseLbl);
+      ug.appendChild(corpseLbl);
       return;
     }
 
@@ -4736,7 +4738,7 @@ function hxRender() {
     circle.setAttribute('opacity', isDone ? '0.6' : '1');
     circle.setAttribute('style', 'pointer-events:all;cursor:pointer;');
     circle.addEventListener('click', () => hxClickUnit(unit.id));
-    svg.appendChild(circle);
+    ug.appendChild(circle);
 
     // Emoji/letter label
     const label = document.createElementNS('http://www.w3.org/2000/svg','text');
@@ -4745,7 +4747,7 @@ function hxRender() {
     label.setAttribute('font-size','11'); label.setAttribute('fill','#fff');
     label.setAttribute('pointer-events','none');
     label.textContent = unit.name.charAt(0);
-    svg.appendChild(label);
+    ug.appendChild(label);
 
     // HP bar
     const barW = 26, barH = 4;
@@ -4755,7 +4757,7 @@ function hxRender() {
     bgRect.setAttribute('width',barW); bgRect.setAttribute('height',barH);
     bgRect.setAttribute('rx','2'); bgRect.setAttribute('fill','rgba(0,0,0,0.5)');
     bgRect.setAttribute('pointer-events','none');
-    svg.appendChild(bgRect);
+    ug.appendChild(bgRect);
     const hpFill = document.createElementNS('http://www.w3.org/2000/svg','rect');
     const hpPct = Math.max(0, unit.hp/unit.maxHp);
     hpFill.setAttribute('x',bx); hpFill.setAttribute('y',by);
@@ -4763,7 +4765,18 @@ function hxRender() {
     hpFill.setAttribute('rx','2');
     hpFill.setAttribute('fill', hpPct>0.5 ? '#2ecc71' : hpPct>0.25 ? '#f39c12' : '#e74c3c');
     hpFill.setAttribute('pointer-events','none');
-    svg.appendChild(hpFill);
+    ug.appendChild(hpFill);
+
+    // Terrain badge — small glyph in the hex corner so you can tell what the unit stands on
+    const _terr = hxTerrainEmojiAt(unit.col, unit.row);
+    if(_terr) {
+      const tb = document.createElementNS('http://www.w3.org/2000/svg','text');
+      tb.setAttribute('x', x-12); tb.setAttribute('y', y-10);
+      tb.setAttribute('font-size','9'); tb.setAttribute('text-anchor','middle');
+      tb.setAttribute('dominant-baseline','middle'); tb.setAttribute('pointer-events','none');
+      tb.textContent = _terr;
+      ug.appendChild(tb);
+    }
 
     // Status effect icons
     let statusOffset = 0;
@@ -4774,7 +4787,7 @@ function hxRender() {
       sh.setAttribute('text-anchor','middle'); sh.setAttribute('dominant-baseline','middle');
       sh.setAttribute('pointer-events','none');
       sh.textContent = '🛡';
-      svg.appendChild(sh);
+      ug.appendChild(sh);
       statusOffset += 11;
     }
     if(unit.atkDebuff > 0) {
@@ -4784,7 +4797,7 @@ function hxRender() {
       deb.setAttribute('text-anchor','middle'); deb.setAttribute('dominant-baseline','middle');
       deb.setAttribute('pointer-events','none');
       deb.textContent = '💨';
-      svg.appendChild(deb);
+      ug.appendChild(deb);
       statusOffset += 11;
     }
     // (aimBonus removed — old ranged system replaced by FFT abilities)
@@ -4801,7 +4814,7 @@ function hxRender() {
       anim.setAttribute('from','0'); anim.setAttribute('to','24');
       anim.setAttribute('dur','1s'); anim.setAttribute('repeatCount','indefinite');
       ring.appendChild(anim);
-      svg.appendChild(ring);
+      ug.appendChild(ring);
     }
 
     // Done-turn checkmark
@@ -4811,7 +4824,7 @@ function hxRender() {
       check.setAttribute('font-size','11'); check.setAttribute('fill','#2ecc71');
       check.setAttribute('text-anchor','middle'); check.setAttribute('pointer-events','none');
       check.textContent = '✓';
-      svg.appendChild(check);
+      ug.appendChild(check);
     }
 
     // Larger invisible tap target (mobile UX)
@@ -4820,7 +4833,7 @@ function hxRender() {
     tapArea.setAttribute('fill', 'transparent');
     tapArea.setAttribute('style', 'pointer-events:all; cursor:pointer;');
     tapArea.addEventListener('click', () => hxClickUnit(unit.id));
-    svg.appendChild(tapArea);
+    ug.appendChild(tapArea);
   });
 
   // PASS C: Draw confirmation ring on hxs.confirming hex
@@ -4967,6 +4980,9 @@ function hxRender() {
     t.setAttribute('x',x); t.setAttribute('y',y+6); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','13'); t.setAttribute('pointer-events','none');
     t.textContent='🔥'; svg.appendChild(t);
   });
+
+  // Unit layer on top of all terrain/obstacles so icons + HP are never shaded
+  svg.appendChild(ug);
 
   // Draw enemy intent indicators — only during player turn
   if(hxs.turn === 'player' && hxs.enemyIntents) {
@@ -5422,6 +5438,21 @@ function hxClickHex(col, row) {
   }
 
   if(hxs.mode === 'select') hxTerrainInfoAt(col, row);
+}
+
+// Small terrain glyph for a cell (for the corner badge under a unit). null = plain ground.
+function hxTerrainEmojiAt(col, row) {
+  if((hxs.rifts||[]).some(([c,r])=>c===col&&r===row)) return '⌖';
+  if((hxs.forests||[]).some(([c,r])=>c===col&&r===row)) return '🌳';
+  if((hxs.bushes||[]).some(([c,r])=>c===col&&r===row)) return '🌿';
+  if((hxs.heights||[]).some(([c,r])=>c===col&&r===row)) return '🗿';
+  if((hxs.swamps||[]).some(([c,r])=>c===col&&r===row)) return '🟫';
+  if((hxs.shallow_waters||[]).some(([c,r])=>c===col&&r===row)) return '〰';
+  if((hxs.deep_waters||[]).some(([c,r])=>c===col&&r===row)) return '🌊';
+  if((hxs.waters||[]).some(([c,r])=>c===col&&r===row)) return '💧';
+  if((hxs.fires||[]).some(f=>f.col===col&&f.row===row)) return '🔥';
+  if((hxs.burnable||[]).some(([c,r])=>c===col&&r===row)) return '🌾';
+  return null;
 }
 
 function hxTerrainInfoAt(col, row) {
