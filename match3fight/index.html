@@ -31,9 +31,12 @@
   .m3f-fighter-hp-text { font-size: 0.82rem; color: var(--tg-theme-hint-color, #aaa); }
   .m3f-shield { color: #74b9ff; font-weight: 700; font-size: 0.82rem; }
   .m3f-wounds { color: #ff7675; font-weight: 700; font-size: 0.82rem; letter-spacing: 1px; }
-  .m3f-statuses { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
-  .m3f-status-chip { padding: 1px 7px; border-radius: 6px; font-size: 0.68rem; background: rgba(162,155,254,0.15); border: 1px solid rgba(162,155,254,0.5); color: #c8c2ff; }
+  .m3f-statuses { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .m3f-status-chip { display: inline-flex; flex-direction: column; line-height: 1.25; padding: 3px 9px; border-radius: 8px;
+    background: rgba(162,155,254,0.15); border: 1px solid rgba(162,155,254,0.5); color: #c8c2ff; }
   .m3f-status-chip.bad { background: rgba(231,76,60,0.12); border-color: rgba(231,76,60,0.5); color: #ff9b8f; }
+  .m3f-st-name { font-size: 0.82rem; font-weight: 600; }
+  .m3f-st-meta { font-size: 0.68rem; opacity: 0.85; }
   .m3f-resources { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
   .m3f-res-chip { padding: 1px 7px; border-radius: 6px; font-size: 0.68rem; background: rgba(241,196,15,0.14); border: 1px solid rgba(241,196,15,0.5); color: #f1c40f; }
   .m3f-info { font-size: 0.72rem; color: var(--tg-theme-hint-color, #aaa); margin-top: 3px; font-style: italic; }
@@ -994,12 +997,13 @@ function m3fEvalConditionOne(cond, person, owner) {
   const cmpVal = (cond.value != null ? +cond.value : 0);
   // Status-existence symbols (HAVE/EXIST/EMPTY) only meaningful for STATUS param.
   if (param === 'STATUS') {
-    const exists = m3fHasStatus(person, cond.name);
     const val = m3fStatusValue(person, cond.name);
+    // A status with value 0 (e.g. skipZero "Цель: X" SET to 0) counts as NOT present —
+    // matches Android isActive(): HAVE/EXIST require an active (non-zero) status, EMPTY = inactive/absent.
+    const present = m3fHasStatus(person, cond.name) && val !== 0;
     switch (sym) {
-      case 'HAVE': return exists && val > 0;
-      case 'EXIST': return exists;
-      case 'EMPTY': return !exists;
+      case 'HAVE': case 'EXIST': return present;
+      case 'EMPTY': return !present;
       case 'MORE': return val > cmpVal;
       case 'LESS': return val < cmpVal;
       case 'EQUALS': return val === cmpVal;
@@ -1778,14 +1782,30 @@ function m3fGiveTurnToHero() {
 }
 
 // ---------- Rendering of fighters / stocks ----------
+// Human-readable hint per status type (shown under the name).
+const M3F_STATUS_DESC = {
+  DAMAGE: 'урон/ход', DAMAGE_HP: 'урон по HP/ход', HEAL: 'лечение/ход', DEFEND: 'щит/ход',
+  ARMOR: 'броня (шанс −урон)', WEAK: 'слабее атака', STRONG: 'сильнее атака',
+  VULNERABLE: 'уязвимость +урон', VUL: 'уязвимость +урон', RESISTANCE: 'сопротивление %',
+  STUN: 'оглушён — пропуск', GENERATE: 'очки/ход', CHANGE_STOCK: 'мод. сбора очков',
+  EVASION: 'уклонение', ACCURACY: 'точность', INFO: '', CHANGE_DEFEND: 'мод. щита',
+  CHANGE_TURN_KEEP_STRATEGY: 'сохранение очков'
+};
 function m3fStatusChips(fighter) {
-  if (!fighter.statuses.length) return '';
   const bad = ['DAMAGE','DAMAGE_HP','WEAK','VULNERABLE','VUL','STUN'];
-  return '<div class="m3f-statuses">' + fighter.statuses.map(s => {
+  // hide skipZero statuses sitting at value 0 (e.g. non-selected "Цель: X" target flags)
+  const list = fighter.statuses.filter(s => !(s.skipZero && (s.value === 0)));
+  if (!list.length) return '';
+  return '<div class="m3f-statuses">' + list.map(s => {
     const cls = bad.includes(s.type) ? 'm3f-status-chip bad' : 'm3f-status-chip';
-    const dur = s.duration === -1 ? '∞' : s.duration;
-    const e = s.end ? ' (E)' : '';
-    return `<span class="${cls}">${s.name}${e}: ${s.value}${dur !== '' ? ' ⏳' + dur : ''}</span>`;
+    const dur = (s.duration === -1) ? '∞' : (s.duration != null ? s.duration : '');
+    const e = s.end ? '⤵' : '';
+    const hint = s.description || M3F_STATUS_DESC[s.type] || '';
+    const valTxt = (s.type === 'INFO') ? '' : `<b>${s.value}</b>`;
+    return `<span class="${cls}" title="${(s.description||s.type||'').replace(/"/g,'')}">` +
+      `<span class="m3f-st-name">${s.name}${e}</span>` +
+      `<span class="m3f-st-meta">${valTxt}${dur !== '' ? ' ⏳' + dur : ''}${hint ? ' · ' + hint : ''}</span>` +
+      `</span>`;
   }).join('') + '</div>';
 }
 
