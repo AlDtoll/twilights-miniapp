@@ -1370,11 +1370,11 @@ function m3fUpdateAllUI() {
   m3fUpdateStocksUI();
   m3fRenderHands();
   const etb = document.getElementById('m3f-endturn');
-  etb.disabled = (m3f.done || m3f.turn !== 'hero');
-  // подсказка: одно совмещение за ход
-  etb.textContent = (m3f.turn === 'hero' && m3f.matchDone)
-    ? 'Совмещение сделано — заверши ход ▶'
-    : 'Завершить ход';
+  // Завершить ход нельзя, пока не сделано совмещение (как allowEndTurn в Android).
+  etb.disabled = (m3f.done || m3f.turn !== 'hero' || !m3f.matchDone);
+  etb.textContent = (m3f.turn === 'hero' && !m3f.matchDone)
+    ? 'Сделай совмещение'
+    : 'Завершить ход ▶';
 }
 
 function m3fLog(msg) {
