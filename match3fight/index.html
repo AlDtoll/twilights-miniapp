@@ -14,7 +14,15 @@
 
   /* MATCH3 FIGHT */
   #m3f-game { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 8px; }
-  .m3f-fighter { padding: 8px 12px; border-radius: 12px; background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.1); }
+  .m3f-fighter { padding: 8px 12px; border-radius: 12px; background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.1); position: relative; }
+  .m3f-fighter.m3f-hit { animation: m3fHit 0.32s ease; }
+  @keyframes m3fHit { 0%{transform:translateX(0)} 20%{transform:translateX(-5px);box-shadow:0 0 0 2px rgba(231,76,60,0.6)} 40%{transform:translateX(5px)} 60%{transform:translateX(-3px)} 80%{transform:translateX(3px)} 100%{transform:translateX(0)} }
+  .m3f-float { position: absolute; left: 50%; top: 6px; transform: translateX(-50%); font-weight: 800; font-size: 1.15rem;
+    pointer-events: none; text-shadow: 0 1px 3px rgba(0,0,0,0.7); animation: m3fFloat 0.9s ease-out forwards; z-index: 6; white-space: nowrap; }
+  @keyframes m3fFloat { 0%{opacity:0;transform:translate(-50%,4px) scale(0.8)} 20%{opacity:1;transform:translate(-50%,-6px) scale(1.1)} 100%{opacity:0;transform:translate(-50%,-34px) scale(1)} }
+  .m3f-float.dmg{color:#ff6b5e} .m3f-float.heal{color:#48d68a} .m3f-float.shield{color:#74b9ff} .m3f-float.block{color:#9ec7ff;font-size:0.95rem} .m3f-float.miss{color:#cdd2d8;font-size:0.95rem}
+  .m3f-cell.m3f-drop { animation: m3fDrop 0.26s cubic-bezier(0.3,0.6,0.4,1); }
+  @keyframes m3fDrop { 0%{transform:translateY(-60%);opacity:0.2} 100%{transform:translateY(0);opacity:1} }
   .m3f-fighter-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
   .m3f-fighter-name { font-weight: 700; font-size: 0.98rem; }
   .m3f-fighter-hp-text { font-size: 0.82rem; color: var(--tg-theme-hint-color, #aaa); }
@@ -1086,6 +1094,7 @@ function m3fApplyEffectOnce(effect, source) {
         srcF.statuses.forEach(s => { if (s.type === 'CHANGE_DEFEND') v += s.value; });
         t.shield += Math.max(0, v);
         m3fLog(`${t.name}: +${Math.max(0,v)} щитов.`);
+        if (v > 0) m3fFloat(t, '+' + v + '🛡', 'shield');
       });
       break;
     case 'HEAL':
@@ -1095,6 +1104,8 @@ function m3fApplyEffectOnce(effect, source) {
         else t.hp = Math.min(t.maxHp, t.hp + baseValue);
         if (t.hp < 0) t.hp = 0;
         m3fLog(`${t.name}: HP ${baseValue >= 0 ? '+' : ''}${baseValue}.`);
+        if (baseValue > 0) m3fFloat(t, '+' + baseValue, 'heal');
+        else if (baseValue < 0) { m3fFloat(t, '' + baseValue, 'dmg'); m3fFlash(t); }
       });
       break;
     case 'EDIT_STOCK': {
@@ -1197,7 +1208,7 @@ function m3fAttack(src, tgt, value, type, selfTarget) {
     tgt.statuses.forEach(s => { if (s.type === 'EVASION') chance -= s.value; });
     src.statuses.forEach(s => { if (s.type === 'ACCURACY') chance += s.value; });
     // miss/dodge: attack reached resolution but neither touch nor hit flag set
-    if (chance < (rng() * 100)) { m3fLog(`${src.name} → ${tgt.name}: Промах!`); return; }
+    if (chance < (rng() * 100)) { m3fLog(`${src.name} → ${tgt.name}: Промах!`); m3fFloat(tgt, 'Промах', 'miss'); return; }
   }
 
   // attack landed (not a miss/dodge): mark touched (mirror ApplyAttackExecutor.touch())
@@ -1208,13 +1219,15 @@ function m3fAttack(src, tgt, value, type, selfTarget) {
   }
 
   const ty = type || 'BOTH';
-  let hpDamage = 0;
+  let hpDamage = 0, blocked = 0;
   if (ty === 'HP') {
     hpDamage = v;
   } else if (ty === 'SP') {
+    blocked = Math.min(v, tgt.shield);
     tgt.shield = Math.max(0, tgt.shield - v);
   } else { // BOTH
     const absorbed = Math.min(v, tgt.shield);
+    blocked = absorbed;
     tgt.shield -= absorbed;
     hpDamage = v - absorbed;
   }
@@ -1224,6 +1237,9 @@ function m3fAttack(src, tgt, value, type, selfTarget) {
     if (tgt.hp !== 0 && !selfTarget) { tgt.wasHitByPreviousEffect = true; tgt.hits = (tgt.hits || 0) + 1; }
     // hero stock decay on taking damage (damageKeepStrategy)
     if (tgt === m3f.hero) m3fApplyDamageKeep();
+    m3fFloat(tgt, '−' + hpDamage, 'dmg'); m3fFlash(tgt);
+  } else if (blocked > 0) {
+    m3fFloat(tgt, '🛡−' + blocked, 'block');
   }
   m3fLog(`${src.name} → ${tgt.name}: ${v} урона${ty !== 'BOTH' ? ' (' + ty + ')' : ''}.`);
 }
@@ -1605,36 +1621,43 @@ function m3fEnemyActions() {
   if (m3f.done) return;
   if (m3fIsStunned(m3f.enemy)) {
     m3fLog(`${m3f.enemy.name}: оглушён, пропускает ход.`);
-  } else {
-    let used = false;
-    for (const hand of m3f.enemyHands) {
-      // hand-level conditionsForDisplay gates the whole enemy hand
-      if (!m3fCheckConditions(hand.conditionsForDisplay, 'enemy')) continue;
-      for (const perk of hand.perks) {
-        // perk-level conditionsForDisplay hides the perk from the enemy's options
-        if (!m3fCheckConditions(perk.conditionsForDisplay, 'enemy')) continue;
-        if (!m3fPerkEnabled(perk, 'enemy')) continue;
-        if ((rng() * 100) > (perk.probability != null ? perk.probability : 100)) continue;
-        m3fLog(`${m3f.enemy.name}: «${perk.name}».`);
-        // deduct enemy prices (from the ENEMY stock pool) + resource cost
-        perk.prices.forEach(pr => { const st = m3f.enemyStocks[pr.gemType]; if (st) st.value = Math.max(0, st.value - pr.value); });
-        (perk.resources || []).forEach(rc => { const r = (m3f.enemy.resources || []).find(x => x.name === rc.name); if (r) r.amount = Math.max(0, r.amount - rc.amount); });
-        perk.effects.forEach(eff => m3fApplyEffect(eff, 'enemy'));
-        m3fUpdatePersonsStates(); // PerkExecutor.execute line 207: re-eval auto-statuses after effects
-        if (perk.charges != null) m3f.perkCharges[perk.name] = Math.max(0, (m3f.perkCharges[perk.name] || 0) - 1);
-        m3f.perkReload[perk.name] = 0;
-        used = true;
-        if (m3fCheckEnd()) { m3fUpdateAllUI(); m3fRender(); return; }
-        // NO break: keep casting every eligible perk in declared order.
-      }
-    }
-    if (!used) m3fLog(`${m3f.enemy.name}: бездействует.`);
+    m3fEnemyFinish();
+    return;
   }
-  // afterEnemyAction: enemy end-of-turn statuses.
+  // Ordered candidate list (hands top-to-bottom, perks top-to-bottom). Fired SEQUENTIALLY with a
+  // delay so the player sees each action's animation; eligibility re-checked at fire time.
+  const queue = [];
+  for (const hand of m3f.enemyHands) {
+    if (!m3fCheckConditions(hand.conditionsForDisplay, 'enemy')) continue;
+    for (const perk of hand.perks) queue.push(perk);
+  }
+  let used = false;
+  const step = (i) => {
+    if (m3f.done) return;
+    if (i >= queue.length) { if (!used) m3fLog(`${m3f.enemy.name}: бездействует.`); m3fEnemyFinish(); return; }
+    const perk = queue[i];
+    if (!m3fCheckConditions(perk.conditionsForDisplay, 'enemy') || !m3fPerkEnabled(perk, 'enemy')
+        || (rng() * 100) > (perk.probability != null ? perk.probability : 100)) { step(i + 1); return; }
+    m3fLog(`${m3f.enemy.name}: «${perk.name}».`);
+    perk.prices.forEach(pr => { const st = m3f.enemyStocks[pr.gemType]; if (st) st.value = Math.max(0, st.value - pr.value); });
+    (perk.resources || []).forEach(rc => { const r = (m3f.enemy.resources || []).find(x => x.name === rc.name); if (r) r.amount = Math.max(0, r.amount - rc.amount); });
+    perk.effects.forEach(eff => m3fApplyEffect(eff, 'enemy'));
+    m3fUpdatePersonsStates();
+    if (perk.charges != null) m3f.perkCharges[perk.name] = Math.max(0, (m3f.perkCharges[perk.name] || 0) - 1);
+    m3f.perkReload[perk.name] = 0;
+    used = true;
+    m3fUpdateAllUI();
+    if (m3fCheckEnd()) { m3fRender(); return; }
+    setTimeout(() => step(i + 1), 700); // пауза между действиями врага
+  };
+  step(0);
+}
+
+// afterEnemyAction: enemy end-of-turn statuses, then hand the turn back to the hero.
+function m3fEnemyFinish() {
   m3fTickStatuses(m3f.enemy, 'end');
   m3fUpdateAllUI();
   if (m3fCheckEnd()) return;
-
   m3fGiveTurnToHero();
 }
 
@@ -1669,13 +1692,33 @@ function m3fStatusChips(fighter) {
   }).join('') + '</div>';
 }
 
+// --- Action animations: floating numbers + hit flash over a fighter panel ---
+function m3fSideEl(p) { return document.getElementById(p === m3f.enemy ? 'm3f-enemy' : 'm3f-hero'); }
+function m3fFloat(p, text, kind) {
+  const el = m3fSideEl(p); if (!el) return;
+  const s = document.createElement('span');
+  s.className = 'm3f-float ' + (kind || 'dmg');
+  s.textContent = text;
+  el.appendChild(s);
+  setTimeout(() => { try { el.removeChild(s); } catch (e) {} }, 950);
+}
+function m3fFlash(p) {
+  const el = m3fSideEl(p); if (!el) return;
+  el.classList.remove('m3f-hit'); void el.offsetWidth; el.classList.add('m3f-hit');
+  setTimeout(() => { try { el.classList.remove('m3f-hit'); } catch (e) {} }, 340);
+}
+
 function m3fRenderFighter(elId, f, isEnemy) {
   const el = document.getElementById(elId);
   const pct = Math.max(0, Math.min(100, f.hp / f.maxHp * 100));
   const woundsHtml = (f.maxWounds != null)
     ? ' · <span class="m3f-wounds" title="Раны">' + '✚'.repeat(Math.max(0, f.maxWounds - f.wounds)) + '✖'.repeat(Math.max(0, f.wounds)) + '</span>'
     : '';
-  el.innerHTML =
+  // Render content into a child (.m3f-fc) so floating-number/flash overlay children of the
+  // panel survive re-renders.
+  let fc = el.querySelector('.m3f-fc');
+  if (!fc) { fc = document.createElement('div'); el.appendChild(fc); }
+  fc.innerHTML =
     `<div class="m3f-fighter-head"><span class="m3f-fighter-name">${isEnemy ? '👹 ' : '🛡 '}${f.name}</span>` +
     `<span class="m3f-fighter-hp-text">HP ${f.hp}/${f.maxHp}${f.shield > 0 ? ' · <span class="m3f-shield">🛡 ' + f.shield + '</span>' : ''}${woundsHtml}</span></div>` +
     `<div class="combat-hp-bar"><div class="combat-hp-fill" style="width:${pct}%"></div></div>` +
