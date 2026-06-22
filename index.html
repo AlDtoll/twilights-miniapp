@@ -3326,7 +3326,7 @@ const HEX_UNIT_DEFS = {
       {id:'e_elem_burst',  name:'Взрыв стихии',icon:'🌊',type:'magic',range:3,aoe:1,damage:3,effect:null,cooldown:0,maxCooldown:0},
       {id:'e_elem_thunder',name:'Молния',icon:'⚡',type:'magic',range:4,aoe:0,damage:4,effect:null,cooldown:0,maxCooldown:4},
     ]},
-  shadow:       {name:'Тень',        emoji:'👤', hp:6, atk:3,  moveRange:3, atkRange:1, accuracy:68, defense:12, armor:0,  armorMax:0,  blockMax:0,
+  shadow:       {name:'Тень',        emoji:'👤', hp:6, atk:3,  moveRange:3, atkRange:1, accuracy:68, defense:10, armor:0,  armorMax:0,  blockMax:0,
     abilities:[
       {id:'e_shadow_strike',name:'Удар тьмы',icon:'👤',type:'melee',range:1,aoe:0,damage:3,effect:null,cooldown:0,maxCooldown:0},
     ]},
@@ -3714,32 +3714,23 @@ function hxMarkActed(caster, ability) {
   hxApplySchoolCooldown(caster, ability);
 }
 
-// BB-style unified accuracy-vs-dodge hit roll for ALL attacks (melee, ranged, magic, basic).
-// hit% = attacker.accuracy - target.defense + shieldFront + surroundBonus + height + stun - cover - distPenalty
-// adjacentEnemies = number of attacker-team units adjacent to target (flank count, attacker included).
+// Hit model (Данил's spec):
+//  - MELEE (and any non-ranged) ALWAYS hits — 100%.
+//  - RANGED / MAGIC: hit% = 100 − target base dodge (5-10) − situational,
+//    where situational = the LARGER of { target moved this turn: −5, target behind partial cover: −15 }.
+//    The two situational penalties do NOT stack — only the bigger one applies.
+// adjacentEnemies kept for signature compatibility (flanking now matters via guaranteed melee damage, not to-hit).
 function hxCalcHitChance(ability, attacker, target, adjacentEnemies) {
-  const r = ability.range || 1;
   const isRangedType = ability.type === 'ranged' || ability.type === 'magic';
-  const dist = hexDist(attacker.col, attacker.row, target.col, target.row);
-  const n = adjacentEnemies || 0;
-  let acc = (attacker.accuracy != null ? attacker.accuracy : 65) - (target.defense != null ? target.defense : 0);
-  // Shield front-arc bonus: target gets +10 effective defense (=> −10 to attacker hit) while NOT flanked (n < 2)
-  if(target.hasShield && n < 2) acc -= 10;
-  // Surround / encirclement bonus
-  acc += Math.min(24, Math.max(0, (n - 1) * 8));
-  // Height advantage to-hit
-  if(hxs.heights.some(([hc,hr])=>hc===attacker.col&&hr===attacker.row)
-     && !hxs.heights.some(([hc,hr])=>hc===target.col&&hr===target.row)) acc += 5;
-  // Stunned target is easy to hit
-  if((target.stunnedTurns||0) > 0) acc += 25;
-  // Cover penalty (bush / behind rubble)
+  if(!isRangedType) return 100; // melee never misses
+  const dodge = (target.defense != null ? target.defense : 0); // base evasion, 5-10
   const inBush = (hxs.bushes||[]).some(([bc,br])=>bc===target.col&&br===target.row);
   const hasCover = (hxs.obstacles||[]).some(ob=>ob.type==='rubble'&&hexDist(ob.col,ob.row,target.col,target.row)===1&&hexDist(ob.col,ob.row,attacker.col,attacker.row)>1);
-  if(inBush || hasCover) acc -= 15;
-  // Ranged/magic distance falloff
-  if(r > 1 && isRangedType) acc -= Math.max(0, dist - Math.ceil(r/2)) * 8;
-  const floor = isRangedType ? 35 : 50;
-  return Math.max(floor, Math.min(95, Math.round(acc)));
+  const coverPen = (inBush || hasCover) ? 15 : 0;        // partial cover: −15 (ranged)
+  const movePen  = target.movedRecently ? 5 : 0;         // target moved this turn: −5 (ranged)
+  const situational = Math.max(coverPen, movePen);       // do NOT stack
+  const hit = 100 - dodge - situational;
+  return Math.max(40, Math.min(100, Math.round(hit)));
 }
 
 // SHARED damage resolver — dodge already rolled by caller. Applies shield-block then armor (30% leak) then HP.
@@ -4167,7 +4158,7 @@ async function hxAnimateMelee(unit, targetCol, targetRow) {
 
 async function hxMoveUnit(unit, toCol, toRow, forcedMove) {
   const fromCol=unit.col, fromRow=unit.row;
-  unit.col=toCol; unit.row=toRow; unit.moved=true;
+  unit.col=toCol; unit.row=toRow; unit.moved=true; unit.movedRecently=true; // harder to hit with ranged until its next turn
   // --- ATTACK OF OPPORTUNITY: living hostiles adjacent to from-hex (but not to-hex) get a free strike ---
   if(!forcedMove) {
     const _aooFoes = hxs.units.filter(p=>p.team!==unit.team&&p.hp>0&&!p.stunnedTurns&&!p._aooUsed
@@ -4413,6 +4404,7 @@ function hxRefreshBlock(team) {
     if((u.block||0) > bm) u.block = Math.max(bm, (u.block||0) - 2);
     else if(!u._blockHitThisRound) u.block = Math.min(bm, (u.block||0) + 1); // no renew if the shield absorbed a hit since last turn
     u._blockHitThisRound = false;
+    u.movedRecently = false; // reset evasion-from-moving at the unit's own turn start (it persisted through the enemy turn)
   });
 }
 
@@ -5512,7 +5504,7 @@ function hxClickHex(col, row) {
         hxs.heroAP = Math.max(0, hxs.heroAP - paidHexes);
       }
       const fromCol = unit.col, fromRow = unit.row;
-      unit.col = col; unit.row = row;
+      unit.col = col; unit.row = row; unit.movedRecently = true; // harder to hit with ranged until its next turn
       unit.remainingMove = Math.max(0, (unit.remainingMove ?? unit.moveRange) - dist);
       unit.moved = unit.remainingMove === 0;
       // --- ATTACK OF OPPORTUNITY: enemies adjacent to the from-hex (but not to-hex) get a free strike ---
