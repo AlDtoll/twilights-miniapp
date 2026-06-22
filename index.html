@@ -3492,6 +3492,48 @@ function hexReachable(unit) {
   return result;
 }
 
+// Shortest walkable path from (fromCol,fromRow) to (toCol,toRow) as ordered [col,row] steps
+// (destination inclusive, start exclusive). Respects obstacles/units/terrain cost. Straight-line fallback.
+function hexPath(fromCol, fromRow, toCol, toRow, ignoreUnitId) {
+  const blocked = new Set([
+    ...hxs.units.filter(u=>u.id!==ignoreUnitId&&u.hp>0).map(u=>`${u.col},${u.row}`),
+    ...(hxs.obstacles||[]).map(ob=>`${ob.col},${ob.row}`),
+  ]);
+  const costSet = new Set([
+    ...(hxs.swamps||[]).map(([c,r])=>`${c},${r}`),
+    ...(hxs.shallow_waters||[]).map(([c,r])=>`${c},${r}`),
+    ...(hxs.deep_waters||[]).map(([c,r])=>`${c},${r}`),
+  ]);
+  const start = `${fromCol},${fromRow}`, goal = `${toCol},${toRow}`;
+  const dist = new Map([[start, 0]]);
+  const prev = new Map();
+  const queue = [[0, fromCol, fromRow]];
+  while(queue.length) {
+    queue.sort((a,b)=>a[0]-b[0]);
+    const [d, c, r] = queue.shift();
+    const key = `${c},${r}`;
+    if(d > (dist.get(key) ?? Infinity)) continue;
+    if(key === goal) break;
+    for(const [nc, nr] of hexNeighbors(c, r)) {
+      const nkey = `${nc},${nr}`;
+      if(nkey !== goal && blocked.has(nkey)) continue;
+      const nd = d + (costSet.has(nkey) ? 2 : 1);
+      if(nd < (dist.get(nkey) ?? Infinity)) {
+        dist.set(nkey, nd); prev.set(nkey, key); queue.push([nd, nc, nr]);
+      }
+    }
+  }
+  if(!prev.has(goal)) return [[toCol, toRow]]; // unreachable graph-wise → glide straight
+  const path = [];
+  let cur = goal;
+  while(cur !== start) {
+    const [c, r] = cur.split(',').map(Number);
+    path.unshift([c, r]);
+    cur = prev.get(cur);
+  }
+  return path;
+}
+
 function hexAttackable(unit) {
   const ranged = unit.atkRange > 1;
   return hxs.units.filter(u => u.team !== unit.team && u.hp > 0
@@ -3971,9 +4013,8 @@ function hxDelay(ms) { return new Promise(r => setTimeout(r, ms)); }
 async function hxAnimateMove(unit, fromCol, fromRow, toCol, toRow) {
   const svg = document.getElementById('hx-svg');
   if(!svg || (fromCol===toCol && fromRow===toRow)) return;
-  const from = hexToPixel(fromCol, fromRow);
-  const to = hexToPixel(toCol, toRow);
-  const dur = 260, t0 = performance.now();
+  // Walk hex-by-hex along the real path instead of gliding through walls
+  const waypoints = [[fromCol, fromRow], ...hexPath(fromCol, fromRow, toCol, toRow, unit.id)];
   const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
   const circ = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
   circ.setAttribute('r', String(HEX_SIZE * 0.58));
@@ -3985,15 +4026,24 @@ async function hxAnimateMove(unit, fromCol, fromRow, toCol, toRow) {
   lbl.textContent = unit.emoji || unit.name.charAt(0);
   g.appendChild(circ); g.appendChild(lbl); g.style.pointerEvents = 'none';
   svg.appendChild(g);
+  const p0 = hexToPixel(fromCol, fromRow);
+  g.setAttribute('transform', `translate(${p0.x},${p0.y})`);
   unit._animating = true; hxRender();
-  await new Promise(resolve => {
-    const frame = (now) => {
-      const t = Math.min(1,(now-t0)/dur), e = t<.5?2*t*t:-1+(4-2*t)*t;
-      g.setAttribute('transform',`translate(${from.x+(to.x-from.x)*e},${from.y+(to.y-from.y)*e})`);
-      t<1 ? requestAnimationFrame(frame) : resolve();
-    };
-    requestAnimationFrame(frame);
-  });
+  // Per-hex step duration: shorter when path is long so total time stays snappy
+  const perHex = Math.max(90, Math.min(150, 520 / Math.max(1, waypoints.length - 1)));
+  for(let i = 1; i < waypoints.length; i++) {
+    const a = hexToPixel(waypoints[i-1][0], waypoints[i-1][1]);
+    const b = hexToPixel(waypoints[i][0], waypoints[i][1]);
+    const t0 = performance.now();
+    await new Promise(resolve => {
+      const frame = (now) => {
+        const t = Math.min(1,(now-t0)/perHex), e = t<.5?2*t*t:-1+(4-2*t)*t;
+        g.setAttribute('transform',`translate(${a.x+(b.x-a.x)*e},${a.y+(b.y-a.y)*e})`);
+        t<1 ? requestAnimationFrame(frame) : resolve();
+      };
+      requestAnimationFrame(frame);
+    });
+  }
   g.remove(); delete unit._animating;
 }
 
