@@ -67,6 +67,12 @@
   .m3f-perk-cost { font-size: 0.74rem; color: var(--tg-theme-hint-color, #aaa); margin-top: 2px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
   .m3f-perk-cost .m3f-stock-dot { width: 9px; height: 9px; }
   .m3f-perk-desc { font-size: 0.72rem; color: var(--tg-theme-hint-color, #aaa); margin-top: 2px; }
+  .m3f-sectors { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+  .m3f-sector { padding: 4px 9px; border-radius: 8px; font-size: 0.74rem; font-weight: 600; cursor: pointer;
+    border: 1.5px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.05); color: var(--tg-theme-text-color, #fff); transition: all 0.15s; }
+  .m3f-sector:active:not(:disabled) { background: rgba(255,255,255,0.16); }
+  .m3f-sector:disabled { opacity: 0.4; cursor: default; }
+  .m3f-sector.active { border-color: #ff6b5e; background: rgba(255,107,94,0.18); color: #ffb3aa; }
   </style>
 </head>
 <body>
@@ -179,11 +185,72 @@ function m3fDemoScene() {
   };
 }
 
+// Scene loaded by file via ?scene=NAME (set by m3fFetchScene before initM3F). When
+// present it takes priority over gameData. Holds the RAW scene object (either format).
+let m3fSceneOverride = null;
+
+// ---------- Format adapter ----------
+// Normalize an incoming scene to match3fight's internal lowercase model. Accepts the
+// Android COMPILED format (CAPITALIZED top-level keys + separate arrays) as PRIMARY and
+// the existing lowercase form as FALLBACK. Returns the lowercase `sc` shape the rest of
+// m3fLoadScene already consumes (hero/enemy/heroHands/enemyHands/heroRules/settings + the
+// time/stock/state perk lists, plus a parsed `enemySectors`).
+function m3fNormalizeScene(raw) {
+  raw = raw || {};
+  // Detect the CAPITALIZED Android format by its hallmark keys. If absent, the scene is
+  // already in lowercase form — pass it through untouched (back-compat with the demo).
+  const isAndroid = !!(raw.Hero || raw.Enemy || raw.HeroHands || raw.EnemyHands || raw.Settings);
+  if (!isAndroid) {
+    // lowercase fallback: surface enemySectors (lowercase) if present so the rest of the
+    // pipeline can read it uniformly.
+    if (raw.enemySectors && !raw.EnemySectors) { /* already lowercase */ }
+    return raw;
+  }
+
+  // Attach side-specific statuses/resources onto the Hero/Enemy base objects.
+  const hero = Object.assign({}, raw.Hero || {});
+  const enemy = Object.assign({}, raw.Enemy || {});
+  if (Array.isArray(raw.HeroStatuses))  hero.statuses  = raw.HeroStatuses;
+  if (Array.isArray(raw.EnemyStatuses)) enemy.statuses = raw.EnemyStatuses;
+  if (Array.isArray(raw.HeroResources))  hero.resources  = raw.HeroResources;
+  if (Array.isArray(raw.EnemyResources)) enemy.resources = raw.EnemyResources;
+
+  // Settings: carry the whole object; the time/stock/state perk lists live at the TOP
+  // level in the Android format, so fold them under settings too (m3fLoadScene reads
+  // `settings.HeroTimePerks || sc.HeroTimePerks` etc., so either location works — we keep
+  // them top-level on `sc`). gemSettings/cells already live inside Settings.
+  const settings = Object.assign({}, raw.Settings || {});
+
+  // Seed each side's stock pools (initial value + maxValue) from HeroStocks/EnemyStocks.
+  // Stored as `heroStocks`/`enemyStocks` for m3fLoadScene to apply after building pools.
+  const sc = {
+    hero: hero,
+    enemy: enemy,
+    heroHands: raw.HeroHands || [],
+    enemyHands: raw.EnemyHands || [],
+    heroRules: raw.HeroRules || [],
+    settings: settings,
+    HeroTimePerks: raw.HeroTimePerks || [],
+    EnemyTimePerks: raw.EnemyTimePerks || [],
+    HeroStockPerks: raw.HeroStockPerks || [],
+    EnemyStockPerks: raw.EnemyStockPerks || [],
+    HeroStates: raw.HeroStates || [],
+    EnemyStates: raw.EnemyStates || [],
+    heroStocks: Array.isArray(raw.HeroStocks) ? raw.HeroStocks : [],
+    enemyStocks: Array.isArray(raw.EnemyStocks) ? raw.EnemyStocks : [],
+    enemySectors: Array.isArray(raw.EnemySectors) ? raw.EnemySectors : []
+  };
+  return sc;
+}
+
 // ---------- Scene loader / state builder ----------
 function m3fLoadScene() {
-  const raw = (gameData && gameData.game === 'match3fight') ? gameData : {};
-  const hasScene = raw.hero || raw.enemy || raw.heroHands || raw.settings;
-  const sc = hasScene ? raw : m3fDemoScene();
+  const fromData = (gameData && gameData.game === 'match3fight') ? gameData : {};
+  // ?scene= file override wins over ?data=; else gameData; else demo.
+  const src = m3fSceneOverride || fromData;
+  const hasScene = src.hero || src.enemy || src.heroHands || src.settings ||
+    src.Hero || src.Enemy || src.HeroHands || src.Settings;
+  const sc = m3fNormalizeScene(hasScene ? src : m3fDemoScene());
 
   const settings = sc.settings || {};
   const types = Math.max(4, parseInt(settings.types) || 5);
@@ -253,6 +320,18 @@ function m3fLoadScene() {
     stocks[gt] = { value: 0, gemType: gt, maxValue: gemSettings[gt].maxValue };
     enemyStocks[gt] = { value: 0, gemType: gt, maxValue: gemSettings[gt].maxValue };
   }
+  // SEED initial stock value + maxValue per side from HeroStocks/EnemyStocks
+  // ([{gemType,value,maxValue}]). Overrides the gemSettings-derived maxValue when given.
+  function m3fSeedStocks(pool, arr) {
+    (Array.isArray(arr) ? arr : []).forEach(s => {
+      const gt = parseInt(s.gemType);
+      if (!gt || !pool[gt]) return;
+      if (s.value != null) pool[gt].value = +s.value;
+      if (s.maxValue != null) pool[gt].maxValue = +s.maxValue;
+    });
+  }
+  m3fSeedStocks(stocks, sc.heroStocks);
+  m3fSeedStocks(enemyStocks, sc.enemyStocks);
 
   function mkHands(arr) {
     return (Array.isArray(arr) ? arr : []).map(h => ({
@@ -333,6 +412,14 @@ function m3fLoadScene() {
     cells: cellMap,                 // "row_col" -> special cell descriptor
     heroStates: mkStates(settings.HeroStates || sc.HeroStates),  // auto-status states (hero)
     enemyStates: mkStates(settings.EnemyStates || sc.EnemyStates),// auto-status states (enemy)
+    // EnemySectors: tappable enemy body-part buttons. Hero targets a limb; on tap the
+    // sector's perk effects run with owner 'hero' (typically SET "Цель: X" INFO statuses).
+    enemySectors: (Array.isArray(sc.enemySectors) ? sc.enemySectors : []).map(s => ({
+      id: (s.id != null ? +s.id : 0),
+      name: s.name || '',
+      iconResName: s.iconResName || '',
+      perk: s.perk ? m3fMkPerk(s.perk) : null
+    })).filter(s => s.perk),
     settings: {
       types: types,
       makeEnemyMove: !!settings.makeEnemyMove,
@@ -1766,7 +1853,38 @@ function m3fRenderFighter(elId, f, isEnemy) {
     ((f.resources && f.resources.length)
       ? `<div class="m3f-resources">${f.resources.map(r => `<span class="m3f-res-chip">${r.name}: ${r.amount}${r.maxAmount != null ? '/' + r.maxAmount : ''}</span>`).join(' ')}</div>`
       : '') +
-    m3fStatusChips(f);
+    m3fStatusChips(f) +
+    (isEnemy ? m3fSectorButtons() : '');
+}
+
+// EnemySectors -> tappable body-part buttons. Hero "aims" at a limb; tapping runs the
+// sector perk's effects (owner 'hero') — typically SET "Цель: X" INFO statuses on the enemy.
+const M3F_SECTOR_ICONS = { ic_helmet: '🪖', ic_hands: '✋', ic_legs: '🦵' };
+function m3fSectorButtons() {
+  const sectors = (m3f && m3f.enemySectors) || [];
+  if (!sectors.length) return '';
+  const disabled = m3f.done || m3f.turn !== 'hero';
+  return '<div class="m3f-sectors">' + sectors.map((s, i) => {
+    const icon = M3F_SECTOR_ICONS[s.iconResName] || '🎯';
+    // mark the currently-selected limb: its "Цель: X" INFO status is VALUE 1 on the enemy.
+    // (Existence alone is insufficient — selecting a limb SETs the other limbs' statuses to 0
+    //  rather than removing them, so all "Цель: X" statuses can coexist; only the active one
+    //  carries value 1. The sector's perk name equals the "Цель: X" status name it sets.)
+    const active = m3fStatusValue(m3f.enemy, s.perk.name) === 1;
+    return `<button class="m3f-sector${active ? ' active' : ''}" ${disabled ? 'disabled' : ''} onclick="m3fTapSector(${i})">${icon} ${s.name}</button>`;
+  }).join('') + '</div>';
+}
+
+function m3fTapSector(i) {
+  if (m3f.done || m3f.turn !== 'hero') return;
+  const s = (m3f.enemySectors || [])[i];
+  if (!s || !s.perk) return;
+  if (!m3fCheckConditions(s.perk.conditionsForDisplay, 'hero')) return;
+  m3fLog(`Цель: «${s.name}».`);
+  s.perk.effects.forEach(eff => m3fApplyEffect(eff, 'hero'));
+  m3fUpdatePersonsStates();
+  m3fUpdateAllUI();
+  m3fCheckEnd();
 }
 
 function m3fUpdateStocksUI() {
@@ -1872,8 +1990,26 @@ function initM3F() {
   m3fStartTurnTimer();
 }
 
-// Path implies the game: auto-start directly (no cross-game dispatch).
-setTimeout(initM3F, 0);
+// ?scene=NAME (or gameData.scene): fetch scenes/NAME.json (relative to this page) and use
+// it as the raw scene (either format). On any error, fall back to gameData/demo. The name
+// is sanitized to a bare file stem to avoid path traversal.
+function m3fFetchScene() {
+  let name = null;
+  try { name = new URLSearchParams(window.location.search).get('scene'); } catch (e) {}
+  if (!name && gameData && gameData.scene) name = gameData.scene;
+  if (!name) return Promise.resolve();
+  name = String(name).replace(/[^A-Za-z0-9_-]/g, '');
+  if (!name) return Promise.resolve();
+  const sub = document.getElementById('subtitle');
+  if (sub) sub.textContent = 'Загрузка…';
+  return fetch('scenes/' + name + '.json')
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(j => { m3fSceneOverride = j; })
+    .catch(e => { m3fSceneOverride = null; /* fall back to gameData/demo */ });
+}
+
+// Path implies the game: fetch any ?scene= file first, then auto-start.
+setTimeout(() => { m3fFetchScene().then(initM3F); }, 0);
 </script>
 </body>
 </html>
