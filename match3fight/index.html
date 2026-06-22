@@ -1844,7 +1844,7 @@ function m3fRenderFighter(elId, f, isEnemy) {
   // Render content into a child (.m3f-fc) so floating-number/flash overlay children of the
   // panel survive re-renders.
   let fc = el.querySelector('.m3f-fc');
-  if (!fc) { fc = document.createElement('div'); el.appendChild(fc); }
+  if (!fc) { fc = document.createElement('div'); fc.className = 'm3f-fc'; el.appendChild(fc); }
   fc.innerHTML =
     `<div class="m3f-fighter-head"><span class="m3f-fighter-name">${isEnemy ? '👹 ' : '🛡 '}${f.name}</span>` +
     `<span class="m3f-fighter-hp-text">HP ${f.hp}/${f.maxHp}${f.shield > 0 ? ' · <span class="m3f-shield">🛡 ' + f.shield + '</span>' : ''}${woundsHtml}</span></div>` +
