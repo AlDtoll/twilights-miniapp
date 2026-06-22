@@ -652,6 +652,15 @@
     <div id="hx-intro-name" style="font-size:1.2rem;font-weight:700;"></div>
     <div id="hx-intro-stats" style="font-size:0.85rem;color:rgba(255,255,255,0.65);"></div>
     <div id="hx-intro-abilities" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%;max-width:280px;margin-top:4px;"></div>
+    <div id="hx-intro-legend" style="font-size:0.62rem;color:rgba(255,255,255,0.5);line-height:1.7;max-width:320px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.12);text-align:left;">
+      <div style="text-align:center;color:rgba(255,255,255,0.4);margin-bottom:3px;">— Легенда —</div>
+      🛡×N Броня (детали, шанс срабатывания)<br>
+      🛡N Щиты (ряд заслонов, 1 ход; удар снимает передний барьер)<br>
+      🌀 Уклонение · 🎯 Точность · 🟧 Зона контроля (уход = ⚔ атака вдогон) · 🔴 Окружение<br>
+      🌳 Дерево: 🛡+1 щит(15) / −15% точн. дальним · 🗿 Камни: +1 урон / +5% дальним<br>
+      🌿 Кусты / 🪨 Обломки: −15% точн. дальним · 🧱 Стена: блок движения и обзора<br>
+      🟫 Болото: движение ×2 · 🔥 Огонь: −20 HP · 〰 Мелководье ×2 · 🌊 Глуб. вода: нет атаки
+    </div>
     <button id="hx-intro-btn" onclick="document.getElementById('hx-intro-overlay').style.display='none'" style="margin-top:8px;padding:10px 28px;border-radius:20px;border:none;background:var(--tg-theme-button-color,#6c5ce7);color:var(--tg-theme-button-text-color,#fff);font-size:1rem;font-weight:700;cursor:pointer;">В бой!</button>
   </div>
   <div class="hx-turn-label" id="hx-turn-label">Ход игрока</div>
@@ -671,10 +680,6 @@
     <div id="hx-info-name" style="font-weight:700; font-size:0.85rem;"></div>
     <div id="hx-info-stats" style="font-size:0.75rem; color:rgba(255,255,255,0.7); margin-top:2px;"></div>
     <div id="hx-info-status" style="font-size:0.7rem; margin-top:2px; color:#a29bfe;"></div>
-    <div id="hx-legend" style="font-size:0.62rem; color:rgba(255,255,255,0.4); padding:4px 2px 0; line-height:1.6; border-top:1px solid rgba(255,255,255,0.08); margin-top:4px;">
-      🛡×N Броня (детали, шанс)  🛡N Щиты (ряд, 1 ход; удар снимает передний)  🌀 Уклонение  🎯 Точность  🟧 Зона контроля (уход = ⚔ атака вдогон)  🔴 Окружение<br>
-      🌳 Дерево 🛡+1 щит / −15% точн.(дальн.)  🗿 Камни +1 урон / +5%  🌿 Кусты −15% точн.  🪨 Обломки −15% точн.  🧱 Стена  🟫 Болото (2 ОД)  🔥 Огонь −20  〰 Мелководье  🌊 Глуб. вода
-    </div>
   </div>
   <div id="hx-ability-panel">
     <div class="hx-ability-row" id="hx-ability-row"></div>
