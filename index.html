@@ -3189,7 +3189,7 @@ const HX_WEAPON_ABILITIES = {
   shield: [
     {id:'shield_bash',    name:'Удар щитом',    icon:'🛡️', type:'melee',  range:1, aoe:0, damage:35, effect:null,                         maxCooldown:0, school:'shield'},
     {id:'shield_push',    name:'Отбросить',     icon:'🏋️', type:'melee',  range:1, aoe:0, damage:25, effect:{type:'knockback'},            maxCooldown:2, school:'shield'},
-    {id:'shield_ward',    name:'Заслон',         icon:'🔰',type:'melee',  range:0, aoe:0, damage:0, effect:{type:'barrier',value:35,count:2}, maxCooldown:3, school:'shield'},
+    {id:'shield_ward',    name:'Заслон',         icon:'🔰',type:'melee',  range:0, aoe:0, damage:0, effect:{type:'barrier',value:35,count:1}, maxCooldown:3, school:'shield'},
   ],
   unarmed: [
     {id:'unarmed_punch',  name:'Серия ударов',  icon:'👊', type:'melee',  range:1, aoe:0, damage:35, effect:null,                         maxCooldown:0, school:'unarmed'},
@@ -3232,7 +3232,7 @@ const HX_MAGIC_ABILITIES = {
   ],
   geomancer: [
     {id:'geo_stone',      name:'Метание камня',    icon:'🪨',type:'magic', range:4, aoe:0, damage:30,   effect:null,                               maxCooldown:0, school:'geomancer'},
-    {id:'geo_shield',     name:'Заслон',           icon:'🏔️',type:'magic', range:0, aoe:0, damage:0,   effect:{type:'barrier',value:40,count:2},      maxCooldown:2, school:'geomancer'},
+    {id:'geo_shield',     name:'Заслон',           icon:'🏔️',type:'magic', range:0, aoe:0, damage:0,   effect:{type:'barrier',value:40,count:1},      maxCooldown:2, school:'geomancer'},
     {id:'geo_quake',      name:'Сотрясение',       icon:'🌍',type:'magic', range:1, aoe:1, damage:25,   effect:{type:'stun',turns:1},             maxCooldown:4, school:'geomancer'},
   ],
   aeromancer: [
@@ -3281,7 +3281,7 @@ const HEX_UNIT_DEFS = {
     statuses:[{name:'Шлем',value:30,chance:15},{name:'Кираса',value:20,chance:60},{name:'Наручи',value:10,chance:30},{name:'Поножи',value:10,chance:15},{name:'Щит',value:35,chance:20}],
     abilities:[
       {id:'e_sword_strike',name:'Удар',icon:'⚔️',type:'melee',range:1,aoe:0,damage:40,effect:null,cooldown:0,maxCooldown:0},
-      {id:'e_shield_ward', name:'Заслон',icon:'🛡️',type:'melee',range:0,aoe:0,damage:0,effect:{type:'barrier',value:35,count:2},cooldown:0,maxCooldown:2},
+      {id:'e_shield_ward', name:'Заслон',icon:'🛡️',type:'melee',range:0,aoe:0,damage:0,effect:{type:'barrier',value:35,count:1},cooldown:0,maxCooldown:2},
     ]},
   archer:       {name:'Лучник',      emoji:'🏹', hp:100, atk:30,  moveRange:2, atkRange:3, accuracy:72, defense:9,
     statuses:[{name:'Кожаная куртка',value:15,chance:40},{name:'Наручи',value:10,chance:30}],
