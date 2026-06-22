@@ -5166,6 +5166,15 @@ function hexUpdateInfo(unit) {
     }
   }
 
+  // Append the terrain the unit stands on — character and tile are different layers,
+  // both shown together so the player doesn't have to guess from the legend.
+  const _terrUnder = hxTerrainDescAt(unit.col, unit.row);
+  if(_terrUnder && statusEl) {
+    const _base = statusEl.textContent;
+    statusEl.innerHTML = (_base ? _base + '<br>' : '') +
+      `<span style="color:#8fd1a0">${_terrUnder.emoji} ${_terrUnder.name} — ${_terrUnder.effect}</span>`;
+  }
+
   // Show skip button only for non-hero player units (hero ends turn via "Конец хода")
   // PASS A: hero doesn't skip — uses "Конец хода" button instead
   if(skipBtn) skipBtn.disabled = unit.team !== 'player' || hxs.turn !== 'player' || hxs.ended || done || unit.isHero;
@@ -5455,36 +5464,34 @@ function hxTerrainEmojiAt(col, row) {
   return null;
 }
 
+// Full terrain description for a cell: {emoji, name, effect}. null = plain ground.
+function hxTerrainDescAt(col, row) {
+  const has = (arr) => (hxs[arr]||[]).some(([c,r])=>c===col&&r===row);
+  if(has('rifts'))   return {emoji:'⌖',  name:'Разлом',         effect:'Демонолог рядом: +5HP к Тени'};
+  if(has('forests')) return {emoji:'🌳', name:'Дерево',         effect:'+2 блок в начале хода'};
+  if(has('bushes'))  return {emoji:'🌿', name:'Кусты',          effect:'Укрытие: −2 урон от дальних атак'};
+  if(has('heights')) return {emoji:'🗿', name:'Камни',          effect:'+2 атк дальнобойным юнитам'};
+  const ob = hxObstAt(col,row);
+  if(ob) return ob.type==='wall'
+    ? {emoji:'🧱', name:`Стена (${ob.hp}/${ob.maxHp})`,    effect:'Блокирует движение и дальний обзор'}
+    : {emoji:'🪨', name:`Обломки (${ob.hp}/${ob.maxHp})`,  effect:'Укрытие: −2 урон от дальних атак; разрушаемо'};
+  if(has('swamps'))         return {emoji:'🟫', name:'Болото',         effect:'Движение стоит 2 ОД; −1 HP в конце хода'};
+  if(has('waters'))         return {emoji:'💧', name:'Вода',           effect:'Непроходимо'};
+  if(has('shallow_waters')) return {emoji:'〰', name:'Мелководье',     effect:'Движение стоит 2 ОД'};
+  if(has('deep_waters'))    return {emoji:'🌊', name:'Глубокая вода',  effect:'Нельзя атаковать и использовать способности в этом ходу'};
+  const f = (hxs.fires||[]).find(f=>f.col===col&&f.row===row);
+  if(f) return {emoji:'🔥', name:`Огонь (${f.duration} хода)`, effect:'−2 HP в конце каждого хода'};
+  if(has('burnable'))       return {emoji:'🌾', name:'Трава',          effect:'Горючая — поджигается огненными заклинаниями'};
+  return null;
+}
+
 function hxTerrainInfoAt(col, row) {
   const nameEl = document.getElementById('hx-info-name');
   const statsEl = document.getElementById('hx-info-stats');
   if(!nameEl || !statsEl) return;
-  if((hxs.rifts||[]).some(([c,r])=>c===col&&r===row)) {
-    nameEl.textContent = '⌖ Разлом'; statsEl.textContent = 'Демонолог рядом: +5HP к Тени';
-  } else if((hxs.forests||[]).some(([c,r])=>c===col&&r===row)) {
-    nameEl.textContent = '🌳 Дерево'; statsEl.textContent = '+2 блок в начале хода';
-  } else if((hxs.bushes||[]).some(([c,r])=>c===col&&r===row)) {
-    nameEl.textContent = '🌿 Кусты'; statsEl.textContent = 'Укрытие: −2 урон от дальних атак';
-  } else if((hxs.heights||[]).some(([c,r])=>c===col&&r===row)) {
-    nameEl.textContent = '🗿 Камни'; statsEl.textContent = '+2 атк дальнобойным юнитам';
-  } else if(hxObstAt(col,row)) {
-    const _ob = hxObstAt(col,row);
-    if(_ob.type==='wall') { nameEl.textContent = `🧱 Стена (${_ob.hp}/${_ob.maxHp})`; statsEl.textContent = 'Блокирует движение и дальний обзор'; }
-    else { nameEl.textContent = `🪨 Обломки (${_ob.hp}/${_ob.maxHp})`; statsEl.textContent = 'Укрытие: −2 урон от дальних атак; разрушаемо'; }
-  } else if((hxs.swamps||[]).some(([c,r])=>c===col&&r===row)) {
-    nameEl.textContent = '🟫 Болото'; statsEl.textContent = 'Движение стоит 2 ОД; −1 HP в конце хода';
-  } else if((hxs.waters||[]).some(([c,r])=>c===col&&r===row)) {
-    nameEl.textContent = '💧 Вода'; statsEl.textContent = 'Непроходимо';
-  } else if((hxs.shallow_waters||[]).some(([c,r])=>c===col&&r===row)) {
-    nameEl.textContent = '〰 Мелководье'; statsEl.textContent = 'Движение стоит 2 ОД';
-  } else if((hxs.deep_waters||[]).some(([c,r])=>c===col&&r===row)) {
-    nameEl.textContent = '🌊 Глубокая вода'; statsEl.textContent = 'Нельзя атаковать и использовать способности в этом ходу';
-  } else if((hxs.fires||[]).some(f=>f.col===col&&f.row===row)) {
-    const _f = hxs.fires.find(f=>f.col===col&&f.row===row);
-    nameEl.textContent = `🔥 Огонь (${_f.duration} хода)`; statsEl.textContent = '−2 HP в конце каждого хода';
-  } else if((hxs.burnable||[]).some(([c,r])=>c===col&&r===row)) {
-    nameEl.textContent = '🌾 Трава'; statsEl.textContent = 'Горючая — поджигается огненными заклинаниями';
-  }
+  const t = hxTerrainDescAt(col, row);
+  if(t) { nameEl.textContent = `${t.emoji} ${t.name}`; statsEl.textContent = t.effect; }
+  else  { nameEl.textContent = '▫ Ровная земля'; statsEl.textContent = 'Без особых свойств'; }
 }
 
 function hxSkipUnit() {
