@@ -23,6 +23,9 @@
   .m3f-float.dmg{color:#ff6b5e} .m3f-float.heal{color:#48d68a} .m3f-float.shield{color:#74b9ff} .m3f-float.block{color:#9ec7ff;font-size:0.95rem} .m3f-float.miss{color:#cdd2d8;font-size:0.95rem}
   .m3f-cell.m3f-drop { animation: m3fDrop 0.26s cubic-bezier(0.3,0.6,0.4,1); }
   @keyframes m3fDrop { 0%{transform:translateY(-60%);opacity:0.2} 100%{transform:translateY(0);opacity:1} }
+  .m3f-cast { position: fixed; z-index: 50; font-size: 1.7rem; pointer-events: none;
+    filter: drop-shadow(0 2px 5px rgba(0,0,0,0.6)); transform: translate(-50%,-50%);
+    transition: transform 0.44s cubic-bezier(0.45,0,0.55,1), opacity 0.44s ease; will-change: transform, opacity; }
   .m3f-fighter-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
   .m3f-fighter-name { font-weight: 700; font-size: 0.98rem; }
   .m3f-fighter-hp-text { font-size: 0.82rem; color: var(--tg-theme-hint-color, #aaa); }
@@ -1507,14 +1510,17 @@ function m3fUsePerk(perk) {
   // spend resource cost (стрелы/заряды)
   (perk.resources || []).forEach(rc => { const r = (m3f.hero.resources || []).find(x => x.name === rc.name); if (r) r.amount = Math.max(0, r.amount - rc.amount); });
   m3fLog(`Герой: «${perk.name}».`);
-  perk.effects.forEach(eff => m3fApplyEffect(eff, 'hero'));
-  m3fUpdatePersonsStates(); // PerkExecutor.execute line 207: re-eval auto-statuses after effects
-  // charges / cooldown / category
-  if (perk.charges != null) m3f.perkCharges[perk.name] = Math.max(0, (m3f.perkCharges[perk.name] || 0) - 1);
-  m3f.perkReload[perk.name] = 0;
-  if (perk.category && perk.coolDown === 1 && perk.reloadType === 'TURN') m3f.categoryLocked[perk.category] = true;
-  m3fUpdateAllUI();
-  if (m3fCheckEnd()) return;
+  m3fUpdateAllUI(); // reflect the cost deduction before the cast flies
+  // Fly the skill icon, then apply effects on arrival.
+  m3fCastAnim('hero', perk, () => {
+    perk.effects.forEach(eff => m3fApplyEffect(eff, 'hero'));
+    m3fUpdatePersonsStates(); // PerkExecutor.execute line 207: re-eval auto-statuses after effects
+    if (perk.charges != null) m3f.perkCharges[perk.name] = Math.max(0, (m3f.perkCharges[perk.name] || 0) - 1);
+    m3f.perkReload[perk.name] = 0;
+    if (perk.category && perk.coolDown === 1 && perk.reloadType === 'TURN') m3f.categoryLocked[perk.category] = true;
+    m3fUpdateAllUI();
+    m3fCheckEnd();
+  });
 }
 
 // ---------- Turn flow ----------
@@ -1641,14 +1647,18 @@ function m3fEnemyActions() {
     m3fLog(`${m3f.enemy.name}: «${perk.name}».`);
     perk.prices.forEach(pr => { const st = m3f.enemyStocks[pr.gemType]; if (st) st.value = Math.max(0, st.value - pr.value); });
     (perk.resources || []).forEach(rc => { const r = (m3f.enemy.resources || []).find(x => x.name === rc.name); if (r) r.amount = Math.max(0, r.amount - rc.amount); });
-    perk.effects.forEach(eff => m3fApplyEffect(eff, 'enemy'));
-    m3fUpdatePersonsStates();
-    if (perk.charges != null) m3f.perkCharges[perk.name] = Math.max(0, (m3f.perkCharges[perk.name] || 0) - 1);
-    m3f.perkReload[perk.name] = 0;
     used = true;
     m3fUpdateAllUI();
-    if (m3fCheckEnd()) { m3fRender(); return; }
-    setTimeout(() => step(i + 1), 700); // пауза между действиями врага
+    // Fly the enemy's skill icon, then apply effects on arrival — shows the enemy's move.
+    m3fCastAnim('enemy', perk, () => {
+      perk.effects.forEach(eff => m3fApplyEffect(eff, 'enemy'));
+      m3fUpdatePersonsStates();
+      if (perk.charges != null) m3f.perkCharges[perk.name] = Math.max(0, (m3f.perkCharges[perk.name] || 0) - 1);
+      m3f.perkReload[perk.name] = 0;
+      m3fUpdateAllUI();
+      if (m3fCheckEnd()) { m3fRender(); return; }
+      setTimeout(() => step(i + 1), 450); // пауза между действиями врага
+    });
   };
   step(0);
 }
@@ -1706,6 +1716,36 @@ function m3fFlash(p) {
   const el = m3fSideEl(p); if (!el) return;
   el.classList.remove('m3f-hit'); void el.offsetWidth; el.classList.add('m3f-hit');
   setTimeout(() => { try { el.classList.remove('m3f-hit'); } catch (e) {} }, 340);
+}
+// Which side a perk is aimed at: offensive (any ATTACK / debuff vs foe) → opponent, else self.
+function m3fPerkAimedAtFoe(perk) {
+  return (perk.effects || []).some(e => {
+    const c = (e.command || '').toUpperCase();
+    if (c === 'ATTACK') return true;
+    const tg = (e.target || '').toUpperCase();
+    return (c === 'EDIT_STATUS' || c === 'EDIT_STOCK' || c === 'EDIT_RES') && (tg === 'ENEMY' || tg === 'FOE');
+  });
+}
+// Fly the perk's icon from caster panel to target panel, then run cb (effects land on arrival).
+function m3fCastAnim(casterSide, perk, cb) {
+  const fromP = casterSide === 'hero' ? m3f.hero : m3f.enemy;
+  const foeP = casterSide === 'hero' ? m3f.enemy : m3f.hero;
+  const toP = m3fPerkAimedAtFoe(perk) ? foeP : fromP;
+  const fe = m3fSideEl(fromP), te = m3fSideEl(toP);
+  if (!fe || !te) { if (cb) cb(); return; }
+  const a = fe.getBoundingClientRect(), b = te.getBoundingClientRect();
+  const ax = a.left + a.width / 2, ay = a.top + a.height / 2;
+  const bx = b.left + b.width / 2, by = b.top + b.height / 2;
+  const s = document.createElement('div');
+  s.className = 'm3f-cast';
+  s.textContent = perk.icon || '✨';
+  s.style.left = ax + 'px'; s.style.top = ay + 'px';
+  document.body.appendChild(s);
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    s.style.transform = `translate(calc(-50% + ${bx - ax}px), calc(-50% + ${by - ay}px)) scale(1.35)`;
+    if (toP === fromP) s.style.opacity = '0.7';
+  }));
+  setTimeout(() => { try { document.body.removeChild(s); } catch (e) {} if (cb) cb(); }, 460);
 }
 
 function m3fRenderFighter(elId, f, isEnemy) {
