@@ -5543,6 +5543,9 @@ function hxEndTurn() {
 
 function initHex() {
   document.getElementById('hx-battle').style.display='';
+  // Hide global app header/subtitle on the battle map — maximize space for the board
+  const _h1 = document.querySelector('h1'); if(_h1) _h1.style.display = 'none';
+  const _sub = document.getElementById('subtitle'); if(_sub) _sub.style.display = 'none';
 
   // Support hero param: {name, hp, atk, weapon, magic, level, emoji}
   const heroDef = gameData.hero || null;
@@ -5688,28 +5691,40 @@ function initHex() {
     ...(hxs.forests||[]).map(([c,r])=>`${c},${r}`),
     ...(hxs.heights||[]).map(([c,r])=>`${c},${r}`),
   ]);
-  const _obstCandidates = [];
-  for(let r=2;r<HEX_ROWS-2;r++) for(let c=3;c<=7;c++) {
-    if(!_allBlocked.has(`${c},${r}`)) _obstCandidates.push([c,r]);
-  }
   hxs.obstacles = [];
-  // 1 wall
-  if(_obstCandidates.length) {
-    const idx=Math.floor(Math.random()*_obstCandidates.length);
-    const [oc,or]=_obstCandidates.splice(idx,1)[0];
-    hxs.obstacles.push({col:oc,row:or,hp:50,maxHp:50,type:'wall',blocksLos:true});
-    _allBlocked.add(`${oc},${or}`);
-  }
-  // 2 rubble (from wider area)
-  const _rubbleCandidates = [];
-  for(let r=2;r<HEX_ROWS-2;r++) for(let c=2;c<=8;c++) {
-    if(!_allBlocked.has(`${c},${r}`)) _rubbleCandidates.push([c,r]);
-  }
-  for(let i=0;i<2&&_rubbleCandidates.length;i++){
-    const idx=Math.floor(Math.random()*_rubbleCandidates.length);
-    const [oc,or]=_rubbleCandidates.splice(idx,1)[0];
-    hxs.obstacles.push({col:oc,row:or,hp:5,maxHp:5,type:'rubble',blocksLos:false});
-    _allBlocked.add(`${oc},${or}`);
+  // Explicit walls from gameData.walls = [[col,row], ...] — overrides random obstacle placement
+  const _customWalls = Array.isArray(gameData.walls) ? gameData.walls : null;
+  if(_customWalls) {
+    _customWalls.forEach(w => {
+      const c = Array.isArray(w) ? w[0] : w.col, r = Array.isArray(w) ? w[1] : w.row;
+      if(c==null||r==null||c<0||c>=HEX_COLS||r<0||r>=HEX_ROWS) return;
+      if(_allBlocked.has(`${c},${r}`)) return;
+      hxs.obstacles.push({col:c,row:r,hp:50,maxHp:50,type:'wall',blocksLos:true});
+      _allBlocked.add(`${c},${r}`);
+    });
+  } else {
+    const _obstCandidates = [];
+    for(let r=2;r<HEX_ROWS-2;r++) for(let c=3;c<=7;c++) {
+      if(!_allBlocked.has(`${c},${r}`)) _obstCandidates.push([c,r]);
+    }
+    // 1 wall
+    if(_obstCandidates.length) {
+      const idx=Math.floor(Math.random()*_obstCandidates.length);
+      const [oc,or]=_obstCandidates.splice(idx,1)[0];
+      hxs.obstacles.push({col:oc,row:or,hp:50,maxHp:50,type:'wall',blocksLos:true});
+      _allBlocked.add(`${oc},${or}`);
+    }
+    // 2 rubble (from wider area)
+    const _rubbleCandidates = [];
+    for(let r=2;r<HEX_ROWS-2;r++) for(let c=2;c<=8;c++) {
+      if(!_allBlocked.has(`${c},${r}`)) _rubbleCandidates.push([c,r]);
+    }
+    for(let i=0;i<2&&_rubbleCandidates.length;i++){
+      const idx=Math.floor(Math.random()*_rubbleCandidates.length);
+      const [oc,or]=_rubbleCandidates.splice(idx,1)[0];
+      hxs.obstacles.push({col:oc,row:or,hp:5,maxHp:5,type:'rubble',blocksLos:false});
+      _allBlocked.add(`${oc},${or}`);
+    }
   }
 
   // PASS E: Place bushes — passable, ranged/magic target gets -2 dmg
