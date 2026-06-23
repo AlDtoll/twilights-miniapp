@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Twilights — Найди все</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="../shared/styles.css">
+  <style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--tg-theme-bg-color, #1a1a2e);
+    color: var(--tg-theme-text-color, #eee);
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  h1 { font-size: 1.4rem; margin-bottom: 8px; text-align: center; }
+  .subtitle { font-size: 0.9rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 16px; text-align: center; }
+
+  /* THRESHOLDS */
+  .thresholds-panel { width: 100%; max-width: 360px; margin-bottom: 14px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .threshold-chip {
+    flex: 1; min-width: 60px; padding: 6px 8px; border-radius: 10px; text-align: center;
+    font-size: 0.75rem; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+  }
+  .threshold-chip .t-range { font-weight: 700; font-size: 0.85rem; display: block; }
+  .threshold-chip .t-label { color: var(--tg-theme-hint-color, #aaa); font-size: 0.7rem; }
+  .threshold-chip.active { border-color: #00b894; background: rgba(0,184,148,0.18); }
+  .threshold-chip.active .t-label { color: #00b894; }
+
+  /* CHOICE */
+  #choice-game { width: 100%; max-width: 360px; }
+  .choice-prompt { text-align: center; font-size: 1rem; margin-bottom: 20px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; line-height: 1.5; }
+  .choice-buttons { display: flex; flex-direction: column; gap: 10px; }
+  .choice-btn { padding: 14px 18px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: var(--tg-theme-text-color, #fff); font-size: 1rem; cursor: pointer; text-align: left; transition: all 0.2s; }
+  .choice-btn:hover { border-color: var(--tg-theme-button-color, #6c5ce7); }
+  .choice-btn.selected { border-color: #00b894; background: rgba(0,184,148,0.2); }
+  .choice-hint { margin-top: 10px; padding: 10px 14px; border-radius: 10px; background: rgba(162,155,254,0.12); border: 1px solid rgba(162,155,254,0.3); font-size: 0.9rem; color: #a29bfe; line-height: 1.5; }
+
+  /* BLACKJACK */
+  #bj-game { width: 100%; max-width: 360px; }
+  .bj-info { display: flex; justify-content: space-between; margin-bottom: 16px; padding: 10px 14px; background: rgba(255,255,255,0.05); border-radius: 12px; }
+  .bj-info-item { text-align: center; }
+  .bj-info-label { font-size: 0.7rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 2px; }
+  .bj-info-val { font-size: 1.3rem; font-weight: bold; }
+  .bj-cards { min-height: 60px; margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .card { width: 44px; height: 60px; border-radius: 8px; background: #fff; color: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 1rem; font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,0.4); line-height: 1.1; }
+  .card.red { color: #e74c3c; }
+  .bj-section-label { font-size: 0.75rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 6px; }
+  .bj-actions { display: flex; gap: 10px; margin-top: 16px; }
+  .btn { flex: 1; padding: 12px; border-radius: 12px; border: none; font-size: 1rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+  .btn:disabled { opacity: 0.4; cursor: default; }
+  .btn-primary { background: var(--tg-theme-button-color, #6c5ce7); color: var(--tg-theme-button-text-color, #fff); }
+  .btn-secondary { background: rgba(255,255,255,0.1); color: var(--tg-theme-text-color, #fff); }
+
+  .result-banner { padding: 12px; border-radius: 12px; text-align: center; font-size: 1.1rem; font-weight: bold; margin-top: 12px; display: none; }
+  .result-good { background: rgba(0,184,148,0.2); border: 2px solid #00b894; color: #00b894; }
+  .result-mid  { background: rgba(255,193,7,0.15); border: 2px solid #ffc107; color: #ffc107; }
+  .result-bad  { background: rgba(231,76,60,0.2); border: 2px solid #e74c3c; color: #e74c3c; }
+
+  /* MODIFIERS (toggle/choice) */
+  .modifiers-panel { width: 100%; margin-bottom: 14px; }
+  .modifiers-label { font-size: 0.75rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 8px; }
+  .modifier-row { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+  .modifier-name { font-size: 0.85rem; color: var(--tg-theme-text-color, #eee); flex: 1; min-width: 80px; }
+  .mod-btn { padding: 6px 14px; border-radius: 20px; border: 2px solid rgba(255,255,255,0.2); background: transparent; color: var(--tg-theme-hint-color, #aaa); font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.15s; min-width: 48px; text-align: center; }
+  .mod-btn:disabled { opacity: 0.35; cursor: default; }
+  .mod-btn.active-plus { border-color: #00b894; background: rgba(0,184,148,0.2); color: #00b894; }
+  .mod-btn.active-minus { border-color: #e74c3c; background: rgba(231,76,60,0.2); color: #e74c3c; }
+
+  /* FORESIGHT / DISCARD (shared row layout) */
+  .foresight-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .foresight-name { font-size: 0.85rem; color: var(--tg-theme-text-color, #eee); flex: 1; min-width: 80px; }
+  .foresight-btn {
+    padding: 6px 14px; border-radius: 20px; border: 2px solid #a29bfe;
+    background: transparent; color: #a29bfe; font-size: 0.85rem; font-weight: 700;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .foresight-btn:disabled { opacity: 0.35; cursor: default; }
+  .foresight-btn.used { border-color: rgba(255,255,255,0.2); color: var(--tg-theme-hint-color, #aaa); background: transparent; cursor: default; }
+  .foresight-hint {
+    width: 100%; margin-top: 4px; padding: 8px 12px; border-radius: 10px;
+    background: rgba(162,155,254,0.12); border: 1px solid rgba(162,155,254,0.3);
+    font-size: 0.9rem; color: #a29bfe; font-weight: 600; text-align: center;
+  }
+  .discard-btn {
+    padding: 6px 14px; border-radius: 20px; border: 2px solid #fd79a8;
+    background: transparent; color: #fd79a8; font-size: 0.85rem; font-weight: 700;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .discard-btn:disabled { opacity: 0.35; cursor: default; }
+  .discard-btn.used { border-color: rgba(255,255,255,0.2); color: var(--tg-theme-hint-color, #aaa); background: transparent; cursor: default; }
+
+  .confirm-btn { width: 100%; margin-top: 20px; padding: 14px; border-radius: 14px; border: none; background: var(--tg-theme-button-color, #6c5ce7); color: var(--tg-theme-button-text-color, #fff); font-size: 1.05rem; font-weight: 700; cursor: pointer; }
+  .confirm-btn:disabled { opacity: 0.25; cursor: default; }
+
+  /* TIMING */
+  #timing-game { width: 100%; max-width: 360px; text-align: center; }
+  .timing-prompt { font-size: 0.95rem; margin-bottom: 20px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; line-height: 1.5; }
+  .timing-wrap { position: relative; height: 72px; border-radius: 14px; overflow: hidden; margin-bottom: 10px; background: #e74c3c; }
+  .timing-zone { position: absolute; top: 0; bottom: 0; }
+  .timing-marker { position: absolute; top: 0; bottom: 0; width: 5px; background: #fff; border-radius: 3px; transform: translateX(-50%); box-shadow: 0 0 10px rgba(255,255,255,0.9); pointer-events: none; transition: none; }
+  .timing-live-label { font-size: 1rem; font-weight: 700; min-height: 1.4rem; margin-bottom: 6px; text-align: center; transition: color 0.1s; }
+  .timing-result-label { font-size: 1.2rem; font-weight: 700; min-height: 1.8rem; margin-bottom: 16px; }
+  .timing-stop-btn { padding: 14px; border-radius: 12px; border: none; background: var(--tg-theme-button-color, #6c5ce7); color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; letter-spacing: 0.5px; }
+  .timing-stop-btn:disabled { opacity: 0.4; cursor: default; }
+
+  /* MATCH-3 */
+  #match3-game { width: 100%; max-width: 360px; }
+  .m3-status { display: flex; justify-content: space-around; margin-bottom: 10px; padding: 10px 14px; background: rgba(255,255,255,0.05); border-radius: 12px; }
+  .m3-status-item { text-align: center; }
+  .m3-status-label { font-size: 0.7rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 2px; }
+  .m3-status-val { font-size: 1.3rem; font-weight: bold; }
+  .m3-thresholds { font-size: 0.75rem; color: var(--tg-theme-hint-color, #aaa); text-align: center; margin-bottom: 6px; }
+  .m3-combo { font-size: 0.95rem; font-weight: 700; text-align: center; min-height: 1.4rem; color: #f1c40f; margin-bottom: 6px; }
+  .m3-board { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-bottom: 10px; touch-action: none; }
+  .m3-cell { aspect-ratio: 1; border-radius: 50%; cursor: pointer; transition: transform 0.12s, box-shadow 0.12s; }
+  .m3-cell.selected { transform: scale(1.18); box-shadow: 0 0 0 3px #fff, 0 0 10px rgba(255,255,255,0.5); }
+  .m3-cell.removing { transition: transform 0.22s cubic-bezier(0.4,0,1,1), opacity 0.22s ease-in !important; transform: scale(0) !important; opacity: 0 !important; }
+  .m3-cell.dead { background: rgba(255,255,255,0.04) !important; cursor: default; }
+  .m3-time-bar-wrap { width: 100%; height: 5px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-bottom: 8px; overflow: hidden; display: none; }
+  .m3-time-bar { height: 100%; border-radius: 3px; transition: width 0.1s linear, background 0.3s; }
+
+  /* SEQUENCE */
+  #sequence-game { width: 100%; max-width: 360px; }
+  .seq-ready-title { font-size: 1.3rem; font-weight: 700; text-align: center; margin-bottom: 10px; }
+  .seq-ready-info { font-size: 0.9rem; color: var(--tg-theme-hint-color, #aaa); text-align: center; margin-bottom: 24px; }
+  .seq-progress-wrap { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-bottom: 16px; overflow: hidden; }
+  .seq-progress-bar { height: 100%; border-radius: 3px; transition: width 0.1s linear, background 0.3s; }
+  .seq-counter { font-size: 0.8rem; color: var(--tg-theme-hint-color, #aaa); text-align: right; margin-bottom: 8px; }
+  .seq-question { font-size: 1.05rem; font-weight: 600; padding: 14px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 14px; line-height: 1.5; text-align: center; }
+  #seq-options { display: flex; flex-direction: column; gap: 8px; }
+  .seq-opt-btn { padding: 12px 16px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: var(--tg-theme-text-color, #fff); font-size: 0.95rem; cursor: pointer; text-align: left; transition: border-color 0.2s, background 0.2s; }
+  .seq-opt-btn:disabled { cursor: default; }
+  .seq-opt-correct { border-color: #00b894 !important; background: rgba(0,184,148,0.15) !important; }
+  .seq-opt-wrong { border-color: #e74c3c !important; background: rgba(231,76,60,0.15) !important; }
+  .seq-feedback { margin-top: 10px; font-size: 1rem; font-weight: 700; text-align: center; min-height: 1.4rem; }
+  .seq-result-wrap { text-align: center; }
+  .seq-result-score { font-size: 2.5rem; font-weight: 800; margin-bottom: 8px; }
+  .seq-result-total { font-size: 0.9rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 16px; }
+  .seq-result-label { font-size: 1.2rem; font-weight: 700; padding: 12px 20px; border-radius: 12px; display: inline-block; }
+
+  /* COMPARE */
+  #compare-game { width: 100%; max-width: 360px; }
+  .cmp-timer-bar { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-bottom: 14px; overflow: hidden; }
+  .cmp-timer-fill { height: 100%; background: #00b894; border-radius: 3px; transition: width 0.1s linear, background 0.3s; }
+  .cmp-prompt { text-align: center; font-size: 1.1rem; font-weight: 700; margin-bottom: 14px; }
+  .cmp-pair { display: flex; gap: 12px; width: 100%; margin-bottom: 10px; }
+  .cmp-card { flex: 1; min-height: 110px; border-radius: 14px; border: 2px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: var(--tg-theme-text-color, #fff); font-size: 1.05rem; cursor: pointer; display: flex; align-items: center; justify-content: center; text-align: center; padding: 12px; transition: all 0.15s; line-height: 1.3; }
+  .cmp-card:active { transform: scale(0.96); }
+  .cmp-card.correct { border-color: #00b894; background: rgba(0,184,148,0.25); }
+  .cmp-card.wrong { border-color: #e74c3c; background: rgba(231,76,60,0.2); }
+  .cmp-card:disabled { cursor: default; }
+  .cmp-progress { text-align: center; font-size: 0.82rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 6px; }
+  .cmp-feedback { text-align: center; min-height: 1.4rem; font-size: 1.1rem; font-weight: 700; }
+
+  /* MEMORY */
+  #memory-game { width: 100%; max-width: 400px; }
+  .mem-header { display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--tg-theme-hint-color,#aaa); margin-bottom: 8px; }
+  .mem-grid { display: grid; gap: 5px; margin-bottom: 8px; }
+  .mem-card { aspect-ratio: 1; border-radius: 10px; border: 2px solid rgba(255,255,255,0.12); background: rgba(108,92,231,0.12); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; user-select: none; -webkit-tap-highlight-color: transparent; transition: background 0.15s, border-color 0.15s; }
+  .mem-card.face-down { color: transparent !important; font-size: 0; }
+  .mem-card.face-down::after { content: '?'; color: rgba(255,255,255,0.18); font-size: 1rem; }
+  .mem-card.matched { border-color: #00b894; background: rgba(0,184,148,0.2); cursor: default; }
+  .mem-card.wrong-pair { border-color: #e74c3c; background: rgba(231,76,60,0.18); }
+  @keyframes mem-shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+
+  /* ODDONE */
+  #oddone-game { width: 100%; max-width: 360px; }
+  .oo-grid { display: grid; gap: 8px; margin-bottom: 10px; }
+  .oo-cell { aspect-ratio: 1; border-radius: 12px; border: 2px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.05); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; user-select: none; -webkit-tap-highlight-color: transparent; transition: all 0.12s; }
+  .oo-cell.correct { border-color: #00b894; background: rgba(0,184,148,0.2); }
+  .oo-cell.wrong-tap { border-color: #e74c3c; background: rgba(231,76,60,0.18); animation: mem-shake 0.3s; }
+
+  /* REACTION */
+  #reaction-game { width: 100%; max-width: 360px; text-align: center; }
+  .rx-stats { display: flex; justify-content: center; gap: 20px; margin-bottom: 10px; font-size: 0.85rem; color: var(--tg-theme-hint-color,#aaa); }
+  .rx-display { font-size: 4.5rem; height: 120px; display: flex; align-items: center; justify-content: center; border-radius: 20px; background: rgba(255,255,255,0.04); border: 2px solid rgba(255,255,255,0.08); margin-bottom: 14px; transition: background 0.1s, border-color 0.1s; }
+  .rx-display.rx-target { background: rgba(108,92,231,0.15); border-color: rgba(108,92,231,0.4); }
+  .rx-tap-btn { width: 100%; padding: 20px; border-radius: 16px; border: none; background: var(--tg-theme-button-color,#6c5ce7); color: #fff; font-size: 1.1rem; font-weight: 700; cursor: pointer; }
+  .rx-tap-btn:active { transform: scale(0.96); }
+  .rx-tap-btn:disabled { opacity: 0.4; cursor: default; }
+
+  /* SORTING */
+  #sorting-game { width: 100%; max-width: 360px; }
+  .sort-round-label { font-size: 0.82rem; color: var(--tg-theme-hint-color,#aaa); text-align: center; margin-bottom: 8px; }
+  .sort-items { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+  .sort-item { padding: 12px 16px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: var(--tg-theme-text-color,#fff); cursor: pointer; text-align: left; font-size: 1rem; display: flex; align-items: center; gap: 10px; user-select: none; -webkit-tap-highlight-color: transparent; transition: all 0.15s; }
+  .sort-item.selected { border-color: #00b894; background: rgba(0,184,148,0.15); cursor: default; }
+  .sort-badge { width: 24px; height: 24px; border-radius: 50%; background: #00b894; color: #fff; font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; visibility: hidden; }
+
+  /* ESTIMATE */
+  #estimate-game { width: 100%; max-width: 360px; text-align: center; }
+  .est-round-label { font-size: 0.82rem; color: var(--tg-theme-hint-color,#aaa); margin-bottom: 8px; text-align: center; }
+  .est-display { width: 100%; height: 150px; border-radius: 16px; background: rgba(255,255,255,0.04); border: 2px solid rgba(255,255,255,0.08); margin-bottom: 14px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: rgba(255,255,255,0.2); }
+  .est-dot-el { position: absolute; font-size: 1.2rem; line-height: 1; color: var(--tg-theme-text-color,#fff); }
+  .est-slider-wrap { margin-bottom: 12px; }
+  .est-slider { width: 100%; accent-color: var(--tg-theme-button-color,#6c5ce7); }
+  .est-slider-val { font-size: 1.5rem; font-weight: 700; margin-top: 4px; }
+
+  /* FINDALL */
+  #findall-game { width: 100%; max-width: 400px; }
+  .fa-timer-bar { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-bottom: 12px; overflow: hidden; }
+  .fa-timer-fill { height: 100%; background: #00b894; border-radius: 3px; transition: width 0.1s linear, background 0.3s; }
+  .fa-target-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 12px; }
+  .fa-target-label { font-size: 0.85rem; color: var(--tg-theme-hint-color, #aaa); }
+  .fa-target-val { font-size: 2rem; padding: 6px 14px; border-radius: 10px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.2); }
+  .fa-grid { display: grid; gap: 5px; margin-bottom: 10px; }
+  .fa-cell { aspect-ratio: 1; border-radius: 10px; border: 2px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: var(--tg-theme-text-color, #fff); font-size: 1.3rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color 0.12s, background 0.12s; -webkit-tap-highlight-color: transparent; user-select: none; }
+  .fa-cell:active:not([disabled]) { transform: scale(0.88); }
+  .fa-cell.found { border-color: #00b894; background: rgba(0,184,148,0.3); cursor: default; }
+  .fa-cell.wrong { border-color: #e74c3c; background: rgba(231,76,60,0.25); cursor: default; animation: fa-shake 0.25s; }
+  .fa-cell[disabled] { cursor: default; }
+  @keyframes fa-shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-3px)} 75%{transform:translateX(3px)} }
+  .fa-progress { text-align: center; font-size: 0.85rem; color: var(--tg-theme-hint-color, #aaa); }
+  </style>
+</head>
+<body>
+
+<div id="findall-game" style="display:none">
+  <div id="fa-ready">
+    <div class="seq-ready-title" id="fa-ready-title">Найди все</div>
+    <div style="font-size:3rem;text-align:center;margin:16px 0;letter-spacing:4px" id="fa-ready-target"></div>
+    <div class="seq-ready-info" id="fa-ready-info"></div>
+    <button class="confirm-btn" onclick="faStart()">Начать</button>
+  </div>
+  <div id="fa-play" style="display:none">
+    <div class="fa-timer-bar"><div class="fa-timer-fill" id="fa-timer-fill"></div></div>
+    <div class="fa-target-row">
+      <span class="fa-target-label">Найди:</span>
+      <span class="fa-target-val" id="fa-target-val"></span>
+    </div>
+    <div class="fa-grid" id="fa-grid"></div>
+    <div class="fa-progress" id="fa-progress"></div>
+  </div>
+</div>
+
+<script src="../shared/core.js"></script>
+<script>
+// ---- FINDALL ----
+let faGrid = [], faTarget = '', faCols = 6, faFound = 0, faTotal = 0, faWrongTaps = 0;
+let faTimerInterval = null, faTotalTicks = 0, faTicksLeft = 0, faWrongPenalty = 'time', faTimePenalty = 3;
+
+function initFindall() {
+  document.getElementById('findall-game').style.display = '';
+  faGrid = (gameData.grid || []).slice();
+  faTarget = gameData.target || '';
+  faCols = gameData.cols || 6;
+  faWrongPenalty = gameData.wrongPenalty || 'time';
+  faTimePenalty = typeof gameData.timePenalty === 'number' ? gameData.timePenalty : 3;
+  const secs = gameData.timeLimit || 15;
+  faTotalTicks = secs * 10;
+  faTotal = faGrid.filter(x => x === faTarget).length;
+  const prompt = gameData.prompt || 'Найди все';
+  document.getElementById('fa-ready-title').textContent = prompt;
+  document.getElementById('fa-ready-target').textContent = faTarget;
+  const tWord = faTotal === 1 ? 'цель' : faTotal < 5 ? 'цели' : 'целей';
+  document.getElementById('fa-ready-info').textContent = faTotal + ' ' + tWord + ' · ' + secs + ' сек';
+}
+
+function faStart() {
+  document.getElementById('fa-ready').style.display = 'none';
+  document.getElementById('fa-play').style.display = '';
+  faFound = 0; faWrongTaps = 0;
+  faTicksLeft = faTotalTicks;
+  document.getElementById('fa-target-val').textContent = faTarget;
+  const grid = document.getElementById('fa-grid');
+  grid.style.gridTemplateColumns = 'repeat(' + faCols + ', 1fr)';
+  grid.innerHTML = '';
+  faGrid.forEach(function(item, i) {
+    const btn = document.createElement('button');
+    btn.className = 'fa-cell';
+    btn.textContent = item;
+    btn.onclick = function() { faTap(btn, item); };
+    grid.appendChild(btn);
+  });
+  faUpdateProgress();
+  faTimerInterval = setInterval(function() {
+    faTicksLeft = Math.max(0, faTicksLeft - 1);
+    const pct = faTicksLeft / faTotalTicks * 100;
+    const fill = document.getElementById('fa-timer-fill');
+    if (fill) {
+      fill.style.width = pct + '%';
+      fill.style.background = pct < 30 ? '#e74c3c' : pct < 60 ? '#f39c12' : '#00b894';
+    }
+    if (faTicksLeft <= 0) { clearInterval(faTimerInterval); faFinish(); }
+  }, 100);
+}
+
+function faTap(btn, item) {
+  if (btn.disabled) return;
+  btn.disabled = true;
+  if (item === faTarget) {
+    btn.classList.add('found');
+    faFound++;
+    faUpdateProgress();
+    if (faFound >= faTotal) { clearInterval(faTimerInterval); setTimeout(faFinish, 300); }
+  } else {
+    btn.classList.add('wrong');
+    faWrongTaps++;
+    if (faWrongPenalty === 'time') {
+      faTicksLeft = Math.max(0, faTicksLeft - faTimePenalty * 10);
+      const pct = faTicksLeft / faTotalTicks * 100;
+      const fill = document.getElementById('fa-timer-fill');
+      if (fill) fill.style.width = pct + '%';
+      if (faTicksLeft <= 0) { clearInterval(faTimerInterval); setTimeout(faFinish, 300); }
+    }
+  }
+}
+
+function faUpdateProgress() {
+  document.getElementById('fa-progress').textContent = 'Найдено: ' + faFound + ' / ' + faTotal;
+}
+
+function faFinish() {
+  clearInterval(faTimerInterval);
+  const timeSpent = Math.round((faTotalTicks - faTicksLeft) / 10 * 10) / 10;
+  const effectiveFound = faWrongPenalty === 'point' ? Math.max(0, faFound - faWrongTaps) : faFound;
+  const pct = faTotal > 0 ? effectiveFound / faTotal : 0;
+  let outcome, level;
+  if (pct >= 1 && faWrongTaps === 0) { outcome = 'Идеально'; level = 4; }
+  else if (pct >= 0.8) { outcome = 'Отлично'; level = 3; }
+  else if (pct >= 0.6) { outcome = 'Хорошо'; level = 2; }
+  else if (pct >= 0.4) { outcome = 'Неплохо'; level = 1; }
+  else { outcome = 'Слабо'; level = 0; }
+  const wrongStr = faWrongTaps > 0 ? ' · ' + faWrongTaps + ' ошиб.' : '';
+  document.getElementById('findall-game').innerHTML =
+    '<div style="text-align:center;padding:20px">' +
+    '<div style="font-size:1.4rem;font-weight:700;margin-bottom:8px">' + outcome + '</div>' +
+    '<div style="font-size:1rem;color:var(--tg-theme-hint-color,#aaa)">' + effectiveFound + ' из ' + faTotal + wrongStr + ' · ' + timeSpent + ' сек</div>' +
+    '</div>';
+  setTimeout(function() {
+    sendResultToBot({game:'findall', found:faFound, effectiveFound, total:faTotal, wrongTaps:faWrongTaps, outcome, level, timeSpent});
+  }, 600);
+}
+
+initFindall();
+</script>
+</body>
+</html>
