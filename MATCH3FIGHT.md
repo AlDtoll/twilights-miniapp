@@ -1,18 +1,37 @@
 # Match-3 Fight (`game:'match3fight'`)
 
-Веб-аналог боевого цикла Android-приложения **twiligihts** внутри `index.html`.
+Веб-порт боевого цикла Android-приложения **twiligihts**. Отдельная страница `match3fight/index.html`.
 Использует **те же имена полей JSON**, что и `SCENE_CREATION_GUIDE.md` / `ENEMY_AI.md`.
 Неизвестные поля игнорируются (forward-compat) — более полная Android-сцена загрузится без ошибок.
 
+> **Статус: полный паритет движка 1:1 с Android (блоки A–G).** Аудит и список различий — в
+> `MATCH3FIGHT_PARITY.md`. Реализованы: жизненный цикл статусов (`isActive`/`compareValue`/`times`/
+> duration→value0), боёвка с `isWork`-бросками + расходом `times`, VAMP/DODGE/SMART_DODGE/
+> COUNTERATTACK/HARM/REACTION, STUN-подавление-с-оплатой, scope целей и флаги `ignore*`/`help`,
+> общий `executeIfAvailable` (авто-перки/триггеры/реакции через полный gate), `reloadType`
+> TURN/PERK/COMBO, category-эксклюзив, StockPerk/TimePerk, очки по связным группам (BFS) с
+> правилом раз-на-группу, дуальные гемы 0.5, `Settings.cells` (MULTIPLIER/ADDITIVE/TRIGGER),
+> **раздельные пулы стоков** героя и врага, условия (ALL=AND, EXIST, SP, ATTEMPT, первый активный),
+> EDIT_STATUS-merge, EDIT_STOCK ALL/ADD/REMOVE, EDIT_RES, DEFEND SET. Округления — truncate (toInt).
+
 ## Боевой цикл
 
-1. Поле 3-в-ряд (6×6). Цвет гема `g` (0-based) → `gemType = g+1` (цвета Android 1-based).
-2. Совпадение даёт очки (**Stock**) того цвета, по правилам `gemSettings`.
-3. Ладони героя (`heroHands`) группируют навыки (`perks`) по `gemType`.
-4. Навык стоит `prices` (ресурсы-стоки) и запускает список `effects` (ATTACK / DEFEND / HEAL / EDIT_STATUS / EDIT_STOCK).
-5. У героя и врага есть `hp / maxHp / shield / statuses`.
-6. Кнопка **«Завершить ход»** → распад стоков (`turnKeepStrategy`) → ход врага (SimpleStrategy).
-7. Победа при `enemy.hp ≤ 0`, поражение при `hero.hp ≤ 0`.
+1. Поле 3-в-ряд **8×8** (Android `GameBoard`: 8×8). Цвет гема `g` (0-based) → `gemType = g+1`.
+2. **Одно успешное совмещение за ход** (доска блокируется крышкой до следующего хода) + каскады. Кнопка «Завершить ход» доступна всегда в свой ход — можно пропустить без совмещения.
+3. Совпадение даёт очки (**Stock**) по правилам `gemSettings` + `Settings.cells`; правила `heroRules` срабатывают раз на связную группу.
+4. Ладони героя (`heroHands`) группируют навыки (`perks`) по `gemType`. Навык стоит `prices`/`resources` и запускает `effects[]`.
+5. У героя и врага есть `hp / maxHp / shield(барьеры) / statuses / resources`.
+6. **Цель по части тела:** сначала тапнуть сектор противника (`EnemySectors` → статус «Цель: X»), затем применить навык — он действует на выбранный сектор (двухшаговое наведение НЕ используется: перк зависит от уже выбранного сектора, как в движке).
+7. **«Завершить ход»** → распад стоков (`turnKeepStrategy`) → ход врага → возврат герою.
+8. Победа при `enemy.hp ≤ 0`, поражение при `hero.hp ≤ 0`.
+
+## Интерфейс (раскладка как в Android)
+
+- **Поле сверху** на всю ширину (фиксировано); таймер раунда ⏱ и очки — над полем.
+- Под полем — **две колонки: игрок СЛЕВА, противник СПРАВА** (Android `heroBlock`/`enemyBlock`). Статусы растут вниз внутри своей колонки → поле не дёргается.
+- **Выдвижные панели рук** по краям: лево — руки героя, право — руки противника (read-only). Тап по руке → её навыки **оверлеем поверх поля** (план 2); ✕ — назад к полю (план 1). Оверлей пере-рендерится при смене состояния/цели (`conditionsForDisplay`).
+- Самонаведённые навыки (лечение/щит) — сразу; навыки по врагу — после выбора сектора.
+- Заголовки сайта на боевом экране скрыты.
 
 Результат отправляется ботом через `sendResultToBot`:
 ```json
@@ -48,8 +67,9 @@
 | Поле | По умолчанию | Описание |
 |------|--------------|----------|
 | `types` | 5 | число цветов гемов (мин. 4) |
-| `makeEnemyMove` | false | v1: враг не делает реальный матч на поле, сразу применяет навыки |
-| `animateEnemy` | false | парсится, без визуала |
+| `makeEnemyMove` | false | `true` — враг делает один реальный свайп + каскады перед навыками |
+| `animateEnemy` | false | анимация перков врага (полёт иконки) vs мгновенное применение |
+| `cells` | — | модификаторы клеток: MULTIPLIER / ADDITIVE / TRIGGER |
 | `gemSettings` | — | массив (см. ниже) |
 
 ### gemSettings (элемент)
@@ -73,7 +93,7 @@
 | `gemType` | int — цвет ресурса ладони (ярлык/группировка) |
 | `name` | подпись ладони |
 | `perks` | массив навыков |
-| `conditionsForDisplay` | парсится, **DSL отложен** → ладонь всегда видима |
+| `conditionsForDisplay` | **реализовано** — DSL условий проверяется (видимость ладони/перка) |
 
 ### perk
 | Поле | По умолчанию | Описание |
@@ -85,9 +105,10 @@
 | `icon` | "" | иконка |
 | `category` | null | категория (для взаимоисключения) |
 | `coolDown` | 0 | перезарядка в ходах |
-| `reloadType` | "TURN" | только `TURN` в v1 |
+| `reloadType` | "TURN" | `TURN` (раунд) / `PERK` (на применение) / `COMBO` (сброс в конце хода) |
 | `charges` | null | конечное число применений |
-| `probability` | 100 | % срабатывания (для врага) |
+| `probability` | 100 | % срабатывания (бросок `isWork`; + `pFunc`) |
+| `conditionsForEnable` / `conditionsForDisplay` | — | DSL условий (доступность/видимость) |
 | `place` | false | пассивный (парсится, отложен) |
 
 **Взаимоисключение:** навыки с одинаковыми `category` + `coolDown:1` + `reloadType:"TURN"` — только один за ход.
@@ -99,22 +120,23 @@
 
 | command | поля | поведение |
 |---------|------|-----------|
-| `ATTACK` | `type` (`BOTH`/`SP`/`HP`) | формула щит/HP (см. ниже) |
-| `DEFEND` | `value` | `shield += value` (+ статус `CHANGE_DEFEND`) |
+| `ATTACK` | `type` (`BOTH`/`SP`/`HP`), `ignore*`/`help` | формула щит/броня/HP (см. ниже) |
+| `DEFEND` | `type` (`CHANGE`/`SET`), `value` | `CHANGE: shield+=value`, `SET: shield=value` (+ статус `CHANGE_DEFEND` с `isWork`) |
 | `HEAL` | `type` (`CHANGE`/`SET`) | `CHANGE: hp+=value` (cap maxHp), `SET: hp=value`; отрицательное = урон |
-| `EDIT_STOCK` | `type` (`CHANGE`/`SET`), `gemTypes[]` | изменить стоки, не ниже 0 |
-| `EDIT_STATUS` | `type` (`SET`/`CHANGE`/`TIMES`), `status{}` | добавить статус на цель |
+| `EDIT_STOCK` | `type` (`CHANGE`/`SET`/`ADD`/`REMOVE`), `gemTypes[]`, `target` | изменить стоки выбранной стороны (ALL=пул героя), не ниже 0 |
+| `EDIT_STATUS` | `type` (`SET`/`CHANGE`/`TIMES`), `status{}` | merge по value/duration/times как в Android |
+| `EDIT_RES` | `resName`, `type` (`SET`/`CHANGE`), `target` | именованный ресурс (стрелы/заряды) |
+| `INFO` | `message` / `title` | строка в лог (title → разделитель «—») |
 
-**Формула ATTACK** (порядок):
-1. Модификаторы значения: `WEAK`(−)/`STRONG`(+) у источника; `VULNERABLE`/`VUL`(+)/`ARMOR`(−, с шансом `probability`) у цели; затем `RESISTANCE` множитель `×(1 − Σ/100)`; `coerce ≥ 0`.
-2. Шанс попадания `= 100 − Σ EVASION(цель) + Σ ACCURACY(источник)`; промах → «Промах!» (self-цель не проверяется).
-3. Применение:
-   - `BOTH` (по умолчанию, == «без type» в гайде): `absorbed = min(v, shield); shield -= absorbed; hp -= (v − absorbed)`.
-   - `SP`: `shield = max(0, shield − v)`, HP не трогается.
-   - `HP`: `hp -= v` (пробивает щиты).
-4. После урона по HP героя — `damageKeepStrategy` распад стоков.
+**Формула ATTACK** (порядок, как `ApplyAttackExecutor`):
+1. Если `selfTarget` — модификаторы статусов НЕ применяются (сырое значение). Иначе каждый модификатор применяется через бросок `isWork` (`isActive` + `Random(0..100) ≤ probability`) и расходует `times`:
+   - `WEAK`(−)/`STRONG`(+) у **источника**; `VULNERABLE`/`VUL`(+)/`ARMOR`(−)/`RESISTANCE`(×) у цели по **scope** `effect.target` (не только у буквальной цели). `coerce ≥ 0`. Флаги `ignore*` пропускают соответствующий модификатор; `help` — атака без модификаторов источника/контратак/вампиризма.
+2. Шанс попадания `= 100 − Σ EVASION(цель) + Σ ACCURACY(источник)` (ближний/мгновенный = 100). Промах → «Промах!». Затем `SMART_DODGE`/`DODGE` цели может полностью свести атаку (расход `times`, если не `ignoreDodge`).
+3. Применение: барьеры (`shield` как ряд) → броня → HP. `BOTH` (по умолчанию) — `absorbed=min(v,shield); shield-=absorbed; hp-=(v−absorbed)`; `SP` — только щит; `HP` — пробивает щиты.
+4. **VAMP**: источник лечится на `floor(hpDamage×value/100)` (расход `times`). **Контратаки** `COUNTERATTACK`/`HARM`/`REACTION` цели — ответ на атаку.
+5. После урона по HP героя — `damageKeepStrategy` распад стоков.
 
-> **Каноническое имя атаки по умолчанию = `BOTH`** (текст гайда говорит «без type», но enum-константа — `BOTH`).
+> Имя атаки по умолчанию = `BOTH`.
 
 ### status
 | Поле | По умолчанию | Описание |
@@ -128,9 +150,9 @@
 | `times` | null | число применений |
 | `end` | false | `true` → применяется ПОСЛЕ хода, в UI «(E)» |
 
-Реализованные типы: `DAMAGE`, `DAMAGE_HP`, `HEAL`, `DEFEND`, `ARMOR` (вероятностный блок), `STRONG`, `WEAK`, `VULNERABLE`/`VUL`, `STUN`, `GENERATE`, `CHANGE_STOCK`, `RESISTANCE`/`EVASION`/`ACCURACY` (учитываются в формуле атаки), `CHANGE_DEFEND`, `CHANGE_TURN_KEEP_STRATEGY`. Неизвестные типы игнорируются.
+Реализованные типы: `DAMAGE`, `DAMAGE_HP`, `HEAL`, `DEFEND`, `ARMOR` (вероятностный блок), `STRONG`, `WEAK`, `VULNERABLE`/`VUL`, `STUN`, `GENERATE`, `CHANGE_STOCK`, `RESISTANCE`/`EVASION`/`ACCURACY`, `CHANGE_DEFEND`, `CHANGE_TURN_KEEP_STRATEGY`, `VAMP`, `DODGE`/`SMART_DODGE`, `COUNTERATTACK`/`HARM`/`REACTION`, `INFO`. Неизвестные типы игнорируются.
 
-`end:false` → применяется и декрементируется ПЕРЕД ходом владельца; `end:true` → ПОСЛЕ.
+`isActive()`: статус действует только если `(duration==-1||duration>0) && compareValue() && (times==null||times>0)` — статус со `value 0` (вкл. `skipZero`) считается отсутствующим. `end:false` → ПЕРЕД ходом владельца, `end:true` → ПОСЛЕ; декремент `duration` только когда активен (при duration 0 держится `value=0`, не удаляется).
 
 ### heroRules (MatchRule)
 | Поле | По умолчанию | Описание |
@@ -142,11 +164,12 @@
 
 Все подходящие правила срабатывают (без исключительности).
 
-## Враг (SimpleStrategy, `ENEMY_AI.md`)
-1. Статусы `end:false` врага.
-2. Ладони сверху-вниз → навыки сверху-вниз: первый доступный (хватает стоков, не на кулдауне, есть заряды) И прошедший бросок `probability` — применяется, **затем стоп** (порядок в JSON = приоритет).
-3. Статусы `end:true`. Возврат хода герою.
-4. `STUN` блокирует ход врага.
+## Враг (`ENEMY_AI.md`)
+1. Статусы `end:false` врага; барьеры сбрасываются.
+2. При `makeEnemyMove:true` — один случайный свайп + каскады (очки/правила врага).
+3. Ладони сверху-вниз → **все** перки с `show && enable` применяются по порядку (не «один лучший»; без лишнего броска вероятности на каст — вероятность только внутри эффектов). `EnemySectors`/`EnemyHands` игроку не показываются (правая панель — read-only просмотр).
+4. Статусы `end:true`. Возврат хода герою.
+5. `STUN` — подавление **по-перково с оплатой** (стоимость платится, эффекты гасятся, один STUN расходуется на попытку), а не пропуск всего хода; на доске оглушённый враг всё равно делает свайп.
 
 ---
 
@@ -215,19 +238,24 @@
 
 ---
 
-## Отложено в v1 (JSON остаётся совместимым)
+## Реализовано (было «отложено в v1»)
 
-extraProbability / двухцветные гемы; `Settings.cells` (MULTIPLIER/ADDITIVE/TRIGGER);
-TimePerks / StockPerks (пороговые перки); продвинутые статусы полностью
-(DODGE/SMART_DODGE, COUNTERATTACK/HARM, REACTION/reactionEffect, VAMP, INFO-логика);
-`pFunc`/`func` параметры кроме STOCK; DSL `conditions`/`conditionsForDisplay`/`conditionsForEnable`;
-`reloadType` `PERK`/`COMBO` (только `TURN`); пассивные `place`-перки; `gif`;
-`additionalEffects`/`successType`; `wounds`; ориентации `T_SHAPE`/`L_SHAPE`/`OTHER`;
-реальный матч врага на поле (`makeEnemyMove` по умолчанию false); флаги `ignore*`/`help`.
+Раздельные пулы стоков героя/врага; `Settings.cells` (MULTIPLIER/ADDITIVE/TRIGGER); двухцветные гемы (вес 0.5);
+TimePerks / StockPerks через общий `executeIfAvailable`; продвинутые статусы (DODGE/SMART_DODGE, COUNTERATTACK/HARM,
+REACTION, VAMP, INFO); DSL `conditions`/`conditionsForDisplay`/`conditionsForEnable` (ALL=AND, EXIST, SP, ATTEMPT,
+STATUS=первый активный); `reloadType` PERK/COMBO; флаги `ignore*`/`help`; реальный свайп врага (`makeEnemyMove`);
+EDIT_RES (именованные ресурсы), EDIT_STATUS-merge, EDIT_STOCK ALL/ADD/REMOVE, DEFEND SET; связные группы очков (BFS);
+сектора (`EnemySectors`); загрузка реальной сцены через `?scene=NAME` (формат Android с заглавными ключами).
 
-## Известные ограничения v1 (осознанно, вне рамок одиночного боя)
-- **Единый пул очков (Stocks)**: герой и враг используют общий пул ресурсов. В Android-движке у каждой стороны свой список; для боя «игрок против врага» с активными перками игрока это упрощение допустимо. Враг-сторонние STOCK-условия читают пул игрока.
-- ~~EDIT_RES / RES~~ — **РЕАЛИЗОВАНО**: именованные боевые ресурсы (стрелы, заряды) `{name, amount, maxAmount?}` на hero/enemy. Эффект `EDIT_RES` (target, resName, type SET|CHANGE, value) меняет существующий ресурс; перк может стоить ресурсов (`perk.resources:[{name,amount}]`); условие/сегмент `parameter:'RES'` (name, target) читает счётчик. Показывается чипами под бойцом. Демо: «Стрелы 3/5», «Выстрел из лука» (−1 стрела), «Собрать стрелы» (EDIT_RES +2).
-- **EXIST на нестатусном параметре**: символ EXIST/HAVE/EMPTY имеет смысл только для STATUS (по спеку); на STOCK/HP не применять.
+## Загрузка сцены и тесты
 
-Эти пункты — следующий шаг, если понадобится полноценный кампанейный режим.
+- `?scene=NAME` → грузит `match3fight/scenes/NAME.json` (формат Android: `Hero/Enemy/HeroHands/Settings/EnemySectors/…`). Адаптер нормализует в внутренний вид.
+- Отправка теста: `send_miniapp.py <chat> "<подпись>" match3fight --scene <NAME>` (см. [[feedback_send_tests_via_script]]).
+- Пример сцены: `scenes/zevft_ogr.json` (Зевфт против Огра Фоса).
+- Деплой через GitHub Pages; при частых пушах возможен лаг сборки — см. [[github-pages-deploy-lag]].
+
+## Осознанные упрощения
+
+- `place`-перки (пассивные), `additionalEffects`/`successType`, `gif`, `wounds`, ориентации `T_SHAPE`/`L_SHAPE`/`OTHER` — парсятся, на механику пока не влияют.
+- Условие на «очки за конкретный матч в каскаде» отсутствует (по очкам; см. диалог — такого условия в движке тоже нет).
+- ALL-атака на self-сторону: Android шлёт модифицированное значение, веб — сырое (редкий edge, задокументирован в `MATCH3FIGHT_PARITY.md`).
