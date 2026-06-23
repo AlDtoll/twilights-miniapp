@@ -1210,6 +1210,18 @@ function renderSettlements(setts) {
         }</div>` : ""}`;
     }
 
+    // Промыслы (что есть в НП — NPC-предприятия; Т-предприятия идут в требования тиров)
+    const promysly = s.promysly || [];
+    if (promysly.length) {
+      html += `<div class="np-sec">Промыслы</div>`;
+      promysly.forEach(p => {
+        const td = (p.tier && /\d/.test(p.tier)) ? p.tier.match(/\d/)[0] : null;
+        const tierBadge = td ? `<span class="np-type-badge">Т${td}</span>` : "";
+        const chain = (p.chain && p.chain !== "—") ? `<span style="color:var(--muted);font-size:0.68rem"> ${esc(p.chain)}</span>` : "";
+        html += `<div class="np-row"><span class="np-lbl">${esc(p.name)} ${tierBadge}${chain}</span><span style="color:var(--muted);font-size:0.68rem">${esc(p.owner || "")}</span></div>`;
+      });
+    }
+
     // Income
     if (income.length) {
       html += `<div class="np-sec">Доходы</div>`;
