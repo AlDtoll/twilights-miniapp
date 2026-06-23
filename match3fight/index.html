@@ -2438,8 +2438,9 @@ function m3fStartTargeting(perk) {
   hint.textContent = `Приём: «${perk.name}»`;
   secWrap.innerHTML = '';
   const sectors = m3f.enemySectors || [];
-  // If the perk gates on specific limbs, offer exactly those; else offer all sectors (if any).
-  const offered = deps.length ? deps : sectors.map((_, i) => i);
+  // Always offer ALL limbs/sectors as targets — the player chooses where to strike.
+  // (Perk conditions like EMPTY "Цель: Голова" are gates, NOT a forced single target.)
+  const offered = sectors.map((_, i) => i);
   offered.forEach(i => {
     const s = sectors[i]; if (!s) return;
     const icon = M3F_SECTOR_ICONS[s.iconResName] || '🎯';
@@ -2941,7 +2942,10 @@ function m3fFinish(win) {
 // ---------- Entry ----------
 function initM3F() {
   document.getElementById('m3f-game').style.display = '';
-  document.getElementById('subtitle').textContent = 'Бой 3-в-ряд';
+  // Скрыть общие заголовки (h1 «Twilights» + подзаголовок) — больше места под бой.
+  const _h1 = document.querySelector('h1'); if (_h1) _h1.style.display = 'none';
+  const _sub = document.getElementById('subtitle'); if (_sub) _sub.style.display = 'none';
+  document.body.style.padding = '6px 8px';
   m3fLoadScene();
   m3fInitBoard();
   m3fTickStatuses(m3f.hero, 'start'); // pre-turn statuses for hero's first turn
