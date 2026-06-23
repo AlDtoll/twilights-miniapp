@@ -2401,9 +2401,8 @@ function m3fRenderPerksList(side, handIndex) {
     const costHtml = costParts.length ? costParts.join(' ') : 'бесплатно';
     let extra = '';
     if (perk.charges != null) extra += ` · заряды: ${m3f.perkCharges[perk.name] || 0}`;
-    const aim = isHero && m3fPerkNeedsEnemyTarget(perk) ? ' · 🎯 цель' : '';
     btn.innerHTML = `<div class="m3f-perk-name">${perk.icon ? perk.icon + ' ' : ''}${perk.name}</div>` +
-      `<div class="m3f-perk-cost">${costHtml}${extra}${aim}</div>` +
+      `<div class="m3f-perk-cost">${costHtml}${extra}</div>` +
       (perk.description ? `<div class="m3f-perk-desc">${perk.description}</div>` : '');
     if (isHero) btn.onclick = () => m3fChoosePerk(perk);
     listEl.appendChild(btn);
@@ -2415,17 +2414,13 @@ function m3fClosePerksOverlay(silent) {
   if (!silent && !m3fAim) document.getElementById('m3f-board-wrap').classList.remove('m3f-dimmed');
 }
 
-// A hero perk was tapped in the overlay. Self-targeted -> apply now. Enemy-targeted -> aim.
+// A hero perk was tapped in the overlay. The target sector is pre-selected on the enemy
+// (tap a body-part first to set «Цель: X»); the perk applies directly to whatever is selected.
 function m3fChoosePerk(perk) {
   if (m3f.done || m3f.turn !== 'hero') return;
-  if (m3fPerkNeedsEnemyTarget(perk)) {
-    m3fClosePerksOverlay(true);
-    m3fStartTargeting(perk);
-  } else {
-    m3fClosePerksOverlay(true);
-    document.getElementById('m3f-board-wrap').classList.remove('m3f-dimmed');
-    m3fUsePerk(perk);
-  }
+  m3fClosePerksOverlay(true);
+  document.getElementById('m3f-board-wrap').classList.remove('m3f-dimmed');
+  m3fUsePerk(perk);
 }
 
 // ---- Two-step targeting (plane 2) ----
