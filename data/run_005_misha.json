@@ -1,6 +1,8 @@
 {
   "run": "run_005",
   "player": "misha",
+  "char_name": "Манс «Налётчик»",
+  "player_name": "Миша",
   "user_id": 1700257736,
   "telegram": "@Мишачья",
   "season": null,
@@ -123,6 +125,11 @@
         "name": "Резьба по дереву (I)",
         "techniques": [],
         "bank": 0
+      },
+      {
+        "name": "Тактика (0)",
+        "techniques": [],
+        "bank": 9
       }
     ],
     "features": [],
@@ -163,7 +170,7 @@
       "name": "Соляный Берег",
       "population": null,
       "growth": null,
-      "houses": null,
+      "houses": "150",
       "staff": [
         {
           "category": "Стража (бойцы)",
@@ -225,7 +232,5 @@
         "total": 75
       }
     }
-  ],
-  "char_name": "Манс «Налётчик»",
-  "player_name": "Миша"
+  ]
 }
