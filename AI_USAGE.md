@@ -107,6 +107,23 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" sequence \
 
 ---
 
+### match3 — 3 в ряд (испытание воли/навыка)
+
+Поле гемов. Игрок собирает линии 3+ за ограниченное число ходов. Каждый гем = 10 очков (3 в ряд = 30, 4 = 40, 5 = 50). Каскад: +10 за каждый уровень свыше первого.
+
+```bash
+python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" match3 \
+  --moves 5 \
+  --thresholds "230:идеально|200:успех|160:частичный|0:провал"
+```
+
+- `--moves` — число ходов (3 — короткое, среднее ~90; 5 — стандарт, среднее ~150).
+- `--thresholds` — пороги по сумме очков.
+
+Результат: `{"game":"match3","score":210,"outcome":"успех","level":2}`
+
+---
+
 ### combat — боевая мини-игра
 
 Симметричная система matching: враги каждый раунд бросают d6 на защиту и d6 на атаку. Игрок распределяет кубики по слотам.
@@ -145,6 +162,29 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" combat \
 | Магия / особенность | `--reroll-name "Мерцание"` (переброс) |
 | Больше врагов | `--enemies '[...]'` с 3–4 объектами |
 | Сложный бой | `--max-rounds 2` или высокий HP врагов |
+
+---
+
+### card — карточный бой (deck-builder)
+
+Колода из карт оружия и магии; игрок разыгрывает карты против врага(ов) по ходам. Миньоны принимают удары вместо игрока, пока живы.
+
+```bash
+python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" card \
+  --weapon-card sword_3 \
+  --magic-card wizard_2 \
+  --card-enemies '[{"name":"Страж","hp":30,"attack":8}]' \
+  --player-minions '[{"name":"Тень","hp":15}]'
+```
+
+- `--weapon-card <id>` — карта оружия из CG_LIB: `sword`/`axe`/`chain`/`dual`/`heavy`/`polearm`/`ranged` + `_1`…`_6` (напр. `sword_3`, `axe_6`). `_6` — ультимейт (стоит 2 энергии).
+- `--magic-card <id>` — карта магии (`wizard_6`, `druid_2` и т.п.).
+- `--cards "id|id|…"` — дополнительные карты в колоду.
+- `--card-enemies '<json>'` — массив врагов `{name,hp,attack}` (новый формат); `--card-enemy` — один враг (устаревший).
+- `--player-minions '<json>'` — союзники-миньоны.
+Полный справочник карт оружия/магии и врагов — `twilights/minigames/README.md`.
+
+Результат: `{"game":"card","win":true,"outcome":"Победа","level":4,"turns":3,"player_hp_remaining":22,"enemies_defeated":2,"damage_taken":8}`
 
 ---
 
