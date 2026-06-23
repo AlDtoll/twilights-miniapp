@@ -557,9 +557,11 @@ select:focus { outline: none; border-color: var(--gold-dim); }
 </div>
 
 <script>
-const PLAYERS = ["valter", "danil", "misha"];
-const PLAYER_LABELS = { valter: "Лаки (Егор)", danil: "Клод (Данил)", misha: "Дунар (Миша)" };
-const RUN_LABELS    = { run_004: "Забег 004", run_003: "Забег 003" };
+// Ростер и подписи строятся из data/index.json по текущему забегу — без хардкода персонажей/забегов.
+let INDEX = [];   // [{file, run, player, char_name, player_name}]
+function runLabel(run) { const n = (String(run).match(/(\d+)/) || [])[1]; return n ? ("Забег " + n) : run; }
+function runEntries(run) { return INDEX.filter(e => e.run === run); }
+function entryLabel(e) { return `${e.char_name || e.player} (${e.player_name || ""})`.replace(" ()", ""); }
 
 const PHASE_LABELS = {
   leader:    "Лидер",
@@ -587,18 +589,16 @@ function setParams(run, player) {
 }
 
 // ── Selects ───────────────────────────────────────────────────────────────────
-function buildSelects() {
+function buildSelects(run, player) {
   const pSel = document.getElementById("sel-player");
-  const { run, player } = getParams();
-
-  PLAYERS.forEach(pl => {
+  pSel.innerHTML = "";
+  runEntries(run).forEach(e => {
     const o = document.createElement("option");
-    o.value = pl; o.textContent = PLAYER_LABELS[pl] || pl;
-    if (pl === player) o.selected = true;
+    o.value = e.player; o.textContent = entryLabel(e);
+    if (e.player === player) o.selected = true;
     pSel.appendChild(o);
   });
-
-  pSel.onchange = () => loadData(getParams().run, pSel.value);
+  pSel.onchange = () => loadData(run, pSel.value);
 }
 
 // ── Load & render ─────────────────────────────────────────────────────────────
@@ -657,9 +657,9 @@ function render(d, npFilter) {
   // Header
   const heroName = d.hero?.name?.replace(/—.+/, "").trim() || "—";
   document.title = heroName + " — Дашборд";
-  document.getElementById("hdr-run").textContent    = (RUN_LABELS[d.run] || d.run) + " · С" + (d.season || "?");
+  document.getElementById("hdr-run").textContent    = runLabel(d.run) + " · С" + (d.season || "?");
   document.getElementById("hdr-char").textContent   = heroName;
-  document.getElementById("hdr-player").textContent = PLAYER_LABELS[d.player] || d.player;
+  document.getElementById("hdr-player").textContent = d.player_name || d.player;
   document.getElementById("hdr-season").textContent = "Сезон " + (d.season || "?");
   const phase = d.active_phase;
   document.getElementById("hdr-phase").textContent  = PHASE_LABELS[phase] || phase || "?";
@@ -1301,9 +1301,27 @@ function esc(s) {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-buildSelects();
-const { run, player } = getParams();
-loadData(run, player);
+async function init() {
+  try {
+    const res = await fetch(`data/index.json?_=${Date.now()}`);
+    const idx = await res.json();
+    INDEX = idx.entries || (idx.files || []).map(f => {
+      const m = f.replace(/\.json$/, "").match(/^(run_\w+)_(\w+)$/);
+      return m ? { file: f, run: m[1], player: m[2] } : null;
+    }).filter(Boolean);
+  } catch (e) { INDEX = []; }
+
+  const q = new URLSearchParams(location.search);
+  let run = q.get("run"), player = q.get("player");
+  const runs = [...new Set(INDEX.map(e => e.run))].sort().reverse();
+  if (!run) run = runs[0] || "run_005";                 // дефолт — последний забег
+  const ents = runEntries(run);
+  if (!player) player = ents.length ? ents[0].player : "danil";  // первый игрок забега
+
+  buildSelects(run, player);
+  loadData(run, player);
+}
+init();
 </script>
 </body>
 </html>

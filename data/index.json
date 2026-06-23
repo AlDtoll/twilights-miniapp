@@ -2,5 +2,63 @@
   "files": [
     "run_005_danil.json",
     "run_005_misha.json"
+  ],
+  "entries": [
+    {
+      "file": "run_003_danil.json",
+      "run": "run_003",
+      "player": "danil",
+      "char_name": "Яр «Кость»",
+      "player_name": "Данил"
+    },
+    {
+      "file": "run_003_misha.json",
+      "run": "run_003",
+      "player": "misha",
+      "char_name": "Брикс «Тень»",
+      "player_name": "Миша"
+    },
+    {
+      "file": "run_003_valter.json",
+      "run": "run_003",
+      "player": "valter",
+      "char_name": "Артур «Победоносный»",
+      "player_name": "Егор"
+    },
+    {
+      "file": "run_004_danil.json",
+      "run": "run_004",
+      "player": "danil",
+      "char_name": "Клод «Бич»",
+      "player_name": "Данил"
+    },
+    {
+      "file": "run_004_misha.json",
+      "run": "run_004",
+      "player": "misha",
+      "char_name": "Сир Дунар «Костолом»",
+      "player_name": "Миша"
+    },
+    {
+      "file": "run_004_valter.json",
+      "run": "run_004",
+      "player": "valter",
+      "char_name": "Лаки «Фартовый»",
+      "player_name": "Егор"
+    },
+    {
+      "file": "run_005_danil.json",
+      "run": "run_005",
+      "player": "danil",
+      "char_name": "Ок «Клин»",
+      "player_name": "Данил"
+    },
+    {
+      "file": "run_005_misha.json",
+      "run": "run_005",
+      "player": "misha",
+      "char_name": "Манс «Налётчик»",
+      "player_name": "Миша"
+    }
   ]
 }
