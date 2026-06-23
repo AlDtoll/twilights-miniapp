@@ -263,10 +263,7 @@
 <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;width:100%">
   <h1 id="map-title" style="flex:1">Карта</h1>
   <div style="display:flex;gap:6px">
-    <select id="run-sel" style="background:#1a1814;border:1px solid #2e2a22;color:#c8b89a;font:inherit;font-size:0.7rem;padding:4px 8px;border-radius:4px;cursor:pointer" onchange="switchRun(this.value)">
-      <option value="run_004">Забег 004</option>
-      <option value="run_003">Забег 003</option>
-    </select>
+    <select id="run-sel" style="background:#1a1814;border:1px solid #2e2a22;color:#c8b89a;font:inherit;font-size:0.7rem;padding:4px 8px;border-radius:4px;cursor:pointer" onchange="switchRun(this.value)"><!-- забеги подставляются динамически из map_cells.toon --></select>
     <a href="player.html" style="font-size:0.65rem;color:#7a6e5a;text-decoration:none;border:1px solid #2e2a22;padding:4px 8px;border-radius:4px">👤 Дашборд</a>
   </div>
 </div>
@@ -299,21 +296,24 @@
 </div>
 
 <script>
-// Ячейки карты загружаются из data/map_cells.toon — не редактировать здесь
-const RUNS_META = {
-  run_004: { label: "Забег 004 — текущий",  cells: {} },
-  run_003: { label: "Забег 003 — архив С11", cells: {} },
-};
+// Ячейки карты грузятся из data/map_cells.toon (секции по забегам). Список забегов — динамический,
+// собирается из ключей toon (как дашборды по data/{run}_{player}.json). Новый забег появляется сам.
+let RUNS_META = {};      // run_id -> { label, cells }
+let CELLS = {};
+let currentRun = null;
 
-let CELLS = CELLS_RUN004;
-let currentRun = "run_004";
+function runLabel(run) {
+  const n = (String(run).match(/(\d+)/) || [])[1];
+  return n ? ("Забег " + n) : run;
+}
 
 function switchRun(run) {
   currentRun = run;
-  const meta = RUNS_META[run] || RUNS_META["run_004"];
-  CELLS = meta.cells;
-  document.getElementById("map-title").textContent = "Карта — " + (run === "run_004" ? "Забег 004" : "Забег 003");
-  document.title = "Карта — " + (run === "run_004" ? "Забег 004" : "Забег 003");
+  const meta = RUNS_META[run] || { cells: {} };
+  CELLS = meta.cells || {};
+  const t = "Карта — " + runLabel(run);
+  document.getElementById("map-title").textContent = t;
+  document.title = t;
   rebuildMap();
 }
 
@@ -552,9 +552,17 @@ async function initMap() {
   try {
     const res = await fetch(`data/map_cells.toon?_=${Date.now()}`);
     const parsed = parseToon(await res.text());
-    RUNS_META.run_004.cells = parsed.run_004 || {};
-    RUNS_META.run_003.cells = parsed.run_003 || parsed.run_004 || {};
-    CELLS = RUNS_META[currentRun].cells;
+    const runs = Object.keys(parsed).sort().reverse(); // последний забег — первым/по умолчанию
+    RUNS_META = {};
+    runs.forEach(r => { RUNS_META[r] = { label: runLabel(r), cells: parsed[r] || {} }; });
+    const sel = document.getElementById("run-sel");
+    sel.innerHTML = runs.map(r => `<option value="${r}">${runLabel(r)}</option>`).join("");
+    currentRun = runs[0] || "run_004";
+    sel.value = currentRun;
+    CELLS = (RUNS_META[currentRun] || { cells: {} }).cells;
+    const t = "Карта — " + runLabel(currentRun);
+    document.getElementById("map-title").textContent = t;
+    document.title = t;
   } catch (e) {
     mapEl.innerHTML = `<div style="grid-column:1/-1;padding:32px;color:#c8883a">Ошибка загрузки map_cells.toon: ${e.message}</div>`;
     return;
