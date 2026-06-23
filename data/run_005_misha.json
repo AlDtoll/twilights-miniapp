@@ -168,7 +168,7 @@
   "settlements": [
     {
       "name": "Соляный Берег",
-      "population": null,
+      "population": "~1500",
       "growth": null,
       "houses": "150",
       "staff": [

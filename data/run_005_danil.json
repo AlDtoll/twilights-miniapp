@@ -1,6 +1,8 @@
 {
   "run": "run_005",
   "player": "danil",
+  "char_name": "Ок «Клин»",
+  "player_name": "Данил",
   "user_id": 579387502,
   "telegram": "@aldtoll",
   "season": null,
@@ -156,9 +158,9 @@
   "settlements": [
     {
       "name": "Клинов Мыс",
-      "population": null,
+      "population": "~900",
       "growth": null,
-      "houses": null,
+      "houses": "90",
       "staff": [
         {
           "category": "Стража (бойцы)",
@@ -220,7 +222,5 @@
         "total": 75
       }
     }
-  ],
-  "char_name": "Ок «Клин»",
-  "player_name": "Данил"
+  ]
 }
