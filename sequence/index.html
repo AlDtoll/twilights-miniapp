@@ -500,7 +500,9 @@ function initSequence() {
     `${seqQuestions.length} вопрос${seqQuestions.length === 1 ? '' : seqQuestions.length < 5 ? 'а' : 'ов'} · ${seqTotalTime} сек`;
 }
 
+let seqStartTime = 0;
 function seqStart() {
+  seqStartTime = Date.now();
   document.getElementById('seq-ready').style.display = 'none';
   document.getElementById('seq-play').style.display = '';
   seqCurrent = 0; seqCorrect = 0; seqTimeLeft = seqTotalTime; seqDone = false;
@@ -581,7 +583,7 @@ function seqFinish() {
   labelEl.style.background = color.replace(')', ', 0.15)').replace('rgb', 'rgba').replace('#', 'rgba(').replace('rgba(', color.startsWith('#') ? `${color}22` : color);
   labelEl.style.background = color + '22';
   labelEl.style.border = `2px solid ${color}`;
-  setTimeout(() => sendResultToBot({game: 'sequence', correct: seqCorrect, total, outcome: outcome.label, level: outcome.level ?? 0}), 800);
+  setTimeout(() => sendResultToBot({game: 'sequence', correct: seqCorrect, total, outcome: outcome.label, level: outcome.level ?? 0, timeSpent: Math.round((Date.now()-seqStartTime)/1000)}), 800);
 }
 
 initSequence();

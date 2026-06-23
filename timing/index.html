@@ -530,7 +530,9 @@ function initTiming() {
   window._timingGetCurrentZone = getCurrentZone;
 }
 
+let timStartTime = 0;
 function timingStart() {
+  timStartTime = Date.now();
   document.getElementById('timing-ready').style.display = 'none';
   document.getElementById('timing-play').style.display = '';
 
@@ -607,7 +609,7 @@ function timingStop() {
   document.getElementById('timing-result-label').style.color = ZONE_COLORS[Math.min(outcome.level ?? 0, ZONE_COLORS.length-1)];
   document.getElementById('timing-slow-btn').disabled = true;
   document.getElementById('timing-stop-btn').disabled = true;
-  setTimeout(() => sendResultToBot({game:'timing', position:pos, outcome:outcome.label, level}), 600);
+  setTimeout(() => sendResultToBot({game:'timing', position:pos, outcome:outcome.label, level, timeSpent:Math.round((Date.now()-timStartTime)/1000)}), 600);
 }
 
 // ---- AUTO-START (per-page entry; replaces monolith game dispatch) ----

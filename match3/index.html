@@ -489,7 +489,9 @@ let m3Done = false, m3Animating = false, m3Combo = 0;
 
 function m3Gem() { return Math.floor(rng() * M3_COLORS.length); }
 
+let m3StartTime = 0;
 function initMatch3() {
+  m3StartTime = Date.now();
   document.getElementById('match3-game').style.display = '';
   document.getElementById('subtitle').textContent = '3 в ряд';
 
@@ -757,7 +759,7 @@ function m3End() {
   banner.style.display = '';
   banner.className = 'result-banner '+(level>=2?'result-good':level===1?'result-mid':'result-bad');
   banner.textContent = `${score} очков — ${label}`;
-  setTimeout(() => sendResultToBot({game:'match3', score, outcome:label, level}), 700);
+  setTimeout(() => sendResultToBot({game:'match3', score, outcome:label, level, timeSpent:Math.round((Date.now()-m3StartTime)/1000)}), 700);
 }
 
 initMatch3();
