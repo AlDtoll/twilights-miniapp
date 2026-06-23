@@ -15,6 +15,11 @@
   /* MATCH3 FIGHT */
   #m3f-game { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 8px; }
   .m3f-fighter { padding: 8px 12px; border-radius: 12px; background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.1); position: relative; }
+  /* hero LEFT / enemy RIGHT, side by side under the board — statuses grow down, board stays put */
+  .m3f-fighters { display: flex; gap: 8px; align-items: flex-start; margin-top: 6px; }
+  .m3f-fighters .m3f-fighter { flex: 1 1 0; min-width: 0; padding: 7px 9px; }
+  .m3f-side-hero { border-color: rgba(116,185,255,0.4); background: rgba(116,185,255,0.07); }
+  .m3f-side-enemy { border-color: rgba(231,76,60,0.4); background: rgba(231,76,60,0.07); }
   .m3f-fighter.m3f-hit { animation: m3fHit 0.32s ease; }
   @keyframes m3fHit { 0%{transform:translateX(0)} 20%{transform:translateX(-5px);box-shadow:0 0 0 2px rgba(231,76,60,0.6)} 40%{transform:translateX(5px)} 60%{transform:translateX(-3px)} 80%{transform:translateX(3px)} 100%{transform:translateX(0)} }
   .m3f-float { position: absolute; left: 50%; top: 6px; transform: translateX(-50%); font-weight: 800; font-size: 1.15rem;
@@ -160,7 +165,6 @@
 <p class="subtitle" id="subtitle">Загрузка...</p>
 
 <div id="m3f-game" style="display:none">
-  <div class="m3f-fighter" id="m3f-enemy"></div>
   <div class="m3f-topbar"><div class="m3f-stocks" id="m3f-stocks"></div><div class="m3f-timer" id="m3f-timer">⏱ 0с</div></div>
   <div class="m3f-board-wrap" id="m3f-board-wrap">
     <div class="m3f-board" id="m3f-board"></div>
@@ -181,7 +185,12 @@
       <button class="m3f-target-cancel" onclick="m3fCancelTargeting()">← Отмена</button>
     </div>
   </div>
-  <div class="m3f-fighter" id="m3f-hero"></div>
+  <!-- below the board: two side-by-side columns — hero LEFT, enemy RIGHT (Android layout).
+       Status chips grow DOWNWARD within each column, so the board above never shifts. -->
+  <div class="m3f-fighters">
+    <div class="m3f-fighter m3f-side-hero" id="m3f-hero"></div>
+    <div class="m3f-fighter m3f-side-enemy" id="m3f-enemy"></div>
+  </div>
   <!-- old always-expanded hands list — REPLACED by slide-out panels + overlay (kept hidden for compat) -->
   <div class="m3f-hands" id="m3f-hands" style="display:none"></div>
   <button class="btn btn-primary" id="m3f-endturn" onclick="m3fEndTurn()" style="width:100%;padding:12px;border-radius:12px">Завершить ход</button>
