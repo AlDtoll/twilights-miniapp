@@ -331,7 +331,18 @@ function switchRun(run) {
   rebuildMap();
 }
 
-const X_MIN = -3, X_MAX = 3, Y_MIN = -2, Y_MAX = 2;
+const MARGIN = 2;  // фог-кольцо вокруг клеток: область героя не на границе, карта расширяема
+let X_MIN = -3, X_MAX = 3, Y_MIN = -2, Y_MAX = 2;
+
+// Границы грида = bbox клеток забега + поле MARGIN (дальние пустые клетки = туман войны)
+function computeBounds() {
+  const keys = Object.keys(CELLS);
+  if (!keys.length) { X_MIN = -3; X_MAX = 3; Y_MIN = -2; Y_MAX = 2; return; }
+  const xs = [], ys = [];
+  for (const k of keys) { const p = k.split(','); xs.push(+p[0]); ys.push(+p[1]); }
+  X_MIN = Math.min(...xs) - MARGIN; X_MAX = Math.max(...xs) + MARGIN;
+  Y_MIN = Math.min(...ys) - MARGIN; Y_MAX = Math.max(...ys) + MARGIN;
+}
 
 const mapEl   = document.getElementById('map');
 const zoomEl  = document.getElementById('map-zoom');
@@ -351,6 +362,10 @@ function infoHtml(data, x, y) {
 function rebuildMap() {
   mapEl.innerHTML = '';
   if (selectedCell) { selectedCell = null; panel.style.display = 'none'; }
+
+  computeBounds();
+  mapEl.style.gridTemplateColumns = '36px repeat(' + (X_MAX - X_MIN + 1) + ', 64px)';
+  mapEl.style.gridTemplateRows = '24px repeat(' + (Y_MAX - Y_MIN + 1) + ', 64px)';
 
   const corner = document.createElement('div');
   corner.className = 'axis-label';
