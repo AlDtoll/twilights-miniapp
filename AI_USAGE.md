@@ -188,6 +188,24 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" card \
 
 ---
 
+### match3fight — боевой match-3 (порт Android-игры)
+
+Боевой цикл на поле 3-в-ряд: герой и враг обмениваются ходами, сборы линий → урон/статусы. Отдельная страница `match3fight/index.html`. Полный канон (статусы, секторы, формат сцены) — `MATCH3FIGHT.md` в этом репо.
+
+```bash
+# Демо-сцена (без параметров):
+python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" match3fight
+
+# Готовая сцена из match3fight/scenes/<NAME>.json:
+python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" match3fight --scene zevft_ogr
+```
+
+- `--scene <NAME>` — загрузить `match3fight/scenes/<NAME>.json` (формат Android: Hero/Enemy/HeroHands/Settings/EnemySectors/…). Без сцены — встроенная демо.
+
+Результат: `{"game":"match3fight","win":true,"outcome":"Победа","turns":2,"heroHpLeft":84,"enemyHpLeft":0}`
+
+---
+
 ### compare — что больше/тяжелее/дальше
 
 Два объекта рядом. Игрок тапает тот, что больше (или что задал мастер). Несколько раундов на общее время.
