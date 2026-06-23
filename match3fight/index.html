@@ -40,7 +40,11 @@
   .m3f-resources { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
   .m3f-res-chip { padding: 1px 7px; border-radius: 6px; font-size: 0.68rem; background: rgba(241,196,15,0.14); border: 1px solid rgba(241,196,15,0.5); color: #f1c40f; }
   .m3f-info { font-size: 0.72rem; color: var(--tg-theme-hint-color, #aaa); margin-top: 3px; font-style: italic; }
-  .m3f-stocks { display: flex; flex-wrap: wrap; gap: 6px; }
+  .m3f-stocks { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+  .m3f-topbar { display: flex; align-items: center; gap: 8px; }
+  .m3f-timer { font-size: 0.82rem; font-weight: 700; color: #f1c40f; background: rgba(241,196,15,0.12);
+    border: 1px solid rgba(241,196,15,0.4); border-radius: 8px; padding: 3px 9px; white-space: nowrap; }
+  .m3f-timer.stopped { color: var(--tg-theme-hint-color,#aaa); border-color: rgba(255,255,255,0.18); background: rgba(255,255,255,0.06); }
   .m3f-stock { display: flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 8px; background: rgba(255,255,255,0.06); font-size: 0.82rem; font-weight: 600; }
   .m3f-stock-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
   .m3f-board { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; touch-action: none; }
@@ -157,7 +161,7 @@
 
 <div id="m3f-game" style="display:none">
   <div class="m3f-fighter" id="m3f-enemy"></div>
-  <div class="m3f-stocks" id="m3f-stocks"></div>
+  <div class="m3f-topbar"><div class="m3f-stocks" id="m3f-stocks"></div><div class="m3f-timer" id="m3f-timer">⏱ 0с</div></div>
   <div class="m3f-board-wrap" id="m3f-board-wrap">
     <div class="m3f-board" id="m3f-board"></div>
     <div class="m3f-board-cover" id="m3f-board-cover"><span>Ход сделан</span></div>
@@ -2008,10 +2012,19 @@ function m3fRunTimePerks(owner) {
 // TimePerks (isHero=true) and enemy TimePerks (isHero=false) at this exact second.
 function m3fCheckTime(seconds) {
   m3f.timeSec = seconds;
+  m3fUpdateTimer();
   m3fUpdatePersonsStates();
   m3fRunTimePerks('hero');
   if (m3f.done) return;
   m3fRunTimePerks('enemy');
+}
+
+// Live round-time display (current turn seconds). Ticks while the board is open; freezes after the swap.
+function m3fUpdateTimer() {
+  const el = document.getElementById('m3f-timer');
+  if (!el) return;
+  el.textContent = '⏱ ' + (m3f.timeSec || 0) + 'с';
+  el.classList.toggle('stopped', !m3f.timerRunning);
 }
 
 // Start (or restart) the per-turn real-time timer. Called when the hero's board opens.
@@ -2022,6 +2035,7 @@ function m3fStartTurnTimer() {
   m3f.turnElapsedMs = 0;
   m3f.timeSec = 0;
   m3f.timerRunning = true;
+  m3fUpdateTimer();
   m3f.turnTimer = setInterval(() => {
     if (!m3f.timerRunning || m3f.done) return;
     m3f.turnElapsedMs += 1000;
@@ -2036,6 +2050,7 @@ function m3fStartTurnTimer() {
 function m3fStopTurnTimer() {
   m3f.timerRunning = false;
   if (m3f.turnTimer != null) { clearInterval(m3f.turnTimer); m3f.turnTimer = null; }
+  m3fUpdateTimer();
 }
 
 // Called on the first successful swap (Android onHandleMatches): stop the turn timer
@@ -2280,6 +2295,8 @@ function m3fRenderHands() {
 let m3fAim = null;
 // Which slide-out (if any) is open: 'hero' | 'enemy' | null.
 let m3fSlideoutOpen = null;
+// Which hand's perks overlay is open ({side, handIndex}) — kept so updates re-render it.
+let m3fPerksOverlayRef = null;
 
 // A hero perk needs an ENEMY target if it is offensive (m3fPerkAimedAtFoe) OR it gates on a
 // "Цель: X" sector status (a condition naming one of the enemySectors' perk names). Returns
@@ -2349,11 +2366,20 @@ function m3fRenderSlideout(side) {
 
 // ---- Perks overlay (plane 2) ----
 function m3fOpenPerksOverlay(side, handIndex) {
-  const isHero = side === 'hero';
-  const hand = (isHero ? m3f.heroHands : m3f.enemyHands)[handIndex];
+  const hand = (side === 'hero' ? m3f.heroHands : m3f.enemyHands)[handIndex];
   if (!hand) return;
   m3fCloseSlideout(side);
   m3fCancelTargeting(true);
+  m3fPerksOverlayRef = { side, handIndex };
+  m3fRenderPerksList(side, handIndex);
+  document.getElementById('m3f-perks-overlay').classList.add('show');
+  document.getElementById('m3f-board-wrap').classList.add('m3f-dimmed');
+}
+// Build the perks-overlay title+list for a hand. Re-callable on state change (conditionsForDisplay).
+function m3fRenderPerksList(side, handIndex) {
+  const isHero = side === 'hero';
+  const hand = (isHero ? m3f.heroHands : m3f.enemyHands)[handIndex];
+  if (!hand) return;
   const owner = isHero ? 'hero' : 'enemy';
   const titleEl = document.getElementById('m3f-perks-overlay-title');
   titleEl.innerHTML = `${m3fStockDot(hand.gemType)} <span>${hand.name || ('Тип ' + hand.gemType)}</span>` +
@@ -2382,11 +2408,10 @@ function m3fOpenPerksOverlay(side, handIndex) {
     if (isHero) btn.onclick = () => m3fChoosePerk(perk);
     listEl.appendChild(btn);
   });
-  document.getElementById('m3f-perks-overlay').classList.add('show');
-  document.getElementById('m3f-board-wrap').classList.add('m3f-dimmed');
 }
 function m3fClosePerksOverlay(silent) {
   document.getElementById('m3f-perks-overlay').classList.remove('show');
+  m3fPerksOverlayRef = null;
   if (!silent && !m3fAim) document.getElementById('m3f-board-wrap').classList.remove('m3f-dimmed');
 }
 
@@ -2839,12 +2864,14 @@ function m3fUpdateAllUI() {
   // keep an open slide-out list in sync with engine state (charges/conditions may change).
   if (m3fSlideoutOpen) m3fRenderSlideout(m3fSlideoutOpen);
   const etb = document.getElementById('m3f-endturn');
-  // Завершить ход нельзя, пока не сделано совмещение (как allowEndTurn в Android).
-  etb.disabled = (m3f.done || m3f.turn !== 'hero' || !m3f.matchDone);
-  etb.textContent = (m3f.turn === 'hero' && !m3f.matchDone)
-    ? 'Сделай совмещение'
-    : 'Завершить ход ▶';
+  // Завершить ход можно всегда в свой ход — даже без совмещения (можно пропустить ход).
+  etb.disabled = (m3f.done || m3f.turn !== 'hero');
+  etb.textContent = m3f.matchDone ? 'Завершить ход ▶' : 'Завершить ход (без совмещения) ▶';
   m3fUpdateCover();
+  m3fUpdateTimer();
+  // держим открытый оверлей приёмов в синхроне (conditionsForDisplay зависят от статусов/целей)
+  if (m3fPerksOverlayRef && document.getElementById('m3f-perks-overlay').classList.contains('show'))
+    m3fRenderPerksList(m3fPerksOverlayRef.side, m3fPerksOverlayRef.handIndex);
 }
 
 // Полупрозрачная крышка над доской, когда поле «закрыто» (ход сделан или ходит враг) — coverBoard.
