@@ -330,10 +330,13 @@ const HEX_UNIT_DEFS = {
       {id:'e_elem_burst',  name:'Взрыв стихии',icon:'🌊',type:'magic',range:3,aoe:1,damage:30,effect:null,cooldown:0,maxCooldown:0},
       {id:'e_elem_thunder',name:'Молния',icon:'⚡',type:'magic',range:4,aoe:0,damage:40,effect:null,cooldown:0,maxCooldown:4},
     ]},
-  shadow:       {name:'Тень',        emoji:'👤', hp:50, atk:30,  moveRange:3, atkRange:1, accuracy:68, defense:10,
+  // Тень = воплощённый полуголем из подручного мусора (камни/палки), НЕ призрак: медленный,
+  // неуклюжий физический конструкт; «пара ударов», отвлечение/число; разрушаем обычным оружием
+  // (creatures/shadow.md, demonologist.md). Низкий moveRange + низкое уклонение, без брони.
+  shadow:       {name:'Тень',        emoji:'🗿', hp:50, atk:30,  moveRange:2, atkRange:1, accuracy:68, defense:5,
     statuses:[],
     abilities:[
-      {id:'e_shadow_strike',name:'Удар тьмы',icon:'👤',type:'melee',range:1,aoe:0,damage:30,effect:null,cooldown:0,maxCooldown:0},
+      {id:'e_shadow_strike',name:'Удар обломками',icon:'🗿',type:'melee',range:1,aoe:0,damage:30,effect:null,cooldown:0,maxCooldown:0},
     ]},
   cadaver:      {name:'Кадавр',      emoji:'💀', hp:85, atk:40,  moveRange:1, atkRange:1, accuracy:60, defense:5,
     statuses:[{name:'Гнилая шкура',value:15,chance:40}],
@@ -440,6 +443,36 @@ function hexNeighbors(col, row) {
 
 function hxObstAt(col, row) {
   return (hxs.obstacles||[]).find(ob=>ob.col===col&&ob.row===row) || null;
+}
+
+// All passable tiles from which `target` could be attacked at `atkRange` with clear line-of-sight
+// (the "firing positions" a ranged unit wants to reach). Walls/obstacles excluded.
+function hxFiringSpots(target, atkRange) {
+  const spots = [];
+  for(let c=0;c<HEX_COLS;c++) for(let r=0;r<HEX_ROWS;r++) {
+    if(hxObstAt(c,r)) continue;
+    if(hexDist(c,r,target.col,target.row) <= atkRange &&
+       (atkRange<=1 || !hxLoSBlocked(c,r,target.col,target.row))) spots.push([c,r]);
+  }
+  return spots;
+}
+
+// Multi-source BFS distance field (steps) from `goals` over passable tiles (walls/obstacles block,
+// units do not). Returns Map "c,r"->steps. Used to route a unit AROUND walls toward a goal.
+function hxDistField(goals) {
+  const field = new Map();
+  const q = [];
+  for(const [c,r] of goals) { const k=c+','+r; if(!field.has(k)){ field.set(k,0); q.push([c,r]); } }
+  let head = 0;
+  while(head < q.length) {
+    const [c,r] = q[head++]; const d = field.get(c+','+r);
+    for(const [nc,nr] of hexNeighbors(c,r)) {
+      if(hxObstAt(nc,nr)) continue;
+      const k = nc+','+nr;
+      if(!field.has(k)) { field.set(k, d+1); q.push([nc,nr]); }
+    }
+  }
+  return field;
 }
 
 // --- FLANKING / ZONE-OF-CONTROL helpers (BB-style) ---
@@ -1903,9 +1936,24 @@ async function hexEnemyTurn() {
               } else { await hxEnemyBasicAtk(enemy, nearest); if(hxs.ended) break; }
             }
           } else if(reach.length) {
-            const best = reach.reduce((a,b)=>hexDist(a[0],a[1],nearest.col,nearest.row)<=hexDist(b[0],b[1],nearest.col,nearest.row)?a:b);
+            // No reachable firing tile THIS turn — route toward a position that WILL have
+            // line-of-sight + range to the target, going AROUND walls (BFS path distance,
+            // not a raw straight line — was approaching walls head-on).
+            const fire = hxFiringSpots(nearest, enemy.atkRange);
+            let best = null;
+            if(fire.length) {
+              const field = hxDistField(fire);
+              const cand = reach.map(([c,r])=>({c,r,d:field.has(c+','+r)?field.get(c+','+r):Infinity}));
+              const minD = Math.min(...cand.map(x=>x.d));
+              if(minD !== Infinity) {
+                const pool = cand.filter(x=>x.d===minD);
+                const pick = pool.reduce((a,b)=>hexDist(a.c,a.r,nearest.col,nearest.row)<=hexDist(b.c,b.r,nearest.col,nearest.row)?a:b);
+                best = [pick.c, pick.r];
+              }
+            }
+            if(!best) best = reach.reduce((a,b)=>hexDist(a[0],a[1],nearest.col,nearest.row)<=hexDist(b[0],b[1],nearest.col,nearest.row)?a:b);
             await hxMoveUnit(enemy, best[0], best[1]);
-            hxLog(`${enemy.name} движется к ${nearest.name}.`, 'info');
+            hxLog(`${enemy.name} ищет позицию для выстрела.`, 'info');
           }
         }
         continue;
