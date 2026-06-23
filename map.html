@@ -576,7 +576,9 @@ async function initMap() {
     }));
     const sel = document.getElementById("run-sel");
     sel.innerHTML = runs.map(r => `<option value="${r}">${runLabel(r)}</option>`).join("");
-    currentRun = runs[0] || "run_004";
+    // ?run=run_005 в URL → открыть конкретный забег (для нескольких активных); иначе последний.
+    const urlRun = new URLSearchParams(location.search).get("run");
+    currentRun = (urlRun && RUNS_META[urlRun]) ? urlRun : (runs[0] || "run_004");
     sel.value = currentRun;
     CELLS = (RUNS_META[currentRun] || { cells: {} }).cells;
     const t = "Карта — " + runLabel(currentRun);
