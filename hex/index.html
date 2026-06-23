@@ -381,7 +381,11 @@ function hxAbilityDamage(ability, unit) {
 function hxBuildHeroAbilities(weapon, magic) {
   const wArr = (HX_WEAPON_ABILITIES[weapon] || HX_WEAPON_ABILITIES.sword).map(a => ({...a, cooldown:0}));
   const mArr = magic ? (HX_MAGIC_ABILITIES[magic] || []).map(a => ({...a, cooldown:0})) : [];
-  return [...wArr, ...mArr];
+  // Базовый навык каждого героя: «Рывок» — 1 AP, перезарядка 1 → +2 очка движения и 5 щитов (self).
+  const dash = {id:'hero_dash', name:'Рывок', icon:'💨', type:'move', range:0, aoe:0, damage:0,
+    ap:1, cooldown:0, maxCooldown:1, effect:{type:'dash', move:2, shields:5},
+    desc:'+2 очка движения и 5 щитов'};
+  return [dash, ...wArr, ...mArr];
 }
 
 let hxs = {
@@ -517,10 +521,9 @@ function hxDamageObstacle(ob, dmg) {
 }
 
 function hexReachable(unit) {
-  let range = unit.remainingMove !== undefined ? unit.remainingMove : unit.moveRange;
-  // Hero movement is AP-bound (1 free hex, then 1 AP per move-cost), NOT capped by a dwindling
-  // moveRange counter — so available AP decides reach, incl. terrain that costs 2 (e.g. shallow water).
-  if(unit.isHero) range = (unit.freeMoveDone ? 0 : 1) + (hxs.heroAP || 0);
+  // Movement is move-point-based: base 1 free point/turn; extra points come from skills like Рывок.
+  // Terrain (shallow/swamp/deep water) costs 2 points — so 1 base point can't enter water without Рывок.
+  const range = unit.remainingMove !== undefined ? unit.remainingMove : unit.moveRange;
   const blocked = new Set([
     ...hxs.units.filter(u=>u.id!==unit.id&&u.hp>0).map(u=>`${u.col},${u.row}`),
     ...(hxs.obstacles||[]).map(ob=>`${ob.col},${ob.row}`),
@@ -972,6 +975,20 @@ function hxApplyAbility(caster, ability, primaryTarget) {
     const cnt = eff.count || 1;
     for(let i=0;i<cnt;i++) caster.shields.push(eff.value);
     hxLog(`${caster.icon||''} ${caster.name} — ${ability.name}: 🛡 ${cnt}×${eff.value} заслон!`, 'special');
+    hxMarkActed(caster, ability);
+    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    return;
+  }
+
+  // --- DASH (Рывок): +move points (re-enables movement) + a barrier ---
+  if(eff?.type === 'dash') {
+    caster.remainingMove = (caster.remainingMove ?? caster.moveRange ?? 0) + (eff.move || 0);
+    if(eff.move) caster.moved = false;
+    if(eff.shields) {
+      if(!Array.isArray(caster.shields)) caster.shields = [];
+      caster.shields.push(eff.shields);
+    }
+    hxLog(`${caster.icon||''} ${caster.name} — ${ability.name}: 💨 +${eff.move} движения, 🛡 ${eff.shields} щит!`, 'special');
     hxMarkActed(caster, ability);
     if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
     return;
@@ -2720,13 +2737,11 @@ function hexUpdateInfo(unit) {
   const _armorStr = _armorPieces.length
     ? '🛡 ' + _armorPieces.map(s=>`${s.name||'Броня'} ${s.value||0} (${s.chance!=null?s.chance:100}%)`).join(' · ')
     : '🛡 нет брони';
-  // Точность нужна только дальним/магическим атакам — ближний бой всегда попадает (100%).
-  const _hasRanged = (Array.isArray(unit.abilities) && unit.abilities.some(a=>a.type==='ranged'||a.type==='magic')) || (unit.atkRange||1) > 1;
-  const _accStr = _hasRanged ? `  🎯 Точность: ${unit.accuracy||0}` : '';
+  // Нет базовой «точности» у юнита — точность задаёт каждая АТАКА своим паттерном (accByDist).
   if(statsEl) statsEl.textContent =
-    `❤ HP: ${unit.hp}/${unit.maxHp} (${hpPct}%)  ⚔ ${atkEff}  👣 ${unit.moveRange}${apStr}\n` +
+    `❤ HP: ${unit.hp}/${unit.maxHp} (${hpPct}%)  ⚔ ${atkEff}  👣 ${unit.remainingMove ?? unit.moveRange}${apStr}\n` +
     `${_armorStr}\n` +
-    `🌀 Уклонение: ${unit.defense||0}${_accStr}` +
+    `🌀 Уклонение: ${unit.defense||0}` +
     (unit.shields?.length ? `   🛡 Щиты: ${unit.shields.join('·')}` : '');
   if(statsEl) statsEl.style.whiteSpace = 'pre-line';
   const statuses = [];
@@ -2797,9 +2812,9 @@ function hexUpdateInfo(unit) {
   const moveBtn = document.createElement('button');
   moveBtn.className = 'hx-ability-btn move-btn' + (hxs.mode === 'move' ? ' active' : '');
   const remMove = unit.remainingMove ?? unit.moveRange;
-  const moveBlocked = unit.isHero ? (unit.freeMoveDone && hxs.heroAP <= 0) : (remMove === 0);
+  const moveBlocked = remMove === 0;
   moveBtn.disabled = moveBlocked;
-  const moveApHint = unit.isHero && unit.freeMoveDone ? '<span class="hx-ab-ap">1ap/гекс</span>' : '<span class="hx-ab-ap">бесплатно</span>';
+  const moveApHint = `<span class="hx-ab-ap">${remMove} очк.</span>`;
   moveBtn.innerHTML = `<span class="hx-ability-icon">🚶</span><span class="hx-ability-name">Движение</span>${moveApHint}`;
   moveBtn.onclick = () => hxSelectMoveMode();
   row.appendChild(moveBtn);
@@ -2822,6 +2837,7 @@ function hexUpdateInfo(unit) {
       ? `<span class="hx-ab-dmg">⚔${ab.damage}${ab.aoe>0?'⊕':''}</span>`
       : ab.effect?.type==='heal'    ? `<span class="hx-ab-dmg" style="color:#2ecc71">＋${ab.effect.value}</span>`
       : ab.effect?.type==='barrier' ? `<span class="hx-ab-dmg" style="color:#74b9ff">🛡${ab.effect.value}</span>`
+      : ab.effect?.type==='dash'    ? `<span class="hx-ab-dmg" style="color:#74b9ff">+${ab.effect.move}👣🛡${ab.effect.shields}</span>`
       : '';
     // PASS A: show AP cost indicator
     const apBadge = unit.isHero ? `<span class="hx-ab-ap">${apCost}AP</span>` : '';
@@ -2943,7 +2959,7 @@ function hxClickUnit(unitId) {
     }
     hxs.selected = unitId;
     hxs.confirming = null; // PASS B: reset confirmation on unit change
-    const canMove = unit.isHero ? (!unit.freeMoveDone || hxs.heroAP > 0) : ((unit.remainingMove ?? unit.moveRange) > 0);
+    const canMove = (unit.remainingMove ?? unit.moveRange) > 0;
     hxs.mode = canMove ? 'move' : 'select';
     hxs.reachable = canMove ? hexReachable(unit) : [];
     hxs.abilityTargets = [];
@@ -2966,24 +2982,13 @@ function hxClickHex(col, row) {
   // Move mode: click on reachable hex
   if(hxs.mode === 'move') {
     if(hxs.reachable.some(([c,r])=>c===col&&r===row)) {
-      // Terrain-aware move cost (shallow/swamp/deep water = 2), not straight-line distance.
+      // Movement spends MOVE POINTS by terrain cost (shallow/swamp/deep water = 2). No AP for moving;
+      // extra move points come from the «Рывок» skill. (Moving never costs AP now.)
       const cost = hxMoveCostTo(unit, col, row);
-      // First hex is free; the rest costs 1 AP per move-cost point (hero only).
-      if(unit.isHero) {
-        const freeLeft = unit.freeMoveDone ? 0 : 1;
-        const paidCost = Math.max(0, cost - freeLeft);
-        if(paidCost > hxs.heroAP) {
-          hxLog(`Недостаточно AP для движения.`, 'info');
-          hxRender(); hexUpdateInfo(); return;
-        }
-        if(!unit.freeMoveDone) unit.freeMoveDone = true;
-        hxs.heroAP = Math.max(0, hxs.heroAP - paidCost);
-      }
       const fromCol = unit.col, fromRow = unit.row;
       unit.col = col; unit.row = row; unit.movedRecently = true; unit.shields = []; // moving drops your guard (barriers cleared); harder to hit with ranged until its next turn
       unit.remainingMove = Math.max(0, (unit.remainingMove ?? unit.moveRange) - cost);
-      // Hero is gated by AP (not the move counter); others by remainingMove.
-      unit.moved = unit.isHero ? (unit.freeMoveDone && hxs.heroAP <= 0) : (unit.remainingMove === 0);
+      unit.moved = unit.remainingMove === 0;
       // --- ATTACK OF OPPORTUNITY: enemies adjacent to the from-hex (but not to-hex) get a free strike ---
       const _moverTeam = unit.team;
       const _aooEnemies = hxs.units.filter(e=>e.team!==_moverTeam&&e.hp>0&&!e.stunnedTurns&&!e._aooUsed
@@ -2997,7 +3002,7 @@ function hxClickHex(col, row) {
         return;
       }
       // Stay in move mode if remaining moves left AND hero has AP, else switch to select
-      const canKeepMoving = unit.isHero ? (hxs.heroAP > 0 || !unit.freeMoveDone) : (unit.remainingMove > 0);
+      const canKeepMoving = unit.remainingMove > 0;
       if(canKeepMoving) {
         hxs.reachable = hexReachable(unit);
         hxs.mode = 'move';
@@ -3253,8 +3258,8 @@ function initHex() {
         name: h.name || 'Герой', team:'player', originalTeam:'player',
         col: pPositions[i].col, row: pPositions[i].row,
         hp: baseHp, maxHp: baseHp, atk: baseAtk,
-        moveRange: 3, atkRange: 1,
-        accuracy: 65, defense: 8,
+        moveRange: 1, atkRange: 1, // базово 1 очко движения; больше — навыком «Рывок»
+        defense: 8,
         statuses: heroStatuses, shields: [], hasShield: hasShield,
         moved: false, acted: false,
         emoji: h.emoji || '🧙',
