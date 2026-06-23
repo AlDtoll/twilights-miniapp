@@ -92,11 +92,6 @@
     "name": "Ок «Клин»",
     "skills": [
       {
-        "name": "-->",
-        "techniques": [],
-        "bank": null
-      },
-      {
         "name": "Длинный меч (I)",
         "techniques": [
           "Пластичность клинка"

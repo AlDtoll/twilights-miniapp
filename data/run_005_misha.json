@@ -100,11 +100,6 @@
     "name": "Манс «Налётчик»",
     "skills": [
       {
-        "name": "-->",
-        "techniques": [],
-        "bank": null
-      },
-      {
         "name": "Топор (I)",
         "techniques": [
           "Зацеп"
