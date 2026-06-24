@@ -284,7 +284,7 @@
     {
       "name": "Соляный Берег",
       "population": "~700",
-      "growth": null,
+      "growth": "+10%",
       "houses": "70",
       "staff": [
         {
@@ -376,7 +376,7 @@
     {
       "name": "Солончак",
       "population": "~500",
-      "growth": null,
+      "growth": "+10%",
       "houses": "50",
       "staff": [
         {
@@ -463,7 +463,7 @@
     {
       "name": "Невод",
       "population": "~300",
-      "growth": null,
+      "growth": "+10%",
       "houses": "30",
       "staff": [
         {

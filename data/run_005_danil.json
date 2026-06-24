@@ -399,7 +399,7 @@
     {
       "name": "Клинов Мыс",
       "population": "~600",
-      "growth": null,
+      "growth": "+10%",
       "houses": "60",
       "staff": [
         {
@@ -485,7 +485,7 @@
     {
       "name": "Камнегорка",
       "population": "~600",
-      "growth": null,
+      "growth": "+10%",
       "houses": "60",
       "staff": [
         {
