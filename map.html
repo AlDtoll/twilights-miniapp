@@ -645,12 +645,13 @@ async function openCell(cellData, playerType) {
       return;
     }
   }
+  // ВСЕ селения области игрока (главный НП клетки — первым), а не только клетка
   const all = areaCache[cacheKey].settlements || [];
-  const matched = all.filter(s => s.name === cellData.name);
-  const settlements = matched.length > 0 ? matched : [];
+  const settlements = all.slice().sort((a, b) =>
+    (a.name === cellData.name ? 0 : 1) - (b.name === cellData.name ? 0 : 1));
   const npHtml = settlements.length
     ? settlements.map(renderNPCard).join('')
-    : '<div class="area-loading">НП не найден в данных</div>';
+    : '<div class="area-loading">НП не найдены в данных</div>';
   areaNps.innerHTML = descHtml + npHtml;
 }
 
