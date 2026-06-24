@@ -156,7 +156,9 @@
       }
     ],
     "features": [],
-    "status": {},
+    "status": {
+      "HP": "100%"
+    },
     "retinue": [],
     "retinue_slots": {
       "total": 0.5,
