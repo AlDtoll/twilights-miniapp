@@ -494,11 +494,15 @@ function initCombat() {
   document.getElementById('subtitle').textContent = '⚔️ Сражение';
   const raw = gameData.enemies || [{name:'Противник', hp:2, danger:2}];
   const enemies = raw.map(e => ({...e, max_hp: e.max_hp ?? e.hp, defVal: null, atkVal: null}));
-  const playerHp = gameData.player_hp ?? 2;
+  const playerHp = Math.min(4, gameData.player_hp ?? 2);
   combatState = {
     enemies, playerHp, maxPlayerHp: playerHp,
     round: 1, maxRounds: gameData.max_rounds ?? 3,
-    dice: [], cardUsed: false,
+    dice: [],
+    // Движение — хаотичная карта, по дефолту включена; пара значений −3..+3 меняется каждый раунд
+    movement: gameData.movement !== false, movementPair: [0, 0], movementUsed: false,
+    // Контрол ±1 — стабильный, опциональный (мастер включает через control или card_name)
+    control: !!(gameData.control || gameData.card_name), controlUsed: false,
     cardName: gameData.card_name || null,
     hasReroll: !!(gameData.reroll || gameData.reroll_name), rerollUsed: false,
     rerollName: gameData.reroll_name || null,
@@ -526,7 +530,8 @@ function combatStartRound() {
   combatRollEnemies();
   combatState.dice = Array.from({length: 4}, () => Math.floor(combatState.rng() * 6) + 1);
   combatState.assignments = {};
-  combatState.cardUsed = false;
+  combatState.controlUsed = false;
+  combatRollMovement();
   combatSelectedDie = null;
   document.getElementById('combat-log').innerHTML = '';
   combatRender();
@@ -592,14 +597,29 @@ function combatRender() {
   const canMod = combatSelectedDie !== null && !(combatSelectedDie in s.assignments);
   const modsEl = document.getElementById('combat-mods');
   let modsHtml = '';
-  const cardLabel = s.cardName ? `✨ ${s.cardName}` : '✏️ ±1';
-  const cardHint = `<span class="combat-mod-hint">(±1, раз в раунд)</span>`;
-  if (s.cardUsed) {
-    modsHtml += `<div class="combat-mod-row"><span class="combat-mod-label">${cardLabel}</span>${cardHint}<span class="combat-mod-used">использован</span></div>`;
-  } else if (canMod) {
-    modsHtml += `<div class="combat-mod-row"><span class="combat-mod-label">${cardLabel}</span>${cardHint}<button class="combat-card-btn" onclick="combatApplyCard(1)">+1</button><button class="combat-card-btn" onclick="combatApplyCard(-1)">−1</button></div>`;
-  } else {
-    modsHtml += `<div class="combat-mod-row"><span class="combat-mod-label">${cardLabel}</span>${cardHint}<span class="combat-mod-hint">выбери кубик</span></div>`;
+  if (s.movement) {
+    const mvLabel = '🏃 Движение';
+    const mvHint = `<span class="combat-mod-hint">(случайно, раз в раунд)</span>`;
+    const fmt = d => d > 0 ? `+${d}` : `${d}`;
+    if (s.movementUsed) {
+      modsHtml += `<div class="combat-mod-row"><span class="combat-mod-label">${mvLabel}</span>${mvHint}<span class="combat-mod-used">использовано</span></div>`;
+    } else if (canMod) {
+      const [a, b] = s.movementPair;
+      modsHtml += `<div class="combat-mod-row"><span class="combat-mod-label">${mvLabel}</span>${mvHint}<button class="combat-card-btn" onclick="combatApplyMovement(${a})">${fmt(a)}</button><button class="combat-card-btn" onclick="combatApplyMovement(${b})">${fmt(b)}</button></div>`;
+    } else {
+      modsHtml += `<div class="combat-mod-row"><span class="combat-mod-label">${mvLabel}</span>${mvHint}<span class="combat-mod-hint">выбери кубик</span></div>`;
+    }
+  }
+  if (s.control) {
+    const cardLabel = s.cardName ? `✨ ${s.cardName}` : '✏️ ±1';
+    const cardHint = `<span class="combat-mod-hint">(±1, раз в раунд)</span>`;
+    if (s.controlUsed) {
+      modsHtml += `<div class="combat-mod-row"><span class="combat-mod-label">${cardLabel}</span>${cardHint}<span class="combat-mod-used">использован</span></div>`;
+    } else if (canMod) {
+      modsHtml += `<div class="combat-mod-row"><span class="combat-mod-label">${cardLabel}</span>${cardHint}<button class="combat-card-btn" onclick="combatApplyCard(1)">+1</button><button class="combat-card-btn" onclick="combatApplyCard(-1)">−1</button></div>`;
+    } else {
+      modsHtml += `<div class="combat-mod-row"><span class="combat-mod-label">${cardLabel}</span>${cardHint}<span class="combat-mod-hint">выбери кубик</span></div>`;
+    }
   }
   if (s.hasReroll) {
     const rerollLabel = s.rerollName ? `✨ ${s.rerollName}` : '🔄 Переброс';
@@ -652,9 +672,26 @@ function combatUnassignBlk(ei) {
 }
 
 function combatApplyCard(delta) {
-  if (combatSelectedDie === null || combatState.cardUsed) return;
+  if (combatSelectedDie === null || combatState.controlUsed) return;
   combatState.dice[combatSelectedDie] = Math.max(1, Math.min(6, combatState.dice[combatSelectedDie] + delta));
-  combatState.cardUsed = true;
+  combatState.controlUsed = true;
+  combatSelectedDie = null;
+  combatRender();
+}
+
+function combatRollMovement() {
+  if (!combatState.movement) { combatState.movementUsed = true; return; }
+  const r = () => Math.floor(combatState.rng() * 7) - 3; // −3..+3
+  let a = r(), b = r(), guard = 0;
+  while (b === a && guard++ < 12) b = r();
+  combatState.movementPair = [a, b];
+  combatState.movementUsed = false;
+}
+
+function combatApplyMovement(delta) {
+  if (combatSelectedDie === null || combatState.movementUsed) return;
+  combatState.dice[combatSelectedDie] = Math.max(1, Math.min(6, combatState.dice[combatSelectedDie] + delta));
+  combatState.movementUsed = true;
   combatSelectedDie = null;
   combatRender();
 }
