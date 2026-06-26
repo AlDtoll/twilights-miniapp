@@ -1166,6 +1166,7 @@ function renderSettlements(setts) {
 
     const buildings = s.buildings || [];
     const staff     = s.staff     || [];
+    const stash     = s.stash     || [];
 
     // Start block — first НП expanded, rest collapsed
     html += `<div class="np-block${idx > 0 ? " collapsed" : ""}" id="np-block-${idx}">
@@ -1285,6 +1286,16 @@ function renderSettlements(setts) {
         html += `<div class="np-row">
           <span class="np-lbl">${esc(r.category)}</span>
           <span class="${stCls}" style="white-space:nowrap;font-size:0.74rem">${esc(r.fact)}/${esc(r.norm || "?")} ${esc(r.status || "")}</span>
+        </div>`;
+      });
+    }
+
+    // Stash (Кладовая)
+    if (stash.length) {
+      html += `<div class="np-sec">🗃 Кладовая (${stash.length})</div>`;
+      stash.forEach(item => {
+        html += `<div class="np-row">
+          <span class="np-lbl" style="white-space:normal">${esc(item)}</span>
         </div>`;
       });
     }
