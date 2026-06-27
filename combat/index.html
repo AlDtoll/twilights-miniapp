@@ -480,23 +480,87 @@ function combatPRNG(seed) {
   return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 0x100000000; };
 }
 
-function calcCombatDamage(playerDie, enemyDefVal) {
-  const diff = Math.abs(playerDie - enemyDefVal);
-  return diff === 0 ? 2 : diff === 1 ? 1 : 0;
+// Требование слота: {type:'exact'|'any'|'odd'|'even'|'gt'|'lt', value?}
+function parseReq(spec) {
+  if (spec && typeof spec === 'object') return spec;
+  const t = String(spec ?? '').trim().toLowerCase();
+  if (t === 'any' || t === 'любой' || t === '*') return {type: 'any'};
+  if (t === 'odd' || t === 'нечёт' || t === 'нечет') return {type: 'odd'};
+  if (t === 'even' || t === 'чёт' || t === 'чет') return {type: 'even'};
+  let m;
+  if ((m = t.match(/^>\s*(\d)/))) return {type: 'gt', value: +m[1]};
+  if ((m = t.match(/^<\s*(\d)/))) return {type: 'lt', value: +m[1]};
+  if ((m = t.match(/^(\d)$/))) return {type: 'exact', value: +m[1]};
+  return {type: 'exact', value: Math.max(1, Math.min(6, parseInt(t) || 1))};
 }
-function calcCombatBlock(blockDie, enemyAtkVal) {
-  const diff = Math.abs(blockDie - enemyAtkVal);
-  return diff === 0 ? 0 : diff === 1 ? 1 : 2;
+function reqKey(req) { return req.type + (req.value ?? ''); }
+function reqLabel(req) {
+  switch (req.type) {
+    case 'exact': return `ровно ${req.value}`;
+    case 'any': return 'любой';
+    case 'odd': return 'нечёт';
+    case 'even': return 'чёт';
+    case 'gt': return `> ${req.value}`;
+    case 'lt': return `< ${req.value}`;
+  }
+  return '?';
+}
+function reqMet(die, req) {
+  switch (req.type) {
+    case 'exact': return die === req.value;
+    case 'any': return true;
+    case 'odd': return die % 2 === 1;
+    case 'even': return die % 2 === 0;
+    case 'gt': return die > req.value;
+    case 'lt': return die < req.value;
+  }
+  return false;
+}
+// Урон по слоту поражения: точный — 2/1/0 (нюанс ±1), остальные — бинарно 2/0
+function calcDefeatDamage(die, req) {
+  if (req.type === 'exact') { const d = Math.abs(die - req.value); return d === 0 ? 2 : d === 1 ? 1 : 0; }
+  return reqMet(die, req) ? 2 : 0;
+}
+// Поглощение блоком: точный — 0/1/2 (нюанс ±1), остальные — бинарно 0/2
+function calcBlockTaken(die, req) {
+  if (req.type === 'exact') { const d = Math.abs(die - req.value); return d === 0 ? 0 : d === 1 ? 1 : 2; }
+  return reqMet(die, req) ? 0 : 2;
+}
+// Случайное требование из пула значений и набора типов; avoid — не повторять (для «разных» слотов)
+function genReq(pool, types, rng, avoid) {
+  for (let tries = 0; tries < 24; tries++) {
+    const type = types[Math.floor(rng() * types.length)];
+    let req;
+    if (type === 'odd') req = {type: 'odd'};
+    else if (type === 'even') req = {type: 'even'};
+    else if (type === 'any') req = {type: 'any'};
+    else if (type === 'gt') req = {type: 'gt', value: 1 + Math.floor(rng() * 5)};   // >1..>5
+    else if (type === 'lt') req = {type: 'lt', value: 2 + Math.floor(rng() * 5)};   // <2..<6
+    else req = {type: 'exact', value: pool[Math.floor(rng() * pool.length)]};
+    if (!avoid || reqKey(req) !== reqKey(avoid)) return req;
+  }
+  return {type: 'exact', value: pool[Math.floor(rng() * pool.length)]};
 }
 
 function initCombat() {
   document.getElementById('combat-game').style.display = '';
   document.getElementById('subtitle').textContent = '⚔️ Сражение';
   const raw = (gameData.enemies || [{name:'Противник', hp:3, danger:2}]).slice(0, 4);
-  const enemies = raw.map(e => ({...e, max_hp: e.max_hp ?? e.hp, defVal: null, atkVal: null}));
+  // Пул значений для случайных «точных» требований (по умолчанию 1–6, можно сузить)
+  const slotPool = (Array.isArray(gameData.slot_pool) && gameData.slot_pool.length) ? gameData.slot_pool : [1,2,3,4,5,6];
+  // Набор типов требований для случайной генерации (по умолчанию только точные = как раньше)
+  const slotTypes = (Array.isArray(gameData.slot_types) && gameData.slot_types.length) ? gameData.slot_types : ['exact'];
+  const enemies = raw.map(e => ({
+    ...e, max_hp: e.max_hp ?? e.hp,
+    // явные спеки слотов (фиксированы на бой) либо null → генерим случайно каждый раунд
+    defeatSpec: Array.isArray(e.defeat) ? e.defeat.map(parseReq) : null,
+    blockSpec: (e.block != null) ? parseReq(e.block) : null,
+    defeatSlots: [], blockReq: null,
+  }));
   const playerHp = Math.min(5, gameData.player_hp ?? 3);
   combatState = {
     enemies, playerHp, maxPlayerHp: playerHp,
+    slotPool, slotTypes,
     round: 1, maxRounds: gameData.max_rounds ?? 3,
     dice: [], diceCount: 4,
     // Движение — хаотичная карта, по дефолту включена; пара значений −3..+3 меняется каждый раунд
@@ -519,9 +583,15 @@ function initCombat() {
 function combatRollEnemies() {
   const s = combatState;
   s.enemies.forEach(e => {
-    if (e.hp <= 0) { e.defVal = null; e.atkVal = null; return; }
-    e.defVal = Math.floor(s.rng() * 6) + 1;
-    e.atkVal = Math.floor(s.rng() * 6) + 1;
+    if (e.hp <= 0) { e.defeatSlots = []; e.blockReq = null; return; }
+    if (e.defeatSpec) {
+      e.defeatSlots = e.defeatSpec.map(r => ({...r}));
+    } else {
+      const r0 = genReq(s.slotPool, s.slotTypes, s.rng, null);
+      const r1 = genReq(s.slotPool, s.slotTypes, s.rng, r0); // «разные» слоты
+      e.defeatSlots = [r0, r1];
+    }
+    e.blockReq = e.blockSpec ? {...e.blockSpec} : genReq(s.slotPool, s.slotTypes, s.rng, null);
   });
 }
 
@@ -545,7 +615,6 @@ function combatRender() {
   const enemiesEl = document.getElementById('combat-enemies');
   enemiesEl.innerHTML = '';
   s.enemies.forEach((e, i) => {
-    const atkEntries = Object.entries(s.assignments).filter(([_, a]) => a.type === 'attack' && a.enemyIndex === i);
     const blkEntry = Object.entries(s.assignments).find(([_, a]) => a.type === 'block' && a.enemyIndex === i);
     const div = document.createElement('div');
     div.className = 'combat-enemy' + (e.hp <= 0 ? ' dead' : '');
@@ -553,24 +622,27 @@ function combatRender() {
 
     let atkSlotHtml = '', blkSlotHtml = '';
     if (e.hp > 0) {
-      atkEntries.forEach(([di]) => {
-        const dv = s.dice[+di];
-        const dmg = calcCombatDamage(dv, e.defVal);
-        const dmgClass = dmg === 2 ? 'combat-damage-2' : dmg === 1 ? 'combat-damage-1' : 'combat-damage-0';
-        const dmgText = dmg === 2 ? '2 урона!' : dmg === 1 ? '1 урон' : 'промах';
-        atkSlotHtml += `<div class="combat-atk-slot has-die" onclick="combatUnassignDie(${+di})">${DICE_FACES[dv-1]} <span class="${dmgClass}">→ ${dmgText}</span> <span style="margin-left:auto;opacity:0.5;font-size:0.7rem">✕</span></div>`;
+      // Оба слота поражения видны сразу, у каждого своё требование
+      e.defeatSlots.forEach((req, si) => {
+        const entry = Object.entries(s.assignments).find(([_, a]) => a.type === 'attack' && a.enemyIndex === i && a.slotIndex === si);
+        if (entry) {
+          const dv = s.dice[+entry[0]];
+          const dmg = calcDefeatDamage(dv, req);
+          const dmgClass = dmg === 2 ? 'combat-damage-2' : dmg === 1 ? 'combat-damage-1' : 'combat-damage-0';
+          const dmgText = dmg === 2 ? '2 урона!' : dmg === 1 ? '1 урон' : 'промах';
+          atkSlotHtml += `<div class="combat-atk-slot has-die" onclick="combatUnassignDie(${+entry[0]})">${DICE_FACES[dv-1]} <span class="${dmgClass}">→ ${dmgText}</span> <span style="margin-left:auto;opacity:0.5;font-size:0.7rem">✕</span></div>`;
+        } else {
+          atkSlotHtml += `<div class="combat-atk-slot" onclick="combatAssignAttack(${i},${si})">🗡 Удар — <span class="combat-val-def">${reqLabel(req)}</span></div>`;
+        }
       });
-      if (atkEntries.length < 2) {
-        atkSlotHtml += `<div class="combat-atk-slot" onclick="combatAssignAttack(${i})">🗡 Удар — <span class="combat-val-def">попасть в ${e.defVal}</span>${atkEntries.length === 1 ? ' <span style="opacity:0.5;font-size:0.7rem">(2-й куб)</span>' : ''}</div>`;
-      }
       if (blkEntry) {
         const dv = s.dice[+blkEntry[0]];
-        const taken = calcCombatBlock(dv, e.atkVal);
+        const taken = calcBlockTaken(dv, e.blockReq);
         const blkClass = taken === 0 ? 'combat-block-0' : taken === 1 ? 'combat-block-1' : 'combat-block-full';
         const blkText = taken === 0 ? 'блок!' : taken === 1 ? '1 урон' : '2 урона';
         blkSlotHtml = `<div class="combat-blk-slot has-die" onclick="combatUnassignBlk(${i})">${DICE_FACES[dv-1]} <span class="${blkClass}">→ ${blkText}</span> <span style="margin-left:auto;opacity:0.5;font-size:0.7rem">✕</span></div>`;
       } else {
-        blkSlotHtml = `<div class="combat-blk-slot" onclick="combatAssignBlock(${i})">🛡 Блок — <span class="combat-val-atk">удар ${e.atkVal}</span></div>`;
+        blkSlotHtml = `<div class="combat-blk-slot" onclick="combatAssignBlock(${i})">🛡 Блок — <span class="combat-val-atk">${reqLabel(e.blockReq)}</span></div>`;
       }
     }
 
@@ -640,14 +712,14 @@ function combatRender() {
   document.getElementById('combat-player-hp').textContent = `Герой: ${hearts}`;
 }
 
-function combatAssignAttack(ei) {
+function combatAssignAttack(ei, si) {
   if (combatSelectedDie === null) return;
   const s = combatState;
-  // до 2 кубов атаки на одного врага; при 3-м — заменяем самый ранний
-  const existing = Object.entries(s.assignments).filter(([_, a]) => a.type === 'attack' && a.enemyIndex === ei);
-  if (existing.length >= 2) delete s.assignments[+existing[0][0]];
+  // один куб на слот: если слот занят — освобождаем
+  const occupied = Object.entries(s.assignments).find(([_, a]) => a.type === 'attack' && a.enemyIndex === ei && a.slotIndex === si);
+  if (occupied) delete s.assignments[+occupied[0]];
   delete s.assignments[combatSelectedDie];
-  s.assignments[combatSelectedDie] = {type: 'attack', enemyIndex: ei};
+  s.assignments[combatSelectedDie] = {type: 'attack', enemyIndex: ei, slotIndex: si};
   combatSelectedDie = null; combatRender();
 }
 
@@ -714,9 +786,9 @@ function combatResolve() {
     const atkEntries = Object.entries(s.assignments).filter(([_, a]) => a.type === 'attack' && a.enemyIndex === i);
     if (atkEntries.length === 0) return;
     let dmg = 0; const faces = [];
-    atkEntries.forEach(([di]) => {
+    atkEntries.forEach(([di, a]) => {
       const dv = s.dice[+di];
-      dmg += calcCombatDamage(dv, e.defVal);
+      dmg += calcDefeatDamage(dv, e.defeatSlots[a.slotIndex]);
       faces.push(DICE_FACES[dv-1]);
     });
     if (dmg > 0) {
@@ -724,22 +796,18 @@ function combatResolve() {
       e.hp = Math.max(0, e.hp - dmg);
       log.push(`⚔️ ${e.name}: -${actual}❤️${e.hp <= 0 ? ' (повержен!)' : ''}`);
     } else {
-      log.push(`💨 ${e.name}: промах (${faces.join('')} ≠ 🛡${e.defVal})`);
+      log.push(`💨 ${e.name}: промах (${faces.join('')})`);
     }
   });
 
   let totalTaken = 0;
   s.enemies.forEach((e, i) => {
-    if (e.hp > 0) return;
-    if (e.hp <= 0 && !Object.entries(s.assignments).find(([_, a]) => a.type === 'block' && a.enemyIndex === i)) return;
-  });
-  s.enemies.forEach((e, i) => {
     if (e.hp <= 0) return;
     const blkEntry = Object.entries(s.assignments).find(([_, a]) => a.type === 'block' && a.enemyIndex === i);
     if (blkEntry) {
       const dv = s.dice[+blkEntry[0]];
-      const taken = calcCombatBlock(dv, e.atkVal);
-      if (taken === 0) log.push(`🛡 ${e.name}: блок! (${DICE_FACES[dv-1]} ↔ ⚔️${e.atkVal})`);
+      const taken = calcBlockTaken(dv, e.blockReq);
+      if (taken === 0) log.push(`🛡 ${e.name}: блок! (${DICE_FACES[dv-1]} ✓ ${reqLabel(e.blockReq)})`);
       else { log.push(`🛡 ${e.name}: ${DICE_FACES[dv-1]} → ${taken} урона`); totalTaken += taken; }
     } else {
       log.push(`💔 ${e.name} атакует: 2 урона`); totalTaken += 2;
