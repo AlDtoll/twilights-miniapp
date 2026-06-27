@@ -526,20 +526,31 @@ function calcBlockTaken(die, req) {
   if (req.type === 'exact') { const d = Math.abs(die - req.value); return d === 0 ? 0 : d === 1 ? 1 : 2; }
   return reqMet(die, req) ? 0 : 2;
 }
+// Случайное значение для заданного типа требования
+function rollReqOfType(type, pool, rng) {
+  if (type === 'odd') return {type: 'odd'};
+  if (type === 'even') return {type: 'even'};
+  if (type === 'any') return {type: 'any'};
+  if (type === 'gt') return {type: 'gt', value: 1 + Math.floor(rng() * 5)};   // >1..>5
+  if (type === 'lt') return {type: 'lt', value: 2 + Math.floor(rng() * 5)};   // <2..<6
+  return {type: 'exact', value: pool[Math.floor(rng() * pool.length)]};
+}
 // Случайное требование из пула значений и набора типов; avoid — не повторять (для «разных» слотов)
 function genReq(pool, types, rng, avoid) {
   for (let tries = 0; tries < 24; tries++) {
-    const type = types[Math.floor(rng() * types.length)];
-    let req;
-    if (type === 'odd') req = {type: 'odd'};
-    else if (type === 'even') req = {type: 'even'};
-    else if (type === 'any') req = {type: 'any'};
-    else if (type === 'gt') req = {type: 'gt', value: 1 + Math.floor(rng() * 5)};   // >1..>5
-    else if (type === 'lt') req = {type: 'lt', value: 2 + Math.floor(rng() * 5)};   // <2..<6
-    else req = {type: 'exact', value: pool[Math.floor(rng() * pool.length)]};
+    const req = rollReqOfType(types[Math.floor(rng() * types.length)], pool, rng);
     if (!avoid || reqKey(req) !== reqKey(avoid)) return req;
   }
-  return {type: 'exact', value: pool[Math.floor(rng() * pool.length)]};
+  return rollReqOfType('exact', pool, rng);
+}
+// Деривация требования на новый раунд по режиму keep: always — то же; type — тот же тип, новое значение; random — всё заново
+function deriveReq(base, keep, pool, types, rng, avoid) {
+  if (keep === 'always') return {...base};
+  for (let tries = 0; tries < 24; tries++) {
+    const req = keep === 'random' ? genReq(pool, types, rng, null) : rollReqOfType(base.type, pool, rng);
+    if (!avoid || reqKey(req) !== reqKey(avoid)) return req;
+  }
+  return {...base};
 }
 
 function initCombat() {
@@ -561,6 +572,8 @@ function initCombat() {
   combatState = {
     enemies, playerHp, maxPlayerHp: playerHp,
     slotPool, slotTypes,
+    // keep: always — слоты держатся весь бой; type — тип держится, значение меняется; random — всё меняется
+    keep: ['always', 'type', 'random'].includes(gameData.keep) ? gameData.keep : 'type',
     round: 1, maxRounds: gameData.max_rounds ?? 3,
     dice: [], diceCount: 4,
     // Движение — хаотичная карта, по дефолту включена; пара значений −3..+3 меняется каждый раунд
@@ -584,14 +597,22 @@ function combatRollEnemies() {
   const s = combatState;
   s.enemies.forEach(e => {
     if (e.hp <= 0) { e.defeatSlots = []; e.blockReq = null; return; }
-    if (e.defeatSpec) {
-      e.defeatSlots = e.defeatSpec.map(r => ({...r}));
-    } else {
-      const r0 = genReq(s.slotPool, s.slotTypes, s.rng, null);
-      const r1 = genReq(s.slotPool, s.slotTypes, s.rng, r0); // «разные» слоты
-      e.defeatSlots = [r0, r1];
+    // База задаётся один раз (раунд 1): явная спека или случайная пара «разных» слотов
+    if (!e.defeatBase) {
+      if (e.defeatSpec) {
+        e.defeatBase = e.defeatSpec.map(r => ({...r}));
+      } else {
+        const r0 = genReq(s.slotPool, s.slotTypes, s.rng, null);
+        const r1 = genReq(s.slotPool, s.slotTypes, s.rng, r0);
+        e.defeatBase = [r0, r1];
+      }
+      e.blockBase = e.blockSpec ? {...e.blockSpec} : genReq(s.slotPool, s.slotTypes, s.rng, null);
     }
-    e.blockReq = e.blockSpec ? {...e.blockSpec} : genReq(s.slotPool, s.slotTypes, s.rng, null);
+    // На текущий раунд — по режиму keep (слоты поражения держим «разными»)
+    const d0 = deriveReq(e.defeatBase[0], s.keep, s.slotPool, s.slotTypes, s.rng, null);
+    const d1 = deriveReq(e.defeatBase[1], s.keep, s.slotPool, s.slotTypes, s.rng, d0);
+    e.defeatSlots = [d0, d1];
+    e.blockReq = deriveReq(e.blockBase, s.keep, s.slotPool, s.slotTypes, s.rng, null);
   });
 }
 
