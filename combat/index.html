@@ -229,14 +229,14 @@
   .combat-enemy-vals { display: flex; gap: 16px; margin-bottom: 8px; font-size: 0.95rem; }
   .combat-val-def { color: #74b9ff; font-weight: 700; }
   .combat-val-atk { color: #ff7675; font-weight: 700; }
-  .combat-atk-slot { padding: 7px 10px; border-radius: 8px; border: 1.5px dashed rgba(255,255,255,0.2); display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.83rem; color: var(--tg-theme-hint-color, #aaa); transition: all 0.15s; }
+  .combat-atk-slot { flex: 1 1 calc(50% - 3px); box-sizing: border-box; padding: 7px 10px; border-radius: 8px; border: 1.5px dashed rgba(255,255,255,0.2); display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.83rem; color: var(--tg-theme-hint-color, #aaa); transition: all 0.15s; }
   .combat-atk-slot:hover { border-color: rgba(255,255,255,0.4); }
   .combat-atk-slot.has-die { border-style: solid; border-color: #e74c3c; background: rgba(231,76,60,0.1); color: var(--tg-theme-text-color, #fff); }
   .combat-damage-2 { color: #fdcb6e; font-weight: 700; }
   .combat-damage-1 { color: #a29bfe; font-weight: 700; }
   .combat-damage-0 { color: #636e72; font-weight: 700; text-decoration: line-through; }
-  .combat-enemy-slots { display: flex; gap: 6px; margin-top: 4px; }
-  .combat-blk-slot { flex: 1; padding: 7px 10px; border-radius: 8px; border: 1.5px dashed rgba(116,185,255,0.35); display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.83rem; color: var(--tg-theme-hint-color, #aaa); transition: all 0.15s; }
+  .combat-enemy-slots { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .combat-blk-slot { flex: 1 1 calc(50% - 3px); box-sizing: border-box; padding: 7px 10px; border-radius: 8px; border: 1.5px dashed rgba(116,185,255,0.35); display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.83rem; color: var(--tg-theme-hint-color, #aaa); transition: all 0.15s; }
   .combat-blk-slot:hover { border-color: rgba(116,185,255,0.7); }
   .combat-blk-slot.has-die { border-style: solid; border-color: #74b9ff; background: rgba(116,185,255,0.1); color: var(--tg-theme-text-color, #fff); }
   .combat-block-0 { color: #00b894; font-weight: 700; }
@@ -682,7 +682,6 @@ function combatRender() {
       // Слоты блока: по одному на каждую атаку врага (две атаки → два слота)
       e.blockReqs.forEach((req, bi) => {
         const entry = Object.entries(s.assignments).find(([_, a]) => a.type === 'block' && a.enemyIndex === i && a.slotIndex === bi);
-        const hint = e.blockReqs.length > 1 ? ` <span style="opacity:0.5;font-size:0.7rem">(атака ${bi+1})</span>` : '';
         if (entry) {
           const dv = s.dice[+entry[0]];
           const taken = calcBlockTaken(dv, req);
@@ -690,7 +689,7 @@ function combatRender() {
           const blkText = taken === 0 ? 'блок!' : taken === 1 ? '1 урон' : '2 урона';
           blkSlotHtml += `<div class="combat-blk-slot has-die" onclick="combatUnassignBlk(${i},${bi})">${DICE_FACES[dv-1]} <span class="${blkClass}">→ ${blkText}</span> <span style="margin-left:auto;opacity:0.5;font-size:0.7rem">✕</span></div>`;
         } else {
-          blkSlotHtml += `<div class="combat-blk-slot" onclick="combatAssignBlock(${i},${bi})">🛡 Блок — <span class="combat-val-atk">${reqLabel(req)}</span>${hint}</div>`;
+          blkSlotHtml += `<div class="combat-blk-slot" onclick="combatAssignBlock(${i},${bi})">🛡 Блок — <span class="combat-val-atk">${reqLabel(req)}</span></div>`;
         }
       });
       // Слот «Особенность» (опциональный): уклонение / заряд — нейтрализуется кубом
