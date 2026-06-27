@@ -492,13 +492,13 @@ function calcCombatBlock(blockDie, enemyAtkVal) {
 function initCombat() {
   document.getElementById('combat-game').style.display = '';
   document.getElementById('subtitle').textContent = '⚔️ Сражение';
-  const raw = gameData.enemies || [{name:'Противник', hp:2, danger:2}];
+  const raw = (gameData.enemies || [{name:'Противник', hp:3, danger:2}]).slice(0, 4);
   const enemies = raw.map(e => ({...e, max_hp: e.max_hp ?? e.hp, defVal: null, atkVal: null}));
-  const playerHp = Math.min(4, gameData.player_hp ?? 2);
+  const playerHp = Math.min(5, gameData.player_hp ?? 3);
   combatState = {
     enemies, playerHp, maxPlayerHp: playerHp,
     round: 1, maxRounds: gameData.max_rounds ?? 3,
-    dice: [],
+    dice: [], diceCount: 4,
     // Движение — хаотичная карта, по дефолту включена; пара значений −3..+3 меняется каждый раунд
     movement: gameData.movement !== false, movementPair: [0, 0], movementUsed: false,
     // Контрол ±1 — стабильный, опциональный (мастер включает через control или card_name)
@@ -528,7 +528,7 @@ function combatRollEnemies() {
 function combatStartRound() {
   if (combatState.done) return;
   combatRollEnemies();
-  combatState.dice = Array.from({length: 4}, () => Math.floor(combatState.rng() * 6) + 1);
+  combatState.dice = Array.from({length: combatState.diceCount}, () => Math.floor(combatState.rng() * 6) + 1);
   combatState.assignments = {};
   combatState.controlUsed = false;
   combatRollMovement();
@@ -545,7 +545,7 @@ function combatRender() {
   const enemiesEl = document.getElementById('combat-enemies');
   enemiesEl.innerHTML = '';
   s.enemies.forEach((e, i) => {
-    const atkEntry = Object.entries(s.assignments).find(([_, a]) => a.type === 'attack' && a.enemyIndex === i);
+    const atkEntries = Object.entries(s.assignments).filter(([_, a]) => a.type === 'attack' && a.enemyIndex === i);
     const blkEntry = Object.entries(s.assignments).find(([_, a]) => a.type === 'block' && a.enemyIndex === i);
     const div = document.createElement('div');
     div.className = 'combat-enemy' + (e.hp <= 0 ? ' dead' : '');
@@ -553,14 +553,15 @@ function combatRender() {
 
     let atkSlotHtml = '', blkSlotHtml = '';
     if (e.hp > 0) {
-      if (atkEntry) {
-        const dv = s.dice[+atkEntry[0]];
+      atkEntries.forEach(([di]) => {
+        const dv = s.dice[+di];
         const dmg = calcCombatDamage(dv, e.defVal);
         const dmgClass = dmg === 2 ? 'combat-damage-2' : dmg === 1 ? 'combat-damage-1' : 'combat-damage-0';
         const dmgText = dmg === 2 ? '2 урона!' : dmg === 1 ? '1 урон' : 'промах';
-        atkSlotHtml = `<div class="combat-atk-slot has-die" onclick="combatUnassignAtk(${i})">${DICE_FACES[dv-1]} <span class="${dmgClass}">→ ${dmgText}</span> <span style="margin-left:auto;opacity:0.5;font-size:0.7rem">✕</span></div>`;
-      } else {
-        atkSlotHtml = `<div class="combat-atk-slot" onclick="combatAssignAttack(${i})">🗡 Удар — <span class="combat-val-def">попасть в ${e.defVal}</span></div>`;
+        atkSlotHtml += `<div class="combat-atk-slot has-die" onclick="combatUnassignDie(${+di})">${DICE_FACES[dv-1]} <span class="${dmgClass}">→ ${dmgText}</span> <span style="margin-left:auto;opacity:0.5;font-size:0.7rem">✕</span></div>`;
+      });
+      if (atkEntries.length < 2) {
+        atkSlotHtml += `<div class="combat-atk-slot" onclick="combatAssignAttack(${i})">🗡 Удар — <span class="combat-val-def">попасть в ${e.defVal}</span>${atkEntries.length === 1 ? ' <span style="opacity:0.5;font-size:0.7rem">(2-й куб)</span>' : ''}</div>`;
       }
       if (blkEntry) {
         const dv = s.dice[+blkEntry[0]];
@@ -642,11 +643,17 @@ function combatRender() {
 function combatAssignAttack(ei) {
   if (combatSelectedDie === null) return;
   const s = combatState;
-  const prev = Object.entries(s.assignments).find(([_, a]) => a.type === 'attack' && a.enemyIndex === ei);
-  if (prev) delete s.assignments[+prev[0]];
+  // до 2 кубов атаки на одного врага; при 3-м — заменяем самый ранний
+  const existing = Object.entries(s.assignments).filter(([_, a]) => a.type === 'attack' && a.enemyIndex === ei);
+  if (existing.length >= 2) delete s.assignments[+existing[0][0]];
   delete s.assignments[combatSelectedDie];
   s.assignments[combatSelectedDie] = {type: 'attack', enemyIndex: ei};
   combatSelectedDie = null; combatRender();
+}
+
+function combatUnassignDie(di) {
+  delete combatState.assignments[di];
+  combatRender();
 }
 
 function combatAssignBlock(ei) {
@@ -657,12 +664,6 @@ function combatAssignBlock(ei) {
   delete s.assignments[combatSelectedDie];
   s.assignments[combatSelectedDie] = {type: 'block', enemyIndex: ei};
   combatSelectedDie = null; combatRender();
-}
-
-function combatUnassignAtk(ei) {
-  const s = combatState;
-  const entry = Object.entries(s.assignments).find(([_, a]) => a.type === 'attack' && a.enemyIndex === ei);
-  if (entry) { delete s.assignments[+entry[0]]; combatRender(); }
 }
 
 function combatUnassignBlk(ei) {
@@ -710,16 +711,20 @@ function combatResolve() {
 
   s.enemies.forEach((e, i) => {
     if (e.hp <= 0) return;
-    const atkEntry = Object.entries(s.assignments).find(([_, a]) => a.type === 'attack' && a.enemyIndex === i);
-    if (!atkEntry) return;
-    const dv = s.dice[+atkEntry[0]];
-    const dmg = calcCombatDamage(dv, e.defVal);
+    const atkEntries = Object.entries(s.assignments).filter(([_, a]) => a.type === 'attack' && a.enemyIndex === i);
+    if (atkEntries.length === 0) return;
+    let dmg = 0; const faces = [];
+    atkEntries.forEach(([di]) => {
+      const dv = s.dice[+di];
+      dmg += calcCombatDamage(dv, e.defVal);
+      faces.push(DICE_FACES[dv-1]);
+    });
     if (dmg > 0) {
       const actual = Math.min(dmg, e.hp);
       e.hp = Math.max(0, e.hp - dmg);
       log.push(`⚔️ ${e.name}: -${actual}❤️${e.hp <= 0 ? ' (повержен!)' : ''}`);
     } else {
-      log.push(`💨 ${e.name}: промах (${DICE_FACES[dv-1]} ≠ 🛡${e.defVal})`);
+      log.push(`💨 ${e.name}: промах (${faces.join('')} ≠ 🛡${e.defVal})`);
     }
   });
 
@@ -742,6 +747,13 @@ function combatResolve() {
   });
   if (totalTaken > 0) { s.playerHp = Math.max(0, s.playerHp - totalTaken); log.push(`Герой: ${s.playerHp}❤️ (−${totalTaken})`); }
   else if (s.enemies.some(e => e.hp > 0)) log.push('✅ Весь урон поглощён');
+
+  // Полная оборона: все кубы в блок, ни одной атаки, урона не получено → +1 куб на след. раунд
+  const attackCount = Object.values(s.assignments).filter(a => a.type === 'attack').length;
+  const blockCount = Object.values(s.assignments).filter(a => a.type === 'block').length;
+  const fullDefense = attackCount === 0 && totalTaken === 0 && s.dice.length > 0 && blockCount === s.dice.length;
+  s.diceCount = fullDefense ? 5 : 4;
+  if (fullDefense) log.push('🛡 Полная оборона — +1 кубик в следующем раунде (5)');
 
   s.roundLogs.push({round: s.round, dice: [...s.dice], log: [...log]});
   s.round++;
