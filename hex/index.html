@@ -171,7 +171,7 @@ const HX_WEAPON_ABILITIES = {
   ],
   heavy: [
     {id:'heavy_strike',   name:'Дробящий',      icon:'🔨', type:'melee',  range:1, aoe:0, damage:45, effect:null,                         maxCooldown:0, school:'heavy'},
-    {id:'heavy_quake',    name:'Волновой удар', icon:'💫', type:'melee',  range:1, aoe:1, damage:30, effect:{type:'stun',turns:1},         maxCooldown:3, school:'heavy'},
+    {id:'heavy_quake',    name:'Волновой удар', icon:'💫', type:'melee',  range:1, aoe:1, aoeShape:'wave', damage:30, effect:{type:'stun',turns:1},         maxCooldown:3, school:'heavy'},
     {id:'heavy_death',    name:'Смерть молотом',icon:'💀', type:'melee',  range:1, aoe:0, damage:60, effect:null,                         maxCooldown:4, school:'heavy'},
   ],
   dual: [
@@ -186,7 +186,7 @@ const HX_WEAPON_ABILITIES = {
   ],
   unarmed: [
     {id:'unarmed_punch',  name:'Серия ударов',  icon:'👊', type:'melee',  range:1, aoe:0, damage:35, effect:null,                         maxCooldown:0, school:'unarmed'},
-    {id:'unarmed_grab',   name:'Захват',        icon:'🤼', type:'melee',  range:1, aoe:0, damage:25, effect:{type:'stun',turns:1},         maxCooldown:2, school:'unarmed'},
+    {id:'unarmed_grab',   name:'Захват',        icon:'🤼', type:'melee',  range:1, aoe:0, damage:20, effect:{type:'reposition'},         maxCooldown:2, school:'unarmed'},
     {id:'unarmed_crush',  name:'Зеркальный удар',icon:'💢',type:'melee',  range:1, aoe:0, damage:60, effect:null,                         maxCooldown:4, school:'unarmed'},
   ],
   polearm: [
@@ -221,12 +221,15 @@ const HX_MAGIC_ABILITIES = {
   pyromancer: [
     {id:'pyro_flame',     name:'Сгусток огня',     icon:'🔥',type:'magic', range:4, aoe:0, damage:30,   effect:null,                               maxCooldown:0, school:'pyromancer'},
     {id:'pyro_ignite',    name:'Возгорание',       icon:'💥',type:'magic', range:3, aoe:0, damage:35,   effect:{type:'ignite'},                    maxCooldown:4, school:'pyromancer'},
-    {id:'pyro_wave',      name:'Волна пламени',    icon:'🌋',type:'magic', range:2, aoe:2, damage:25,   effect:{type:'ignite'},                    maxCooldown:4, school:'pyromancer'},
+    {id:'pyro_wave',      name:'Волна пламени',    icon:'🌋',type:'magic', range:3, aoe:1, aoeShape:'wave', damage:25,   effect:{type:'ignite'},                    maxCooldown:4, school:'pyromancer'},
+    {id:'pyro_line',      name:'Огненная струя',   icon:'🔥',type:'magic', range:4, aoe:3, aoeShape:'line', damage:22,   effect:null,                               maxCooldown:3, school:'pyromancer'},
   ],
   geomancer: [
     {id:'geo_stone',      name:'Метание камня',    icon:'🪨',type:'magic', range:4, aoe:0, damage:30,   effect:null,                               maxCooldown:0, school:'geomancer'},
     {id:'geo_shield',     name:'Заслон',           icon:'🏔️',type:'magic', range:0, aoe:0, damage:0,   effect:{type:'barrier',value:40,count:1},      maxCooldown:2, school:'geomancer'},
-    {id:'geo_quake',      name:'Сотрясение',       icon:'🌍',type:'magic', range:1, aoe:1, damage:25,   effect:{type:'stun',turns:1},             maxCooldown:4, school:'geomancer'},
+    {id:'geo_quake',      name:'Сотрясение',       icon:'🌍',type:'magic', range:2, aoe:1, aoeShape:'line_pair', damage:25,   effect:{type:'stun',turns:1},             maxCooldown:4, school:'geomancer'},
+    {id:'geo_crate',      name:'Ящик',             icon:'📦',type:'magic', range:2, aoe:0, damage:0,   effect:{type:'spawn_terrain',terrain:'crate'}, maxCooldown:3, school:'geomancer'},
+    {id:'geo_rock',       name:'Каменная стена',   icon:'🪨',type:'magic', range:3, aoe:0, damage:0,   effect:{type:'spawn_terrain',terrain:'rock'},  maxCooldown:4, school:'geomancer'},
   ],
   aeromancer: [
     {id:'aero_gust',      name:'Воздушный поток',  icon:'🌬️',type:'magic', range:3, aoe:1, damage:20,   effect:{type:'knockback'},                 maxCooldown:0, school:'aeromancer'},
@@ -237,6 +240,7 @@ const HX_MAGIC_ABILITIES = {
     {id:'aqua_stream',    name:'Водный поток',     icon:'🌊',type:'magic', range:3, aoe:0, damage:30,   effect:null,                               maxCooldown:0, school:'aquamancer'},
     {id:'aqua_fist',      name:'Взрыв воды',       icon:'💧',type:'magic', range:3, aoe:0, damage:35,   effect:{type:'knockback'},                 maxCooldown:2, school:'aquamancer'},
     {id:'aqua_sticky',    name:'Прилипчая вода',   icon:'🫧',type:'debuff',range:2, aoe:0, damage:0,   effect:{type:'stun',turns:2},             maxCooldown:4, school:'aquamancer'},
+    {id:'aqua_shallow',   name:'Мелководье',       icon:'〰️',type:'magic', range:3, aoe:0, damage:0,   effect:{type:'spawn_terrain',terrain:'shallow'}, maxCooldown:3, school:'aquamancer'},
   ],
   druid: [
     {id:'druid_heal',     name:'Токи жизни',       icon:'🌿',type:'heal',  range:1, aoe:0, damage:0,   effect:{type:'heal',value:30},              maxCooldown:0, school:'druid'},
@@ -245,6 +249,7 @@ const HX_MAGIC_ABILITIES = {
   ],
   necro: [
     {id:'necro_drain',    name:'Витализм',         icon:'🩸',type:'magic', range:2, aoe:0, damage:30,   effect:{type:'lifesteal',value:10},         maxCooldown:0, school:'necro'},
+    {id:'necro_bleed',    name:'Кровавая метка',   icon:'🩸',type:'magic', range:2, aoe:0, damage:20,   effect:{type:'bleed',value:12,turns:2},     maxCooldown:3, school:'necro'},
     {id:'necro_wave',     name:'Волна смерти',     icon:'🌑',type:'magic', range:2, aoe:1, damage:35,   effect:null,                               maxCooldown:2, school:'necro'},
     {id:'necro_raise',    name:'Кукловодство',     icon:'💀',type:'summon',range:2, aoe:0, damage:0,   effect:{type:'summon',unitType:'cadaver'}, maxCooldown:4, school:'necro'},
   ],
@@ -255,7 +260,7 @@ const HX_MAGIC_ABILITIES = {
   ],
   incenser: [
     {id:'inc_smoke',      name:'Дымовое облако',   icon:'💨',type:'debuff',range:3, aoe:2, damage:0,   effect:{type:'debuff',stat:'atk',value:1,turns:1}, maxCooldown:0, school:'incenser'},
-    {id:'inc_poison',     name:'Ядовитый дым',     icon:'🟢',type:'magic', range:2, aoe:1, damage:25,   effect:null,                               maxCooldown:2, school:'incenser'},
+    {id:'inc_poison',     name:'Ядовитый дым',     icon:'🧪',type:'magic', range:2, aoe:1, damage:15,   effect:{type:'poison',value:8,turns:3},    maxCooldown:2, school:'incenser'},
     {id:'inc_blind',      name:'Слепота',          icon:'🙈',type:'debuff',range:3, aoe:0, damage:0,   effect:{type:'debuff',stat:'atk',value:2,turns:2}, maxCooldown:4, school:'incenser'},
   ],
   adept: [
@@ -304,7 +309,7 @@ const HEX_UNIT_DEFS = {
     statuses:[{name:'Роба',value:10,chance:40}],
     abilities:[
       {id:'e_inc_smoke',   name:'Дымовое облако',icon:'💨',type:'debuff',range:2,aoe:2,damage:0,effect:{type:'debuff',stat:'atk',value:1,turns:1},cooldown:0,maxCooldown:0},
-      {id:'e_inc_poison',  name:'Ядовитый дым',icon:'☠️',type:'magic',range:2,aoe:1,damage:25,effect:null,cooldown:0,maxCooldown:3},
+      {id:'e_inc_poison',  name:'Ядовитый дым',icon:'🧪',type:'magic',range:2,aoe:1,damage:15,effect:{type:'poison',value:8,turns:3},cooldown:0,maxCooldown:3},
     ]},
   demonologist: {name:'Демонолог',   emoji:'👁', hp:100, atk:30,  moveRange:2, atkRange:2, accuracy:65, defense:7,
     statuses:[{name:'Роба',value:10,chance:40},{name:'Наручи',value:10,chance:20}],
@@ -385,7 +390,10 @@ function hxBuildHeroAbilities(weapon, magic) {
   const dash = {id:'hero_dash', name:'Рывок', icon:'💨', type:'move', range:0, aoe:0, damage:0,
     ap:1, cooldown:0, maxCooldown:1, effect:{type:'dash', move:2, shields:5},
     desc:'+2 очка движения и 5 щитов'};
-  return [dash, ...wArr, ...mArr];
+  const jump = {id:'hero_jump', name:'Прыжок', icon:'🦘', type:'jump', range:2, aoe:0, damage:0,
+    ap:1, cooldown:0, maxCooldown:2, effect:{type:'jump', distance:2, overUnit:true, overObstacle:true},
+    desc:'Перепрыгнуть через врага или препятствие на 2 гекса'};
+  return [dash, jump, ...wArr, ...mArr];
 }
 
 let hxs = {
@@ -407,6 +415,9 @@ let hxs = {
   hero: null, // FFT hero definition reference
   heroAP: 4, // PASS A: Action Points for hero (4 per turn)
   confirming: null, // PASS B/C: {col, row} of hex pending confirmation
+  repositionLanding: false,
+  repositionTargetId: null,
+  timedFeatures: [], // timed terrain/obstacles {kind,col,row,turns,label}
 };
 
 function hexToPixel(col, row) {
@@ -447,6 +458,298 @@ function hexNeighbors(col, row) {
 
 function hxObstAt(col, row) {
   return (hxs.obstacles||[]).find(ob=>ob.col===col&&ob.row===row) || null;
+}
+
+function hxHexInBounds(c, r) {
+  return c >= 0 && c < HEX_COLS && r >= 0 && r < HEX_ROWS;
+}
+
+function hxCubeRound(fx, fy, fz) {
+  let rx = Math.round(fx), ry = Math.round(fy), rz = Math.round(fz);
+  const xd = Math.abs(rx - fx), yd = Math.abs(ry - fy), zd = Math.abs(rz - fz);
+  if(xd > yd && xd > zd) rx = -ry - rz;
+  else if(yd > zd) ry = -rx - rz;
+  else rz = -rx - ry;
+  return {x: rx, y: ry, z: rz};
+}
+
+function hxCubeToColRow(x, z) {
+  return [x + (z - (z & 1)) / 2, z];
+}
+
+function hexLine(c1, r1, c2, r2) {
+  const n = hexDist(c1, r1, c2, r2);
+  if(n === 0) return [[c1, r1]];
+  const a = toCube(c1, r1), b = toCube(c2, r2);
+  const out = [];
+  for(let i = 0; i <= n; i++) {
+    const t = i / n;
+    const c = hxCubeRound(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t);
+    const [cCol, cRow] = hxCubeToColRow(c.x, c.z);
+    if(!out.length || out[out.length - 1][0] !== cCol || out[out.length - 1][1] !== cRow) {
+      out.push([cCol, cRow]);
+    }
+  }
+  return out;
+}
+
+function hxDirFromTo(c1, r1, c2, r2) {
+  const nbrs = hexNeighbors(c1, r1);
+  for(let i = 0; i < nbrs.length; i++) {
+    if(nbrs[i][0] === c2 && nbrs[i][1] === r2) return i;
+  }
+  const line = hexLine(c1, r1, c2, r2);
+  if(line.length >= 2) return hxDirFromTo(c1, r1, line[1][0], line[1][1]);
+  return 0;
+}
+
+function hxStepFrom(col, row, dirIdx, steps) {
+  let c = col, r = row;
+  for(let s = 0; s < (steps || 1); s++) {
+    const nbrs = hexNeighbors(c, r);
+    if(dirIdx < 0 || dirIdx >= nbrs.length) return null;
+    [c, r] = nbrs[dirIdx];
+    if(!hxHexInBounds(c, r)) return null;
+  }
+  return [c, r];
+}
+
+// AoE hex set: radius (default), line, line_pair, wave — direction from caster → anchor.
+function hxAoeHexes(caster, anchorCol, anchorRow, ability) {
+  const shape = ability.aoeShape || 'radius';
+  const aoe = ability.aoe || 0;
+  if(aoe <= 0) return [[anchorCol, anchorRow]];
+  if(shape === 'radius') {
+    const hexes = [];
+    for(let rr = 0; rr < HEX_ROWS; rr++) for(let cc = 0; cc < HEX_COLS; cc++) {
+      if(hexDist(anchorCol, anchorRow, cc, rr) <= aoe) hexes.push([cc, rr]);
+    }
+    return hexes;
+  }
+  const dir = hxDirFromTo(caster.col, caster.row, anchorCol, anchorRow);
+  if(shape === 'line') {
+    const line = hexLine(caster.col, caster.row, anchorCol, anchorRow);
+    return line.slice(1, aoe + 1);
+  }
+  if(shape === 'line_pair') {
+    const away = hxStepFrom(anchorCol, anchorRow, dir, 1);
+    const hexes = [[anchorCol, anchorRow]];
+    if(away) hexes.push(away);
+    else {
+      const back = hxStepFrom(anchorCol, anchorRow, (dir + 3) % 6, 1);
+      if(back) hexes.unshift(back);
+    }
+    return hexes;
+  }
+  if(shape === 'wave') {
+    const p1 = hxStepFrom(anchorCol, anchorRow, (dir + 1) % 6, 1);
+    const p2 = hxStepFrom(anchorCol, anchorRow, (dir + 5) % 6, 1);
+    const hexes = [];
+    if(p1) hexes.push(p1);
+    if(p2) hexes.push(p2);
+    return hexes.length ? hexes : [[anchorCol, anchorRow]];
+  }
+  return [[anchorCol, anchorRow]];
+}
+
+function hxAoeHexSet(caster, anchorCol, anchorRow, ability) {
+  return new Set(hxAoeHexes(caster, anchorCol, anchorRow, ability).map(([c, r]) => `${c},${r}`));
+}
+
+// Unit conditions (DoT, vulnerable): no stack, no refresh — duplicate type ignored.
+const HX_CONDITION_DEFS = {
+  poison:    {icon:'🧪', label:'Яд'},
+  bleed:     {icon:'🩸', label:'Кровотечение'},
+  vulnerable:{icon:'🎯', label:'Уязвимость'},
+};
+
+function hxApplyCondition(unit, cond) {
+  if(!unit || unit.hp <= 0) return false;
+  if(!Array.isArray(unit.conditions)) unit.conditions = [];
+  if(unit.conditions.some(c => c.type === cond.type)) return false;
+  const def = HX_CONDITION_DEFS[cond.type] || {};
+  unit.conditions.push({
+    type: cond.type,
+    value: cond.value != null ? cond.value : 0,
+    turns: cond.turns != null ? cond.turns : 1,
+    icon: cond.icon || def.icon || '⚠',
+  });
+  return true;
+}
+
+function hxConditionHitBonus(target) {
+  if(!Array.isArray(target?.conditions)) return 0;
+  const v = target.conditions.find(c => c.type === 'vulnerable');
+  return v ? (v.value || 10) : 0;
+}
+
+function hxTickConditionsOnTurnStart(unit) {
+  if(!unit?.conditions?.length) return;
+  for(const c of [...unit.conditions]) {
+    if(c.type === 'poison' || c.type === 'bleed') {
+      const dmg = c.value || 0;
+      if(dmg > 0) {
+        const prev = unit.hp;
+        unit.hp = Math.max(0, unit.hp - dmg);
+        if(unit.hp <= 0 && prev > 0) hexApplyMorale(unit);
+        hxLog(`${c.icon||''} ${unit.name}: ${HX_CONDITION_DEFS[c.type]?.label||c.type} −${dmg} HP`, 'attack');
+      }
+    }
+    c.turns--;
+    if(c.turns <= 0) unit.conditions = unit.conditions.filter(x => x !== c);
+  }
+}
+
+function hxTickTimedFeatures() {
+  if(!hxs.timedFeatures?.length) return;
+  const expired = [];
+  hxs.timedFeatures.forEach(tf => {
+    tf.turns--;
+    if(tf.turns <= 0) expired.push(tf);
+  });
+  expired.forEach(tf => {
+    if(tf.kind === 'shallow') {
+      hxs.shallow_waters = (hxs.shallow_waters || []).filter(([c, r]) => !(c === tf.col && r === tf.row));
+    } else if(tf.kind === 'obstacle') {
+      hxs.obstacles = (hxs.obstacles || []).filter(ob => !(ob.col === tf.col && ob.row === tf.row));
+    }
+    hxLog(`⌛ ${tf.label || 'Объект'} исчез с (${tf.col},${tf.row})`, 'info');
+  });
+  hxs.timedFeatures = hxs.timedFeatures.filter(tf => !expired.includes(tf));
+}
+
+function hxCollisionDmg(ability) {
+  const eff = ability?.effect;
+  if(eff?.collisionDmg != null) return eff.collisionDmg;
+  if(ability?.collisionDmg != null) return ability.collisionDmg;
+  return 15;
+}
+
+function hxResolveKnockback(caster, target, ability) {
+  if(!target || target.hp <= 0) return {moved: false};
+  if(target.col === caster.col && target.row === caster.row) return {moved: false};
+  const dir = hxDirFromTo(caster.col, caster.row, target.col, target.row);
+  const next = hxStepFrom(target.col, target.row, dir, 1);
+  if(!next) return {moved: false, reason: 'edge'};
+  const [nc, nr] = next;
+  const other = hxs.units.find(u => u.id !== target.id && u.hp > 0 && u.col === nc && u.row === nr);
+  const obst = hxObstAt(nc, nr);
+  const collDmg = hxCollisionDmg(ability);
+  if(other || obst) {
+    hxDealDamage(target, collDmg, caster.team);
+    if(other) hxDealDamage(other, collDmg, caster.team);
+    hxApplyCondition(target, {type: 'vulnerable', value: 10, turns: 2});
+    if(other) hxApplyCondition(other, {type: 'vulnerable', value: 10, turns: 2});
+    hxLog(`${target.name} ударился о ${other ? other.name : (obst.type === 'wall' ? '🧱' : '🪨')}! −${collDmg} (оба), уязвимость`, 'special');
+    return {moved: false, collision: true};
+  }
+  target.col = nc; target.row = nr;
+  hxLog(`${target.name} отброшен`, 'special');
+  return {moved: true};
+}
+
+function hxResolvePull(caster, target, ability) {
+  if(!target || target.hp <= 0) return {moved: false};
+  if(target.col === caster.col && target.row === caster.row) return {moved: false};
+  const dir = hxDirFromTo(target.col, target.row, caster.col, caster.row);
+  const next = hxStepFrom(target.col, target.row, dir, 1);
+  if(!next) return {moved: false, reason: 'edge'};
+  const [nc, nr] = next;
+  const other = hxs.units.find(u => u.id !== target.id && u.hp > 0 && u.col === nc && u.row === nr);
+  const obst = hxObstAt(nc, nr);
+  const collDmg = hxCollisionDmg(ability);
+  if(other || obst) {
+    hxDealDamage(target, collDmg, caster.team);
+    if(other) hxDealDamage(other, collDmg, caster.team);
+    hxApplyCondition(target, {type: 'vulnerable', value: 10, turns: 2});
+    if(other) hxApplyCondition(other, {type: 'vulnerable', value: 10, turns: 2});
+    hxLog(`${target.name} не может быть притянут — столкновение! −${collDmg}`, 'special');
+    return {moved: false, collision: true};
+  }
+  target.col = nc; target.row = nr;
+  hxLog(`${target.name} притянут`, 'special');
+  return {moved: true};
+}
+
+function hxResolveReposition(caster, target, landCol, landRow) {
+  const ok = hexNeighbors(caster.col, caster.row).some(([c, r]) => c === landCol && r === landRow);
+  if(!ok) return false;
+  if(hxs.units.some(u => u.hp > 0 && u.id !== target.id && u.col === landCol && u.row === landRow)) return false;
+  if(hxObstAt(landCol, landRow)) return false;
+  target.col = landCol; target.row = landRow;
+  hxLog(`${target.name} перемещён к ${caster.name}`, 'special');
+  return true;
+}
+
+function hxRepositionLandingHexes(caster) {
+  const occupied = new Set(hxs.units.filter(u => u.hp > 0).map(u => `${u.col},${u.row}`));
+  return hexNeighbors(caster.col, caster.row)
+    .filter(([c, r]) => !occupied.has(`${c},${r}`) && !hxObstAt(c, r))
+    .map(([c, r]) => ({col: c, row: r, isFreeHex: true}));
+}
+
+function hxJumpLandingHexes(unit, ability) {
+  const eff = ability.effect || {};
+  const dist = eff.distance || 2;
+  const result = [];
+  for(let dir = 0; dir < 6; dir++) {
+    const mid = hxStepFrom(unit.col, unit.row, dir, 1);
+    const end = hxStepFrom(unit.col, unit.row, dir, dist);
+    if(!mid || !end) continue;
+    const [mc, mr] = mid, [ec, er] = end;
+    if(hxs.units.some(u => u.hp > 0 && u.col === ec && u.row === er)) continue;
+    if(hxObstAt(ec, er)) continue;
+    const midUnit = hxs.units.find(u => u.hp > 0 && u.col === mc && u.row === mr);
+    const midObst = hxObstAt(mc, mr);
+    let ok = false;
+    if(eff.overUnit && midUnit && midUnit.team !== unit.team) ok = true;
+    if(eff.overObstacle && midObst) ok = true;
+    if(ok) result.push({col: ec, row: er, isFreeHex: true});
+  }
+  return result;
+}
+
+function hxSpawnTerrain(col, row, spec) {
+  const terrain = spec.terrain || spec.type || 'rock';
+  const duration = spec.duration; // null/undefined = forever
+  if(terrain === 'shallow' || terrain === 'shallow_water') {
+    if(!(hxs.shallow_waters || []).some(([c, r]) => c === col && r === row)) {
+      if(!hxs.shallow_waters) hxs.shallow_waters = [];
+      hxs.shallow_waters.push([col, row]);
+    }
+    if(duration != null && duration > 0) {
+      if(!hxs.timedFeatures) hxs.timedFeatures = [];
+      hxs.timedFeatures.push({kind: 'shallow', col, row, turns: duration, label: 'Мелководье'});
+    }
+    hxLog(`🌊 Мелководье на (${col},${row})${duration ? ` на ${duration} х.` : ''}`, 'special');
+    return;
+  }
+  if(hxs.units.some(u => u.hp > 0 && u.col === col && u.row === row)) return;
+  if(hxObstAt(col, row)) return;
+  const isCrate = terrain === 'crate' || terrain === 'box';
+  const hp = spec.hp || (isCrate ? 20 : 50);
+  const ob = {
+    col, row, hp, maxHp: hp,
+    type: isCrate ? 'crate' : (terrain === 'rock' ? 'rock' : terrain),
+    blocksLos: true,
+  };
+  if(!hxs.obstacles) hxs.obstacles = [];
+  hxs.obstacles.push(ob);
+  if(duration != null && duration > 0) {
+    if(!hxs.timedFeatures) hxs.timedFeatures = [];
+    hxs.timedFeatures.push({kind: 'obstacle', col, row, turns: duration, label: isCrate ? 'Ящик' : 'Камень'});
+  }
+  hxLog(`${isCrate ? '📦 Ящик' : '🪨 Камень'} на (${col},${row})${duration ? ` на ${duration} х.` : ''}`, 'special');
+}
+
+function hxSplashUnits(caster, anchor, ability, excludeId) {
+  const set = hxAoeHexSet(caster, anchor.col, anchor.row, ability);
+  return hxs.units.filter(u => u.team !== caster.team && u.hp > 0 && u.id !== excludeId && set.has(`${u.col},${u.row}`));
+}
+
+function hxSplashObstacles(anchor, ability, caster) {
+  const set = hxAoeHexSet(caster, anchor.col, anchor.row, ability);
+  return (hxs.obstacles || []).filter(ob => set.has(`${ob.col},${ob.row}`));
 }
 
 // All passable tiles from which `target` could be attacked at `atkRange` with clear line-of-sight
@@ -640,6 +943,12 @@ function hexAttackable(unit) {
 // PASS B: returns hex objects {col, row, isFreeHex?} for hero; unit-based for enemies
 function hxAbilityTargets(unit, ability) {
   if(!ability || ability.range === 0) return [];
+  if(ability.type === 'jump' || ability.effect?.type === 'jump') {
+    return hxJumpLandingHexes(unit, ability);
+  }
+  if(hxs.repositionLanding && unit.id === hxs.selected) {
+    return hxRepositionLandingHexes(unit);
+  }
   // PASS B: hero gets hex-based targeting — bright targets depend on ability type
   if(unit.isHero) {
     const result = [];
@@ -716,6 +1025,23 @@ function hxConfirmApplyBtn() {
 
 // PASS B/C: confirm and apply hero ability at hex {col, row}
 function hxConfirmApply(unit, ab, col, row) {
+  if(hxs.repositionLanding && ab.effect?.type === 'reposition') {
+    const target = hxs.units.find(u => u.id === hxs.repositionTargetId && u.hp > 0);
+    const valid = hxRepositionLandingHexes(unit).some(h => h.col === col && h.row === row);
+    if(!target || !valid) {
+      hxLog('Нельзя переместить цель на этот гекс.', 'info');
+      hxs.repositionLanding = false; hxs.repositionTargetId = null;
+      hxs.confirming = null; hxRender(); hexUpdateInfo(); return;
+    }
+    hxApplyAbility(unit, ab, target, {landCol: col, landRow: row});
+    hxs.repositionLanding = false; hxs.repositionTargetId = null;
+    hxs.confirming = null;
+    hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null; hxs.aoeHover = null;
+    if(unit.moved && unit.acted) hxs.selected = null;
+    hxRender(); hexUpdateInfo();
+    return;
+  }
+
   const unitOnTarget = hxs.units.find(u=>u.hp>0&&u.col===col&&u.row===row);
   const obstOnTarget = hxObstAt(col, row);
   const primaryTarget = unitOnTarget
@@ -723,6 +1049,20 @@ function hxConfirmApply(unit, ab, col, row) {
     : obstOnTarget
       ? {col:obstOnTarget.col, row:obstOnTarget.row, isFreeHex:true, isObstacle:true}
       : {col, row, isFreeHex:true, isBurnable:!!(hxs.burnable||[]).find(([c,r])=>c===col&&r===row)};
+
+  if(ab.effect?.type === 'reposition') {
+    if(!unitOnTarget || unitOnTarget.team === unit.team) {
+      hxLog(`${ab.name}: нужен враг на гексе.`, 'info');
+      hxs.confirming = null; hxRender(); hexUpdateInfo(); return;
+    }
+    hxs.repositionLanding = true;
+    hxs.repositionTargetId = unitOnTarget.id;
+    hxs.confirming = null;
+    hxs.abilityTargets = hxRepositionLandingHexes(unit);
+    hxLog(`${ab.name}: выбери клетку рядом с собой для ${unitOnTarget.name}.`, 'special');
+    hxRender(); hexUpdateInfo();
+    return;
+  }
 
   const dmgForObst = () => {
     const d = hxAbilityDamage(ab, unit);
@@ -755,6 +1095,8 @@ function hxConfirmApply(unit, ab, col, row) {
   }
 
   hxs.confirming = null;
+  hxs.repositionLanding = false;
+  hxs.repositionTargetId = null;
   hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null; hxs.aoeHover = null;
   if(unit.moved && unit.acted) hxs.selected = null;
   hxRender(); hexUpdateInfo();
@@ -834,6 +1176,7 @@ function hxCalcHitChance(ability, attacker, target, adjacentEnemies) {
   const coverPen = (inBush || inForest || hasCover) ? 15 : 0;  // partial cover (куст/лес/обломки): −15 (ranged)
   const movePen  = target.movedRecently ? 5 : 0;         // target moved this turn: −5 (ranged)
   hit -= Math.max(coverPen, movePen);                    // do NOT stack
+  hit += hxConditionHitBonus(target);
   return Math.max(35, Math.min(95, Math.round(hit)));
 }
 
@@ -937,7 +1280,8 @@ function hxEffectDefaultTo(type) {
 }
 
 // Apply an ability effect from caster on primary target (handles AoE automatically)
-function hxApplyAbility(caster, ability, primaryTarget) {
+function hxApplyAbility(caster, ability, primaryTarget, opts) {
+  opts = opts || {};
   // PASS D: Track ability usage for FFT hero
   if(caster.isHero && ability.id) {
     hxs.abilitiesUsed[ability.id] = (hxs.abilitiesUsed[ability.id] || 0) + 1;
@@ -975,6 +1319,61 @@ function hxApplyAbility(caster, ability, primaryTarget) {
     const cnt = eff.count || 1;
     for(let i=0;i<cnt;i++) caster.shields.push(eff.value);
     hxLog(`${caster.icon||''} ${caster.name} — ${ability.name}: 🛡 ${cnt}×${eff.value} заслон!`, 'special');
+    hxMarkActed(caster, ability);
+    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    return;
+  }
+
+  // --- JUMP: leap over unit/obstacle (not terrain) ---
+  if(eff?.type === 'jump' || ability.type === 'jump') {
+    const landCol = primaryTarget.col, landRow = primaryTarget.row;
+    const fromCol = caster.col, fromRow = caster.row;
+    caster.col = landCol; caster.row = landRow;
+    caster.moved = true; caster.movedRecently = true; caster.shields = [];
+    hxLog(`${caster.name} — ${ability.name}: прыжок!`, 'special');
+    hxMarkActed(caster, ability);
+    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    hxAnimateMove(caster, fromCol, fromRow, landCol, landRow);
+    return;
+  }
+
+  // --- SPAWN TERRAIN on empty hex ---
+  if(eff?.type === 'spawn_terrain' && primaryTarget && (primaryTarget.isFreeHex || primaryTarget.isBurnable)) {
+    hxSpawnTerrain(primaryTarget.col, primaryTarget.row, eff);
+    hxMarkActed(caster, ability);
+    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    return;
+  }
+
+  // --- REPOSITION with landing hex (phase 2) ---
+  if(eff?.type === 'reposition' && opts.landCol != null) {
+    if(dmg > 0 && primaryTarget && primaryTarget.hp > 0 && primaryTarget.team !== caster.team) {
+      const _n = hxCountFlankers(primaryTarget, caster.team);
+      const _hitChance = hxCalcHitChance(ability, caster, primaryTarget, _n);
+      if(Math.random() * 100 >= _hitChance) {
+        hxLog(`${caster.name} — ${ability.name}: промах!`, 'damage');
+        hxMarkActed(caster, ability);
+        if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+        return;
+      }
+      hxDealDamage(primaryTarget, dmg, caster.team);
+    }
+    hxResolveReposition(caster, primaryTarget, opts.landCol, opts.landRow);
+    hxMarkActed(caster, ability);
+    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    hexCheckEnd();
+    return;
+  }
+
+  // --- POISON / BLEED only (no damage in ability) ---
+  if((eff?.type === 'poison' || eff?.type === 'bleed') && (!dmg || dmg === 0)) {
+    const targets = (ability.aoe || 0) > 0
+      ? hxSplashUnits(caster, primaryTarget, ability, null).concat(
+          primaryTarget?.hp > 0 && primaryTarget.team !== caster.team ? [primaryTarget] : [])
+      : (primaryTarget?.hp > 0 && primaryTarget.team !== caster.team ? [primaryTarget] : []);
+    const uniq = [...new Map(targets.map(t => [t.id, t])).values()];
+    uniq.forEach(t => hxApplyCondition(t, {type: eff.type, value: eff.value, turns: eff.turns}));
+    hxLog(`${caster.name} — ${ability.name}: ${HX_CONDITION_DEFS[eff.type]?.label||eff.type} → ${uniq.map(u=>u.name).join(', ')}`, 'special');
     hxMarkActed(caster, ability);
     if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
     return;
@@ -1053,8 +1452,9 @@ function hxApplyAbility(caster, ability, primaryTarget) {
 
   // --- ATK DEBUFF (smoke etc.) ---
   if(eff?.type === 'debuff' && eff.stat === 'atk') {
-    const targets = ability.aoe > 0
-      ? hxs.units.filter(u=>u.team!==caster.team&&u.hp>0&&hexDist(primaryTarget.col,primaryTarget.row,u.col,u.row)<=ability.aoe)
+    const anchor = {col: primaryTarget.col, row: primaryTarget.row};
+    const targets = (ability.aoe || 0) > 0
+      ? hxSplashUnits(caster, anchor, ability, null)
       : [primaryTarget];
     targets.forEach(t => { t.atkDebuff = (t.atkDebuff||0) + eff.value; });
     hxLog(`${caster.name} — ${ability.name}: ${targets.length} цел. −${eff.value} атк!`, 'special');
@@ -1107,30 +1507,41 @@ function hxApplyAbility(caster, ability, primaryTarget) {
     const _distMult = primaryTarget ? hxDistDmgMult(ability, hexDist(caster.col, caster.row, primaryTarget.col, primaryTarget.row)) : 1;
     const totalDmg = Math.max(0, Math.round((dmg + bonusDmg) * _distMult));
     const doHit = (target, hitDmg) => hxDealDamage(target, hitDmg, caster.team);
+    const anchor = {col: primaryTarget.col, row: primaryTarget.row};
+    let logMsg = `${caster.name} — ${ability.icon||''} ${ability.name}:`;
+    let hitPrimary = false;
 
-    const actualDmg = doHit(primaryTarget, totalDmg);
-    let logMsg = `${caster.name} — ${ability.icon||''} ${ability.name}: ${actualDmg} урона → ${primaryTarget.name} (${primaryTarget.hp}/${primaryTarget.maxHp})`;
-    if(bonusDmg > 0) logMsg += ` [🗿+${bonusDmg}]`;
-    if(_distMult < 1.0) logMsg += ` [дальн.×${_distMult}]`;
+    if(primaryTarget && primaryTarget.hp > 0 && primaryTarget.team !== caster.team) {
+      const actualDmg = doHit(primaryTarget, totalDmg);
+      logMsg += ` ${actualDmg} урона → ${primaryTarget.name} (${primaryTarget.hp}/${primaryTarget.maxHp})`;
+      hitPrimary = true;
+      hxFlashHex(primaryTarget.col, primaryTarget.row, 'rgba(231,76,60,0.75)');
+    }
 
-    hxFlashHex(primaryTarget.col, primaryTarget.row, 'rgba(231,76,60,0.75)');
-
-    // AoE splash
+    // AoE splash (or sole damage if anchor hex is empty)
     if(ability.aoe > 0) {
-      const splashTargets = hxs.units.filter(u=>u.team!==caster.team&&u.hp>0&&u.id!==primaryTarget.id&&hexDist(primaryTarget.col,primaryTarget.row,u.col,u.row)<=ability.aoe);
+      const splashTargets = hxSplashUnits(caster, anchor, ability, hitPrimary ? primaryTarget.id : null);
       splashTargets.forEach(t => {
-        const sd = doHit(t, Math.round(totalDmg*0.6));
+        const sd = doHit(t, Math.round(totalDmg * (hitPrimary ? 0.6 : 1)));
         logMsg += `, ${sd}→${t.name}`;
         hxFlashHex(t.col, t.row, 'rgba(231,76,60,0.5)');
       });
-      // AoE also damages obstacles in radius
-      const aoeObst = (hxs.obstacles||[]).filter(ob=>hexDist(primaryTarget.col,primaryTarget.row,ob.col,ob.row)<=ability.aoe);
+      const aoeObst = hxSplashObstacles(anchor, ability, caster);
       aoeObst.forEach(ob => {
-        const od = Math.round(totalDmg*0.6);
-        logMsg += `, ${od}→${ob.type==='wall'?'🧱':'🪨'}`;
+        const od = Math.round(totalDmg * 0.6);
+        logMsg += `, ${od}→${ob.type==='wall'?'🧱':ob.type==='crate'?'📦':'🪨'}`;
         hxDamageObstacle(ob, od);
       });
+    } else if(!hitPrimary) {
+      hxLog(`${caster.icon||''} ${caster.name} — ${ability.icon||''} ${ability.name}: удар в пустоту`, 'info');
+      hxMarkActed(caster, ability);
+      if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+      hxRender(); hexUpdateInfo();
+      return;
     }
+
+    if(bonusDmg > 0 && hitPrimary) logMsg += ` [🗿+${bonusDmg}]`;
+    if(_distMult < 1.0 && hitPrimary) logMsg += ` [дальн.×${_distMult}]`;
 
     // Fire ignition: pyromancer ignite abilities set burnable terrain on fire
     if(ability.effect?.type === 'ignite') {
@@ -1165,27 +1576,26 @@ function hxApplyAbility(caster, ability, primaryTarget) {
 
     // Knockback — push target 1 hex away from caster
     if(eff?.type === 'knockback') {
-      const dc = primaryTarget.col - caster.col;
-      const dr = primaryTarget.row - caster.row;
-      const nc = primaryTarget.col + Math.sign(dc);
-      const nr = primaryTarget.row + Math.sign(dr);
-      if(nc>=0&&nc<HEX_COLS&&nr>=0&&nr<HEX_ROWS&&!hxs.units.find(u=>u.col===nc&&u.row===nr&&u.hp>0)&&!hxObstAt(nc,nr)) {
-        primaryTarget.col = nc; primaryTarget.row = nr;
-        logMsg += ' [отбросил]';
-      }
+      hxResolveKnockback(caster, primaryTarget, ability);
+      logMsg += ' [отбросил]';
     }
 
     // Pull — drag target 1 hex toward caster
     if(eff?.type === 'pull') {
-      const dc = caster.col - primaryTarget.col;
-      const dr = caster.row - primaryTarget.row;
-      const nc = primaryTarget.col + Math.sign(dc);
-      const nr = primaryTarget.row + Math.sign(dr);
-      const occupied = hxs.units.find(u=>u.id!==primaryTarget.id&&u.col===nc&&u.row===nr&&u.hp>0);
-      if(nc>=0&&nc<HEX_COLS&&nr>=0&&nr<HEX_ROWS&&!occupied&&!hxObstAt(nc,nr)) {
-        primaryTarget.col = nc; primaryTarget.row = nr;
-        logMsg += ' [притянул]';
-      }
+      hxResolvePull(caster, primaryTarget, ability);
+      logMsg += ' [притянул]';
+    }
+
+    // Poison / bleed on hit
+    if(eff?.type === 'poison' || eff?.type === 'bleed') {
+      const anchor = {col: primaryTarget.col, row: primaryTarget.row};
+      const condTargets = (ability.aoe || 0) > 0
+        ? [primaryTarget, ...hxSplashUnits(caster, anchor, ability, primaryTarget.id)]
+        : [primaryTarget];
+      [...new Map(condTargets.map(t => [t.id, t])).values()].forEach(t => {
+        if(t.hp > 0) hxApplyCondition(t, {type: eff.type, value: eff.value, turns: eff.turns});
+      });
+      logMsg += ` [${HX_CONDITION_DEFS[eff.type]?.label||eff.type}]`;
     }
 
     // Post-damage stun
@@ -1306,9 +1716,10 @@ function hxApplyAbilityFx(caster, ability, primaryTarget) {
     if(primaryTarget && primaryTarget.hp > 0) applyToUnit(primaryTarget, mainDmg, false);
     // AoE splash
     if((ability.aoe||0) > 0 && primaryTarget) {
-      const splash = hxs.units.filter(u=>u.team!==caster.team&&u.hp>0&&u.id!==primaryTarget.id&&hexDist(primaryTarget.col,primaryTarget.row,u.col,u.row)<=ability.aoe);
+      const anchor = {col: primaryTarget.col, row: primaryTarget.row};
+      const splash = hxSplashUnits(caster, anchor, ability, primaryTarget.id);
       splash.forEach(t => applyToUnit(t, Math.round(mainDmg*0.6), true));
-      const aoeObst = (hxs.obstacles||[]).filter(ob=>hexDist(primaryTarget.col,primaryTarget.row,ob.col,ob.row)<=ability.aoe);
+      const aoeObst = hxSplashObstacles(anchor, ability, caster);
       aoeObst.forEach(ob => { const od = Math.round(mainDmg*0.6); logMsg += ` ${od}→${ob.type==='wall'?'🧱':'🪨'}`; hxDamageObstacle(ob, od); anyDamageLine = true; });
     }
   }
@@ -1413,24 +1824,28 @@ function hxApplyRiderEffect(caster, ability, rider, recipient, primaryTarget) {
     }
     case 'knockback': {
       const t = recipient; if(!t) break;
-      const dc = t.col - caster.col, dr = t.row - caster.row;
-      const nc = t.col + Math.sign(dc), nr = t.row + Math.sign(dr);
-      if(nc>=0&&nc<HEX_COLS&&nr>=0&&nr<HEX_ROWS&&!hxs.units.find(u=>u.col===nc&&u.row===nr&&u.hp>0)&&!hxObstAt(nc,nr)) {
-        t.col = nc; t.row = nr;
-        hxLog(`${caster.name} — ${ability.name}: ${t.name} отброшен`, 'special');
-      }
+      hxResolveKnockback(caster, t, ability);
       break;
     }
     case 'pull': {
       const t = recipient; if(!t) break;
-      const dc = caster.col - t.col, dr = caster.row - t.row;
-      const nc = t.col + Math.sign(dc), nr = t.row + Math.sign(dr);
-      const occupied = hxs.units.find(u=>u.id!==t.id&&u.col===nc&&u.row===nr&&u.hp>0);
-      if(nc>=0&&nc<HEX_COLS&&nr>=0&&nr<HEX_ROWS&&!occupied&&!hxObstAt(nc,nr)) {
-        t.col = nc; t.row = nr;
-        hxLog(`${caster.name} — ${ability.name}: ${t.name} притянут`, 'special');
-      }
+      hxResolvePull(caster, t, ability);
       break;
+    }
+    case 'poison':
+    case 'bleed': {
+      const t = recipient; if(!t || t.hp <= 0) break;
+      hxApplyCondition(t, {type: rider.type, value: rider.value, turns: rider.turns});
+      hxLog(`${caster.name} — ${ability.name}: ${HX_CONDITION_DEFS[rider.type]?.label||rider.type} → ${t.name}`, 'special');
+      break;
+    }
+    case 'spawn_terrain': {
+      const t = recipient || primaryTarget || caster;
+      hxSpawnTerrain(t.col, t.row, rider);
+      break;
+    }
+    case 'jump': {
+      break; // handled in hxApplyAbility main path
     }
     case 'chain': {
       const t = recipient; if(!t) break;
@@ -1869,6 +2284,7 @@ async function hexEnemyTurn() {
   // Shield-block refresh/decay + AoO flag reset for enemy units at their turn-start
   hxRefreshBlock('enemy');
   hxs.units.forEach(u => { u._aooUsed = false; });
+  hxs.units.filter(u => u.team === 'enemy' && u.hp > 0).forEach(u => hxTickConditionsOnTurnStart(u));
 
   // Archer free strike (ranged unit next to enemy triggers free shot)
   hxs.units.filter(u=>u.team==='player'&&u.type==='archer'&&u.hp>0&&!u.acted).forEach(archer=>{
@@ -2044,7 +2460,9 @@ async function hexEnemyTurn() {
   }
 
   // Reset for next player turn
+  hxTickTimedFeatures();
   hxs.units.forEach(u => {
+    if(u.team === 'player' && u.hp > 0) hxTickConditionsOnTurnStart(u);
     u.moved = false; u.acted = false; u.atkDebuff = 0; u.remainingMove = u.moveRange; u.freeMoveDone = false;
     u._aooUsed = false; // reset attack-of-opportunity flag
     u.deepWaterStunned = false; // reset deep water stun (re-applied each turn if still in deep water)
@@ -2101,6 +2519,8 @@ async function hexEnemyTurn() {
   hxs.aoeHover = null;
   hxs.heroAP = 4; // PASS A: reset hero AP each player turn
   hxs.confirming = null; // PASS B: reset confirmation
+  hxs.repositionLanding = false;
+  hxs.repositionTargetId = null;
   // Handle stunned player units — mark them as done so they skip this turn
   hxs.units.filter(u=>u.team==='player'&&u.hp>0&&(u.stunnedTurns||0)>0).forEach(u=>{
     hxLog(`${u.name} оглушён — пропускает ход.`, 'info');
@@ -2158,13 +2578,11 @@ function hxRender() {
   }
 
   // AoE preview: show from confirming hex (after first tap) — no hover re-render on mobile
-  const activeAoe = (activeAbility && (activeAbility.aoe||0) > 0) ? activeAbility.aoe : 0;
+  const activeAoe = (activeAbility && (activeAbility.aoe||0) > 0) ? activeAbility : null;
   const aoeCenter = hxs.confirming || null;
   const aoePreviewSet = new Set();
-  if(activeAoe > 0 && aoeCenter) {
-    for(let r=0;r<HEX_ROWS;r++) for(let c=0;c<HEX_COLS;c++) {
-      if(hexDist(aoeCenter.col, aoeCenter.row, c, r) <= activeAoe) aoePreviewSet.add(`${c},${r}`);
-    }
+  if(activeAoe && aoeCenter && selUnit) {
+    hxAoeHexes(selUnit, aoeCenter.col, aoeCenter.row, activeAoe).forEach(([c, r]) => aoePreviewSet.add(`${c},${r}`));
   }
 
   // Draw hexes
@@ -2366,6 +2784,9 @@ function hxRender() {
       ug.appendChild(deb);
       statusOffset += 11;
     }
+    (unit.conditions||[]).forEach(c => {
+      _addTag(`${c.icon||'⚠'}${c.turns}`, c.type==='poison'?'#2ecc71':c.type==='bleed'?'#e74c3c':'#f39c12');
+    });
     // (aimBonus removed — old ranged system replaced by FFT abilities)
 
     // Animated selection ring for selected unit
@@ -2441,9 +2862,10 @@ function hxRender() {
   (hxs.obstacles||[]).forEach(ob => {
     const {x,y} = hexToPixel(ob.col, ob.row);
     const isWall = ob.type === 'wall';
+    const isCrate = ob.type === 'crate';
     const hpPct = ob.hp / ob.maxHp;
-    const fillColor = isWall ? `rgba(80,80,80,${0.5+0.3*hpPct})` : `rgba(120,80,40,${0.4+0.3*hpPct})`;
-    const strokeColor = isWall ? '#666' : '#8b5e3c';
+    const fillColor = isWall ? `rgba(80,80,80,${0.5+0.3*hpPct})` : isCrate ? `rgba(139,90,43,${0.45+0.3*hpPct})` : `rgba(120,80,40,${0.4+0.3*hpPct})`;
+    const strokeColor = isWall ? '#666' : isCrate ? '#a0522d' : '#8b5e3c';
     const obstPoly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
     obstPoly.setAttribute('points', hexPoints(x,y));
     obstPoly.setAttribute('fill', fillColor);
@@ -2455,7 +2877,7 @@ function hxRender() {
     obstLbl.setAttribute('x', x); obstLbl.setAttribute('y', y+5);
     obstLbl.setAttribute('text-anchor','middle'); obstLbl.setAttribute('font-size','16');
     obstLbl.setAttribute('pointer-events','none');
-    obstLbl.textContent = isWall ? '🧱' : '🪨';
+    obstLbl.textContent = isWall ? '🧱' : isCrate ? '📦' : '🪨';
     svg.appendChild(obstLbl);
     // HP bar (only if damaged)
     if(ob.hp < ob.maxHp) {
@@ -2631,10 +3053,20 @@ function hxShowAbilityTooltip(btn, ab) {
   if(dmgVal && dmgVal !== 0) html += `<div class="tip-row">Урон: ${dmgVal}</div>`;
   html += `<div class="tip-row">Тип: ${typeLabel}</div>`;
   if(ab.range > 0) html += `<div class="tip-row">Дальность: ${ab.range} гекс.</div>`;
-  if((ab.aoe||0) > 0) html += `<div class="tip-row">Радиус AoE: ${ab.aoe}</div>`;
+  if((ab.aoe||0) > 0) {
+    const shapeLbl = {line:'линия', line_pair:'пара на линии', wave:'волна', radius:'радиус'};
+    html += `<div class="tip-row">AoE: ${shapeLbl[ab.aoeShape]||ab.aoeShape||'радиус'} ${ab.aoe}</div>`;
+  }
+  if(ab.effect?.type==='jump' || ab.type==='jump') {
+    const j = ab.effect||{};
+    html += `<div class="tip-effect">Прыжок ${j.distance||2} гекс.${j.overUnit?' через врага':''}${j.overObstacle?' через препятствие':''}</div>`;
+  }
+  if(ab.effect?.type==='spawn_terrain') html += `<div class="tip-effect">Создать: ${ab.effect.terrain}${ab.effect.duration?' ('+ab.effect.duration+' х.)':''}</div>`;
+  if(ab.effect?.type==='reposition') html += `<div class="tip-effect">Переместить цель к себе</div>`;
+  if(ab.effect?.type==='poison' || ab.effect?.type==='bleed') html += `<div class="tip-effect">${HX_CONDITION_DEFS[ab.effect.type]?.label}: ${ab.effect.value}/ход, ${ab.effect.turns} х.</div>`;
   if(Array.isArray(ab.effects)) {
     // Composable effects: list each effect line.
-    const effLabels = {damage:'Урон',stun:'Оглушение',heal:'Лечение',lifesteal:'Жизнекража',knockback:'Отбрасывание',barrier:'Заслон',buff:'Усиление',summon:'Призыв',chain:'Цепь',ignite:'Поджог',debuff:'Ослабление',pull:'Притягивание',gain_ap:'+Очко действия'};
+    const effLabels = {damage:'Урон',stun:'Оглушение',heal:'Лечение',lifesteal:'Жизнекража',knockback:'Отбрасывание',barrier:'Заслон',buff:'Усиление',summon:'Призыв',chain:'Цепь',ignite:'Поджог',debuff:'Ослабление',pull:'Притягивание',gain_ap:'+Очко действия',poison:'Яд',bleed:'Кровотечение',reposition:'Перемещение',spawn_terrain:'Ландшафт',jump:'Прыжок'};
     const condLabels = {always:'',onHit:'при попадании',targetHpBelow:'если HP цели <',targetHpAbove:'если HP цели >',selfHpBelow:'если своё HP <',selfHpAbove:'если своё HP >',isFlanked:'если цель в окружении',distGte:'если дистанция ≥',distLte:'если дистанция ≤',targetInCover:'если цель в укрытии',targetType:'если тип цели ='};
     for(const e of ab.effects) {
       let line = effLabels[e.type] || e.type;
@@ -2749,6 +3181,9 @@ function hexUpdateInfo(unit) {
   if(unit.atkDebuff > 0) statuses.push(`💨 −${unit.atkDebuff}`);
   if(unit.atkBuff > 0) statuses.push(`✨ +${unit.atkBuff}`);
   if(unit.stunnedTurns > 0) statuses.push(`⚡ оглушён ${unit.stunnedTurns}`);
+  (unit.conditions||[]).forEach(c => {
+    statuses.push(`${c.icon||'⚠'} ${HX_CONDITION_DEFS[c.type]?.label||c.type} ${c.turns}х (${c.value||0}/ход)`);
+  });
   if(statusEl) statusEl.textContent = statuses.join('  ');
 
   // Hit chance + damage preview when in ability targeting mode (now incl. MELEE).
@@ -2889,6 +3324,7 @@ function hxSelectAbility(idx) {
   // Toggle off if already selected
   if(hxs.mode === 'ability' && hxs.activeAbilityIdx === idx) {
     hxs.mode = 'select'; hxs.abilityTargets = []; hxs.activeAbilityIdx = null; hxs.aoeHover = null; hxs.confirming = null;
+    hxs.repositionLanding = false; hxs.repositionTargetId = null;
     hxRender(); hexUpdateInfo(); return;
   }
   hxs.mode = 'ability';
@@ -2909,7 +3345,7 @@ function hxSelectAbility(idx) {
     if(unit.moved && unit.acted) { hxs.selected = null; hxs.reachable = []; }
     hxRender(); hexUpdateInfo(); return;
   }
-  hxLog(`${ab.icon||''} ${ab.name}: выбери цель (дальность ${ab.range}${ab.aoe > 0 ? `, AoE ${ab.aoe}` : ''}).`, 'special');
+  hxLog(`${ab.icon||''} ${ab.name}: выбери цель (дальность ${ab.range}${(ab.aoe||0) > 0 ? `, ${ab.aoeShape && ab.aoeShape !== 'radius' ? 'форма '+ab.aoeShape : 'AoE '+ab.aoe}` : ''}${ab.type==='jump' ? ', прыжок' : ''}).`, 'special');
   hxRender(); hexUpdateInfo();
 }
 
@@ -3089,9 +3525,12 @@ function hxTerrainDescAt(col, row) {
   if(has('bushes'))  return {emoji:'🌿', name:'Кусты',          effect:'Укрытие: −1 урон, −15% точности по цели'};
   if(has('heights')) return {emoji:'🗿', name:'Камни',          effect:'+1 урон и +5% точности дальним атакам'};
   const ob = hxObstAt(col,row);
-  if(ob) return ob.type==='wall'
-    ? {emoji:'🧱', name:`Стена (${ob.hp}/${ob.maxHp})`,    effect:'Блокирует движение и дальний обзор'}
-    : {emoji:'🪨', name:`Обломки (${ob.hp}/${ob.maxHp})`,  effect:'Укрытие: −1 урон, −15% точности; разрушаемо'};
+  if(ob) {
+    if(ob.type === 'wall') return {emoji:'🧱', name:`Стена (${ob.hp}/${ob.maxHp})`, effect:'Блокирует движение и дальний обзор'};
+    if(ob.type === 'crate') return {emoji:'📦', name:`Ящик (${ob.hp}/${ob.maxHp})`, effect:'Блокирует движение и обзор'};
+    if(ob.type === 'rock') return {emoji:'🪨', name:`Камень (${ob.hp}/${ob.maxHp})`, effect:'Блокирует движение и обзор'};
+    return {emoji:'🪨', name:`Обломки (${ob.hp}/${ob.maxHp})`, effect:'Укрытие: −1 урон, −15% точности; разрушаемо'};
+  }
   if(has('swamps'))         return {emoji:'🟫', name:'Болото',         effect:'Движение стоит 2 ОД (без урона)'};
   if(has('waters'))         return {emoji:'💧', name:'Вода',           effect:'Непроходимо'};
   if(has('shallow_waters')) return {emoji:'〰', name:'Мелководье',     effect:'Движение стоит 2 ОД'};
@@ -3192,6 +3631,8 @@ function hxEndTurn() {
   hxs.mode = 'select'; hxs.activeAbilityIdx = null; hxs.aoeHover = null;
   hxs.heroAP = 0; // PASS A: consume remaining AP on end turn
   hxs.confirming = null; // PASS B: reset confirmation
+  hxs.repositionLanding = false;
+  hxs.repositionTargetId = null;
   hxs.turn = 'enemy';
   document.getElementById('hx-skip-btn').disabled = true;
   hxRender(); hexUpdateInfo();
@@ -3214,7 +3655,7 @@ function initHex() {
   const playerDefs = heroDef ? null : (Array.isArray(gameData.player_units) ? gameData.player_units : [{type:'warrior',name:'Воин'}]);
   const enemyDefs  = Array.isArray(gameData.enemy_units)  ? gameData.enemy_units  : [{type:'warrior',name:'Страж'}];
 
-  hxs = {units:[], turn:'player', selected:null, inspecting:null, reachable:[], attackable:[], abilityTargets:[], activeAbilityIdx:null, mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, ended:false, rifts:[], forests:[], heights:[], obstacles:[], bushes:[], swamps:[], waters:[], shallow_waters:[], deep_waters:[], fires:[], burnable:[], enemyIntents:{}, totalDamageDealt:0, totalDamageTaken:0, aoeHover:null, abilitiesUsed:{}, hero: heroDef, heroAP: 4, heroMaxAP: 4, confirming: null};
+  hxs = {units:[], turn:'player', selected:null, inspecting:null, reachable:[], attackable:[], abilityTargets:[], activeAbilityIdx:null, mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, ended:false, rifts:[], forests:[], heights:[], obstacles:[], bushes:[], swamps:[], waters:[], shallow_waters:[], deep_waters:[], fires:[], burnable:[], enemyIntents:{}, totalDamageDealt:0, totalDamageTaken:0, aoeHover:null, abilitiesUsed:{}, hero: heroDef, heroAP: 4, heroMaxAP: 4, confirming: null, repositionLanding: false, repositionTargetId: null, timedFeatures: []};
   _hxZoomLevel = 1.0; _hxPanX = 0; _hxPanY = 0;
   const _initSvg = document.getElementById('hx-svg');
   if(_initSvg) {
