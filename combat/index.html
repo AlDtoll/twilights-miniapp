@@ -496,7 +496,7 @@ function parseReq(spec) {
 function reqKey(req) { return req.type + (req.value ?? ''); }
 function reqLabel(req) {
   switch (req.type) {
-    case 'exact': return `ровно ${req.value}`;
+    case 'exact': return `${req.value}`;
     case 'any': return 'любой';
     case 'odd': return 'нечёт';
     case 'even': return 'чёт';
