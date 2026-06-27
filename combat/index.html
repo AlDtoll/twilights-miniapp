@@ -748,12 +748,13 @@ function combatResolve() {
   if (totalTaken > 0) { s.playerHp = Math.max(0, s.playerHp - totalTaken); log.push(`Герой: ${s.playerHp}❤️ (−${totalTaken})`); }
   else if (s.enemies.some(e => e.hp > 0)) log.push('✅ Весь урон поглощён');
 
-  // Полная оборона: все кубы в блок, ни одной атаки, урона не получено → +1 куб на след. раунд
+  // Чистая оборона: были только блоки (ни одной атаки) и урона не получено → +1 куб на след. раунд.
+  // Не требуется занять ВСЕ кубы — достаточно блокировать без атак и без урона (часть кубов может остаться).
   const attackCount = Object.values(s.assignments).filter(a => a.type === 'attack').length;
   const blockCount = Object.values(s.assignments).filter(a => a.type === 'block').length;
-  const fullDefense = attackCount === 0 && totalTaken === 0 && s.dice.length > 0 && blockCount === s.dice.length;
+  const fullDefense = attackCount === 0 && blockCount > 0 && totalTaken === 0;
   s.diceCount = fullDefense ? 5 : 4;
-  if (fullDefense) log.push('🛡 Полная оборона — +1 кубик в следующем раунде (5)');
+  if (fullDefense) log.push('🛡 Чистая оборона — +1 кубик в следующем раунде (5)');
 
   s.roundLogs.push({round: s.round, dice: [...s.dice], log: [...log]});
   s.round++;
