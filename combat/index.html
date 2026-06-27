@@ -543,6 +543,20 @@ function genReq(pool, types, rng, avoid) {
   }
   return rollReqOfType('exact', pool, rng);
 }
+// Особенность врага: {kind:'dodge', chance} или {kind:'charge'}. Шанс уклонения через '=' (dodge=0.2 или dodge=20)
+function parseSpecial(spec) {
+  if (!spec) return null;
+  if (typeof spec === 'object') return spec;
+  const s = String(spec).trim().toLowerCase();
+  if (s.startsWith('dodge') || s.startsWith('уклон')) {
+    let chance = 0.15;
+    const m = s.match(/[=:]\s*([\d.]+)\s*%?/);
+    if (m) { let v = parseFloat(m[1]); chance = v > 1 ? v / 100 : v; }
+    return {kind: 'dodge', chance};
+  }
+  if (s.startsWith('charge') || s.startsWith('заряд')) return {kind: 'charge'};
+  return null;
+}
 // Деривация требования на новый раунд по режиму keep: always — то же; type — тот же тип, новое значение; random — всё заново
 function deriveReq(base, keep, pool, types, rng, avoid) {
   if (keep === 'always') return {...base};
@@ -565,8 +579,14 @@ function initCombat() {
     ...e, max_hp: e.max_hp ?? e.hp,
     // явные спеки слотов (фиксированы на бой) либо null → генерим случайно каждый раунд
     defeatSpec: Array.isArray(e.defeat) ? e.defeat.map(parseReq) : null,
-    blockSpec: (e.block != null) ? parseReq(e.block) : null,
-    defeatSlots: [], blockReq: null,
+    blockSpec: Array.isArray(e.block) ? e.block.map(parseReq) : (e.block != null ? [parseReq(e.block)] : null),
+    // число атак за раунд (опционально): по умолч. 1 (или сколько задано блок-слотов)
+    attacks: Math.max(1, e.attacks ?? (Array.isArray(e.block) ? e.block.length : 1)),
+    // особенность врага (опционально) + требование слота нейтрализации (по умолч. любой куб)
+    special: parseSpecial(e.special),
+    specialReq: e.special_req != null ? parseReq(e.special_req) : {type: 'any'},
+    charged: false,              // заряжен на ТЕКУЩИЙ раунд (даёт +1 атаку)
+    defeatSlots: [], blockReqs: [],
   }));
   const playerHp = Math.min(5, gameData.player_hp ?? 3);
   combatState = {
@@ -596,7 +616,7 @@ function initCombat() {
 function combatRollEnemies() {
   const s = combatState;
   s.enemies.forEach(e => {
-    if (e.hp <= 0) { e.defeatSlots = []; e.blockReq = null; return; }
+    if (e.hp <= 0) { e.defeatSlots = []; e.blockReqs = []; return; }
     // База задаётся один раз (раунд 1): явная спека или случайная пара «разных» слотов
     if (!e.defeatBase) {
       if (e.defeatSpec) {
@@ -606,13 +626,17 @@ function combatRollEnemies() {
         const r1 = genReq(s.slotPool, s.slotTypes, s.rng, r0);
         e.defeatBase = [r0, r1];
       }
-      e.blockBase = e.blockSpec ? {...e.blockSpec} : genReq(s.slotPool, s.slotTypes, s.rng, null);
+      e.blockBase = e.blockSpec ? e.blockSpec.map(r => ({...r})) : [];
     }
+    // эффективное число атак с учётом заряда (заряд даёт +1 атаку на этот раунд)
+    const eff = e.attacks + (e.charged ? 1 : 0);
+    while (e.blockBase.length < eff) e.blockBase.push(genReq(s.slotPool, s.slotTypes, s.rng, null));
     // На текущий раунд — по режиму keep (слоты поражения держим «разными»)
     const d0 = deriveReq(e.defeatBase[0], s.keep, s.slotPool, s.slotTypes, s.rng, null);
     const d1 = deriveReq(e.defeatBase[1], s.keep, s.slotPool, s.slotTypes, s.rng, d0);
     e.defeatSlots = [d0, d1];
-    e.blockReq = deriveReq(e.blockBase, s.keep, s.slotPool, s.slotTypes, s.rng, null);
+    e.blockReqs = [];
+    for (let i = 0; i < eff; i++) e.blockReqs.push(deriveReq(e.blockBase[i], s.keep, s.slotPool, s.slotTypes, s.rng, null));
   });
 }
 
@@ -636,7 +660,6 @@ function combatRender() {
   const enemiesEl = document.getElementById('combat-enemies');
   enemiesEl.innerHTML = '';
   s.enemies.forEach((e, i) => {
-    const blkEntry = Object.entries(s.assignments).find(([_, a]) => a.type === 'block' && a.enemyIndex === i);
     const div = document.createElement('div');
     div.className = 'combat-enemy' + (e.hp <= 0 ? ' dead' : '');
     const pct = Math.max(0, e.hp / e.max_hp * 100);
@@ -656,14 +679,33 @@ function combatRender() {
           atkSlotHtml += `<div class="combat-atk-slot" onclick="combatAssignAttack(${i},${si})">🗡 Удар — <span class="combat-val-def">${reqLabel(req)}</span></div>`;
         }
       });
-      if (blkEntry) {
-        const dv = s.dice[+blkEntry[0]];
-        const taken = calcBlockTaken(dv, e.blockReq);
-        const blkClass = taken === 0 ? 'combat-block-0' : taken === 1 ? 'combat-block-1' : 'combat-block-full';
-        const blkText = taken === 0 ? 'блок!' : taken === 1 ? '1 урон' : '2 урона';
-        blkSlotHtml = `<div class="combat-blk-slot has-die" onclick="combatUnassignBlk(${i})">${DICE_FACES[dv-1]} <span class="${blkClass}">→ ${blkText}</span> <span style="margin-left:auto;opacity:0.5;font-size:0.7rem">✕</span></div>`;
-      } else {
-        blkSlotHtml = `<div class="combat-blk-slot" onclick="combatAssignBlock(${i})">🛡 Блок — <span class="combat-val-atk">${reqLabel(e.blockReq)}</span></div>`;
+      // Слоты блока: по одному на каждую атаку врага (две атаки → два слота)
+      e.blockReqs.forEach((req, bi) => {
+        const entry = Object.entries(s.assignments).find(([_, a]) => a.type === 'block' && a.enemyIndex === i && a.slotIndex === bi);
+        const hint = e.blockReqs.length > 1 ? ` <span style="opacity:0.5;font-size:0.7rem">(атака ${bi+1})</span>` : '';
+        if (entry) {
+          const dv = s.dice[+entry[0]];
+          const taken = calcBlockTaken(dv, req);
+          const blkClass = taken === 0 ? 'combat-block-0' : taken === 1 ? 'combat-block-1' : 'combat-block-full';
+          const blkText = taken === 0 ? 'блок!' : taken === 1 ? '1 урон' : '2 урона';
+          blkSlotHtml += `<div class="combat-blk-slot has-die" onclick="combatUnassignBlk(${i},${bi})">${DICE_FACES[dv-1]} <span class="${blkClass}">→ ${blkText}</span> <span style="margin-left:auto;opacity:0.5;font-size:0.7rem">✕</span></div>`;
+        } else {
+          blkSlotHtml += `<div class="combat-blk-slot" onclick="combatAssignBlock(${i},${bi})">🛡 Блок — <span class="combat-val-atk">${reqLabel(req)}</span>${hint}</div>`;
+        }
+      });
+      // Слот «Особенность» (опциональный): уклонение / заряд — нейтрализуется кубом
+      if (e.special) {
+        const spEntry = Object.entries(s.assignments).find(([_, a]) => a.type === 'special' && a.enemyIndex === i);
+        const spName = e.special.kind === 'dodge' ? `🌀 Уклонение ${Math.round(e.special.chance*100)}%` : '⚡ Заряд';
+        if (spEntry) {
+          const dv = s.dice[+spEntry[0]];
+          const ok = reqMet(dv, e.specialReq);
+          const cls = ok ? 'combat-block-0' : 'combat-block-full';
+          const txt = ok ? 'нейтрализовано' : 'не подходит';
+          blkSlotHtml += `<div class="combat-blk-slot has-die" onclick="combatUnassignSpecial(${i})">${DICE_FACES[dv-1]} <span class="${cls}">→ ${txt}</span> <span style="margin-left:auto;opacity:0.5;font-size:0.7rem">✕</span></div>`;
+        } else {
+          blkSlotHtml += `<div class="combat-blk-slot" onclick="combatAssignSpecial(${i})">✨ ${spName} — <span class="combat-val-atk">снять: ${reqLabel(e.specialReq)}</span></div>`;
+        }
       }
     }
 
@@ -749,19 +791,35 @@ function combatUnassignDie(di) {
   combatRender();
 }
 
-function combatAssignBlock(ei) {
+function combatAssignBlock(ei, bi) {
   if (combatSelectedDie === null) return;
   const s = combatState;
-  const prev = Object.entries(s.assignments).find(([_, a]) => a.type === 'block' && a.enemyIndex === ei);
-  if (prev) delete s.assignments[+prev[0]];
+  const occupied = Object.entries(s.assignments).find(([_, a]) => a.type === 'block' && a.enemyIndex === ei && a.slotIndex === bi);
+  if (occupied) delete s.assignments[+occupied[0]];
   delete s.assignments[combatSelectedDie];
-  s.assignments[combatSelectedDie] = {type: 'block', enemyIndex: ei};
+  s.assignments[combatSelectedDie] = {type: 'block', enemyIndex: ei, slotIndex: bi};
   combatSelectedDie = null; combatRender();
 }
 
-function combatUnassignBlk(ei) {
+function combatUnassignBlk(ei, bi) {
   const s = combatState;
-  const entry = Object.entries(s.assignments).find(([_, a]) => a.type === 'block' && a.enemyIndex === ei);
+  const entry = Object.entries(s.assignments).find(([_, a]) => a.type === 'block' && a.enemyIndex === ei && a.slotIndex === bi);
+  if (entry) { delete s.assignments[+entry[0]]; combatRender(); }
+}
+
+function combatAssignSpecial(ei) {
+  if (combatSelectedDie === null) return;
+  const s = combatState;
+  const occupied = Object.entries(s.assignments).find(([_, a]) => a.type === 'special' && a.enemyIndex === ei);
+  if (occupied) delete s.assignments[+occupied[0]];
+  delete s.assignments[combatSelectedDie];
+  s.assignments[combatSelectedDie] = {type: 'special', enemyIndex: ei};
+  combatSelectedDie = null; combatRender();
+}
+
+function combatUnassignSpecial(ei) {
+  const s = combatState;
+  const entry = Object.entries(s.assignments).find(([_, a]) => a.type === 'special' && a.enemyIndex === ei);
   if (entry) { delete s.assignments[+entry[0]]; combatRender(); }
 }
 
@@ -802,10 +860,25 @@ function combatResolve() {
   const s = combatState;
   const log = [];
 
+  // Нейтрализация особенностей: куб в слот «Особенность», подходящий под требование
+  s.enemies.forEach((e, i) => {
+    e.specNeutralized = false;
+    if (e.hp <= 0 || !e.special) return;
+    const sp = Object.entries(s.assignments).find(([_, a]) => a.type === 'special' && a.enemyIndex === i);
+    if (sp) e.specNeutralized = reqMet(s.dice[+sp[0]], e.specialReq);
+  });
+
   s.enemies.forEach((e, i) => {
     if (e.hp <= 0) return;
+    // Уклонение: если не нейтрализовано — шанс, что все удары игрока промахиваются
+    if (e.special && e.special.kind === 'dodge' && !e.specNeutralized && s.rng() < e.special.chance) {
+      e.dodgedThisRound = true;
+    } else {
+      e.dodgedThisRound = false;
+    }
     const atkEntries = Object.entries(s.assignments).filter(([_, a]) => a.type === 'attack' && a.enemyIndex === i);
     if (atkEntries.length === 0) return;
+    if (e.dodgedThisRound) { log.push(`🌀 ${e.name}: уклонился — удары мимо`); return; }
     let dmg = 0; const faces = [];
     atkEntries.forEach(([di, a]) => {
       const dv = s.dice[+di];
@@ -824,14 +897,22 @@ function combatResolve() {
   let totalTaken = 0;
   s.enemies.forEach((e, i) => {
     if (e.hp <= 0) return;
-    const blkEntry = Object.entries(s.assignments).find(([_, a]) => a.type === 'block' && a.enemyIndex === i);
-    if (blkEntry) {
-      const dv = s.dice[+blkEntry[0]];
-      const taken = calcBlockTaken(dv, e.blockReq);
-      if (taken === 0) log.push(`🛡 ${e.name}: блок! (${DICE_FACES[dv-1]} ✓ ${reqLabel(e.blockReq)})`);
-      else { log.push(`🛡 ${e.name}: ${DICE_FACES[dv-1]} → ${taken} урона`); totalTaken += taken; }
-    } else {
-      log.push(`💔 ${e.name} атакует: 2 урона`); totalTaken += 2;
+    e.blockReqs.forEach((req, bi) => {
+      const entry = Object.entries(s.assignments).find(([_, a]) => a.type === 'block' && a.enemyIndex === i && a.slotIndex === bi);
+      if (entry) {
+        const dv = s.dice[+entry[0]];
+        const taken = calcBlockTaken(dv, req);
+        if (taken === 0) log.push(`🛡 ${e.name}: блок! (${DICE_FACES[dv-1]} ✓ ${reqLabel(req)})`);
+        else { log.push(`🛡 ${e.name}: ${DICE_FACES[dv-1]} → ${taken} урона`); totalTaken += taken; }
+      } else {
+        log.push(`💔 ${e.name} атакует: 2 урона`); totalTaken += 2;
+      }
+    });
+    // Заряд: если не нейтрализован — следующий раунд +1 атака
+    if (e.special && e.special.kind === 'charge') {
+      e.charged = !e.specNeutralized;
+      if (e.charged) log.push(`⚡ ${e.name}: заряд накоплен — в следующий раунд две атаки`);
+      else log.push(`✨ ${e.name}: заряд сбит`);
     }
   });
   if (totalTaken > 0) { s.playerHp = Math.max(0, s.playerHp - totalTaken); log.push(`Герой: ${s.playerHp}❤️ (−${totalTaken})`); }
