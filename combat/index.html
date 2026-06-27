@@ -474,6 +474,7 @@
 <script>
 const DICE_FACES = ['⚀','⚁','⚂','⚃','⚄','⚅'];
 let combatState = null, combatSelectedDie = null;
+let combatMergePending = null, combatMergeAbilityIdx = null;
 
 function combatPRNG(seed) {
   let s = seed >>> 0;
@@ -567,6 +568,44 @@ function deriveReq(base, keep, pool, types, rng, avoid) {
   return {...base};
 }
 
+// Каталог способностей героя. target=true → нужен выбранный кубик; pair=true → нужен второй кубик (слить).
+const ABILITY_CATALOG = {
+  extra_die: {icon: '🎲', name: 'Доп. кубик', target: false},
+  flip:      {icon: '🔄', name: 'Переворот',  target: true},
+  set:       {icon: '🎯', name: 'Грань',      target: true},
+  split:     {icon: '✂️', name: 'Сплит',      target: true},
+  save:      {icon: '💾', name: 'Сохранить',  target: true},
+  merge:     {icon: '➕', name: 'Слить',       target: true, pair: true},
+};
+
+// Парсинг конфигурации способностей: массив строк ("set=4:2:1") или объектов ({id,uses,cooldown,value})
+function parseAbilities(raw) {
+  if (!Array.isArray(raw)) return [];
+  const out = [];
+  raw.forEach(a => {
+    let id, uses = 1, cooldown = 0, value = null;
+    if (a && typeof a === 'object') {
+      id = a.id; uses = a.uses ?? 1; cooldown = a.cooldown ?? 0; value = a.value ?? null;
+    } else {
+      const m = String(a).trim().match(/^([a-z_]+)(?:=(\d+))?(?::(\d+))?(?::(\d+))?$/i);
+      if (!m) return;
+      id = m[1].toLowerCase();
+      if (m[2] != null) value = +m[2];
+      if (m[3] != null) uses = +m[3];
+      if (m[4] != null) cooldown = +m[4];
+    }
+    if (!ABILITY_CATALOG[id]) return;
+    if (id === 'set' && value == null) value = 4;
+    if (id === 'set') value = Math.max(1, Math.min(6, value));
+    out.push({
+      id, uses, cooldown, value,
+      usesLeft: uses === 0 ? Infinity : uses,  // uses=0 → безлимит
+      availableRound: 1,
+    });
+  });
+  return out;
+}
+
 function initCombat() {
   document.getElementById('combat-game').style.display = '';
   document.getElementById('subtitle').textContent = '⚔️ Сражение';
@@ -603,6 +642,8 @@ function initCombat() {
     cardName: gameData.card_name || null,
     hasReroll: !!(gameData.reroll || gameData.reroll_name), rerollUsed: false,
     rerollName: gameData.reroll_name || null,
+    // Способности героя (опц.) + кубики, отложенные на следующий раунд (💾 Сохранить)
+    abilities: parseAbilities(gameData.abilities), savedDice: [],
     assignments: {}, roundLogs: [],
     rng: combatPRNG(gameData.seed || 42), done: false,
   };
@@ -644,10 +685,13 @@ function combatStartRound() {
   if (combatState.done) return;
   combatRollEnemies();
   combatState.dice = Array.from({length: combatState.diceCount}, () => Math.floor(combatState.rng() * 6) + 1);
+  // Отложенные кубики (💾) возвращаются в пул этого раунда
+  if (combatState.savedDice.length) { combatState.dice.push(...combatState.savedDice); combatState.savedDice = []; }
   combatState.assignments = {};
   combatState.controlUsed = false;
   combatRollMovement();
   combatSelectedDie = null;
+  combatMergePending = null; combatMergeAbilityIdx = null;
   document.getElementById('combat-log').innerHTML = '';
   combatRender();
 }
@@ -723,9 +767,16 @@ function combatRender() {
   s.dice.forEach((val, i) => {
     const used = i in s.assignments;
     const div = document.createElement('div');
-    div.className = 'combat-die' + (used ? ' used' : '') + (combatSelectedDie === i ? ' selected' : '');
+    div.className = 'combat-die' + (used ? ' used' : '') + ((combatSelectedDie === i || combatMergePending === i) ? ' selected' : '');
     div.textContent = DICE_FACES[val - 1];
-    div.onclick = () => { if (!used) { combatSelectedDie = combatSelectedDie === i ? null : i; combatRender(); } };
+    div.onclick = () => {
+      if (used) return;
+      if (combatMergePending !== null) {
+        if (i === combatMergePending) { combatMergePending = null; combatMergeAbilityIdx = null; combatRender(); return; }
+        combatDoMerge(combatMergePending, i); return;
+      }
+      combatSelectedDie = combatSelectedDie === i ? null : i; combatRender();
+    };
     diceEl.appendChild(div);
   });
 
@@ -767,6 +818,22 @@ function combatRender() {
       modsHtml += `<div class="combat-mod-row"><span class="combat-mod-label">${rerollLabel}</span>${rerollHint}<span class="combat-mod-hint">выбери кубик</span></div>`;
     }
   }
+  const freeDice = s.dice.length - Object.keys(s.assignments).length;
+  s.abilities.forEach((ab, idx) => {
+    const meta = ABILITY_CATALOG[ab.id];
+    const label = `${meta.icon} ${meta.name}${ab.id === 'set' ? ' ' + ab.value : ''}`;
+    const budget = ab.usesLeft === Infinity ? '∞' : `×${ab.usesLeft}`;
+    const cd = ab.cooldown > 0 ? `, перез. ${ab.cooldown}` : '';
+    const hint = `<span class="combat-mod-hint">(${budget}${cd})</span>`;
+    let ctrl;
+    if (ab.usesLeft <= 0) ctrl = `<span class="combat-mod-used">израсходовано</span>`;
+    else if (s.round < ab.availableRound) ctrl = `<span class="combat-mod-used">перезарядка</span>`;
+    else if (combatMergePending !== null && combatMergeAbilityIdx === idx) ctrl = `<span class="combat-mod-hint">выбери второй кубик</span>`;
+    else if (meta.pair && freeDice < 2) ctrl = `<span class="combat-mod-hint">нужно 2 кубика</span>`;
+    else if (meta.target && !canMod) ctrl = `<span class="combat-mod-hint">выбери кубик</span>`;
+    else ctrl = `<button class="combat-card-btn" onclick="combatUseAbility(${idx})">Использовать</button>`;
+    modsHtml += `<div class="combat-mod-row"><span class="combat-mod-label">${label}</span>${hint}${ctrl}</div>`;
+  });
   modsEl.innerHTML = modsHtml;
 
   document.getElementById('combat-confirm').disabled = Object.keys(s.assignments).length === 0;
@@ -851,6 +918,70 @@ function combatReroll() {
   if (combatSelectedDie === null || combatState.rerollUsed) return;
   combatState.dice[combatSelectedDie] = Math.floor(combatState.rng() * 6) + 1;
   combatState.rerollUsed = true;
+  combatSelectedDie = null;
+  combatRender();
+}
+
+// Удаляет кубик и пересобирает индексы назначений
+function combatRemoveDie(idx) {
+  const s = combatState;
+  s.dice.splice(idx, 1);
+  const na = {};
+  for (const [k, v] of Object.entries(s.assignments)) {
+    const ki = +k;
+    if (ki === idx) continue;
+    na[ki > idx ? ki - 1 : ki] = v;
+  }
+  s.assignments = na;
+}
+
+function combatConsumeAbility(ab) {
+  if (ab.usesLeft !== Infinity) ab.usesLeft--;
+  ab.availableRound = combatState.round + 1 + ab.cooldown;
+}
+
+function combatUseAbility(idx) {
+  const s = combatState;
+  const ab = s.abilities[idx];
+  if (!ab || ab.usesLeft <= 0 || s.round < ab.availableRound) return;
+  const meta = ABILITY_CATALOG[ab.id];
+  const sel = combatSelectedDie;
+  if (meta.target && (sel === null || sel in s.assignments)) return;
+  if (ab.id === 'merge') {
+    if (s.dice.length - Object.keys(s.assignments).length < 2) return;
+    combatMergePending = sel; combatMergeAbilityIdx = idx;
+    combatSelectedDie = null; combatRender(); return;
+  }
+  if (ab.id === 'extra_die') {
+    s.dice.push(Math.floor(s.rng() * 6) + 1);
+  } else if (ab.id === 'flip') {
+    s.dice[sel] = 7 - s.dice[sel];
+  } else if (ab.id === 'set') {
+    s.dice[sel] = ab.value;
+  } else if (ab.id === 'split') {
+    const v = s.dice[sel];
+    if (v < 2) return;
+    const v1 = 1 + Math.floor(s.rng() * (v - 1));  // 1..v-1, остаток v-v1 тоже ≥1
+    s.dice[sel] = v1; s.dice.push(v - v1);
+  } else if (ab.id === 'save') {
+    s.savedDice.push(s.dice[sel]);
+    combatRemoveDie(sel);
+  }
+  combatConsumeAbility(ab);
+  combatSelectedDie = null;
+  combatRender();
+}
+
+function combatDoMerge(a, b) {
+  const s = combatState;
+  const ab = s.abilities[combatMergeAbilityIdx];
+  if (!ab) { combatMergePending = null; combatMergeAbilityIdx = null; combatRender(); return; }
+  const merged = Math.min(6, s.dice[a] + s.dice[b]);
+  const lo = Math.min(a, b), hi = Math.max(a, b);
+  s.dice[lo] = merged;
+  combatRemoveDie(hi);
+  combatConsumeAbility(ab);
+  combatMergePending = null; combatMergeAbilityIdx = null;
   combatSelectedDie = null;
   combatRender();
 }
