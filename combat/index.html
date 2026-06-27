@@ -692,6 +692,7 @@ function combatStartRound() {
   combatRollMovement();
   combatSelectedDie = null;
   combatMergePending = null; combatMergeAbilityIdx = null;
+  combatState.abilityLog = [];
   document.getElementById('combat-log').innerHTML = '';
   combatRender();
 }
@@ -891,8 +892,10 @@ function combatUnassignSpecial(ei) {
 
 function combatApplyCard(delta) {
   if (combatSelectedDie === null || combatState.controlUsed) return;
-  combatState.dice[combatSelectedDie] = Math.max(1, Math.min(6, combatState.dice[combatSelectedDie] + delta));
-  combatState.controlUsed = true;
+  const s = combatState, b = s.dice[combatSelectedDie];
+  s.dice[combatSelectedDie] = Math.max(1, Math.min(6, b + delta));
+  s.abilityLog.push(`${s.cardName ? '✨ ' + s.cardName : '±1'}: ${DICE_FACES[b-1]}→${DICE_FACES[s.dice[combatSelectedDie]-1]}`);
+  s.controlUsed = true;
   combatSelectedDie = null;
   combatRender();
 }
@@ -908,16 +911,20 @@ function combatRollMovement() {
 
 function combatApplyMovement(delta) {
   if (combatSelectedDie === null || combatState.movementUsed) return;
-  combatState.dice[combatSelectedDie] = Math.max(1, Math.min(6, combatState.dice[combatSelectedDie] + delta));
-  combatState.movementUsed = true;
+  const s = combatState, b = s.dice[combatSelectedDie];
+  s.dice[combatSelectedDie] = Math.max(1, Math.min(6, b + delta));
+  s.abilityLog.push(`🏃 движение ${delta > 0 ? '+' + delta : delta}: ${DICE_FACES[b-1]}→${DICE_FACES[s.dice[combatSelectedDie]-1]}`);
+  s.movementUsed = true;
   combatSelectedDie = null;
   combatRender();
 }
 
 function combatReroll() {
   if (combatSelectedDie === null || combatState.rerollUsed) return;
-  combatState.dice[combatSelectedDie] = Math.floor(combatState.rng() * 6) + 1;
-  combatState.rerollUsed = true;
+  const s = combatState, b = s.dice[combatSelectedDie];
+  s.dice[combatSelectedDie] = Math.floor(s.rng() * 6) + 1;
+  s.abilityLog.push(`🔄 переброс ${DICE_FACES[b-1]}→${DICE_FACES[s.dice[combatSelectedDie]-1]}`);
+  s.rerollUsed = true;
   combatSelectedDie = null;
   combatRender();
 }
@@ -952,20 +959,28 @@ function combatUseAbility(idx) {
     combatMergePending = sel; combatMergeAbilityIdx = idx;
     combatSelectedDie = null; combatRender(); return;
   }
+  const face = v => DICE_FACES[v - 1];
   if (ab.id === 'extra_die') {
-    s.dice.push(Math.floor(s.rng() * 6) + 1);
+    const nv = Math.floor(s.rng() * 6) + 1;
+    s.dice.push(nv);
+    s.abilityLog.push(`🎲 доп. кубик ${face(nv)}`);
   } else if (ab.id === 'flip') {
-    s.dice[sel] = 7 - s.dice[sel];
+    const b = s.dice[sel]; s.dice[sel] = 7 - b;
+    s.abilityLog.push(`🔄 переворот ${face(b)}→${face(s.dice[sel])}`);
   } else if (ab.id === 'set') {
-    s.dice[sel] = ab.value;
+    const b = s.dice[sel]; s.dice[sel] = ab.value;
+    s.abilityLog.push(`🎯 грань ${face(b)}→${face(ab.value)}`);
   } else if (ab.id === 'split') {
     const v = s.dice[sel];
     if (v < 2) return;
     const v1 = 1 + Math.floor(s.rng() * (v - 1));  // 1..v-1, остаток v-v1 тоже ≥1
     s.dice[sel] = v1; s.dice.push(v - v1);
+    s.abilityLog.push(`✂️ сплит ${face(v)} → ${face(v1)}+${face(v - v1)}`);
   } else if (ab.id === 'save') {
-    s.savedDice.push(s.dice[sel]);
+    const sv = s.dice[sel];
+    s.savedDice.push(sv);
     combatRemoveDie(sel);
+    s.abilityLog.push(`💾 отложил ${face(sv)} (вернётся в след. раунд)`);
   }
   combatConsumeAbility(ab);
   combatSelectedDie = null;
@@ -976,10 +991,12 @@ function combatDoMerge(a, b) {
   const s = combatState;
   const ab = s.abilities[combatMergeAbilityIdx];
   if (!ab) { combatMergePending = null; combatMergeAbilityIdx = null; combatRender(); return; }
-  const merged = Math.min(6, s.dice[a] + s.dice[b]);
+  const va = s.dice[a], vb = s.dice[b];
+  const merged = Math.min(6, va + vb);
   const lo = Math.min(a, b), hi = Math.max(a, b);
   s.dice[lo] = merged;
   combatRemoveDie(hi);
+  s.abilityLog.push(`➕ слил ${DICE_FACES[va-1]}+${DICE_FACES[vb-1]} → ${DICE_FACES[merged-1]}`);
   combatConsumeAbility(ab);
   combatMergePending = null; combatMergeAbilityIdx = null;
   combatSelectedDie = null;
@@ -988,7 +1005,8 @@ function combatDoMerge(a, b) {
 
 function combatResolve() {
   const s = combatState;
-  const log = [];
+  // Лог начинается с действий игрока над кубиками (движение/способности/контрол/переброс)
+  const log = (s.abilityLog || []).slice();
 
   // Нейтрализация особенностей: куб в слот «Особенность», подходящий под требование
   s.enemies.forEach((e, i) => {
