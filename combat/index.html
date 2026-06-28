@@ -461,6 +461,7 @@
   <div id="combat-prompt" class="subtitle" style="margin-bottom:12px;text-align:left;font-size:0.88rem;padding:10px 12px;background:rgba(255,255,255,0.05);border-radius:10px;line-height:1.5;display:none"></div>
   <div id="combat-round-label" class="combat-round-label"></div>
   <div id="combat-enemies" class="combat-enemies"></div>
+  <div id="combat-supports" class="combat-enemies"></div>
   <div class="combat-section-label">🎲 Кубики — выбери, потом тапни ⚔️ или 🛡 на враге</div>
   <div id="combat-dice-row" class="combat-dice-row"></div>
   <div id="combat-mods" class="combat-mods"></div>
@@ -473,6 +474,8 @@
 <script src="../shared/core.js"></script>
 <script>
 const DICE_FACES = ['⚀','⚁','⚂','⚃','⚄','⚅'];
+const JOKER = 0;  // вайлд-грань: подходит под любое требование, даёт максимум
+function dieFace(v) { return v === JOKER ? '🃏' : DICE_FACES[v - 1]; }
 let combatState = null, combatSelectedDie = null;
 let combatMergePending = null, combatMergeAbilityIdx = null;
 
@@ -507,6 +510,7 @@ function reqLabel(req) {
   return '?';
 }
 function reqMet(die, req) {
+  if (die === JOKER) return true;  // джокер подходит под любое
   switch (req.type) {
     case 'exact': return die === req.value;
     case 'any': return true;
@@ -517,13 +521,15 @@ function reqMet(die, req) {
   }
   return false;
 }
-// Урон по слоту поражения: точный — 2/1/0 (нюанс ±1), остальные — бинарно 2/0
+// Урон по слоту поражения: точный — 2/1/0 (нюанс ±1), остальные — бинарно 2/0; джокер — максимум
 function calcDefeatDamage(die, req) {
+  if (die === JOKER) return 2;
   if (req.type === 'exact') { const d = Math.abs(die - req.value); return d === 0 ? 2 : d === 1 ? 1 : 0; }
   return reqMet(die, req) ? 2 : 0;
 }
-// Поглощение блоком: точный — 0/1/2 (нюанс ±1), остальные — бинарно 0/2
+// Поглощение блоком: точный — 0/1/2 (нюанс ±1), остальные — бинарно 0/2; джокер — чистый блок
 function calcBlockTaken(die, req) {
+  if (die === JOKER) return 0;
   if (req.type === 'exact') { const d = Math.abs(die - req.value); return d === 0 ? 0 : d === 1 ? 1 : 2; }
   return reqMet(die, req) ? 0 : 2;
 }
@@ -606,6 +612,37 @@ function parseAbilities(raw) {
   return out;
 }
 
+// Грань из спеки: число 1–6 или 'joker'/'j'/'*' → JOKER
+function parseFace(x) {
+  const t = String(x).trim().toLowerCase();
+  if (t === 'joker' || t === 'j' || t === '🃏' || t === '*') return JOKER;
+  const n = parseInt(t);
+  return (n >= 1 && n <= 6) ? n : null;
+}
+
+// Кастомные грани по конкретным кубам (только базовые). Массив наборов: dice_faces[i] = [грани] или null
+function parseDiceFaces(raw) {
+  if (!Array.isArray(raw)) return null;
+  return raw.map(set => {
+    if (!Array.isArray(set) || !set.length) return null;
+    const faces = set.map(parseFace).filter(f => f !== null);
+    return faces.length ? faces : null;
+  });
+}
+
+// Источники-«обстрел»: неубиваемые, одна атака (блок-слот), 1 урон, без особенностей
+function parseSupports(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw.map(x => {
+    if (x && typeof x === 'object') return {name: x.name || 'Обстрел', blockSpec: x.block != null ? parseReq(x.block) : null};
+    const t = String(x).trim();
+    const ci = t.indexOf(':');
+    const name = (ci >= 0 ? t.slice(0, ci) : t).trim() || 'Обстрел';
+    const reqStr = ci >= 0 ? t.slice(ci + 1).trim() : '';
+    return {name, blockSpec: reqStr ? parseReq(reqStr) : null};
+  });
+}
+
 function initCombat() {
   document.getElementById('combat-game').style.display = '';
   document.getElementById('subtitle').textContent = '⚔️ Сражение';
@@ -644,6 +681,11 @@ function initCombat() {
     rerollName: gameData.reroll_name || null,
     // Способности героя (опц.) + кубики, отложенные на следующий раунд (💾 Сохранить)
     abilities: parseAbilities(gameData.abilities), savedDice: [],
+    // Кастомные грани по конкретным базовым кубам (опц.); источники-«обстрел» (опц.)
+    diceFaces: parseDiceFaces(gameData.dice_faces),
+    supports: parseSupports(gameData.support),
+    // Счётчик заряда 0/N (опц.): копится, при заполнении даёт куб-джокер
+    counter: gameData.counter ? {n: gameData.counter, value: 0} : null,
     assignments: {}, roundLogs: [],
     rng: combatPRNG(gameData.seed || 42), done: false,
   };
@@ -681,10 +723,28 @@ function combatRollEnemies() {
   });
 }
 
+// Источники-«обстрел»: каждый — одна атака (блок-слот) с требованием по keep
+function combatRollSupports() {
+  const s = combatState;
+  s.supports.forEach(sp => {
+    if (!sp.blockBase) sp.blockBase = sp.blockSpec ? {...sp.blockSpec} : genReq(s.slotPool, s.slotTypes, s.rng, null);
+    sp.blockReq = deriveReq(sp.blockBase, s.keep, s.slotPool, s.slotTypes, s.rng, null);
+  });
+}
+
+// Бросок базового кубика i: кастомные грани (если заданы) либо обычные 1–6
+function combatRollDie(i) {
+  const f = combatState.diceFaces && combatState.diceFaces[i];
+  if (f && f.length) return f[Math.floor(combatState.rng() * f.length)];
+  return Math.floor(combatState.rng() * 6) + 1;
+}
+
 function combatStartRound() {
   if (combatState.done) return;
   combatRollEnemies();
-  combatState.dice = Array.from({length: combatState.diceCount}, () => Math.floor(combatState.rng() * 6) + 1);
+  combatRollSupports();
+  combatState.enemies.forEach(e => e.hpAtStart = e.hp);  // для счётчика: «убил НЕ раненного»
+  combatState.dice = Array.from({length: combatState.diceCount}, (_, i) => combatRollDie(i));
   // Отложенные кубики (💾) возвращаются в пул этого раунда
   if (combatState.savedDice.length) { combatState.dice.push(...combatState.savedDice); combatState.savedDice = []; }
   combatState.assignments = {};
@@ -719,7 +779,7 @@ function combatRender() {
           const dmg = calcDefeatDamage(dv, req);
           const dmgClass = dmg === 2 ? 'combat-damage-2' : dmg === 1 ? 'combat-damage-1' : 'combat-damage-0';
           const dmgText = dmg === 2 ? '2 урона!' : dmg === 1 ? '1 урон' : 'промах';
-          atkSlotHtml += `<div class="combat-atk-slot has-die" onclick="combatUnassignDie(${+entry[0]})">${DICE_FACES[dv-1]} <span class="${dmgClass}">→ ${dmgText}</span> <span style="margin-left:auto;opacity:0.5;font-size:0.7rem">✕</span></div>`;
+          atkSlotHtml += `<div class="combat-atk-slot has-die" onclick="combatUnassignDie(${+entry[0]})">${dieFace(dv)} <span class="${dmgClass}">→ ${dmgText}</span> <span style="margin-left:auto;opacity:0.5;font-size:0.7rem">✕</span></div>`;
         } else {
           atkSlotHtml += `<div class="combat-atk-slot" onclick="combatAssignAttack(${i},${si})">🗡 Удар — <span class="combat-val-def">${reqLabel(req)}</span></div>`;
         }
@@ -732,7 +792,7 @@ function combatRender() {
           const taken = calcBlockTaken(dv, req);
           const blkClass = taken === 0 ? 'combat-block-0' : taken === 1 ? 'combat-block-1' : 'combat-block-full';
           const blkText = taken === 0 ? 'блок!' : taken === 1 ? '1 урон' : '2 урона';
-          blkSlotHtml += `<div class="combat-blk-slot has-die" onclick="combatUnassignBlk(${i},${bi})">${DICE_FACES[dv-1]} <span class="${blkClass}">→ ${blkText}</span> <span style="margin-left:auto;opacity:0.5;font-size:0.7rem">✕</span></div>`;
+          blkSlotHtml += `<div class="combat-blk-slot has-die" onclick="combatUnassignBlk(${i},${bi})">${dieFace(dv)} <span class="${blkClass}">→ ${blkText}</span> <span style="margin-left:auto;opacity:0.5;font-size:0.7rem">✕</span></div>`;
         } else {
           blkSlotHtml += `<div class="combat-blk-slot" onclick="combatAssignBlock(${i},${bi})">🛡 Блок — <span class="combat-val-atk">${reqLabel(req)}</span></div>`;
         }
@@ -746,7 +806,7 @@ function combatRender() {
           const ok = reqMet(dv, e.specialReq);
           const cls = ok ? 'combat-block-0' : 'combat-block-full';
           const txt = ok ? 'нейтрализовано' : 'не подходит';
-          blkSlotHtml += `<div class="combat-blk-slot has-die" onclick="combatUnassignSpecial(${i})">${DICE_FACES[dv-1]} <span class="${cls}">→ ${txt}</span> <span style="margin-left:auto;opacity:0.5;font-size:0.7rem">✕</span></div>`;
+          blkSlotHtml += `<div class="combat-blk-slot has-die" onclick="combatUnassignSpecial(${i})">${dieFace(dv)} <span class="${cls}">→ ${txt}</span> <span style="margin-left:auto;opacity:0.5;font-size:0.7rem">✕</span></div>`;
         } else {
           blkSlotHtml += `<div class="combat-blk-slot" onclick="combatAssignSpecial(${i})">✨ ${spName} — <span class="combat-val-atk">снять: ${reqLabel(e.specialReq)}</span></div>`;
         }
@@ -763,13 +823,39 @@ function combatRender() {
     enemiesEl.appendChild(div);
   });
 
+  // Источники-«обстрел»: неубиваемые, только слот блока (их атака, 1 урон)
+  const supEl = document.getElementById('combat-supports');
+  supEl.innerHTML = '';
+  s.supports.forEach((sp, si) => {
+    const div = document.createElement('div');
+    div.className = 'combat-enemy';
+    const entry = Object.entries(s.assignments).find(([_, a]) => a.type === 'sblock' && a.supportIndex === si);
+    let slot;
+    if (entry) {
+      const dv = s.dice[+entry[0]];
+      const blocked = reqMet(dv, sp.blockReq);
+      const cls = blocked ? 'combat-block-0' : 'combat-block-full';
+      const txt = blocked ? 'блок!' : '1 урон';
+      slot = `<div class="combat-blk-slot has-die" onclick="combatUnassignSBlock(${si})">${dieFace(dv)} <span class="${cls}">→ ${txt}</span> <span style="margin-left:auto;opacity:0.5;font-size:0.7rem">✕</span></div>`;
+    } else {
+      slot = `<div class="combat-blk-slot" onclick="combatAssignSBlock(${si})">🛡 Блок — <span class="combat-val-atk">${reqLabel(sp.blockReq)}</span></div>`;
+    }
+    div.innerHTML = `
+      <div class="combat-enemy-header">
+        <span class="combat-enemy-name">🏹 ${sp.name}</span>
+        <span class="combat-enemy-hp-text">обстрел · 1 урон</span>
+      </div>
+      <div class="combat-enemy-slots">${slot}</div>`;
+    supEl.appendChild(div);
+  });
+
   const diceEl = document.getElementById('combat-dice-row');
   diceEl.innerHTML = '';
   s.dice.forEach((val, i) => {
     const used = i in s.assignments;
     const div = document.createElement('div');
     div.className = 'combat-die' + (used ? ' used' : '') + ((combatSelectedDie === i || combatMergePending === i) ? ' selected' : '');
-    div.textContent = DICE_FACES[val - 1];
+    div.textContent = dieFace(val);
     div.onclick = () => {
       if (used) return;
       if (combatMergePending !== null) {
@@ -835,6 +921,16 @@ function combatRender() {
     else ctrl = `<button class="combat-card-btn" onclick="combatUseAbility(${idx})">Использовать</button>`;
     modsHtml += `<div class="combat-mod-row"><span class="combat-mod-label">${label}</span>${hint}${ctrl}</div>`;
   });
+  if (s.counter) {
+    const c = s.counter;
+    const cLabel = `🔢 Счётчик ${c.value}/${c.n}`;
+    const cHint = `<span class="combat-mod-hint">(скинь куб / повергни не раненного)</span>`;
+    let cCtrl = '';
+    if (c.value >= c.n) cCtrl = `<button class="combat-card-btn" onclick="combatUseCounter()">🃏 Кубик-джокер</button>`;
+    else if (canMod) cCtrl = `<button class="combat-card-btn" onclick="combatDepositDie()">Скинуть куб +1</button>`;
+    else cCtrl = `<span class="combat-mod-hint">выбери кубик чтобы скинуть</span>`;
+    modsHtml += `<div class="combat-mod-row"><span class="combat-mod-label">${cLabel}</span>${cHint}${cCtrl}</div>`;
+  }
   modsEl.innerHTML = modsHtml;
 
   document.getElementById('combat-confirm').disabled = Object.keys(s.assignments).length === 0;
@@ -890,11 +986,27 @@ function combatUnassignSpecial(ei) {
   if (entry) { delete s.assignments[+entry[0]]; combatRender(); }
 }
 
+function combatAssignSBlock(si) {
+  if (combatSelectedDie === null) return;
+  const s = combatState;
+  const occupied = Object.entries(s.assignments).find(([_, a]) => a.type === 'sblock' && a.supportIndex === si);
+  if (occupied) delete s.assignments[+occupied[0]];
+  delete s.assignments[combatSelectedDie];
+  s.assignments[combatSelectedDie] = {type: 'sblock', supportIndex: si};
+  combatSelectedDie = null; combatRender();
+}
+
+function combatUnassignSBlock(si) {
+  const s = combatState;
+  const entry = Object.entries(s.assignments).find(([_, a]) => a.type === 'sblock' && a.supportIndex === si);
+  if (entry) { delete s.assignments[+entry[0]]; combatRender(); }
+}
+
 function combatApplyCard(delta) {
   if (combatSelectedDie === null || combatState.controlUsed) return;
   const s = combatState, b = s.dice[combatSelectedDie];
   s.dice[combatSelectedDie] = Math.max(1, Math.min(6, b + delta));
-  s.abilityLog.push(`${s.cardName ? '✨ ' + s.cardName : '±1'}: ${DICE_FACES[b-1]}→${DICE_FACES[s.dice[combatSelectedDie]-1]}`);
+  s.abilityLog.push(`${s.cardName ? '✨ ' + s.cardName : '±1'}: ${dieFace(b)}→${dieFace(s.dice[combatSelectedDie])}`);
   s.controlUsed = true;
   combatSelectedDie = null;
   combatRender();
@@ -913,7 +1025,7 @@ function combatApplyMovement(delta) {
   if (combatSelectedDie === null || combatState.movementUsed) return;
   const s = combatState, b = s.dice[combatSelectedDie];
   s.dice[combatSelectedDie] = Math.max(1, Math.min(6, b + delta));
-  s.abilityLog.push(`🏃 движение ${delta > 0 ? '+' + delta : delta}: ${DICE_FACES[b-1]}→${DICE_FACES[s.dice[combatSelectedDie]-1]}`);
+  s.abilityLog.push(`🏃 движение ${delta > 0 ? '+' + delta : delta}: ${dieFace(b)}→${dieFace(s.dice[combatSelectedDie])}`);
   s.movementUsed = true;
   combatSelectedDie = null;
   combatRender();
@@ -923,7 +1035,7 @@ function combatReroll() {
   if (combatSelectedDie === null || combatState.rerollUsed) return;
   const s = combatState, b = s.dice[combatSelectedDie];
   s.dice[combatSelectedDie] = Math.floor(s.rng() * 6) + 1;
-  s.abilityLog.push(`🔄 переброс ${DICE_FACES[b-1]}→${DICE_FACES[s.dice[combatSelectedDie]-1]}`);
+  s.abilityLog.push(`🔄 переброс ${dieFace(b)}→${dieFace(s.dice[combatSelectedDie])}`);
   s.rerollUsed = true;
   combatSelectedDie = null;
   combatRender();
@@ -947,6 +1059,27 @@ function combatConsumeAbility(ab) {
   ab.availableRound = combatState.round + 1 + ab.cooldown;
 }
 
+function combatDepositDie() {
+  const s = combatState;
+  if (!s.counter || s.counter.value >= s.counter.n) return;
+  if (combatSelectedDie === null || combatSelectedDie in s.assignments) return;
+  const v = s.dice[combatSelectedDie];
+  combatRemoveDie(combatSelectedDie);
+  combatSelectedDie = null;
+  s.counter.value = Math.min(s.counter.n, s.counter.value + 1);
+  s.abilityLog.push(`🔢 скинул куб ${dieFace(v)} → счётчик ${s.counter.value}/${s.counter.n}`);
+  combatRender();
+}
+
+function combatUseCounter() {
+  const s = combatState;
+  if (!s.counter || s.counter.value < s.counter.n) return;
+  s.counter.value = 0;
+  s.dice.push(JOKER);
+  s.abilityLog.push(`🃏 счётчик использован → кубик-джокер`);
+  combatRender();
+}
+
 function combatUseAbility(idx) {
   const s = combatState;
   const ab = s.abilities[idx];
@@ -959,7 +1092,7 @@ function combatUseAbility(idx) {
     combatMergePending = sel; combatMergeAbilityIdx = idx;
     combatSelectedDie = null; combatRender(); return;
   }
-  const face = v => DICE_FACES[v - 1];
+  const face = v => dieFace(v);
   if (ab.id === 'extra_die') {
     const nv = Math.floor(s.rng() * 6) + 1;
     s.dice.push(nv);
@@ -996,7 +1129,7 @@ function combatDoMerge(a, b) {
   const lo = Math.min(a, b), hi = Math.max(a, b);
   s.dice[lo] = merged;
   combatRemoveDie(hi);
-  s.abilityLog.push(`➕ слил ${DICE_FACES[va-1]}+${DICE_FACES[vb-1]} → ${DICE_FACES[merged-1]}`);
+  s.abilityLog.push(`➕ слил ${dieFace(va)}+${dieFace(vb)} → ${dieFace(merged)}`);
   combatConsumeAbility(ab);
   combatMergePending = null; combatMergeAbilityIdx = null;
   combatSelectedDie = null;
@@ -1031,12 +1164,17 @@ function combatResolve() {
     atkEntries.forEach(([di, a]) => {
       const dv = s.dice[+di];
       dmg += calcDefeatDamage(dv, e.defeatSlots[a.slotIndex]);
-      faces.push(DICE_FACES[dv-1]);
+      faces.push(dieFace(dv));
     });
     if (dmg > 0) {
       const actual = Math.min(dmg, e.hp);
       e.hp = Math.max(0, e.hp - dmg);
       log.push(`⚔️ ${e.name}: -${actual}❤️${e.hp <= 0 ? ' (повержен!)' : ''}`);
+      // Счётчик: убил не раненного (полное HP на начало раунда) за один ход → +1
+      if (e.hp <= 0 && s.counter && e.hpAtStart === e.max_hp) {
+        s.counter.value = Math.min(s.counter.n, s.counter.value + 1);
+        log.push(`🔢 счётчик +1 (${s.counter.value}/${s.counter.n}) — повержен не раненный`);
+      }
     } else {
       log.push(`💨 ${e.name}: промах (${faces.join('')})`);
     }
@@ -1050,8 +1188,8 @@ function combatResolve() {
       if (entry) {
         const dv = s.dice[+entry[0]];
         const taken = calcBlockTaken(dv, req);
-        if (taken === 0) log.push(`🛡 ${e.name}: блок! (${DICE_FACES[dv-1]} ✓ ${reqLabel(req)})`);
-        else { log.push(`🛡 ${e.name}: ${DICE_FACES[dv-1]} → ${taken} урона`); totalTaken += taken; }
+        if (taken === 0) log.push(`🛡 ${e.name}: блок! (${dieFace(dv)} ✓ ${reqLabel(req)})`);
+        else { log.push(`🛡 ${e.name}: ${dieFace(dv)} → ${taken} урона`); totalTaken += taken; }
       } else {
         log.push(`💔 ${e.name} атакует: 2 урона`); totalTaken += 2;
       }
@@ -1063,13 +1201,25 @@ function combatResolve() {
       else log.push(`✨ ${e.name}: заряд сбит`);
     }
   });
+  // Обстрел (поддержка врага): один куб атаки, только блокируется (бинарно)
+  s.supports.forEach((sp, si) => {
+    const entry = Object.entries(s.assignments).find(([_, a]) => a.type === 'sblock' && a.supportIndex === si);
+    if (entry) {
+      const dv = s.dice[+entry[0]];
+      if (reqMet(dv, sp.blockReq)) log.push(`🏹 ${sp.name}: блок! (${dieFace(dv)} ✓ ${reqLabel(sp.blockReq)})`);
+      else { log.push(`🏹 ${sp.name}: ${dieFace(dv)} → 1 урон`); totalTaken += 1; }
+    } else {
+      log.push(`💥 ${sp.name} обстрел: 1 урон`); totalTaken += 1;
+    }
+  });
+
   if (totalTaken > 0) { s.playerHp = Math.max(0, s.playerHp - totalTaken); log.push(`Герой: ${s.playerHp}❤️ (−${totalTaken})`); }
   else if (s.enemies.some(e => e.hp > 0)) log.push('✅ Весь урон поглощён');
 
   // Чистая оборона: были только блоки (ни одной атаки) и урона не получено → +1 куб на след. раунд.
   // Не требуется занять ВСЕ кубы — достаточно блокировать без атак и без урона (часть кубов может остаться).
   const attackCount = Object.values(s.assignments).filter(a => a.type === 'attack').length;
-  const blockCount = Object.values(s.assignments).filter(a => a.type === 'block').length;
+  const blockCount = Object.values(s.assignments).filter(a => a.type === 'block' || a.type === 'sblock').length;
   const fullDefense = attackCount === 0 && blockCount > 0 && totalTaken === 0;
   s.diceCount = fullDefense ? 5 : 4;
   if (fullDefense) log.push('🛡 Чистая оборона — +1 кубик в следующем раунде (5)');
