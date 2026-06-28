@@ -141,7 +141,7 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" combat \
 |---|---|---|
 | `--enemies` | `Враг:3:1` | Враги `Имя:HP:danger[:defeat:block:attacks:special:special_req]`, через `\|`. **Базовый HP обычного врага — 3.** Максимум 4 врага |
 | `--player-hp` | 3 | HP игрока (база 3; потолок 5 — выше клампится клиентом; бонусы поднимают) |
-| `--max-rounds` | 3 | Максимум раундов |
+| `--max-rounds` | 3 | Лимит раундов — **не поражение** при истечении: `scene_revisit` (сигнал мастеру пересмотреть сцену) |
 | `--slot-pool` | `1–6` | Пул значений для случайных точных требований, через запятую. `1,2,3,5,6` = без четвёрки |
 | `--slot-types` | `exact` | Типы случайных требований: `exact,any,odd,even,gt,lt` через запятую. По умолчанию только точные |
 | `--keep` | `type` | Поведение слотов между раундами: `always` (те же) · `type` (тот же тип, новое значение) · `random` (всё меняется) |
@@ -198,7 +198,8 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" combat \
 
 **Кубиков: 4 базово.** Чтобы повергнуть врага с 3 HP, нужно закрыть **оба** слота поражения (макс с одного куба — 2). Чистая оборона (только блоки, ни одной атаки, урона не получено; занимать ВСЕ кубы не обязательно) → **5 кубов** в следующем раунде (одноразово).
 
-Результат: `{"type":"combat","win":true,"player_hp":1,"rounds":2,"enemies_killed":2,"total_enemies":2}`
+Результат (победа): `{"type":"combat","outcome":"victory","victory":true,...}`  
+Результат (лимит раундов): `{"type":"combat","outcome":"scene_revisit","scene_revisit":true,"level":2,...}` — **не поражение**
 
 **RPG-логика:**
 
@@ -207,7 +208,7 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" combat \
 | Боевой навык | `--card-name "Удар"` (±1 на атаку) |
 | Магия / особенность | `--reroll-name "Мерцание"` (переброс) |
 | Больше врагов | `--enemies '[...]'` с 3–4 объектами |
-| Сложный бой | `--max-rounds 2` или высокий HP врагов |
+| Сложный бой | `--max-rounds 2` — урезать фокус-сцену, не «усложнить до поражения» |
 
 ---
 
@@ -260,7 +261,8 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" match3fight
 # FFT-режим: герой (оружие + опц. магия) против врагов
 python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" hex \
   --hex-hero '{"name":"Кай","weapon":"sword","magic":"wizard","emoji":"⚔️","hp":100}' \
-  --hex-enemy '[{"type":"archer","name":"Лучник"},{"type":"shadow","name":"Тень"}]'
+  --hex-enemy '[{"type":"archer","name":"Лучник"},{"type":"shadow","name":"Тень"}]' \
+  --max-rounds 5
 
 # + спутники, террейн, стены (стены блокируют линию обзора)
 python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" hex \
@@ -272,8 +274,10 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" hex \
 ```
 
 Флаги:
-- `--hex-hero` — JSON героя: `name`, `hp` (деф 100), `weapon`, `magic` (опц.), `emoji`, `atk`, `level`.
+- `--hex-hero` — JSON героя: `name`, `hp` (деф 100), `weapon`, `magic` (опц.), `emoji`, `atk`, `level`, `technique` / `techniques` (опц. приёмы).
   - `weapon`: sword, axe, ranged, heavy, dual, shield, unarmed, polearm, chain
+  - `technique`: один id приёма (напр. `"sword_plastic"`) или `techniques`: массив id
+  - приёмы меча: `sword_plastic`, `sword_lunge`, `sword_smear`
   - `magic`: wizard, pyromancer, geomancer, aeromancer, aquamancer, druid, necro, demon, incenser, adept (`elementalist` — тип NPC, не magic героя)
 - `--hex-enemy` — JSON-массив врагов `[{type, name, hp?}]`.
 - `--hex-companions` — JSON-массив спутников игрока (те же типы юнитов).
@@ -281,13 +285,16 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" hex \
 - `--hex-terrain` — JSON `{rifts, forests, heights}` (деф: 1 разлом, 1–2 леса, 1 высота). Вода/болото/обломки/кусты добавляются авто.
 - `--hex-walls` — явные стены (блокируют LoS) `[[col,row],…]`. Герой стартует в col 0, враги в col 10.
 - `--hex-player` — (legacy) старый список юнитов игрока; для FFT использовать `--hex-hero`.
+- `--max-rounds` — лимит раундов (1 раунд = ход игрока + ход врага). **Default: 5**. **Не поражение** — сигнал мастеру пересмотреть сцену: что произошло вокруг, новые условия для следующей проверки. В результате: `scene_revisit: true`, `outcome: "Пересмотр сцены"`, без `win`.
 
 Механика (как в коде):
 - **AP** 4/ход (герой). Навыки **1–2 AP**. **Рывок** 💨: +2 move, щит 5, кд 1.
 - **Move:** герой база 1 очко/ход; болото/мелководье/глубина ×2. **ZoC** + **атака вдогон** при уходе (не при `forcedMove`).
 - **Hit:** melee 100%; ranged/magic — `accByDist`, −defense, −cover **или** −moved (max), clamp 35–95%.
 - **Damage:** ability.damage (25–60) или atk-формулы; дальний falloff; высота +1, куст −1.
-- **Mitigation:** shields → armor statuses (%×value, не изнашиваются) → HP (герой 60–160, люди ~100, тень 50, кадавр 85).
+- **Mitigation:** shields → armor statuses (%×value, не изнашиваются) → HP (герой 60–160, люди ~100, тень 50, кадавр 85). `armorPenPct` на эффекте урона — частичное пробитие (не `ignoreArmor`).
+- **Меч (база):** Удар (40, cd0), Быстрый удар (25, cd0, 50% +AP). **Приёмы** (опц., `--hex-hero` → `technique` / `techniques`): `sword_plastic`, `sword_lunge`, `sword_smear`.
+- **Среднее мерцание (melee, cd>0):** 15% → полный сброс cd, затем половина max; цепочка сбрасывается при естественном откате. Условие: **HP-урон по врагу** (ранение; напр. Выпад, Пластичный) **или** `mirroringOnUse` (успешное применение без урона, напр. Размазать клинок).
 - **AoE:** `aoe: N` + `aoeShape`: `radius` (деф.), `line`, `line_pair`, `wave` — направление от кастера к якорному гексу.
 - **Displacement:** `knockback`/`pull` — 1 гекс; край карты — без эффекта; столкновение с юнитом/препятствием — 15 урона обоим, без сдвига, `vulnerable` (+10% к попаданию, 2 х.).
 - **Reposition:** `effect:{type:'reposition'}` — сразу переместить цель на соседний к кастеру гекс (2 шага UI).
@@ -297,7 +304,8 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" hex \
 - **Прочие эффекты:** stun, ignite (трава), summon, heal, debuff atk, chain, barrier, dash.
 - **LoS** для дальнего; **Тень** = полуголем (не призрак).
 
-Результат: `{"game":"hex","win":true,"outcome":"Победа","turns":6,"hero_hp_remaining":80,"hero_hp_max":100,"enemies_defeated":2,"enemies_total":2,"abilities_used":{...},"mode":"fft"}`
+Результат (победа): `{"game":"hex","win":true,"outcome":"Победа",...}`  
+Результат (лимит раундов): `{"game":"hex","scene_revisit":true,"outcome":"Пересмотр сцены","rounds":5,"max_rounds":5,"enemies_defeated":1,...}` — **без `win`**
 
 ---
 

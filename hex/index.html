@@ -149,15 +149,16 @@ const _HEX_W = Math.sqrt(3) * HEX_SIZE;
 const HEX_SVG_W = Math.ceil(4 + _HEX_W / 2 + HEX_COLS * _HEX_W + HEX_SIZE);
 const HEX_SVG_H = Math.ceil(4 + HEX_SIZE + (HEX_ROWS - 1) * (HEX_SIZE * 1.5) + HEX_SIZE * 1.5);
 
+// Базовый урон стрелы (ranged_shot) — ориентир для «Размазать клинок» (заслон = сила стрелы).
+const HX_ARROW_DAMAGE = 30;
+
 // ---- ABILITY LIBRARY ----
 // Weapon ability sets
 // school field groups abilities for shared cooldown ticking
 const HX_WEAPON_ABILITIES = {
   sword: [
-    {id:'sword_strike',   name:'Удар',          icon:'⚔️', type:'melee',  range:1, aoe:0, damage:40, effect:null,                         maxCooldown:0, school:'sword'},
-    {id:'sword_heavy',    name:'Мощный удар',   icon:'🗡️', type:'melee',  range:1, aoe:0, damage:55, effect:null,                         maxCooldown:2, school:'sword'},
-    {id:'sword_stun',     name:'Оглушение',     icon:'🥊', type:'melee',  range:1, aoe:0, damage:25, effect:{type:'stun',turns:1},         maxCooldown:3, school:'sword'},
-    {id:'sword_swift',    name:'Быстрый удар',  icon:'⚡', type:'melee',  range:1, aoe:0, damage:25, ap:1, maxCooldown:2, school:'sword', effects:[{type:'damage',value:25},{type:'gain_ap',value:1,chance:50}], note:'25 урона; 50% шанс вернуть 1 очко действия'},
+    {id:'sword_strike',   name:'Удар',         icon:'⚔️', type:'melee',  range:1, aoe:0, damage:40, maxCooldown:0, school:'sword'},
+    {id:'sword_swift',    name:'Быстрый удар', icon:'⚡', type:'melee',  range:1, aoe:0, damage:25, ap:1, maxCooldown:0, school:'sword', effects:[{type:'damage',value:25},{type:'gain_ap',value:1,chance:50}], note:'25 урона; 50% шанс вернуть 1 AP'},
   ],
   axe: [
     {id:'axe_strike',     name:'Рубящий удар',  icon:'🪓', type:'melee',  range:1, aoe:0, damage:45, effect:null,                         maxCooldown:0, school:'axe'},
@@ -199,6 +200,13 @@ const HX_WEAPON_ABILITIES = {
     {id:'chain_pull',     name:'Зацеп и контроль',icon:'🪝',type:'melee', range:2, aoe:0, damage:25, effect:{type:'pull'},forcedMove:true, maxCooldown:2, school:'chain'},
     {id:'chain_net',      name:'Волна кинетики',icon:'🕸️', type:'melee',  range:2, aoe:0, damage:40, effect:{type:'stun',turns:1},         maxCooldown:4, school:'chain'},
   ],
+};
+
+// Опциональные приёмы (среднее мерцание) — задаются в --hex-hero через `technique` или `techniques`.
+const HX_TECHNIQUE_ABILITIES = {
+  sword_plastic: {id:'sword_plastic',  name:'Пластичный удар', icon:'🗿', type:'melee', range:1, aoe:0, damage:40, ap:1, maxCooldown:4, school:'sword', effects:[{type:'damage',value:40,armorPenPct:50},{type:'damage',value:12,condition:{type:'isFlanked'}}], note:'50% пробитие брони; +12 во фланге'},
+  sword_lunge:   {id:'sword_lunge',    name:'Выпад',           icon:'➡️', type:'melee', range:2, aoe:0, damage:45, ap:1, maxCooldown:4, school:'sword', effect:{type:'lunge'}, note:'Сближение на 1 гекс + 45 урона; перезарядка при ранении'},
+  sword_smear:   {id:'sword_smear',    name:'Размазать клинок',icon:'🌫️', type:'melee', range:0, aoe:0, damage:0, ap:1, maxCooldown:4, school:'sword', mirroringOnUse:true, effects:[{type:'barrier',value:HX_ARROW_DAMAGE,count:1,to:'self'},{type:'barrier',value:HX_ARROW_DAMAGE,count:1,to:'self',chance:30}], note:`Заслон ${HX_ARROW_DAMAGE} (сила стрелы); 30% второй слой`},
 };
 
 // Magic ability sets — correct Twilights lore schools
@@ -382,9 +390,16 @@ function hxAbilityDamage(ability, unit) {
   return atk; // fallback
 }
 
-// Build ability array for a hero unit from weapon + magic params
-function hxBuildHeroAbilities(weapon, magic) {
+// Build ability array for a hero unit from weapon + magic params + optional techniques
+function hxBuildHeroAbilities(weapon, magic, heroDef) {
+  heroDef = heroDef || {};
   const wArr = (HX_WEAPON_ABILITIES[weapon] || HX_WEAPON_ABILITIES.sword).map(a => ({...a, cooldown:0}));
+  const techRaw = heroDef.techniques || (heroDef.technique ? [heroDef.technique] : []);
+  const techIds = Array.isArray(techRaw) ? techRaw : [techRaw];
+  const techArr = techIds.map(id => {
+    const t = HX_TECHNIQUE_ABILITIES[id];
+    return t ? {...t, cooldown:0} : null;
+  }).filter(Boolean);
   const mArr = magic ? (HX_MAGIC_ABILITIES[magic] || []).map(a => ({...a, cooldown:0})) : [];
   // Базовый навык каждого героя: «Рывок» — 1 AP, перезарядка 1 → +2 очка движения и 5 щитов (self).
   const dash = {id:'hero_dash', name:'Рывок', icon:'💨', type:'move', range:0, aoe:0, damage:0,
@@ -393,7 +408,7 @@ function hxBuildHeroAbilities(weapon, magic) {
   const jump = {id:'hero_jump', name:'Прыжок', icon:'🦘', type:'jump', range:2, aoe:0, damage:0,
     ap:1, cooldown:0, maxCooldown:2, effect:{type:'jump', distance:2, overUnit:true, overObstacle:true},
     desc:'Перепрыгнуть через врага или препятствие на 2 гекса'};
-  return [dash, jump, ...wArr, ...mArr];
+  return [dash, jump, ...wArr, ...techArr, ...mArr];
 }
 
 let hxs = {
@@ -402,7 +417,7 @@ let hxs = {
   abilityTargets: [], // targets for selected ability
   activeAbilityIdx: null, // index into selected unit's abilities (null = none)
   mode: 'select', // 'select' | 'move' | 'ability'
-  log: '', logs: [], turnNum: 1, ended: false,
+  log: '', logs: [], turnNum: 1, maxRounds: 5, ended: false,
   rifts: [],
   forests: [],
   heights: [],
@@ -679,6 +694,27 @@ function hxResolveReposition(caster, target, landCol, landRow) {
   target.col = landCol; target.row = landRow;
   hxLog(`${target.name} перемещён к ${caster.name}`, 'special');
   return true;
+}
+
+// Выпад: шаг на 1 гекс к цели (если dist>1), затем удар.
+function hxResolveLunge(caster, target) {
+  if(!target || target.hp <= 0) return { moved: false };
+  const dist = hexDist(caster.col, caster.row, target.col, target.row);
+  if(dist <= 1) return { moved: false, alreadyAdjacent: true };
+  const occupied = new Set(hxs.units.filter(u => u.hp > 0 && u.id !== caster.id).map(u => `${u.col},${u.row}`));
+  let best = null, bestDist = dist;
+  for(const [nc, nr] of hexNeighbors(caster.col, caster.row)) {
+    if(occupied.has(`${nc},${nr}`) || hxObstAt(nc, nr)) continue;
+    const d = hexDist(nc, nr, target.col, target.row);
+    if(d < bestDist) { bestDist = d; best = [nc, nr]; }
+  }
+  if(!best) return { moved: false, reason: 'blocked' };
+  const fromCol = caster.col, fromRow = caster.row;
+  caster.col = best[0]; caster.row = best[1];
+  caster.moved = true; caster.movedRecently = true; caster.shields = [];
+  hxLog(`${caster.name} — выпад: сближение!`, 'special');
+  hxAnimateMove(caster, fromCol, fromRow, best[0], best[1]);
+  return { moved: true };
 }
 
 function hxRepositionLandingHexes(caster) {
@@ -1087,7 +1123,7 @@ function hxConfirmApply(unit, ab, col, row) {
     if(!ab.aoe && obstOnTarget) {
       hxDamageObstacle(obstOnTarget, dmgForObst());
       hxMarkActed(unit, ab);
-      if(ab.maxCooldown > 0) ab.cooldown = ab.maxCooldown;
+      if(ab.maxCooldown > 0) hxFinalizeAbilityCooldown(unit, ab);
       hexCheckEnd();
     } else {
       hxApplyAbility(unit, ab, primaryTarget);
@@ -1139,6 +1175,43 @@ function hxMarkActed(caster, ability) {
   hxApplySchoolCooldown(caster, ability);
 }
 
+const HX_MIRRORING_CHANCE = 15;
+
+function hxMirroringCanProc(ability, ctx) {
+  if(!ctx || ctx.didHit === false) return false;
+  if((ctx.hpDealt || 0) > 0) return true;
+  if(ability.mirroringOnUse) return true;
+  if(ability.mirroringOnHit && ctx.didStrike) return true;
+  return false;
+}
+
+// Среднее мерцание (melee, cd>0): 15% при успехе → полный сброс cd, затем половина в цепочке подряд.
+function hxTryMirroringAccel(caster, ability, ctx) {
+  if(ability.type !== 'melee' || (ability.maxCooldown||0) <= 0) return;
+  if(!ctx || ctx.didHit === false) { ability._mirroringChain = 0; return; }
+  if(!hxMirroringCanProc(ability, ctx)) return;
+  if(Math.random() * 100 >= HX_MIRRORING_CHANCE) {
+    ability._mirroringChain = 0;
+    return;
+  }
+  const chain = ability._mirroringChain || 0;
+  if(chain === 0) {
+    ability.cooldown = 0;
+    ability._mirroringChain = 1;
+    hxLog(`${caster.icon||''} ${caster.name} — ${ability.name}: ✨ идеальное срабатывание!`, 'special');
+  } else {
+    ability.cooldown = Math.ceil(ability.maxCooldown / 2);
+    ability._mirroringChain = 0;
+    hxLog(`${caster.icon||''} ${caster.name} — ${ability.name}: ✨ перезарядка наполовину`, 'special');
+  }
+}
+
+function hxFinalizeAbilityCooldown(caster, ability, ctx) {
+  if((ability.maxCooldown||0) <= 0) return;
+  ability.cooldown = ability.maxCooldown;
+  hxTryMirroringAccel(caster, ability, ctx);
+}
+
 // Per-attack BASE accuracy at a given hex distance (before dodge / situational mods).
 //  - ability.accByDist: explicit array indexed by hex distance (accByDist[dist-1]); clamped to the last entry
 //    beyond its length. This is how an individual ranged/magic attack defines its own accuracy curve.
@@ -1185,10 +1258,14 @@ function hxCalcHitChance(ability, attacker, target, adjacentEnemies) {
 // Each incoming hit ALWAYS removes ONE front barrier (regardless of damage); damage passing = max(0, hit − barrierValue).
 // Barriers last 1 turn and are cleared at the unit's own turn-start; armor statuses are probabilistic and NOT consumed.
 // Returns hpDmg dealt. Used by every attack path (abilities, basic, AoE, chain, counter) so balance never diverges.
-function hxDealDamage(target, rawDmg, sourceTeam) {
+function hxDealDamage(target, rawDmg, sourceTeam, opts) {
+  opts = opts || {};
   if(rawDmg <= 0) return 0;
   const prevHp = target.hp;
   let D = rawDmg;
+  const ignoreArmor = !!opts.ignoreArmor;
+  const penPct = ignoreArmor ? 100 : Math.max(0, Math.min(100, opts.armorPenPct || 0));
+  const armorMult = (100 - penPct) / 100;
   // (a) barrier (Заслон) — each hit strips ONE front barrier (always), passing damage = max(0, D − barrierValue)
   if(Array.isArray(target.shields) && target.shields.length){
     const v = target.shields.shift();
@@ -1196,16 +1273,17 @@ function hxDealDamage(target, rawDmg, sourceTeam) {
     hxLog && hxLog(`🛡 ${target.name}: щит снят`, 'block');
   }
   // (b) armor statuses — each piece rolls its chance% to reduce; armor is NOT consumed, multiple can proc
-  if(D > 0 && Array.isArray(target.statuses)) {
+  if(D > 0 && !ignoreArmor && Array.isArray(target.statuses)) {
     for(const st of target.statuses) {
       if(D <= 0) break;
       if((st.type||'ARMOR') !== 'ARMOR') continue;
       const chance = st.chance != null ? st.chance : 100;
       if(Math.random()*100 < chance) {
-        const reduced = Math.min(D, st.value||0);
+        const effectiveVal = Math.round((st.value||0) * armorMult);
+        const reduced = Math.min(D, effectiveVal);
         if(reduced > 0) {
           D = D - reduced;
-          hxLog(`🛡 ${st.name||'Броня'} −${reduced}`, 'info');
+          hxLog(`🛡 ${st.name||'Броня'} −${reduced}${penPct ? ' (пробитие)' : ''}`, 'info');
         }
       }
     }
@@ -1320,7 +1398,7 @@ function hxApplyAbility(caster, ability, primaryTarget, opts) {
     for(let i=0;i<cnt;i++) caster.shields.push(eff.value);
     hxLog(`${caster.icon||''} ${caster.name} — ${ability.name}: 🛡 ${cnt}×${eff.value} заслон!`, 'special');
     hxMarkActed(caster, ability);
-    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    hxFinalizeAbilityCooldown(caster, ability);
     return;
   }
 
@@ -1332,7 +1410,7 @@ function hxApplyAbility(caster, ability, primaryTarget, opts) {
     caster.moved = true; caster.movedRecently = true; caster.shields = [];
     hxLog(`${caster.name} — ${ability.name}: прыжок!`, 'special');
     hxMarkActed(caster, ability);
-    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    hxFinalizeAbilityCooldown(caster, ability);
     hxAnimateMove(caster, fromCol, fromRow, landCol, landRow);
     return;
   }
@@ -1341,28 +1419,34 @@ function hxApplyAbility(caster, ability, primaryTarget, opts) {
   if(eff?.type === 'spawn_terrain' && primaryTarget && (primaryTarget.isFreeHex || primaryTarget.isBurnable)) {
     hxSpawnTerrain(primaryTarget.col, primaryTarget.row, eff);
     hxMarkActed(caster, ability);
-    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    hxFinalizeAbilityCooldown(caster, ability);
     return;
   }
 
   // --- REPOSITION with landing hex (phase 2) ---
   if(eff?.type === 'reposition' && opts.landCol != null) {
+    let repDmg = 0;
     if(dmg > 0 && primaryTarget && primaryTarget.hp > 0 && primaryTarget.team !== caster.team) {
       const _n = hxCountFlankers(primaryTarget, caster.team);
       const _hitChance = hxCalcHitChance(ability, caster, primaryTarget, _n);
       if(Math.random() * 100 >= _hitChance) {
         hxLog(`${caster.name} — ${ability.name}: промах!`, 'damage');
         hxMarkActed(caster, ability);
-        if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+        hxFinalizeAbilityCooldown(caster, ability, { didHit: false });
         return;
       }
-      hxDealDamage(primaryTarget, dmg, caster.team);
+      repDmg = hxDealDamage(primaryTarget, dmg, caster.team);
     }
     hxResolveReposition(caster, primaryTarget, opts.landCol, opts.landRow);
     hxMarkActed(caster, ability);
-    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    hxFinalizeAbilityCooldown(caster, ability, { didHit: true, hpDealt: repDmg });
     hexCheckEnd();
     return;
+  }
+
+  // --- LUNGE (Выпад): step 1 hex toward target, then strike ---
+  if(eff?.type === 'lunge' && primaryTarget && primaryTarget.team !== caster.team && primaryTarget.hp > 0) {
+    hxResolveLunge(caster, primaryTarget);
   }
 
   // --- POISON / BLEED only (no damage in ability) ---
@@ -1375,7 +1459,7 @@ function hxApplyAbility(caster, ability, primaryTarget, opts) {
     uniq.forEach(t => hxApplyCondition(t, {type: eff.type, value: eff.value, turns: eff.turns}));
     hxLog(`${caster.name} — ${ability.name}: ${HX_CONDITION_DEFS[eff.type]?.label||eff.type} → ${uniq.map(u=>u.name).join(', ')}`, 'special');
     hxMarkActed(caster, ability);
-    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    hxFinalizeAbilityCooldown(caster, ability);
     return;
   }
 
@@ -1389,7 +1473,7 @@ function hxApplyAbility(caster, ability, primaryTarget, opts) {
     }
     hxLog(`${caster.icon||''} ${caster.name} — ${ability.name}: 💨 +${eff.move} движения, 🛡 ${eff.shields} щит!`, 'special');
     hxMarkActed(caster, ability);
-    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    hxFinalizeAbilityCooldown(caster, ability);
     return;
   }
 
@@ -1399,7 +1483,7 @@ function hxApplyAbility(caster, ability, primaryTarget, opts) {
     primaryTarget.atkBuffTurns = eff.turns||2;
     hxLog(`${caster.name} — ${ability.name}: ${primaryTarget.name} +${eff.value} атк на ${eff.turns} хода!`, 'heal');
     hxMarkActed(caster, ability);
-    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    hxFinalizeAbilityCooldown(caster, ability);
     return;
   }
 
@@ -1424,7 +1508,7 @@ function hxApplyAbility(caster, ability, primaryTarget, opts) {
     };
     hxs.units.push(newUnit);
     hxMarkActed(caster, ability);
-    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    hxFinalizeAbilityCooldown(caster, ability);
     hxLog(`${caster.name} — ${ability.name}: призвана ${def.name}${nearRift?' (Разлом +)':''}!`, 'special');
     return;
   }
@@ -1436,7 +1520,7 @@ function hxApplyAbility(caster, ability, primaryTarget, opts) {
     hxLog(`${caster.name} — ${ability.name}: ${primaryTarget.name} +${heal} HP!`, 'heal');
     hxFlashHex(primaryTarget.col, primaryTarget.row, 'rgba(46,213,115,0.7)');
     hxMarkActed(caster, ability);
-    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    hxFinalizeAbilityCooldown(caster, ability);
     return;
   }
 
@@ -1446,7 +1530,7 @@ function hxApplyAbility(caster, ability, primaryTarget, opts) {
     hxLog(`${caster.name} — ${ability.name}: ${primaryTarget.name} оглушён на ${eff.turns} ход(а)!`, 'special');
     hxFlashHex(primaryTarget.col, primaryTarget.row, 'rgba(243,156,18,0.7)');
     hxMarkActed(caster, ability);
-    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    hxFinalizeAbilityCooldown(caster, ability);
     return;
   }
 
@@ -1459,7 +1543,7 @@ function hxApplyAbility(caster, ability, primaryTarget, opts) {
     targets.forEach(t => { t.atkDebuff = (t.atkDebuff||0) + eff.value; });
     hxLog(`${caster.name} — ${ability.name}: ${targets.length} цел. −${eff.value} атк!`, 'special');
     hxMarkActed(caster, ability);
-    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    hxFinalizeAbilityCooldown(caster, ability);
     return;
   }
 
@@ -1470,7 +1554,7 @@ function hxApplyAbility(caster, ability, primaryTarget, opts) {
       hxLog(`🔥 Трава загорелась!`, 'special');
     }
     hxMarkActed(caster, ability);
-    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    hxFinalizeAbilityCooldown(caster, ability);
     hxRender(); hexUpdateInfo();
     return;
   }
@@ -1482,7 +1566,7 @@ function hxApplyAbility(caster, ability, primaryTarget, opts) {
     } else {
       hxLog(`${caster.icon||''} ${caster.name} — ${ability.icon||''} ${ability.name}: удар в пустоту`, 'info');
       hxMarkActed(caster, ability);
-      if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+      hxFinalizeAbilityCooldown(caster, ability);
       hxRender(); hexUpdateInfo();
       return;
     }
@@ -1496,7 +1580,7 @@ function hxApplyAbility(caster, ability, primaryTarget, opts) {
       hxLog(`${caster.icon||''} ${caster.name} — ${ability.icon||''} ${ability.name}: промах! (${_hitChance}%)`, 'damage');
       hxFlashHex(primaryTarget.col, primaryTarget.row, 'rgba(150,150,150,0.5)');
       hxMarkActed(caster, ability);
-      if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+      hxFinalizeAbilityCooldown(caster, ability, { didHit: false });
       hxRender(); hexUpdateInfo();
       return;
     }
@@ -1506,7 +1590,12 @@ function hxApplyAbility(caster, ability, primaryTarget, opts) {
   if(dmg > 0) {
     const _distMult = primaryTarget ? hxDistDmgMult(ability, hexDist(caster.col, caster.row, primaryTarget.col, primaryTarget.row)) : 1;
     const totalDmg = Math.max(0, Math.round((dmg + bonusDmg) * _distMult));
-    const doHit = (target, hitDmg) => hxDealDamage(target, hitDmg, caster.team);
+    let hpDealtTotal = 0;
+    const doHit = (target, hitDmg) => {
+      const d = hxDealDamage(target, hitDmg, caster.team);
+      hpDealtTotal += d;
+      return d;
+    };
     const anchor = {col: primaryTarget.col, row: primaryTarget.row};
     let logMsg = `${caster.name} — ${ability.icon||''} ${ability.name}:`;
     let hitPrimary = false;
@@ -1535,7 +1624,7 @@ function hxApplyAbility(caster, ability, primaryTarget, opts) {
     } else if(!hitPrimary) {
       hxLog(`${caster.icon||''} ${caster.name} — ${ability.icon||''} ${ability.name}: удар в пустоту`, 'info');
       hxMarkActed(caster, ability);
-      if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+      hxFinalizeAbilityCooldown(caster, ability);
       hxRender(); hexUpdateInfo();
       return;
     }
@@ -1613,7 +1702,7 @@ function hxApplyAbility(caster, ability, primaryTarget, opts) {
 
     hxLog(logMsg, ability.type === 'heal' ? 'heal' : 'attack');
     hxMarkActed(caster, ability);
-    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    hxFinalizeAbilityCooldown(caster, ability, { didHit: hitPrimary && hpDealtTotal > 0, hpDealt: hpDealtTotal, didStrike: hitPrimary && hpDealtTotal > 0 });
     hexCheckEnd();
   }
 }
@@ -1638,20 +1727,33 @@ function hxApplyAbilityFx(caster, ability, primaryTarget) {
 
   // mark/cooldown ONCE — guard so any helper path can't double-count.
   let _finalized = false;
+  let _mirroringHpDealt = 0;
+  let _mirroringDidStrike = false;
   const finalize = () => {
     if(_finalized) return;
     _finalized = true;
     hxMarkActed(caster, ability);
-    if(ability.maxCooldown > 0) ability.cooldown = ability.maxCooldown;
+    const mirCtx = {
+      didHit: _mirroringHpDealt > 0 || !!ability.mirroringOnUse,
+      hpDealt: _mirroringHpDealt,
+      didStrike: _mirroringDidStrike && _mirroringHpDealt > 0,
+    };
+    hxFinalizeAbilityCooldown(caster, ability, mirCtx);
     hxRender(); hexUpdateInfo(); hexCheckEnd();
   };
 
   const dist = primaryTarget ? hexDist(caster.col, caster.row, primaryTarget.col, primaryTarget.row) : 0;
   const adjacentEnemies = primaryTarget ? hxCountFlankers(primaryTarget, caster.team) : 0;
+  const ctxFor = (unit, didHit) => ({caster, target: unit, didHit, dist, adjacentEnemies});
 
   const damageEffects = fx.filter(e => e.type === 'damage');
   const riderEffects  = fx.filter(e => e.type !== 'damage');
   const hasDamage = damageEffects.length > 0;
+
+  // Lunge before damage (composable path — if ever used with effects[])
+  if((ability.effect?.type === 'lunge') && primaryTarget && primaryTarget.team !== caster.team && primaryTarget.hp > 0) {
+    hxResolveLunge(caster, primaryTarget);
+  }
 
   // --- Burnable / empty hex handling (utility "hits" with no live unit) ----------
   if(primaryTarget && primaryTarget.isBurnable) {
@@ -1684,6 +1786,7 @@ function hxApplyAbilityFx(caster, ability, primaryTarget) {
 
     const applyToUnit = (unit, raw, isSplash) => {
       if(!unit || unit.hp <= 0 || unit.team === caster.team) return;
+      if(de.condition && !hxEvalEffectCond(de.condition, ctxFor(unit, true))) return;
       let didHit = true;
       if(isRanged) {
         const flank = hxCountFlankers(unit, caster.team);
@@ -1696,9 +1799,12 @@ function hxApplyAbilityFx(caster, ability, primaryTarget) {
       }
       const prev = hitTargets[unit.id] || {unit, didHit:false, dealt:0};
       if(didHit) {
-        const dealt = hxDealDamage(unit, raw, caster.team);
+        const dmgOpts = { armorPenPct: de.armorPenPct, ignoreArmor: de.ignoreArmor };
+        const dealt = hxDealDamage(unit, raw, caster.team, dmgOpts);
         prev.didHit = true;
         prev.dealt += dealt;
+        _mirroringHpDealt += dealt;
+        _mirroringDidStrike = true;
         logMsg += ` ${dealt}→${unit.name}(${unit.hp}/${unit.maxHp})`;
         anyDamageLine = true;
         hxFlashHex(unit.col, unit.row, isSplash ? 'rgba(231,76,60,0.5)' : 'rgba(231,76,60,0.75)');
@@ -1729,7 +1835,6 @@ function hxApplyAbilityFx(caster, ability, primaryTarget) {
   // --- RIDER PASS: applied after all damage ------------------------------------
   // Eligible damaged targets that were HIT (for target-side riders on a damaging ability).
   const hitUnits = Object.values(hitTargets).filter(h => h.didHit).map(h => h.unit);
-  const ctxFor = (unit, didHit) => ({caster, target: unit, didHit, dist, adjacentEnemies});
 
   for(const rider of riderEffects) {
     const to = rider.to || hxEffectDefaultTo(rider.type);
@@ -2073,6 +2178,18 @@ function hxFlashHex(col, row, color) {
   setTimeout(() => { try { svg.removeChild(flash); } catch(e){} }, 500);
 }
 
+function hxTurnLabelText(phase) {
+  const r = hxs.turnNum, m = hxs.maxRounds;
+  if(phase === 'enemy') return `Раунд ${r}/${m} — ход врага...`;
+  return `Раунд ${r}/${m} — твой ход`;
+}
+
+function hxCheckRoundLimit() {
+  if(hxs.ended || hxs.turnNum <= hxs.maxRounds) return false;
+  hexEnd(null, {reason: 'scene_revisit'});
+  return true;
+}
+
 function hexCheckEnd() {
   const enemyStillFighting = hxs.units.some(u => u.originalTeam==='enemy' && u.team==='enemy' && u.hp>0);
   const playerAlive = hxs.units.some(u => (u.originalTeam==='player' || u.originalTeam==='enemy' && u.team==='player') && u.hp>0);
@@ -2081,7 +2198,8 @@ function hexCheckEnd() {
 
 }
 
-function hexEnd(won) {
+function hexEnd(won, opts) {
+  opts = opts || {};
   hxs.ended = true;
   document.getElementById('hx-end-btn').disabled = true;
   document.getElementById('hx-skip-btn').disabled = true;
@@ -2089,21 +2207,34 @@ function hexEnd(won) {
   const totalPlayer = hxs.units.filter(u=>u.originalTeam==='player').length;
   const enemies_defeated = hxs.units.filter(u=>u.originalTeam==='enemy'&&(u.hp<=0||u.team==='player')).length;
   const enemies_total = hxs.units.filter(u=>u.originalTeam==='enemy').length;
-  hxLog(won ? '🏆 Победа! Все враги повержены.' : '💀 Поражение...', 'attack');
+  const sceneRevisit = opts.reason === 'scene_revisit';
+  let outcomeStr = won ? 'Победа' : 'Поражение';
+  let logMsg = won ? '🏆 Победа! Все враги повержены.' : '💀 Поражение...';
+  let overlayText = won ? '⚔ ПОБЕДА' : '💀 ПОРАЖЕНИЕ';
+  let overlayFill = won ? 'rgba(46,213,115,0.25)' : 'rgba(231,76,60,0.25)';
+  let overlayColor = won ? '#2ecc71' : '#e74c3c';
+  if(sceneRevisit) {
+    outcomeStr = 'Пересмотр сцены';
+    logMsg = `⏱ ${hxs.maxRounds} раундов — мастер пересматривает обстановку вокруг (${enemies_defeated}/${enemies_total} повержено).`;
+    overlayText = '⏱ СЦЕНА';
+    overlayFill = 'rgba(162,155,254,0.22)';
+    overlayColor = '#a29bfe';
+  }
+  hxLog(logMsg, sceneRevisit ? 'info' : 'attack');
   hxRender();
   // Visual end-game overlay
   const svg = document.getElementById('hx-svg');
   const overlay = document.createElementNS('http://www.w3.org/2000/svg','rect');
   overlay.setAttribute('x','0'); overlay.setAttribute('y','0');
   overlay.setAttribute('width','408'); overlay.setAttribute('height','222');
-  overlay.setAttribute('fill', won ? 'rgba(46,213,115,0.25)' : 'rgba(231,76,60,0.25)');
+  overlay.setAttribute('fill', overlayFill);
   svg.appendChild(overlay);
   const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
   txt.setAttribute('x','204'); txt.setAttribute('y','111');
   txt.setAttribute('text-anchor','middle'); txt.setAttribute('dominant-baseline','middle');
   txt.setAttribute('font-size','28'); txt.setAttribute('font-weight','bold');
-  txt.setAttribute('fill', won ? '#2ecc71' : '#e74c3c');
-  txt.textContent = won ? '⚔ ПОБЕДА' : '💀 ПОРАЖЕНИЕ';
+  txt.setAttribute('fill', overlayColor);
+  txt.textContent = overlayText;
   svg.appendChild(txt);
   // PASS D: Build FFT result extras if hero mode
   const _heroUnit = hxs.units.find(u => u.isHero);
@@ -2117,9 +2248,13 @@ function hexEnd(won) {
     total_damage_taken: hxs.totalDamageTaken,
   } : {};
   setTimeout(() => sendResultToBot({
-    game:'hex', win:won,
-    outcome: won ? 'Победа' : 'Поражение',
+    game:'hex',
+    ...(sceneRevisit ? {} : {win: !!won}),
+    scene_revisit: sceneRevisit,
+    outcome: outcomeStr,
     turns: hxs.turnNum,
+    rounds: Math.min(hxs.turnNum, hxs.maxRounds),
+    max_rounds: hxs.maxRounds,
     player_units_alive: playerUnitsAlive,
     player_units_total: totalPlayer,
     enemies_defeated,
@@ -2260,7 +2395,12 @@ function hexComputeEnemyIntents() {
 
 // Advance cooldowns for a unit
 function hxTickCooldowns(unit) {
-  (unit.abilities||[]).forEach(a=>{ if(a.cooldown > 0) a.cooldown--; });
+  (unit.abilities||[]).forEach(a => {
+    if(a.cooldown > 0) {
+      a.cooldown--;
+      if(a.cooldown === 0) a._mirroringChain = 0;
+    }
+  });
 }
 
 // Turn-start reset for a side: barriers (Заслон) last only 1 turn, and evasion-from-moving clears.
@@ -2277,7 +2417,7 @@ function hxRefreshBlock(team) {
 async function hexEnemyTurn() {
   const _turnLabel = document.getElementById('hx-turn-label');
   _turnLabel.className = 'hx-turn-label enemy-turn';
-  _turnLabel.textContent = 'Ход ' + hxs.turnNum + ' — ход врага...';
+  _turnLabel.textContent = hxTurnLabelText('enemy');
   document.getElementById('hx-end-btn').disabled = true;
   document.getElementById('hx-skip-btn').disabled = true;
 
@@ -2509,6 +2649,7 @@ async function hexEnemyTurn() {
   });
 
   hxs.turnNum++;
+  if(hxCheckRoundLimit()) return;
   hxs.turn = 'player';
   hxs.selected = null;
   hxs.reachable = [];
@@ -2527,10 +2668,10 @@ async function hexEnemyTurn() {
     u.stunnedTurns--;
     u.moved = true; u.acted = true;
   });
-  if(!hxs.ended) hxLog(`Ход ${hxs.turnNum}. Твой ход!`, 'info');
+  if(!hxs.ended) hxLog(`Раунд ${hxs.turnNum}/${hxs.maxRounds}. Твой ход!`, 'info');
   const _pLabel = document.getElementById('hx-turn-label');
   _pLabel.className = 'hx-turn-label player-turn';
-  _pLabel.textContent = `Ход ${hxs.turnNum} — твой ход`;
+  _pLabel.textContent = hxTurnLabelText('player');
   document.getElementById('hx-end-btn').disabled = false;
   document.getElementById('hx-skip-btn').disabled = false;
   hexComputeEnemyIntents();
@@ -3062,6 +3203,7 @@ function hxShowAbilityTooltip(btn, ab) {
     html += `<div class="tip-effect">Прыжок ${j.distance||2} гекс.${j.overUnit?' через врага':''}${j.overObstacle?' через препятствие':''}</div>`;
   }
   if(ab.effect?.type==='spawn_terrain') html += `<div class="tip-effect">Создать: ${ab.effect.terrain}${ab.effect.duration?' ('+ab.effect.duration+' х.)':''}</div>`;
+  if(ab.effect?.type==='lunge') html += `<div class="tip-effect">Сближение на 1 гекс + удар</div>`;
   if(ab.effect?.type==='reposition') html += `<div class="tip-effect">Переместить цель к себе</div>`;
   if(ab.effect?.type==='poison' || ab.effect?.type==='bleed') html += `<div class="tip-effect">${HX_CONDITION_DEFS[ab.effect.type]?.label}: ${ab.effect.value}/ход, ${ab.effect.turns} х.</div>`;
   if(Array.isArray(ab.effects)) {
@@ -3071,6 +3213,7 @@ function hxShowAbilityTooltip(btn, ab) {
     for(const e of ab.effects) {
       let line = effLabels[e.type] || e.type;
       if(e.value != null && e.type!=='knockback' && e.type!=='pull') line += `: ${e.value}`;
+      if(e.armorPenPct) line += ` (пробитие ${e.armorPenPct}%)`;
       if(e.turns != null) line += ` (${e.turns} х.)`;
       if(e.chance != null && e.chance < 100) line += ` (${e.chance}%)`;
       if(e.condition) {
@@ -3095,6 +3238,9 @@ function hxShowAbilityTooltip(btn, ab) {
     html += ab.cooldown > 0
       ? `<div class="tip-cd-wait">Кулдаун: ${ab.maxCooldown} хода (ост. ${ab.cooldown})</div>`
       : `<div class="tip-cd-ready">Доступна</div>`;
+    if(ab.type === 'melee') {
+      html += `<div class="tip-effect">Среднее мерцание: 15% при HP-уроне — полный сброс, затем половина cd</div>`;
+    }
   } else {
     html += `<div class="tip-cd-ready">Нет кулдауна</div>`;
   }
@@ -3655,7 +3801,7 @@ function initHex() {
   const playerDefs = heroDef ? null : (Array.isArray(gameData.player_units) ? gameData.player_units : [{type:'warrior',name:'Воин'}]);
   const enemyDefs  = Array.isArray(gameData.enemy_units)  ? gameData.enemy_units  : [{type:'warrior',name:'Страж'}];
 
-  hxs = {units:[], turn:'player', selected:null, inspecting:null, reachable:[], attackable:[], abilityTargets:[], activeAbilityIdx:null, mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, ended:false, rifts:[], forests:[], heights:[], obstacles:[], bushes:[], swamps:[], waters:[], shallow_waters:[], deep_waters:[], fires:[], burnable:[], enemyIntents:{}, totalDamageDealt:0, totalDamageTaken:0, aoeHover:null, abilitiesUsed:{}, hero: heroDef, heroAP: 4, heroMaxAP: 4, confirming: null, repositionLanding: false, repositionTargetId: null, timedFeatures: []};
+  hxs = {units:[], turn:'player', selected:null, inspecting:null, reachable:[], attackable:[], abilityTargets:[], activeAbilityIdx:null, mode:'select', log:'Ход 1. Твой ход!', logs:[], turnNum:1, maxRounds: gameData.max_rounds ?? 5, ended:false, rifts:[], forests:[], heights:[], obstacles:[], bushes:[], swamps:[], waters:[], shallow_waters:[], deep_waters:[], fires:[], burnable:[], enemyIntents:{}, totalDamageDealt:0, totalDamageTaken:0, aoeHover:null, abilitiesUsed:{}, hero: heroDef, heroAP: 4, heroMaxAP: 4, confirming: null, repositionLanding: false, repositionTargetId: null, timedFeatures: []};
   _hxZoomLevel = 1.0; _hxPanX = 0; _hxPanY = 0;
   const _initSvg = document.getElementById('hx-svg');
   if(_initSvg) {
@@ -3704,7 +3850,7 @@ function initHex() {
         statuses: heroStatuses, shields: [], hasShield: hasShield,
         moved: false, acted: false,
         emoji: h.emoji || '🧙',
-        abilities: hxBuildHeroAbilities(h.weapon || 'sword', h.magic || null),
+        abilities: hxBuildHeroAbilities(h.weapon || 'sword', h.magic || null, h),
         isHero: true,
       };
     } else if(def._companionData) {
@@ -3943,9 +4089,9 @@ function initHex() {
 
   const _initLabel = document.getElementById('hx-turn-label');
   _initLabel.className = 'hx-turn-label player-turn';
-  _initLabel.textContent = 'Ход 1 — твой ход';
+  _initLabel.textContent = hxTurnLabelText('player');
   document.getElementById('hx-end-btn').disabled = false;
-  hxLog('Ход 1. Твой ход!', 'info');
+  hxLog(`Раунд 1/${hxs.maxRounds}. Твой ход!`, 'info');
   // Pre-compute initial enemy intents
   hexComputeEnemyIntents();
   hxRender();

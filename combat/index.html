@@ -1313,7 +1313,10 @@ function combatResolve() {
   document.getElementById('combat-log').innerHTML = log.join('<br>');
 
   const alive = s.enemies.filter(e => e.hp > 0).length;
-  if (s.playerHp <= 0 || alive === 0 || s.round > s.maxRounds) {
+  if (s.playerHp <= 0 || alive === 0) {
+    s.done = true; setTimeout(combatEnd, 900);
+  } else if (s.round > s.maxRounds) {
+    s.sceneRevisit = true;
     s.done = true; setTimeout(combatEnd, 900);
   } else {
     document.getElementById('combat-confirm').disabled = true;
@@ -1333,6 +1336,9 @@ function combatEnd() {
     outcome = 'victory'; level = 3; label = '⚔️ Победа!'; cls = 'result-good';
   } else if (!playerAlive) {
     outcome = 'defeat'; level = 0; label = '💀 Поражение'; cls = 'result-bad';
+  } else if (s.sceneRevisit) {
+    outcome = 'scene_revisit'; level = 2;
+    label = `⏱ Пересмотр сцены (${s.maxRounds} раунд.)`; cls = 'result-mid';
   } else if (defeated > 0) {
     outcome = 'partial'; level = 1; label = '🩸 Частичная победа'; cls = 'result-mid';
   } else {
@@ -1343,7 +1349,9 @@ function combatEnd() {
   document.getElementById('combat-confirm').style.display = 'none';
   setTimeout(() => sendResultToBot({
     game: 'combat', outcome, level, victory: outcome === 'victory',
-    rounds: s.round - 1, enemies_defeated: defeated, enemies_total: s.enemies.length,
+    scene_revisit: !!s.sceneRevisit,
+    rounds: s.round - 1, max_rounds: s.maxRounds,
+    enemies_defeated: defeated, enemies_total: s.enemies.length,
     player_hp_remaining: s.playerHp, rounds_log: s.roundLogs,
   }), 700);
 }
