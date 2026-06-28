@@ -488,6 +488,14 @@
   <div id="combat-result" class="result-banner" style="display:none"></div>
 </div>
 
+<div id="combat-summary" style="display:none">
+  <div id="combat-summary-banner" class="result-banner"></div>
+  <div id="combat-summary-stats" class="combat-round-label"></div>
+  <div class="combat-section-label">📜 Лог боя</div>
+  <div id="combat-summary-log" class="combat-log"></div>
+  <button class="confirm-btn" onclick="combatFinish()">Завершить</button>
+</div>
+
 <script src="../shared/core.js"></script>
 <script>
 const DICE_FACES = ['⚀','⚁','⚂','⚃','⚄','⚅'];
@@ -495,6 +503,7 @@ const JOKER = 0;  // вайлд-грань: подходит под любое �
 function dieFace(v) { return v === JOKER ? '🃏' : DICE_FACES[v - 1]; }
 let combatState = null, combatSelectedDie = null;
 let combatMergePending = null, combatMergeAbilityIdx = null;
+let combatResult = null;
 
 function combatPRNG(seed) {
   let s = seed >>> 0;
@@ -1344,16 +1353,35 @@ function combatEnd() {
   } else {
     outcome = 'escape'; level = 0; label = '🌪 Бой прерван'; cls = 'result-bad';
   }
-  const banner = document.getElementById('combat-result');
-  banner.style.display = ''; banner.className = 'result-banner ' + cls; banner.textContent = label;
-  document.getElementById('combat-confirm').style.display = 'none';
-  setTimeout(() => sendResultToBot({
+  combatResult = {
     game: 'combat', outcome, level, victory: outcome === 'victory',
     scene_revisit: !!s.sceneRevisit,
     rounds: s.round - 1, max_rounds: s.maxRounds,
     enemies_defeated: defeated, enemies_total: s.enemies.length,
     player_hp_remaining: s.playerHp, rounds_log: s.roundLogs,
-  }), 700);
+  };
+  combatShowSummary(label, cls, defeated);
+}
+
+function combatShowSummary(label, cls, defeated) {
+  const s = combatState;
+  document.getElementById('combat-game').style.display = 'none';
+  const banner = document.getElementById('combat-summary-banner');
+  banner.className = 'result-banner ' + cls;
+  banner.textContent = label;
+  const hearts = '❤️'.repeat(Math.max(0, s.playerHp)) + '🖤'.repeat(Math.max(0, s.maxPlayerHp - s.playerHp));
+  document.getElementById('combat-summary-stats').innerHTML =
+    `Раундов: ${s.round - 1} · Повержено: ${defeated}/${s.enemies.length} · Герой: ${hearts || '—'}`;
+  let html = '';
+  s.roundLogs.forEach(r => {
+    html += `<div style="margin-bottom:10px"><b>Раунд ${r.round}</b> &nbsp;${r.dice.map(dieFace).join(' ')}<br>${r.log.join('<br>')}</div>`;
+  });
+  document.getElementById('combat-summary-log').innerHTML = html || '—';
+  document.getElementById('combat-summary').style.display = '';
+}
+
+function combatFinish() {
+  if (combatResult) sendResultToBot(combatResult);
 }
 
 initCombat();
