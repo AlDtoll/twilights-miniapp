@@ -243,6 +243,14 @@
   .combat-block-1 { color: #a29bfe; font-weight: 700; }
   .combat-block-full { color: #e17055; font-weight: 700; }
   .combat-round-label { text-align: center; font-size: 0.88rem; font-weight: 600; margin-bottom: 10px; color: var(--tg-theme-hint-color, #aaa); }
+  .combat-timer { text-align: center; font-size: 1rem; font-weight: 700; margin: -4px 0 10px; color: var(--tg-theme-hint-color, #aaa); }
+  .combat-timer-low { color: #ff5a5a; }
+  .combat-ready-card { padding: 16px; background: rgba(255,255,255,0.05); border-radius: 12px; line-height: 1.6; text-align: left; }
+  .combat-ready-card h2 { font-size: 1.05rem; margin: 0 0 12px; text-align: center; }
+  .combat-ready-card .ready-sec { margin-bottom: 12px; font-size: 0.86rem; }
+  .combat-ready-card .ready-sec b { display: block; margin-bottom: 4px; }
+  .combat-ready-card ul { margin: 4px 0 0; padding-left: 18px; }
+  .combat-ready-card li { margin-bottom: 3px; }
   .combat-dice-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 10px; }
   .combat-die { width: 56px; height: 56px; border-radius: 12px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; cursor: pointer; transition: all 0.15s; user-select: none; }
   .combat-die:hover { border-color: rgba(255,255,255,0.4); }
@@ -457,9 +465,18 @@
 <h1>⚔️ Twilights</h1>
 <p class="subtitle" id="subtitle">Загрузка...</p>
 
+<div id="combat-ready" style="display:none">
+  <div class="combat-ready-card">
+    <h2>⚔️ Готовность к бою</h2>
+    <div id="combat-ready-rules"></div>
+    <button class="confirm-btn" onclick="combatBegin()">В бой!</button>
+  </div>
+</div>
+
 <div id="combat-game" style="display:none">
   <div id="combat-prompt" class="subtitle" style="margin-bottom:12px;text-align:left;font-size:0.88rem;padding:10px 12px;background:rgba(255,255,255,0.05);border-radius:10px;line-height:1.5;display:none"></div>
   <div id="combat-round-label" class="combat-round-label"></div>
+  <div id="combat-timer" class="combat-timer" style="display:none"></div>
   <div id="combat-enemies" class="combat-enemies"></div>
   <div id="combat-supports" class="combat-enemies"></div>
   <div class="combat-section-label">🎲 Кубики — выбери, потом тапни ⚔️ или 🛡 на враге</div>
@@ -644,7 +661,6 @@ function parseSupports(raw) {
 }
 
 function initCombat() {
-  document.getElementById('combat-game').style.display = '';
   document.getElementById('subtitle').textContent = '⚔️ Сражение';
   const raw = (gameData.enemies || [{name:'Противник', hp:3, danger:2}]).slice(0, 4);
   // Пул значений для случайных «точных» требований (по умолчанию 1–6, можно сузить)
@@ -686,6 +702,9 @@ function initCombat() {
     supports: parseSupports(gameData.support),
     // Счётчик заряда 0/N (опц.): копится, при заполнении даёт куб-джокер
     counter: gameData.counter ? {n: gameData.counter, value: 0} : null,
+    // Лимит времени на раунд в секундах (опц., по умолч. выкл) — для подстёгивания
+    roundTime: Math.max(0, parseInt(gameData.round_time) || 0),
+    timer: null, timeLeft: 0,
     assignments: {}, roundLogs: [],
     rng: combatPRNG(gameData.seed || 42), done: false,
   };
@@ -693,7 +712,70 @@ function initCombat() {
     const pe = document.getElementById('combat-prompt');
     pe.textContent = gameData.prompt; pe.style.display = '';
   }
+  combatShowReady();
+}
+
+function combatShowReady() {
+  const s = combatState;
+  const enemyNames = s.enemies.map(e => `${e.name} (${e.max_hp}❤️)`).join(', ');
+  const tools = [];
+  if (s.movement) tools.push('🏃 Движение — раз в раунд сдвинуть кубик на случайную дельту (нужно ПОПАСТЬ в число, а не выжать максимум)');
+  if (s.control) tools.push(`${s.cardName ? '✨ ' + s.cardName : '✏️ ±1'} — раз в раунд сдвинуть кубик на ±1`);
+  if (s.hasReroll) tools.push(`${s.rerollName ? '✨ ' + s.rerollName : '🔄 Переброс'} — перебросить кубик (раз в бой)`);
+  s.abilities.forEach(ab => {
+    const m = ABILITY_CATALOG[ab.id];
+    if (m) tools.push(`${m.icon} ${m.name}${ab.id === 'set' ? ' ' + ab.value : ''}`);
+  });
+  if (s.counter) tools.push(`🔢 Счётчик ${s.counter.n} — копи (скинь кубик / повергни не раненного), заполнишь → кубик-джокер 🃏`);
+  const extras = [];
+  if (s.supports.length) extras.push(`🏹 Обстрел: ${s.supports.map(x => x.name).join(', ')} — по 1 урону, только блокируются`);
+  if (s.diceFaces && s.diceFaces.some(f => f && f.length)) extras.push('🎲 У части твоих кубиков особые грани (возможен 🃏 джокер)');
+
+  let html = `
+    <div class="ready-sec"><b>Противник</b>${enemyNames}${s.supports.length ? ' · ' + s.supports.length + ' обстрел' : ''}</div>
+    <div class="ready-sec"><b>Как играть</b>
+      <ul>
+        <li>Бросаешь кубики и распределяешь их: <b>⚔️</b> в слоты поражения врага, <b>🛡</b> на его атаки.</li>
+        <li>Чтобы повергнуть врага — закрой <b>оба</b> слота поражения (макс 2 урона с кубика).</li>
+        <li>Точный слот: ровно = 2, ±1 = 1, мимо = 0. Прочие (любой/чёт/нечёт/&gt;/&lt;) — бинарны.</li>
+        <li>Непокрытая атака врага = <b>2 урона</b>, обстрел = <b>1 урон</b>.</li>
+        <li>Чистая оборона (только блоки, без урона) → <b>+1 кубик</b> в следующем раунде.</li>
+      </ul>
+    </div>
+    <div class="ready-sec"><b>Твои силы</b>Герой: ${s.maxPlayerHp}❤️ · раундов: ${s.maxRounds}${s.roundTime ? ` · ⏱ ${s.roundTime} с/раунд` : ''}
+      ${tools.length ? '<ul>' + tools.map(t => `<li>${t}</li>`).join('') + '</ul>' : ''}
+    </div>`;
+  if (extras.length) html += `<div class="ready-sec"><b>Особое</b><ul>${extras.map(t => `<li>${t}</li>`).join('')}</ul></div>`;
+  if (s.roundTime) html += `<div class="ready-sec" style="color:#ff5a5a"><b>⏱ Лимит времени</b>${s.roundTime} с на раунд. Не успел распределить — раунд разыграется как есть (непокрытое = урон).</div>`;
+
+  document.getElementById('combat-ready-rules').innerHTML = html;
+  document.getElementById('combat-ready').style.display = '';
+}
+
+function combatBegin() {
+  document.getElementById('combat-ready').style.display = 'none';
+  document.getElementById('combat-game').style.display = '';
   combatStartRound();
+}
+
+function combatClearTimer() {
+  if (combatState && combatState.timer) { clearInterval(combatState.timer); combatState.timer = null; }
+}
+
+function combatStartTimer() {
+  const s = combatState;
+  const el = document.getElementById('combat-timer');
+  combatClearTimer();
+  if (!s.roundTime || s.done) { el.style.display = 'none'; return; }
+  s.timeLeft = s.roundTime;
+  el.style.display = '';
+  const upd = () => { el.textContent = `⏱ ${s.timeLeft} с`; el.className = 'combat-timer' + (s.timeLeft <= 3 ? ' combat-timer-low' : ''); };
+  upd();
+  s.timer = setInterval(() => {
+    s.timeLeft--;
+    if (s.timeLeft <= 0) { combatClearTimer(); el.textContent = '⏱ время вышло!'; combatResolve(); return; }
+    upd();
+  }, 1000);
 }
 
 function combatRollEnemies() {
@@ -755,6 +837,7 @@ function combatStartRound() {
   combatState.abilityLog = [];
   document.getElementById('combat-log').innerHTML = '';
   combatRender();
+  combatStartTimer();
 }
 
 function combatRender() {
@@ -1138,6 +1221,7 @@ function combatDoMerge(a, b) {
 
 function combatResolve() {
   const s = combatState;
+  combatClearTimer();
   // Лог начинается с действий игрока над кубиками (движение/способности/контрол/переброс)
   const log = (s.abilityLog || []).slice();
 
@@ -1239,6 +1323,8 @@ function combatResolve() {
 
 function combatEnd() {
   const s = combatState;
+  combatClearTimer();
+  document.getElementById('combat-timer').style.display = 'none';
   const defeated = s.enemies.filter(e => e.hp <= 0).length;
   const allDefeated = defeated === s.enemies.length;
   const playerAlive = s.playerHp > 0;
