@@ -406,9 +406,9 @@
       ],
       "stash": [],
       "loyalty": {
-        "Л": 14,
-        "Н": 35,
-        "НЛ": 21,
+        "Л": 13,
+        "Н": 33,
+        "НЛ": 24,
         "inline_mod": 0,
         "inline_mods": [
           {
@@ -418,12 +418,12 @@
           {
             "val": -2,
             "desc": "Завоевание",
-            "vis_cnt": 4
+            "vis_cnt": 3
           },
           {
             "val": 1,
             "desc": "Расправа над прежней верхушкой",
-            "vis_cnt": 2
+            "vis_cnt": 1
           }
         ],
         "mod": -1,
@@ -433,8 +433,8 @@
       },
       "eff_breakdown": {
         "base": 75,
-        "loyalty_penalty": 0,
-        "total": 75
+        "loyalty_penalty": 6,
+        "total": 69
       }
     },
     {
@@ -497,9 +497,9 @@
       ],
       "stash": [],
       "loyalty": {
-        "Л": 10,
-        "Н": 25,
-        "НЛ": 15,
+        "Л": 9,
+        "Н": 24,
+        "НЛ": 17,
         "inline_mod": -1,
         "inline_mods": [
           {
@@ -509,20 +509,20 @@
           {
             "val": -2,
             "desc": "Завоевание",
-            "vis_cnt": 4
+            "vis_cnt": 3
           }
         ],
         "mod": -2,
         "reasons": [
           "−1 нехватка клерков (0/2)",
           "+1 Стартовая область",
-          "-2 Завоевание (×4)"
+          "-2 Завоевание (×3)"
         ]
       },
       "eff_breakdown": {
         "base": 75,
-        "loyalty_penalty": 0,
-        "total": 75
+        "loyalty_penalty": 6,
+        "total": 69
       }
     },
     {
@@ -597,20 +597,20 @@
           {
             "val": -2,
             "desc": "Завоевание",
-            "vis_cnt": 4
+            "vis_cnt": 3
           }
         ],
         "mod": -2,
         "reasons": [
           "−1 нехватка клерков (0/1)",
           "+1 Стартовая область",
-          "-2 Завоевание (×4)"
+          "-2 Завоевание (×3)"
         ]
       },
       "eff_breakdown": {
         "base": 75,
-        "loyalty_penalty": 0,
-        "total": 75
+        "loyalty_penalty": 6,
+        "total": 69
       }
     }
   ]
