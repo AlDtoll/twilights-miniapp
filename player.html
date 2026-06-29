@@ -287,6 +287,7 @@ body {
 .skill-meta { display: flex; gap: 10px; margin-top: 3px; flex-wrap: wrap; }
 .skill-bank { color: var(--gold); font-size: 0.7rem; }
 .skill-tech { color: #7acc8a; font-size: 0.7rem; font-style: italic; }
+.skill-passive { color: #b58ad6; font-size: 0.7rem; font-style: italic; }
 .hero-section-title {
   font-size: 0.6rem; color: var(--gold-dim); letter-spacing: 0.15em;
   text-transform: uppercase; padding: 8px 0 4px;
@@ -938,7 +939,12 @@ function renderHero(hero) {
     html += `<div class="hero-section-title">Навыки</div>`;
     hero.skills.forEach(s => {
       const bankHtml = s.bank !== null && s.bank !== undefined ? `<span class="skill-bank">банк: ${s.bank}</span>` : "";
-      const techHtml = (s.techniques || []).map(t => `<span class="skill-tech">${esc(t)}</span>`).join("");
+      const techHtml = (s.techniques || []).map(t => {
+        const name = (typeof t === "string") ? t : t.name;
+        const kind = (typeof t === "string") ? "приём" : (t.kind || "приём");
+        const cls  = kind === "техника" ? "skill-passive" : "skill-tech";
+        return `<span class="${cls}">${esc(kind)}: ${esc(name)}</span>`;
+      }).join("");
       html += `<div class="skill-row">
         <div class="skill-name">${esc(s.name)}</div>
         <div class="skill-meta">${bankHtml}${techHtml}</div>
