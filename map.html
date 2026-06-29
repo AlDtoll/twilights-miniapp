@@ -645,9 +645,12 @@ async function openCell(cellData, playerType) {
       return;
     }
   }
-  // ВСЕ селения области игрока (главный НП клетки — первым), а не только клетка
+  // Клетка карты = область: показываем НП этой клетки + его подселения (area === имя клетки).
+  // Главный НП клетки — первым. Фолбэк для старых данных без area (legacy run_004): area = name,
+  // и если по имени клетки ничего не совпало — показываем всю область игрока (прежнее поведение).
   const all = areaCache[cacheKey].settlements || [];
-  const settlements = all.slice().sort((a, b) =>
+  const inArea = all.filter(s => (s.area || s.name) === cellData.name);
+  const settlements = (inArea.length ? inArea : all).slice().sort((a, b) =>
     (a.name === cellData.name ? 0 : 1) - (b.name === cellData.name ? 0 : 1));
   const npHtml = settlements.length
     ? settlements.map(renderNPCard).join('')
