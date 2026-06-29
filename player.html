@@ -564,10 +564,14 @@ function runEntries(run) { return INDEX.filter(e => e.run === run); }
 function entryLabel(e) { return `${e.char_name || e.player} (${e.player_name || ""})`.replace(" ()", ""); }
 
 const PHASE_LABELS = {
+  season:    "Начало сезона",
   leader:    "Лидер",
-  adventure: "Приключение",
   hearth:    "Очаг",
+  adventure: "Приключение",
+  defense:   "Оборона",
   defence:   "Оборона",
+  attack:    "Нападение",
+  building:  "Постройка",
 };
 
 let currentData = null;
