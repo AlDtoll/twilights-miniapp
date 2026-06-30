@@ -79,6 +79,10 @@
       {
         "label": "Стража (4 × 20 × 90)",
         "amount": 7200
+      },
+      {
+        "label": "Клерки (1 × 20 × 90)",
+        "amount": 1800
       }
     ],
     "receipts": [],
@@ -187,12 +191,16 @@
         {
           "label": "Стража (4 × 20 × 90)",
           "amount": 7200
+        },
+        {
+          "label": "Клерки (1 × 20 × 90)",
+          "amount": 1800
         }
       ]
     },
     "total_income": 46575,
-    "total_expenses": 52560,
-    "balance": -11858
+    "total_expenses": 54360,
+    "balance": -13658
   },
   "buildings": {
     "slots": {
@@ -848,6 +856,10 @@
         {
           "label": "Стража (4 × 20 × 90)",
           "amount": 7200
+        },
+        {
+          "label": "Клерки (1 × 20 × 90)",
+          "amount": 1800
         }
       ],
       "stash": [],
