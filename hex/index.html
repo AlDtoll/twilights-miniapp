@@ -202,11 +202,12 @@ const HX_WEAPON_ABILITIES = {
   ],
 };
 
-// Опциональные приёмы (среднее мерцание) — задаются в --hex-hero через `technique` или `techniques`.
+// Опциональные приёмы — задаются в --hex-hero через `technique` / `techniques` (воинские, акробатические и др.).
 const HX_TECHNIQUE_ABILITIES = {
   sword_plastic: {id:'sword_plastic',  name:'Пластичный удар', icon:'🗿', type:'melee', range:1, aoe:0, damage:40, ap:1, maxCooldown:4, school:'sword', effects:[{type:'damage',value:40,armorPenPct:50},{type:'damage',value:12,condition:{type:'isFlanked'}}], note:'50% пробитие брони; +12 во фланге'},
-  sword_lunge:   {id:'sword_lunge',    name:'Выпад',           icon:'➡️', type:'melee', range:2, aoe:0, damage:45, ap:1, maxCooldown:4, school:'sword', effect:{type:'lunge'}, note:'Сближение на 1 гекс + 45 урона; перезарядка при ранении'},
+  sword_lunge:   {id:'sword_lunge',    name:'Выпад',           icon:'➡️', type:'melee', range:2, aoe:0, damage:45, ap:1, maxCooldown:4, school:'sword', effect:{type:'lunge'}, note:'Прорезает пространство: сближение + 45 урона; перезарядка при ранении'},
   sword_smear:   {id:'sword_smear',    name:'Размазать клинок',icon:'🌫️', type:'melee', range:0, aoe:0, damage:0, ap:1, maxCooldown:4, school:'sword', mirroringOnUse:true, effects:[{type:'barrier',value:HX_ARROW_DAMAGE,count:1,to:'self'},{type:'barrier',value:HX_ARROW_DAMAGE,count:1,to:'self',chance:30}], note:`Заслон ${HX_ARROW_DAMAGE} (сила стрелы); 30% второй слой`},
+  acro_vault:    {id:'acro_vault',     name:'Перепрыгнуть',    icon:'🤸', type:'jump',  range:2, aoe:0, damage:0, ap:0, moveCost:1, maxCooldown:4, school:'acrobatics', mirroringOnUse:true, effect:{type:'jump', distance:2, overUnit:true, overObstacle:true}, note:'Через врага/препятствие; 1 👣, 0 AP'},
 };
 
 // Magic ability sets — correct Twilights lore schools
@@ -405,10 +406,7 @@ function hxBuildHeroAbilities(weapon, magic, heroDef) {
   const dash = {id:'hero_dash', name:'Рывок', icon:'💨', type:'move', range:0, aoe:0, damage:0,
     ap:1, cooldown:0, maxCooldown:1, effect:{type:'dash', move:2, shields:5},
     desc:'+2 очка движения и 5 щитов'};
-  const jump = {id:'hero_jump', name:'Прыжок', icon:'🦘', type:'jump', range:2, aoe:0, damage:0,
-    ap:1, cooldown:0, maxCooldown:2, effect:{type:'jump', distance:2, overUnit:true, overObstacle:true},
-    desc:'Перепрыгнуть через врага или препятствие на 2 гекса'};
-  return [dash, jump, ...wArr, ...techArr, ...mArr];
+  return [dash, ...wArr, ...techArr, ...mArr];
 }
 
 let hxs = {
@@ -1163,6 +1161,27 @@ function hxAbilityAP(ab) {
   return ab.maxCooldown === 0 ? 1 : 2;
 }
 
+function hxAbilityMoveCost(ab) {
+  return Math.max(0, ab.moveCost || 0);
+}
+
+function hxUnitRemainingMove(unit) {
+  return unit.remainingMove ?? unit.moveRange ?? 0;
+}
+
+function hxConsumeMoveCost(caster, ability) {
+  const mc = hxAbilityMoveCost(ability);
+  if(mc <= 0) return true;
+  const rem = hxUnitRemainingMove(caster);
+  if(rem < mc) {
+    hxLog(`${ability.name}: нужно ${mc} очк${mc === 1 ? 'о' : 'а'} движения (ост. ${rem}).`, 'info');
+    return false;
+  }
+  caster.remainingMove = rem - mc;
+  caster.moved = caster.remainingMove === 0;
+  return true;
+}
+
 // PASS A: helper — mark caster acted based on AP (hero) or directly (enemy/ally)
 function hxMarkActed(caster, ability) {
   if(caster.isHero) {
@@ -1187,7 +1206,9 @@ function hxMirroringCanProc(ability, ctx) {
 
 // Среднее мерцание (melee, cd>0): 15% при успехе → полный сброс cd, затем половина в цепочке подряд.
 function hxTryMirroringAccel(caster, ability, ctx) {
-  if(ability.type !== 'melee' || (ability.maxCooldown||0) <= 0) return;
+  const utilMirroring = !!ability.mirroringOnUse;
+  if(ability.type !== 'melee' && !utilMirroring) return;
+  if((ability.maxCooldown||0) <= 0) return;
   if(!ctx || ctx.didHit === false) { ability._mirroringChain = 0; return; }
   if(!hxMirroringCanProc(ability, ctx)) return;
   if(Math.random() * 100 >= HX_MIRRORING_CHANCE) {
@@ -1360,6 +1381,10 @@ function hxEffectDefaultTo(type) {
 // Apply an ability effect from caster on primary target (handles AoE automatically)
 function hxApplyAbility(caster, ability, primaryTarget, opts) {
   opts = opts || {};
+  if((ability.moveCost||0) > 0 && !opts._moveCostPaid) {
+    if(!hxConsumeMoveCost(caster, ability)) return;
+    opts._moveCostPaid = true;
+  }
   // PASS D: Track ability usage for FFT hero
   if(caster.isHero && ability.id) {
     hxs.abilitiesUsed[ability.id] = (hxs.abilitiesUsed[ability.id] || 0) + 1;
@@ -1407,7 +1432,7 @@ function hxApplyAbility(caster, ability, primaryTarget, opts) {
     const landCol = primaryTarget.col, landRow = primaryTarget.row;
     const fromCol = caster.col, fromRow = caster.row;
     caster.col = landCol; caster.row = landRow;
-    caster.moved = true; caster.movedRecently = true; caster.shields = [];
+    caster.movedRecently = true; caster.shields = [];
     hxLog(`${caster.name} — ${ability.name}: прыжок!`, 'special');
     hxMarkActed(caster, ability);
     hxFinalizeAbilityCooldown(caster, ability);
@@ -3231,6 +3256,7 @@ function hxShowAbilityTooltip(btn, ab) {
     if(ab.effect?.type==='barrier') html += `<div class="tip-effect">Заслон: ${ab.effect.count||1}×${ab.effect.value}</div>`;
   }
   html += `<div class="tip-row">Стоимость: ${hxAbilityAP(ab)} ОД</div>`;
+  if(hxAbilityMoveCost(ab) > 0) html += `<div class="tip-row">Движение: ${hxAbilityMoveCost(ab)} 👣</div>`;
   if(ab.type==='ranged' || ab.type==='magic') {
     html += `<div class="tip-row">Точность: вблизи ${hxAbilityAccAt(ab,1)}% / на дистанции ${hxAbilityAccAt(ab,ab.range)}%</div>`;
   }
@@ -3239,7 +3265,9 @@ function hxShowAbilityTooltip(btn, ab) {
       ? `<div class="tip-cd-wait">Кулдаун: ${ab.maxCooldown} хода (ост. ${ab.cooldown})</div>`
       : `<div class="tip-cd-ready">Доступна</div>`;
     if(ab.type === 'melee') {
-      html += `<div class="tip-effect">Среднее мерцание: 15% при HP-уроне — полный сброс, затем половина cd</div>`;
+      html += `<div class="tip-effect">Среднее мерцание: 15% при ранении — полный сброс, затем половина cd</div>`;
+    } else if(ab.mirroringOnUse) {
+      html += `<div class="tip-effect">Мерцание: 15% при успехе — полный сброс, затем половина cd</div>`;
     }
   } else {
     html += `<div class="tip-cd-ready">Нет кулдауна</div>`;
@@ -3466,6 +3494,10 @@ function hxSelectAbility(idx) {
   if(unit.isHero) {
     const apCost = hxAbilityAP(ab);
     if(hxs.heroAP < apCost) return;
+    if(hxAbilityMoveCost(ab) > hxUnitRemainingMove(unit)) {
+      hxLog(`${ab.name}: нужно ${hxAbilityMoveCost(ab)} очко движения.`, 'info');
+      return;
+    }
   }
   // Toggle off if already selected
   if(hxs.mode === 'ability' && hxs.activeAbilityIdx === idx) {

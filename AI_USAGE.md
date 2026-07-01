@@ -298,7 +298,7 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" hex \
 - `--hex-hero` — JSON героя: `name`, `hp` (деф 100), `weapon`, `magic` (опц.), `emoji`, `atk`, `level`, `technique` / `techniques` (опц. приёмы).
   - `weapon`: sword, axe, ranged, heavy, dual, shield, unarmed, polearm, chain
   - `technique`: один id приёма (напр. `"sword_plastic"`) или `techniques`: массив id
-  - приёмы меча: `sword_plastic`, `sword_lunge`, `sword_smear`
+  - приёмы (`technique` / `techniques`): `sword_plastic`, `sword_lunge`, `sword_smear`, `acro_vault`, … — по одному или несколько, независимо от оружия/навыков на карточке
   - `magic`: wizard, pyromancer, geomancer, aeromancer, aquamancer, druid, necro, demon, incenser, adept (`elementalist` — тип NPC, не magic героя)
 - `--hex-enemy` — JSON-массив врагов `[{type, name, hp?}]`.
 - `--hex-companions` — JSON-массив спутников игрока (те же типы юнитов).
@@ -319,7 +319,7 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" hex \
 - **AoE:** `aoe: N` + `aoeShape`: `radius` (деф.), `line`, `line_pair`, `wave` — направление от кастера к якорному гексу.
 - **Displacement:** `knockback`/`pull` — 1 гекс; край карты — без эффекта; столкновение с юнитом/препятствием — 15 урона обоим, без сдвига, `vulnerable` (+10% к попаданию, 2 х.).
 - **Reposition:** `effect:{type:'reposition'}` — сразу переместить цель на соседний к кастеру гекс (2 шага UI).
-- **Jump:** `type:'jump'` или `effect:{type:'jump', distance:2, overUnit, overObstacle}` — перепрыгнуть объект, не террейн; кд настраиваемый.
+- **Jump:** опц. приём `acro_vault` (**Перепрыгнуть**): 2 гекса через врага/препятствие; **1 👣**, **0 AP**, cd 4; `mirroringOnUse` (15% перезарядка при успехе).
 - **Spawn:** `effect:{type:'spawn_terrain', terrain:'crate'|'rock'|'shallow', duration?}` — `duration` опц.; без него — навсегда.
 - **DoT:** `poison`/`bleed` на юните — тик в **начале** хода цели; отдельные статусы, без стака/refresh; иконки 🧪/🩸.
 - **Прочие эффекты:** stun, ignite (трава), summon, heal, debuff atk, chain, barrier, dash.
