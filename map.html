@@ -150,6 +150,10 @@
   .t-ocean { background: linear-gradient(135deg, #0a1828, #071020); border-color: #1a3a5a; }
   .t-ocean .cell-code { color: #3a7aaa; }
 
+  /* Шхеры/архипелаг — вода-суша вперемешку: сине-песочный градиент */
+  .t-skerry { background: linear-gradient(135deg, #12222e, #1c2418); border-color: #2a6a6a; }
+  .t-skerry .cell-code { color: #6ab0a8; }
+
   .t-evil { background: linear-gradient(135deg, #2a0f0f, #1f0808); border-color: #6a1a1a; }
   .t-evil .cell-code { color: #cc4444; }
 
@@ -305,6 +309,7 @@
   <div class="leg-item"><div class="leg-dot" style="background:#3a3520;border:1px solid #5a5030"></div>Нейтральная зона</div>
   <div class="leg-item"><div class="leg-dot" style="background:#252320"></div>Горный хребет</div>
   <div class="leg-item"><div class="leg-dot" style="background:#071020"></div>Море</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#1c2418;border:1px solid #2a6a6a"></div>Шхеры</div>
   <div class="leg-item"><div class="leg-dot" style="background:#2a0f0f"></div>Злое место</div>
   <div class="leg-item"><div class="leg-dot" style="background:#1a1814;border:1px solid #2a2520"></div>Неизвестно</div>
 </div>
@@ -353,7 +358,8 @@ const panel   = document.getElementById('info-panel');
 let selectedCell = null;
 
 function infoHtml(data, x, y) {
-  return '<strong>' + data.name + '</strong><br>' +
+  const pop = data.pop ? ' <span class="tip-coord">(~' + data.pop + ' чел.)</span>' : '';
+  return '<strong>' + data.name + '</strong>' + pop + '<br>' +
     data.note +
     '<br><span class="tip-coord">(' + (x>0?'+':'') + x + ', ' + (y>0?'+':'') + y + ')</span>';
 }
@@ -624,7 +630,7 @@ const areaDash    = document.getElementById('area-dash');
 async function openCell(cellData, playerType) {
   const meta = PLAYER_META[playerType];
   if (!meta) return;
-  areaTitle.textContent = cellData.name;
+  areaTitle.textContent = cellData.pop ? `${cellData.name} (~${cellData.pop} чел.)` : cellData.name;
   areaDash.href = `player.html?player=${meta.key}&run=${currentRun}`;
   areaOverlay.classList.add('open');
 
