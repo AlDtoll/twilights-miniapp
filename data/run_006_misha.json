@@ -1,0 +1,129 @@
+{
+  "run": "run_006",
+  "player": "misha",
+  "char_name": "(персонаж)",
+  "player_name": "Миша",
+  "user_id": 1700257736,
+  "telegram": "@Мишачья",
+  "season": "1",
+  "active_phase": null,
+  "finance": {
+    "start": 0,
+    "income": [],
+    "expenses": [],
+    "receipts": [],
+    "spendings": [],
+    "income_by": {},
+    "expenses_by": {
+      "Общие": []
+    },
+    "total_income": 0,
+    "total_expenses": 0,
+    "balance": 0
+  },
+  "buildings": {
+    "slots": {
+      "base": 0,
+      "extra": 0,
+      "used": 0,
+      "max_extra": 0,
+      "free": 0
+    },
+    "buildings": []
+  },
+  "events": {
+    "points": {},
+    "incidents": [],
+    "visitors": [],
+    "assignments": [],
+    "custom": [],
+    "po_title": "Преступления и опасности (капитан — П&О)",
+    "po": []
+  },
+  "hero": {
+    "name": "(персонаж)",
+    "skills": [],
+    "features": [],
+    "status": {
+      "HP": "100%"
+    },
+    "retinue": [],
+    "retinue_slots": null,
+    "items": []
+  },
+  "staff": [
+    {
+      "category": "Стража (бойцы)",
+      "fact": "0",
+      "norm": "0",
+      "status": "—",
+      "np": "(название НП)"
+    },
+    {
+      "category": "Клерки",
+      "fact": "0",
+      "norm": "0",
+      "status": "—",
+      "np": "(название НП)"
+    },
+    {
+      "category": "Рабочие руки",
+      "fact": "0",
+      "norm": "0",
+      "status": "—",
+      "np": "(название НП)"
+    }
+  ],
+  "settlements": [
+    {
+      "name": "(название НП)",
+      "area": "(название НП)",
+      "population": "0",
+      "growth": null,
+      "houses": "0",
+      "staff": [
+        {
+          "category": "Стража (бойцы)",
+          "fact": "0",
+          "norm": "0",
+          "status": "—",
+          "np": "(название НП)"
+        },
+        {
+          "category": "Клерки",
+          "fact": "0",
+          "norm": "0",
+          "status": "—",
+          "np": "(название НП)"
+        },
+        {
+          "category": "Рабочие руки",
+          "fact": "0",
+          "norm": "0",
+          "status": "—",
+          "np": "(название НП)"
+        }
+      ],
+      "buildings": [],
+      "promysly": [],
+      "income": [],
+      "expenses_np": [],
+      "stash": [],
+      "loyalty": {
+        "Л": 0,
+        "Н": 0,
+        "НЛ": 0,
+        "Тип": "стартовая",
+        "mod": 1,
+        "reasons": [
+          "+1 стартовая"
+        ]
+      },
+      "eff_breakdown": {
+        "base": 100,
+        "loyalty_penalty": 0,
+        "total": 100
+      }
+    }
+  ]
+}

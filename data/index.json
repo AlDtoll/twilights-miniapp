@@ -7,7 +7,9 @@
     "run_004_misha.json",
     "run_004_valter.json",
     "run_005_danil.json",
-    "run_005_misha.json"
+    "run_005_misha.json",
+    "run_006_danil.json",
+    "run_006_misha.json"
   ],
   "entries": [
     {
@@ -64,6 +66,20 @@
       "run": "run_005",
       "player": "misha",
       "char_name": "Манс «Налётчик»",
+      "player_name": "Миша"
+    },
+    {
+      "file": "run_006_danil.json",
+      "run": "run_006",
+      "player": "danil",
+      "char_name": "Лег «Ночь»",
+      "player_name": "Данил"
+    },
+    {
+      "file": "run_006_misha.json",
+      "run": "run_006",
+      "player": "misha",
+      "char_name": "(персонаж)",
       "player_name": "Миша"
     }
   ]
