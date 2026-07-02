@@ -335,6 +335,13 @@ body {
 .ly-reasons li { font-size: 0.7rem; color: var(--muted); }
 .ly-reasons li.pos { color: var(--green); }
 .ly-reasons li.neg { color: var(--red); }
+.faith-card { padding: 10px 0 14px; border-bottom: 1px solid var(--border); }
+.faith-card:last-child { border-bottom: none; }
+.faith-bar-full { display: flex; height: 10px; border-radius: 4px; overflow: hidden; background: var(--border); margin-bottom: 6px; }
+.faith-legend { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 0.72rem; margin-bottom: 6px; }
+.faith-legend .fl-item { display: flex; align-items: center; gap: 5px; }
+.faith-legend .fl-dot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+.faith-legend .fl-neutral { color: var(--muted); }
 .sett-pos  { color: var(--green); text-align: right; white-space: nowrap; }
 .sett-neg  { color: var(--red);   text-align: right; white-space: nowrap; }
 .sett-bal-pos { color: #7acc8a; text-align: right; white-space: nowrap; font-weight: bold; }
@@ -545,6 +552,14 @@ select:focus { outline: none; border-color: var(--gold-dim); }
       <div class="card-body" id="body-loyalty"></div>
     </div>
 
+    <div class="card card-wide" id="card-faith">
+      <div class="card-title" onclick="toggleCard('card-faith')">
+        <span class="icon">⛪</span> Религия
+        <em class="chevron">▼</em>
+      </div>
+      <div class="card-body" id="body-faith"></div>
+    </div>
+
     <!-- Per-НП view -->
     <div class="card card-wide" id="card-settlements">
       <div class="card-title" onclick="toggleCard('card-settlements')">
@@ -681,6 +696,7 @@ function render(d, npFilter) {
   renderStaff(setts);
   renderTerritory(setts);
   renderLoyalty(setts);
+  renderFaith(setts);
   renderSettlements(setts);
 }
 
@@ -1126,6 +1142,56 @@ function renderLoyalty(settlements) {
   el.innerHTML = html;
 }
 
+// ── Religion / Вера ─────────────────────────────────────────────────────────
+const FAITH_PALETTE = ["#8a6ac0", "#4a8a5a", "#c08a4a", "#4a7ac0", "#c04a6a",
+                       "#5ab0a0", "#b0a04a", "#a05ac0", "#c07a4a", "#6a8ac0"];
+function faithColor(name, idx) { return FAITH_PALETTE[idx % FAITH_PALETTE.length]; }
+
+function faithBar(f) {
+  if (!f || !f.cults || !f.cults.length) return "";
+  let segs = f.cults.map((c, i) =>
+    `<div style="width:${c.pct}%;background:${faithColor(c.name, i)}" title="${esc(c.name)} ${c.count} (${c.pct}%)"></div>`
+  ).join("");
+  if (f.neutral_pct > 0) segs += `<div style="width:${f.neutral_pct}%;background:var(--border)" title="Нейтральные ${f.neutral} (${f.neutral_pct}%)"></div>`;
+  return `<div class="faith-bar-full">${segs}</div>`;
+}
+
+function renderFaith(settlements) {
+  const el = document.getElementById("body-faith");
+  if (!el) return;
+  if (!settlements || !settlements.length) { el.innerHTML = "<div class='placeholder-body'>Нет данных</div>"; return; }
+  const withFaith = settlements.filter(s => s.faith && s.faith.cults && s.faith.cults.length);
+  if (!withFaith.length) { el.innerHTML = "<div class='placeholder-body'>Вера не расписана</div>"; return; }
+
+  let html = "";
+  withFaith.forEach(s => {
+    const f = s.faith;
+    const mod = f.mod || 0;
+    const modCls = mod > 0 ? "pos" : mod < 0 ? "neg" : "zero";
+    const modStr = mod > 0 ? `+${mod}` : String(mod);
+    const legend = f.cults.map((c, i) =>
+      `<span class="fl-item"><span class="fl-dot" style="background:${faithColor(c.name, i)}"></span>${esc(c.name)} ${c.count} (${c.pct}%)</span>`
+    ).join("") + (f.neutral > 0
+      ? `<span class="fl-item fl-neutral"><span class="fl-dot" style="background:var(--border)"></span>нейтральные ${f.neutral} (${f.neutral_pct}%)</span>`
+      : "");
+    const reasons = (f.reasons || []).map(r => {
+      const cls = r.startsWith("+") ? "pos" : (r.startsWith("−") || r.startsWith("-")) ? "neg" : "";
+      return `<li class="${cls}">${esc(r)}</li>`;
+    }).join("");
+
+    html += `<div class="faith-card">
+      <div class="ly-card-header">
+        <span class="ly-card-name">${esc(s.name)}</span>
+        <span class="ly-card-mod ${modCls}">лоял. ${modStr}</span>
+      </div>
+      ${faithBar(f)}
+      <div class="faith-legend">${legend}</div>
+      ${reasons ? `<ul class="ly-reasons">${reasons}</ul>` : ""}
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
 // ── Settlements (per-НП) ──────────────────────────────────────────────────────
 function toggleNP(id) {
   document.getElementById(id).classList.toggle("collapsed");
@@ -1219,6 +1285,22 @@ function renderSettlements(setts) {
             return `<span style="font-size:0.68rem" class="${cls}">${esc(r)}</span>`;
           }).join("")
         }</div>` : ""}`;
+    }
+
+    // Вера
+    const fth = s.faith;
+    if (fth && fth.cults && fth.cults.length) {
+      const fmod = fth.mod || 0;
+      const fmodStr = fmod > 0 ? `+${fmod}` : String(fmod);
+      const fmodCls = fmod > 0 ? "pos" : fmod < 0 ? "neg" : "zero";
+      const flegend = fth.cults.map((c, i) =>
+        `<span class="fl-item"><span class="fl-dot" style="background:${faithColor(c.name, i)}"></span>${esc(c.name)} ${c.pct}%</span>`
+      ).join("") + (fth.neutral > 0
+        ? `<span class="fl-item fl-neutral"><span class="fl-dot" style="background:var(--border)"></span>нейтр. ${fth.neutral_pct}%</span>`
+        : "");
+      html += `<div class="np-sec" style="display:flex;align-items:center">Вера <span style="color:var(--muted);font-weight:normal;margin-left:auto">лоял. <span class="ly-card-mod ${fmodCls}">${fmodStr}</span></span></div>
+        ${faithBar(fth)}
+        <div class="faith-legend" style="margin-bottom:4px">${flegend}</div>`;
     }
 
     // Промыслы (что есть в НП — NPC-предприятия; Т-предприятия идут в требования тиров)
