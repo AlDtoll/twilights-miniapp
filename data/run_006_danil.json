@@ -334,6 +334,26 @@
           "−1 нехватка клерков (0/2)"
         ]
       },
+      "faith": {
+        "cults": [
+          {
+            "name": "Тенета",
+            "count": 40,
+            "pct": 80
+          },
+          {
+            "name": "Культ разума",
+            "count": 3,
+            "pct": 6
+          }
+        ],
+        "neutral": 7,
+        "neutral_pct": 14,
+        "mod": 2,
+        "reasons": [
+          "+2 Тенета господствует (80%)"
+        ]
+      },
       "eff_breakdown": {
         "base": 100,
         "loyalty_penalty": 10,
@@ -406,6 +426,7 @@
           "−1 нехватка клерков (0/1)"
         ]
       },
+      "faith": null,
       "eff_breakdown": {
         "base": 100,
         "loyalty_penalty": 20,
@@ -478,6 +499,7 @@
           "−1 нехватка клерков (0/1)"
         ]
       },
+      "faith": null,
       "eff_breakdown": {
         "base": 100,
         "loyalty_penalty": 33,

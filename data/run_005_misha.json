@@ -746,6 +746,7 @@
           "-2 Завоевание (×2)"
         ]
       },
+      "faith": null,
       "eff_breakdown": {
         "base": 75,
         "loyalty_penalty": 6,
@@ -842,6 +843,7 @@
           "-2 Завоевание (×2)"
         ]
       },
+      "faith": null,
       "eff_breakdown": {
         "base": 75,
         "loyalty_penalty": 6,
@@ -938,6 +940,7 @@
           "-2 Завоевание (×2)"
         ]
       },
+      "faith": null,
       "eff_breakdown": {
         "base": 75,
         "loyalty_penalty": 6,

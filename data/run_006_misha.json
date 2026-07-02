@@ -119,6 +119,7 @@
           "+1 стартовая"
         ]
       },
+      "faith": null,
       "eff_breakdown": {
         "base": 100,
         "loyalty_penalty": 0,

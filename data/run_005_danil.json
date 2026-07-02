@@ -724,6 +724,7 @@
         "mod": 0,
         "reasons": []
       },
+      "faith": null,
       "eff_breakdown": {
         "base": 85,
         "loyalty_penalty": 2,
@@ -817,6 +818,7 @@
         "mod": 0,
         "reasons": []
       },
+      "faith": null,
       "eff_breakdown": {
         "base": 85,
         "loyalty_penalty": 2,
@@ -916,6 +918,7 @@
           "-2 Завоевание (×2)"
         ]
       },
+      "faith": null,
       "eff_breakdown": {
         "base": 75,
         "loyalty_penalty": 8,
