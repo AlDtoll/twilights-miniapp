@@ -318,6 +318,8 @@ body {
 .lb-n  { background: #555; }
 .lb-nl { background: var(--red); }
 .loyalty-nums { display: flex; gap: 6px; font-size: 0.65rem; }
+.ly-supporters { margin-top: 4px; font-size: 0.72rem; color: var(--muted); }
+.ly-supporters .ly-supp { display: inline-block; padding: 1px 6px; margin-right: 4px; background: var(--border); border-radius: 3px; color: var(--text); }
 .ly-l  { color: var(--green); }
 .ly-n  { color: var(--muted); }
 .ly-nl { color: var(--red); }
@@ -1101,6 +1103,16 @@ function renderStaff(settlements) {
 }
 
 // ── Territory ─────────────────────────────────────────────────────────────────
+function supportersHtml(supporters) {
+  if (!supporters) return "";
+  const entries = Object.entries(supporters).filter(([_, v]) => v > 0);
+  if (!entries.length) return "";
+  const items = entries.map(([name, n]) =>
+    `<span class="ly-supp"><b>${esc(name)}</b> ${n}</span>`
+  ).join(" · ");
+  return `<div class="ly-supporters" title="Дворы, играющие на чужих князей — уже вне пула Л/Н/НЛ; порог захвата 40% Домов">Сторонники: ${items}</div>`;
+}
+
 function loyaltyBar(ly) {
   if (!ly) return "";
   const l = ly["Л"] || 0, n = ly["Н"] || 0, nl = ly["НЛ"] || 0;
@@ -1191,6 +1203,7 @@ function renderLoyalty(settlements) {
         <span class="ly-n">Н ${n} (${np}%)</span>
         <span class="ly-nl">НЛ ${nl} (${nlp}%)</span>
       </div>
+      ${supportersHtml(ly.supporters)}
       ${reasonsHtml ? `<ul class="ly-reasons">${reasonsHtml}</ul>` : ""}
       ${conseq}
     </div>`;
