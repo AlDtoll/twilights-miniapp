@@ -335,6 +335,12 @@ body {
 .ly-reasons li { font-size: 0.7rem; color: var(--muted); }
 .ly-reasons li.pos { color: var(--green); }
 .ly-reasons li.neg { color: var(--red); }
+.ly-conseq { font-size: 0.7rem; line-height: 1.35; margin-top: 6px; padding: 5px 7px; border-radius: 4px; }
+.ly-conseq.warn { color: var(--amber, #c08a4a); background: rgba(192,138,74,0.10); }
+.ly-conseq.crit { color: var(--red); background: rgba(192,74,106,0.12); }
+.ly-legend { font-size: 0.66rem; color: var(--muted); margin-top: 10px; line-height: 1.4; }
+.staff-eff-hint { color: var(--red); font-size: 0.68rem; }
+.staff-sub-note { font-size: 0.66rem; color: var(--muted); margin-top: 8px; line-height: 1.4; }
 .faith-card { padding: 10px 0 14px; border-bottom: 1px solid var(--border); }
 .faith-card:last-child { border-bottom: none; }
 .faith-bar-full { display: flex; height: 10px; border-radius: 4px; overflow: hidden; background: var(--border); margin-bottom: 6px; }
@@ -1037,7 +1043,13 @@ function renderStaff(settlements) {
   const el = document.getElementById("body-staff");
   if (!settlements || !settlements.length) { el.innerHTML = "<div class='placeholder-body'>Нет данных</div>"; return; }
 
+  const numOf = v => { const n = parseInt(String(v).replace(/[^\d-]/g, ""), 10); return isNaN(n) ? null : n; };
+  const isGuard  = c => /страж/i.test(c);
+  const isClerk  = c => /клерк/i.test(c);
+  const isLabor  = c => /рабоч/i.test(c);
+
   let html = "";
+  let anyShortGuard = false, anyShortClerk = false, anyOverLabor = false;
   settlements.forEach(sett => {
     const rows = sett.staff || [];
     if (!rows.length) return;
@@ -1052,15 +1064,38 @@ function renderStaff(settlements) {
       let stNote  = "";
       const noteMatch = stShort.match(/^([✅⚠️]+)\s+(.+)$/u);
       if (noteMatch) { stShort = noteMatch[1]; stNote = noteMatch[2]; }
+
+      const fact = numOf(r.fact), norm = numOf(r.norm);
+      let effHint = "";
+      if (fact != null && norm != null) {
+        if (isGuard(r.category) && fact < norm) {
+          effHint = "−1 к лояльности · +1d2 к преступлениям и опасностям (метка #недостаток_стражи)";
+          anyShortGuard = true;
+        } else if (isClerk(r.category) && fact < norm) {
+          effHint = "−1 к лояльности · +1d2 к происшествиям (метка #недостаток_клерков)";
+          anyShortClerk = true;
+        } else if (isLabor(r.category) && fact > norm) {
+          effHint = "−1 к лояльности · +1 к происшествиям (перегруз, метка #нехватка_свободных_рук)";
+          anyOverLabor = true;
+        }
+      }
       html += `<tr>
         <td class="staff-cat">${esc(r.category)}</td>
         <td class="staff-num">${esc(r.fact)}</td>
         <td class="staff-num">${r.norm ? esc(r.norm) : "—"}</td>
-        <td class="${stClass}">${esc(stShort)}${stNote ? `<br><span class="staff-status-note">${esc(stNote)}</span>` : ""}</td>
+        <td class="${stClass}">${esc(stShort)}${stNote ? `<br><span class="staff-status-note">${esc(stNote)}</span>` : ""}${effHint ? `<br><span class="staff-eff-hint">⚠️ ${effHint}</span>` : ""}</td>
       </tr>`;
     });
     html += `</tbody></table>`;
   });
+
+  if (anyShortGuard || anyShortClerk || anyOverLabor) {
+    const parts = [];
+    if (anyShortGuard) parts.push("<b>нехватка стражи</b> → −1 лояльность и <b>+1d2 к П&amp;О</b> (преступления и опасности)");
+    if (anyShortClerk) parts.push("<b>нехватка клерков</b> → −1 лояльность и <b>+1d2 к происшествиям</b>");
+    if (anyOverLabor)  parts.push("<b>перегруз рабочих рук</b> → −1 лояльность и <b>+1 к происшествиям</b>");
+    html += `<div class="staff-sub-note">⚠️ Последствия в начале следующего сезона:<br>• ${parts.join("<br>• ")}<br>Каждый недобор не только бьёт по лояльности, но и <b>плодит доп. события</b> в очереди лидера (со спец-метками). Нанимайте персонал (settlement_update.py), чтобы закрыть норму.</div>`;
+  }
 
   el.innerHTML = html || "<div class='placeholder-body'>Нет данных</div>";
 }
@@ -1133,6 +1168,14 @@ function renderLoyalty(settlements) {
       return `<li class="${cls}">${esc(r)}</li>`;
     }).join("");
 
+    let conseq = "";
+    if (nlp > 50) {
+      const prob = (nlp - 50) * 5;
+      conseq = `<div class="ly-conseq crit">🔥 НЛ &gt; 50% → риск <b>#бунт</b> ≈ ${prob}% (=(НЛ%−50)×5%). Плюс слот события <b>#нелояльность</b>.</div>`;
+    } else if (nlp >= 25) {
+      conseq = `<div class="ly-conseq warn">⚠️ НЛ ≥ 25% → в следующем сезоне <b>+1 слот события #нелояльность</b>.</div>`;
+    }
+
     html += `<div class="ly-card">
       <div class="ly-card-header">
         <span class="ly-card-name">${esc(s.name)}</span>
@@ -1149,8 +1192,11 @@ function renderLoyalty(settlements) {
         <span class="ly-nl">НЛ ${nl} (${nlp}%)</span>
       </div>
       ${reasonsHtml ? `<ul class="ly-reasons">${reasonsHtml}</ul>` : ""}
+      ${conseq}
     </div>`;
   });
+
+  html += `<div class="ly-legend">Пороги: <b>НЛ ≥ 25%</b> → +1 слот события #нелояльность в следующем сезоне · <b>НЛ &gt; 50%</b> → риск #бунт = (НЛ%−50)×5%. Мод лояльности за сезон складывается из строк-причин (нехватка стражи/клерков, перегруз рабочих рук — по −1 каждая).</div>`;
 
   el.innerHTML = html;
 }
@@ -1195,13 +1241,13 @@ function faithOverview(rel) {
   return `<div class="faith-overview">
     <div class="fo-head">
       <span class="fo-title">Общая структура веры</span>
-      <span class="fo-sub">по всем НП · ${rel.total_houses} домов</span>
+      <span class="fo-sub">по всем НП игрока · ${rel.total_houses} домов</span>
     </div>
     <div class="faith-bar-full">${segs}</div>
     <div class="fo-rows">${rows}</div>
     <div class="faith-sub-note">${anyEvent
-      ? `⚡ — культ занимает &gt;${thr}% всех домов области: раз в сезон добавляет отдельный слот события этого культа.`
-      : `Ни один культ не превысил ${thr}% домов области — событий культов в этом сезоне нет.`}</div>
+      ? `⚡ — культ занимает &gt;${thr}% всех домов игрока (по всем подконтрольным НП): раз в сезон добавляет отдельный слот события этого культа.`
+      : `Ни один культ не превысил ${thr}% всех домов игрока (по всем подконтрольным НП) — событий культов в этом сезоне нет.`}</div>
   </div>`;
 }
 
