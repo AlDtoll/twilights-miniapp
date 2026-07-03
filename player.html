@@ -331,6 +331,10 @@ body {
 .ly-card-mod.pos { color: var(--green); }
 .ly-card-mod.neg { color: var(--red); }
 .ly-card-mod.zero { color: var(--muted); }
+.might-badge { font-weight: bold; white-space: nowrap; cursor: help; }
+.might-badge.pos { color: var(--gold); }
+.might-badge.neg { color: var(--red); }
+.might-badge.zero { color: var(--muted); }
 .ly-bar-full { display: flex; height: 10px; border-radius: 4px; overflow: hidden; background: var(--border); margin-bottom: 4px; }
 .ly-nums-full { display: flex; gap: 14px; font-size: 0.72rem; margin-bottom: 6px; }
 .ly-reasons { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 2px; }
@@ -1137,8 +1141,10 @@ function renderTerritory(settlements) {
   if (!settlements || !settlements.length) { el.innerHTML = "<div class='placeholder-body'>Нет данных</div>"; return; }
 
   const hasLoyalty = settlements.some(s => s.loyalty);
+  const hasMight   = settlements.some(s => s.might);
   let html = `<table class="sett-table"><thead><tr>
     <th>НП</th><th>Население</th><th>Рост</th><th style="text-align:right">Домов</th>
+    ${hasMight ? '<th style="text-align:right">⚔ Мощь</th>' : ""}
     ${hasLoyalty ? "<th>Лояльность</th>" : ""}
   </tr></thead><tbody>`;
   settlements.forEach(s => {
@@ -1147,11 +1153,21 @@ function renderTerritory(settlements) {
       <td>${esc(s.population || "—")}</td>
       <td style="color:var(--green)">${esc(s.growth || "—")}</td>
       <td style="text-align:right;color:var(--muted)">${esc(s.houses || "—")}</td>
+      ${hasMight ? `<td style="text-align:right">${mightBadge(s.might)}</td>` : ""}
       ${hasLoyalty ? `<td>${loyaltyBar(s.loyalty)}</td>` : ""}
     </tr>`;
   });
   html += `</tbody></table>`;
+  if (hasMight) html += `<div class="staff-sub-note">⚔ <b>Боевая мощь</b> = сила обороны НП: ⌊бойцы÷5⌋ + мод лояльности + оборона(+1) + теги #боевая_мощь/#боевая_немощь. Бойцы: у игрока — стража, у нейтрала — ополчение ~1.4% населения. Наведи на число — расшивка.</div>`;
   el.innerHTML = html;
+}
+
+// ⚔ Боевая мощь — число с расшивкой в подсказке.
+function mightBadge(m) {
+  if (!m) return "—";
+  const cls = m.total > 0 ? "pos" : m.total < 0 ? "neg" : "zero";
+  const t = `Боевая мощь ${m.total}\n= ⌊${m.fighters}÷5⌋ база ${m.base}\n + лояльность ${m.loyalty >= 0 ? "+" : ""}${m.loyalty}\n + оборона +${m.defense}\n + теги ${m.tags >= 0 ? "+" : ""}${m.tags}\n(${m.fighters_src})`;
+  return `<span class="might-badge ${cls}" title="${esc(t)}">⚔ ${m.total}</span>`;
 }
 
 // ── Loyalty ───────────────────────────────────────────────────────────────────
