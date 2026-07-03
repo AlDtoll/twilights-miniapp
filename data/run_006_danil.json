@@ -251,6 +251,38 @@
       "np": "Сумерки"
     }
   ],
+  "religion": {
+    "total_houses": 90,
+    "cults": [
+      {
+        "name": "Тенета",
+        "count": 19,
+        "pct": 21,
+        "events": true
+      },
+      {
+        "name": "Лето",
+        "count": 7,
+        "pct": 8,
+        "events": false
+      },
+      {
+        "name": "Местный культ",
+        "count": 6,
+        "pct": 7,
+        "events": false
+      },
+      {
+        "name": "Природный культ (друидизм)",
+        "count": 1,
+        "pct": 1,
+        "events": false
+      }
+    ],
+    "neutral": 57,
+    "neutral_pct": 63,
+    "threshold_pct": 15
+  },
   "settlements": [
     {
       "name": "Полутенье",

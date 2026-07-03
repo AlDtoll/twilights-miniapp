@@ -342,6 +342,19 @@ body {
 .faith-legend .fl-item { display: flex; align-items: center; gap: 5px; }
 .faith-legend .fl-dot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
 .faith-legend .fl-neutral { color: var(--muted); }
+.faith-overview { padding: 4px 0 14px; margin-bottom: 6px; border-bottom: 2px solid var(--border); }
+.faith-overview .fo-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 7px; }
+.faith-overview .fo-title { font-weight: 600; font-size: 0.82rem; }
+.faith-overview .fo-sub { font-size: 0.66rem; color: var(--muted); }
+.faith-overview .fo-rows { display: flex; flex-direction: column; gap: 4px; margin-top: 7px; }
+.faith-overview .fo-row { display: flex; align-items: center; gap: 7px; font-size: 0.74rem; }
+.faith-overview .fo-dot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+.faith-overview .fo-name { flex: 1; }
+.faith-overview .fo-pct { color: var(--muted); min-width: 60px; text-align: right; }
+.faith-event-badge { display: inline-block; font-size: 0.62rem; padding: 1px 6px; border-radius: 8px;
+                     background: rgba(200,138,74,0.18); color: #d89a52; border: 1px solid rgba(200,138,74,0.4);
+                     white-space: nowrap; }
+.faith-sub-note { font-size: 0.66rem; color: var(--muted); margin-top: 8px; line-height: 1.35; }
 .sett-pos  { color: var(--green); text-align: right; white-space: nowrap; }
 .sett-neg  { color: var(--red);   text-align: right; white-space: nowrap; }
 .sett-bal-pos { color: #7acc8a; text-align: right; white-space: nowrap; font-weight: bold; }
@@ -696,7 +709,7 @@ function render(d, npFilter) {
   renderStaff(setts);
   renderTerritory(setts);
   renderLoyalty(setts);
-  renderFaith(setts);
+  renderFaith(setts, d.religion);
   renderSettlements(setts);
 }
 
@@ -1156,14 +1169,54 @@ function faithBar(f) {
   return `<div class="faith-bar-full">${segs}</div>`;
 }
 
-function renderFaith(settlements) {
+// Общая структура веры по всем НП + пометка культов >15% (генерируют события).
+function faithOverview(rel) {
+  if (!rel || !rel.cults || !rel.cults.length) return "";
+  const thr = rel.threshold_pct != null ? rel.threshold_pct : 15;
+  const segs = rel.cults.map((c, i) =>
+    `<div style="width:${c.pct}%;background:${faithColor(c.name, i)}" title="${esc(c.name)} ${c.count} (${c.pct}%)"></div>`
+  ).join("") + (rel.neutral_pct > 0
+    ? `<div style="width:${rel.neutral_pct}%;background:var(--border)" title="Нейтральные ${rel.neutral} (${rel.neutral_pct}%)"></div>`
+    : "");
+  const rows = rel.cults.map((c, i) =>
+    `<div class="fo-row">
+       <span class="fo-dot" style="background:${faithColor(c.name, i)}"></span>
+       <span class="fo-name">${esc(c.name)}${c.events ? ` <span class="faith-event-badge" title="Доля &gt;${thr}% — раз в сезон добавляется слот события этого культа">⚡ событие</span>` : ""}</span>
+       <span class="fo-pct">${c.count} · ${c.pct}%</span>
+     </div>`
+  ).join("") + (rel.neutral > 0
+    ? `<div class="fo-row">
+         <span class="fo-dot" style="background:var(--border)"></span>
+         <span class="fo-name fl-neutral">нейтральные</span>
+         <span class="fo-pct">${rel.neutral} · ${rel.neutral_pct}%</span>
+       </div>`
+    : "");
+  const anyEvent = rel.cults.some(c => c.events);
+  return `<div class="faith-overview">
+    <div class="fo-head">
+      <span class="fo-title">Общая структура веры</span>
+      <span class="fo-sub">по всем НП · ${rel.total_houses} домов</span>
+    </div>
+    <div class="faith-bar-full">${segs}</div>
+    <div class="fo-rows">${rows}</div>
+    <div class="faith-sub-note">${anyEvent
+      ? `⚡ — культ занимает &gt;${thr}% всех домов области: раз в сезон добавляет отдельный слот события этого культа.`
+      : `Ни один культ не превысил ${thr}% домов области — событий культов в этом сезоне нет.`}</div>
+  </div>`;
+}
+
+function renderFaith(settlements, religion) {
   const el = document.getElementById("body-faith");
   if (!el) return;
   if (!settlements || !settlements.length) { el.innerHTML = "<div class='placeholder-body'>Нет данных</div>"; return; }
   const withFaith = settlements.filter(s => s.faith && s.faith.cults && s.faith.cults.length);
-  if (!withFaith.length) { el.innerHTML = "<div class='placeholder-body'>Вера не расписана</div>"; return; }
+  const overview = faithOverview(religion);
+  if (!withFaith.length) {
+    el.innerHTML = overview || "<div class='placeholder-body'>Вера не расписана</div>";
+    return;
+  }
 
-  let html = "";
+  let html = overview;
   withFaith.forEach(s => {
     const f = s.faith;
     const mod = f.mod || 0;
