@@ -393,6 +393,16 @@
         "mod": 0,
         "reasons": []
       },
+      "might": {
+        "total": 0,
+        "fighters": 0,
+        "base": 0,
+        "loyalty": -1,
+        "defense": 1,
+        "tags": 0,
+        "fighters_src": "стража 0",
+        "neutral": false
+      },
       "eff_breakdown": {
         "base": 100,
         "loyalty_penalty": 10,
@@ -483,6 +493,16 @@
         "mod": 0,
         "reasons": []
       },
+      "might": {
+        "total": 0,
+        "fighters": 0,
+        "base": 0,
+        "loyalty": -1,
+        "defense": 1,
+        "tags": 0,
+        "fighters_src": "стража 0",
+        "neutral": false
+      },
       "eff_breakdown": {
         "base": 100,
         "loyalty_penalty": 20,
@@ -572,6 +592,16 @@
         "neutral_pct": 87,
         "mod": 0,
         "reasons": []
+      },
+      "might": {
+        "total": 0,
+        "fighters": 0,
+        "base": 0,
+        "loyalty": -1,
+        "defense": 1,
+        "tags": 0,
+        "fighters_src": "стража 0",
+        "neutral": false
       },
       "eff_breakdown": {
         "base": 100,
