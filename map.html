@@ -250,6 +250,20 @@
   .area-loading { padding: 32px; text-align: center; color: #5a5040; font-size: 0.85rem; }
   .area-desc { font-size: 0.78rem; color: #9a8a6a; line-height: 1.55; padding: 10px 14px 0; }
 
+  /* neutral NP card blocks */
+  .np-might { font-weight: bold; white-space: nowrap; cursor: help; }
+  .np-might.pos { color: #c8a84a; }
+  .np-might.neg { color: #8a3a2a; }
+  .np-might.zero { color: #7a6e5a; }
+  .np-sub { font-size: 0.72rem; color: #7a6e5a; margin: 8px 0 4px; letter-spacing: 0.03em; }
+  .np-bar { display: flex; height: 12px; border-radius: 3px; overflow: hidden; margin: 3px 0 5px; background: #2e2a22; }
+  .np-bar span { height: 100%; }
+  .np-bar-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 0.68rem; color: #9a8a6a; }
+  .np-bar-legend b { color: #c8b89a; font-weight: normal; }
+  .np-dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+  .np-promysly { font-size: 0.72rem; color: #9a8a6a; margin-top: 4px; }
+  .np-promysly .np-stat-label { color: #7a6e5a; }
+
   /* legend */
   .legend {
     margin-top: 28px;
@@ -434,6 +448,7 @@ function rebuildMap() {
           if (isPinching) return;
           const pm = data.type.match(/^t-player-(\w+)$/);
           if (pm) { openCell(data, pm[1]); e.stopPropagation(); return; }
+          if (data.type === 't-neutral') { openNeutralCell(data); e.stopPropagation(); return; }
           if (selectedCell === cell) {
             cell.classList.remove('selected');
             selectedCell = null;
@@ -632,6 +647,7 @@ async function openCell(cellData, playerType) {
   if (!meta) return;
   areaTitle.textContent = cellData.pop ? `${cellData.name} (~${cellData.pop} чел.)` : cellData.name;
   areaDash.href = `player.html?player=${meta.key}&run=${currentRun}`;
+  areaDash.style.display = '';
   areaOverlay.classList.add('open');
 
   // Area description from map data
@@ -679,6 +695,105 @@ function renderNPCard(s) {
     <div class="np-stat"><span class="np-stat-label">Рост:</span> ${s.growth}</div>
     ${staff}
     ${blds ? `<div class="np-buildings">Постройки: ${blds}</div>` : ''}
+  </div>`;
+}
+
+// ── Нейтральная клетка: описание области + упрощённые НП ─────────────────────
+const neutralCache = {};
+
+function esc(t) {
+  return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+async function openNeutralCell(cellData) {
+  areaTitle.textContent = cellData.name;
+  areaDash.style.display = 'none';   // у нейтрала нет дашборда игрока
+  areaOverlay.classList.add('open');
+
+  const descHtml = cellData.note
+    ? `<div class="area-desc">${cellData.note}</div>`
+    : '';
+  areaNps.innerHTML = descHtml + '<div class="area-loading">Загрузка НП…</div>';
+
+  if (!neutralCache[currentRun]) {
+    try {
+      const res = await fetch(`data/${currentRun}_neutrals.json?_=${Date.now()}`);
+      neutralCache[currentRun] = res.ok ? await res.json() : { cells: [] };
+    } catch {
+      neutralCache[currentRun] = { cells: [] };
+    }
+  }
+  const norm = t => (t || '').trim().toLowerCase();
+  const cells = neutralCache[currentRun].cells || [];
+  const cell = cells.find(c => norm(c.area) === norm(cellData.name)
+                            || norm(c.file) === norm(cellData.name));
+  const npHtml = (cell && cell.settlements.length)
+    ? cell.settlements.map(renderNeutralNPCard).join('')
+    : '<div class="area-loading">Разбивка НП для этой клетки ещё не заведена</div>';
+  areaNps.innerHTML = descHtml + npHtml;
+}
+
+const LY_COLORS = { 'Л': '#4a8a5a', 'Н': '#7a6e5a', 'НЛ': '#8a3a2a' };
+const LY_LABELS = { 'Л': 'Лояльные', 'Н': 'Нейтральные', 'НЛ': 'Нелояльные' };
+const FAITH_COLORS = ['#c8a84a', '#6a8ab0', '#a06ab0', '#4a8a5a', '#b07a4a', '#8a8a8a'];
+
+function pct(n, d) { return d > 0 ? Math.round(n / d * 100) : 0; }
+
+function mightBlock(m) {
+  if (!m) return '';
+  const cls = m.total > 0 ? 'pos' : m.total < 0 ? 'neg' : 'zero';
+  const tip = `Боевая мощь ${m.total}\n= ⌊${m.fighters}÷5⌋ база ${m.base}\n + лояльность ${m.loyalty >= 0 ? '+' : ''}${m.loyalty}\n + оборона +${m.defense}\n + теги ${m.tags >= 0 ? '+' : ''}${m.tags}\n(${m.fighters_src})`;
+  return `<div class="np-stat"><span class="np-stat-label">Боевая мощь:</span> `
+    + `<span class="np-might ${cls}" title="${esc(tip)}">⚔ ${m.total}</span></div>`;
+}
+
+function loyaltyBlock(ly, houses) {
+  if (!ly) return '';
+  const supporters = ly.supporters || {};
+  const rows = [['Л', ly['Л'] || 0], ['Н', ly['Н'] || 0], ['НЛ', ly['НЛ'] || 0]];
+  const denom = houses || rows.reduce((a, r) => a + r[1], 0)
+              + Object.values(supporters).reduce((a, v) => a + v, 0);
+  const bar = rows.filter(r => r[1] > 0).map(r =>
+    `<span style="width:${pct(r[1], denom)}%;background:${LY_COLORS[r[0]]}"></span>`).join('')
+    + Object.entries(supporters).filter(([, v]) => v > 0).map(([, v]) =>
+    `<span style="width:${pct(v, denom)}%;background:#c8a84a"></span>`).join('');
+  const legend = rows.map(r =>
+    `<span><span class="np-dot" style="background:${LY_COLORS[r[0]]}"></span>${LY_LABELS[r[0]]} <b>${r[1]} · ${pct(r[1], denom)}%</b></span>`).join('')
+    + Object.entries(supporters).filter(([, v]) => v > 0).map(([who, v]) =>
+    `<span><span class="np-dot" style="background:#c8a84a"></span>Сторонники ${esc(who)} <b>${v} · ${pct(v, denom)}%</b></span>`).join('');
+  const uklad = ly['уклад'] || ly['Тип'];
+  return `<div class="np-sub">Лояльность${uklad ? ' · ' + esc(uklad) : ''}</div>`
+    + `<div class="np-bar">${bar}</div>`
+    + `<div class="np-bar-legend">${legend}</div>`;
+}
+
+function faithBlock(f) {
+  if (!f || !f.cults || !f.cults.length) return '';
+  const cults = f.cults;
+  const bar = cults.map((c, i) =>
+    `<span style="width:${c.pct}%;background:${FAITH_COLORS[i % FAITH_COLORS.length]}"></span>`).join('')
+    + (f.neutral_pct > 0 ? `<span style="width:${f.neutral_pct}%;background:#3a3520"></span>` : '');
+  const legend = cults.map((c, i) =>
+    `<span><span class="np-dot" style="background:${FAITH_COLORS[i % FAITH_COLORS.length]}"></span>${esc(c.name)} <b>${c.count} · ${c.pct}%</b></span>`).join('')
+    + (f.neutral > 0 ? `<span><span class="np-dot" style="background:#3a3520"></span>без культа <b>${f.neutral} · ${f.neutral_pct}%</b></span>` : '');
+  return `<div class="np-sub">Религия</div>`
+    + `<div class="np-bar">${bar}</div>`
+    + `<div class="np-bar-legend">${legend}</div>`;
+}
+
+function renderNeutralNPCard(s) {
+  const houses_m = String(s.houses || '').match(/\d+/);
+  const houses = houses_m ? parseInt(houses_m[0]) : 0;
+  const promysly = (s.promysly || []).map(p => p.name).filter(Boolean).join(', ');
+  return `<div class="np-card">
+    <div class="np-card-name">${esc(s.name)}</div>
+    ${s.population ? `<div class="np-stat"><span class="np-stat-label">Население:</span> ${esc(s.population)}</div>` : ''}
+    ${s.houses ? `<div class="np-stat"><span class="np-stat-label">Домов:</span> ${esc(s.houses)}</div>` : ''}
+    ${mightBlock(s.might)}
+    ${loyaltyBlock(s.loyalty, houses)}
+    ${faithBlock(s.faith)}
+    ${promysly ? `<div class="np-promysly"><span class="np-stat-label">Промыслы:</span> ${esc(promysly)}</div>` : ''}
   </div>`;
 }
 </script>
