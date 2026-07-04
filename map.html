@@ -263,6 +263,11 @@
   .np-dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
   .np-promysly { font-size: 0.72rem; color: #9a8a6a; margin-top: 4px; }
   .np-promysly .np-stat-label { color: #7a6e5a; }
+  .np-prom-row { font-size: 0.74rem; color: #c8b89a; display: flex; justify-content: space-between; gap: 8px; margin: 3px 0; }
+  .np-prom-owner { color: #7a6e5a; font-size: 0.68rem; }
+  .np-tier-badge { display: inline-block; font-size: 0.62rem; font-weight: bold; color: #1a1814;
+    background: #c8a84a; border-radius: 3px; padding: 0 4px; margin-left: 4px; vertical-align: middle; }
+  .np-chain { color: #7a6e5a; font-size: 0.68rem; }
 
   /* legend */
   .legend {
@@ -782,10 +787,21 @@ function faithBlock(f) {
     + `<div class="np-bar-legend">${legend}</div>`;
 }
 
+function promyslyBlock(promysly) {
+  if (!promysly || !promysly.length) return '';
+  const rows = promysly.map(p => {
+    const td = (p.tier && /\d/.test(p.tier)) ? p.tier.match(/\d/)[0] : null;
+    const badge = td ? `<span class="np-tier-badge">Т${td}</span>` : '';
+    const chain = (p.chain && p.chain !== '—') ? ` <span class="np-chain">${esc(p.chain)}</span>` : '';
+    const owner = (p.owner && p.owner !== '—') ? `<span class="np-prom-owner">${esc(p.owner)}</span>` : '';
+    return `<div class="np-prom-row"><span>${esc(p.name)}${badge}${chain}</span>${owner}</div>`;
+  }).join('');
+  return `<div class="np-sub">Промыслы</div>${rows}`;
+}
+
 function renderNeutralNPCard(s) {
   const houses_m = String(s.houses || '').match(/\d+/);
   const houses = houses_m ? parseInt(houses_m[0]) : 0;
-  const promysly = (s.promysly || []).map(p => p.name).filter(Boolean).join(', ');
   return `<div class="np-card">
     <div class="np-card-name">${esc(s.name)}</div>
     ${s.population ? `<div class="np-stat"><span class="np-stat-label">Население:</span> ${esc(s.population)}</div>` : ''}
@@ -793,7 +809,7 @@ function renderNeutralNPCard(s) {
     ${mightBlock(s.might)}
     ${loyaltyBlock(s.loyalty, houses)}
     ${faithBlock(s.faith)}
-    ${promysly ? `<div class="np-promysly"><span class="np-stat-label">Промыслы:</span> ${esc(promysly)}</div>` : ''}
+    ${promyslyBlock(s.promysly)}
   </div>`;
 }
 </script>
