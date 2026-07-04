@@ -742,6 +742,16 @@ async function openNeutralCell(cellData) {
 const LY_COLORS = { 'Л': '#4a8a5a', 'Н': '#7a6e5a', 'НЛ': '#8a3a2a' };
 const LY_LABELS = { 'Л': 'Лояльные', 'Н': 'Нейтральные', 'НЛ': 'Нелояльные' };
 const FAITH_COLORS = ['#c8a84a', '#6a8ab0', '#a06ab0', '#4a8a5a', '#b07a4a', '#8a8a8a'];
+// Цвет закреплён за НАЗВАНИЕМ культа — одинаковый во всех клетках, а не по позиции в списке.
+const FAITH_COLOR_MAP = {};
+let _faithColorNext = 0;
+function faithColor(name) {
+  if (name in FAITH_COLOR_MAP) return FAITH_COLOR_MAP[name];
+  const col = FAITH_COLORS[_faithColorNext % FAITH_COLORS.length];
+  FAITH_COLOR_MAP[name] = col;
+  _faithColorNext++;
+  return col;
+}
 
 function pct(n, d) { return d > 0 ? Math.round(n / d * 100) : 0; }
 
@@ -776,11 +786,11 @@ function loyaltyBlock(ly, houses) {
 function faithBlock(f) {
   if (!f || !f.cults || !f.cults.length) return '';
   const cults = f.cults;
-  const bar = cults.map((c, i) =>
-    `<span style="width:${c.pct}%;background:${FAITH_COLORS[i % FAITH_COLORS.length]}"></span>`).join('')
+  const bar = cults.map(c =>
+    `<span style="width:${c.pct}%;background:${faithColor(c.name)}"></span>`).join('')
     + (f.neutral_pct > 0 ? `<span style="width:${f.neutral_pct}%;background:#3a3520"></span>` : '');
-  const legend = cults.map((c, i) =>
-    `<span><span class="np-dot" style="background:${FAITH_COLORS[i % FAITH_COLORS.length]}"></span>${esc(c.name)} <b>${c.count} · ${c.pct}%</b></span>`).join('')
+  const legend = cults.map(c =>
+    `<span><span class="np-dot" style="background:${faithColor(c.name)}"></span>${esc(c.name)} <b>${c.count} · ${c.pct}%</b></span>`).join('')
     + (f.neutral > 0 ? `<span><span class="np-dot" style="background:#3a3520"></span>без культа <b>${f.neutral} · ${f.neutral_pct}%</b></span>` : '');
   return `<div class="np-sub">Религия</div>`
     + `<div class="np-bar">${bar}</div>`

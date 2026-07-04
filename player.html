@@ -1265,7 +1265,17 @@ function renderLoyalty(settlements) {
 // ── Religion / Вера ─────────────────────────────────────────────────────────
 const FAITH_PALETTE = ["#8a6ac0", "#4a8a5a", "#c08a4a", "#4a7ac0", "#c04a6a",
                        "#5ab0a0", "#b0a04a", "#a05ac0", "#c07a4a", "#6a8ac0"];
-function faithColor(name, idx) { return FAITH_PALETTE[idx % FAITH_PALETTE.length]; }
+// Цвет закреплён за НАЗВАНИЕМ культа (одинаковый во всех НП и в общей структуре).
+// Регистрируется при первом появлении; overview рендерится первым и содержит все культы игрока.
+const FAITH_COLOR_MAP = {};
+let _faithColorNext = 0;
+function faithColor(name) {
+  if (name in FAITH_COLOR_MAP) return FAITH_COLOR_MAP[name];
+  const col = FAITH_PALETTE[_faithColorNext % FAITH_PALETTE.length];
+  FAITH_COLOR_MAP[name] = col;
+  _faithColorNext++;
+  return col;
+}
 
 function faithBar(f) {
   if (!f || !f.cults || !f.cults.length) return "";
