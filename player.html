@@ -1060,14 +1060,7 @@ function renderStaff(settlements) {
       <th>Категория</th><th>Факт</th><th>Норма</th><th>Статус</th>
     </tr></thead><tbody>`;
     rows.forEach(r => {
-      const isWarn = r.status && r.status.includes("⚠");
-      const stClass = isWarn ? "staff-status-warn" : "staff-status-ok";
-      let stShort = r.status || "";
-      let stNote  = "";
-      const noteMatch = stShort.match(/^([✅⚠️]+)\s+(.+)$/u);
-      if (noteMatch) { stShort = noteMatch[1]; stNote = noteMatch[2]; }
-      if (stNote.trim().toLowerCase() === "пусто") stNote = "";
-
+      // Статус и последствия ВЫЧИСЛЯЮТСЯ из недобора (факт vs норма), а не из текста в settlements.md.
       const fact = numOf(r.fact), norm = numOf(r.norm);
       let effHint = "";
       if (fact != null && norm != null) {
@@ -1082,10 +1075,12 @@ function renderStaff(settlements) {
           anyOverLabor = true;
         }
       }
-      // effHint уже несёт свой ⚠️ и объяснение — тогда не дублируем голый значок статуса.
+      const filled = norm != null && norm > 0 && fact != null && fact >= norm
+                     && (isGuard(r.category) || isClerk(r.category));
+      const stClass = effHint ? "staff-status-warn" : "staff-status-ok";
       const stCell = effHint
         ? `<span class="staff-eff-hint">⚠️ ${effHint}</span>`
-        : `${esc(stShort)}${stNote ? `<br><span class="staff-status-note">${esc(stNote)}</span>` : ""}`;
+        : (filled ? "✅" : "—");
       html += `<tr>
         <td class="staff-cat">${esc(r.category)}</td>
         <td class="staff-num">${esc(r.fact)}</td>
