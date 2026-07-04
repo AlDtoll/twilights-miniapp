@@ -384,8 +384,8 @@ body {
 .staff-table tr:last-child td { border-bottom: none; }
 .staff-cat { color: var(--text); }
 .staff-num { color: var(--muted); white-space: nowrap; }
-.staff-status-ok   { color: var(--green); white-space: nowrap; }
-.staff-status-warn { color: #c8883a; white-space: nowrap; }
+.staff-status-ok   { color: var(--green); }
+.staff-status-warn { color: #c8883a; }
 .staff-status-note { color: var(--muted); font-size: 0.7rem; }
 
 /* ── Per-НП settlement cards ── */
@@ -1066,18 +1066,19 @@ function renderStaff(settlements) {
       let stNote  = "";
       const noteMatch = stShort.match(/^([✅⚠️]+)\s+(.+)$/u);
       if (noteMatch) { stShort = noteMatch[1]; stNote = noteMatch[2]; }
+      if (stNote.trim().toLowerCase() === "пусто") stNote = "";
 
       const fact = numOf(r.fact), norm = numOf(r.norm);
       let effHint = "";
       if (fact != null && norm != null) {
         if (isGuard(r.category) && fact < norm) {
-          effHint = "−1 к лояльности · +1d2 к преступлениям и опасностям (метка #недостаток_стражи)";
+          effHint = "−1 к лояльности · +1d2 к преступлениям и опасностям";
           anyShortGuard = true;
         } else if (isClerk(r.category) && fact < norm) {
-          effHint = "−1 к лояльности · +1d2 к происшествиям (метка #недостаток_клерков)";
+          effHint = "−1 к лояльности · +1d2 к происшествиям";
           anyShortClerk = true;
         } else if (isLabor(r.category) && fact > norm) {
-          effHint = "−1 к лояльности · +1 к происшествиям (перегруз, метка #нехватка_свободных_рук)";
+          effHint = "−1 к лояльности · +1 к происшествиям (перегруз)";
           anyOverLabor = true;
         }
       }
@@ -1096,7 +1097,7 @@ function renderStaff(settlements) {
     if (anyShortGuard) parts.push("<b>нехватка стражи</b> → −1 лояльность и <b>+1d2 к П&amp;О</b> (преступления и опасности)");
     if (anyShortClerk) parts.push("<b>нехватка клерков</b> → −1 лояльность и <b>+1d2 к происшествиям</b>");
     if (anyOverLabor)  parts.push("<b>перегруз рабочих рук</b> → −1 лояльность и <b>+1 к происшествиям</b>");
-    html += `<div class="staff-sub-note">⚠️ Последствия в начале следующего сезона:<br>• ${parts.join("<br>• ")}<br>Каждый недобор не только бьёт по лояльности, но и <b>плодит доп. события</b> в очереди лидера (со спец-метками). Нанимайте персонал (settlement_update.py), чтобы закрыть норму.</div>`;
+    html += `<div class="staff-sub-note">⚠️ Последствия в начале следующего сезона:<br>• ${parts.join("<br>• ")}<br>Каждый недобор не только бьёт по лояльности, но и <b>плодит доп. события</b> в очереди лидера. Нанимайте персонал, чтобы закрыть норму.</div>`;
   }
 
   el.innerHTML = html || "<div class='placeholder-body'>Нет данных</div>";
@@ -1501,7 +1502,7 @@ function renderSettlements(setts) {
         const stCls = isWarn ? "staff-status-warn" : "staff-status-ok";
         html += `<div class="np-row">
           <span class="np-lbl">${esc(r.category)}</span>
-          <span class="${stCls}" style="white-space:nowrap;font-size:0.74rem">${esc(r.fact)}/${esc(r.norm || "?")} ${esc(r.status || "")}</span>
+          <span class="${stCls}" style="white-space:nowrap;font-size:0.74rem">${esc(r.fact)}/${esc(r.norm || "?")} ${esc((r.status || "").replace(/пусто/ig, "").trim())}</span>
         </div>`;
       });
     }
