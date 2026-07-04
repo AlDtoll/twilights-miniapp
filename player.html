@@ -987,7 +987,7 @@ function renderHero(hero) {
         return `<span class="${cls}">${esc(kind)}: ${esc(name)}</span>`;
       }).join("");
       html += `<div class="skill-row">
-        <div class="skill-name">${esc(s.name)}</div>
+        <div class="skill-name">${mdBold(s.name)}</div>
         <div class="skill-meta">${bankHtml}${techHtml}</div>
       </div>`;
     });
@@ -996,14 +996,10 @@ function renderHero(hero) {
   // Features
   if ((hero.features || []).length) {
     html += `<div class="hero-section-title">Особенности</div>`;
-    hero.features.forEach(f => { html += `<div class="hero-item">${esc(f)}</div>`; });
+    hero.features.forEach(f => { html += `<div class="hero-item">${mdBold(f)}</div>`; });
   }
 
-  // Retinue
-  if ((hero.retinue || []).length) {
-    html += `<div class="hero-section-title">Свита</div>`;
-    hero.retinue.forEach(r => { html += `<div class="hero-item">${esc(r)}</div>`; });
-  }
+  // Свита показывается в отдельной карточке «Свита» (renderRetinue) — здесь не дублируем.
 
   // Items (collapsed by default — show count + expand)
   if ((hero.items || []).length) {
@@ -1037,7 +1033,7 @@ function renderRetinue(hero) {
     </div>`;
   }
   if (list.length) {
-    list.forEach(r => { html += `<div class="hero-item">${esc(r)}</div>`; });
+    list.forEach(r => { html += `<div class="hero-item">${mdBold(r)}</div>`; });
   } else {
     html += `<div style="color:var(--muted);font-size:0.78rem;padding:6px 0">Свита пуста</div>`;
   }
@@ -1529,6 +1525,10 @@ function renderSettlements(setts) {
 // ── Escape HTML ───────────────────────────────────────────────────────────────
 function esc(s) {
   return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+// esc + рендер markdown-жирного (**текст**) — исходники hero_status.md пишут с **, иначе звёздочки видны буквально.
+function mdBold(s) {
+  return esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
