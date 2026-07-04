@@ -1082,11 +1082,15 @@ function renderStaff(settlements) {
           anyOverLabor = true;
         }
       }
+      // effHint уже несёт свой ⚠️ и объяснение — тогда не дублируем голый значок статуса.
+      const stCell = effHint
+        ? `<span class="staff-eff-hint">⚠️ ${effHint}</span>`
+        : `${esc(stShort)}${stNote ? `<br><span class="staff-status-note">${esc(stNote)}</span>` : ""}`;
       html += `<tr>
         <td class="staff-cat">${esc(r.category)}</td>
         <td class="staff-num">${esc(r.fact)}</td>
         <td class="staff-num">${r.norm ? esc(r.norm) : "—"}</td>
-        <td class="${stClass}">${esc(stShort)}${stNote ? `<br><span class="staff-status-note">${esc(stNote)}</span>` : ""}${effHint ? `<br><span class="staff-eff-hint">⚠️ ${effHint}</span>` : ""}</td>
+        <td class="${stClass}">${stCell}</td>
       </tr>`;
     });
     html += `</tbody></table>`;
