@@ -489,6 +489,7 @@ select:focus { outline: none; border-color: var(--gold-dim); }
   border-radius: 4px;
 }
 .map-link:hover { color: var(--text); border-color: var(--muted); }
+.nav-links { display: flex; gap: 6px; flex-shrink: 0; }
 </style>
 </head>
 <body>
@@ -499,7 +500,10 @@ select:focus { outline: none; border-color: var(--gold-dim); }
       <select id="sel-player"></select>
       <select id="sel-np" style="display:none"></select>
     </div>
-    <a class="map-link" href="map.html">🗺 Карта</a>
+    <div class="nav-links">
+      <a class="map-link" href="/twilights/">📖 Сеттинг</a>
+      <a class="map-link" href="map.html">🗺 Карта</a>
+    </div>
   </div>
 
   <div class="header">
