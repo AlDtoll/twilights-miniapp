@@ -331,10 +331,19 @@ body {
 .ly-card-mod.pos { color: var(--green); }
 .ly-card-mod.neg { color: var(--red); }
 .ly-card-mod.zero { color: var(--muted); }
-.might-badge { font-weight: bold; white-space: nowrap; cursor: help; }
+.might-badge { font-weight: bold; white-space: nowrap; }
 .might-badge.pos { color: var(--gold); }
 .might-badge.neg { color: var(--red); }
 .might-badge.zero { color: var(--muted); }
+.might-row { padding: 8px 0; border-bottom: 1px solid #1a1814; }
+.might-row:last-of-type { border-bottom: none; }
+.might-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.might-np { color: var(--text); font-weight: bold; font-size: 0.85rem; }
+.might-head .might-badge { font-size: 0.95rem; }
+.might-breakdown { margin-top: 4px; font-size: 0.72rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 3px 6px; align-items: baseline; }
+.might-part b { color: var(--text); font-weight: bold; }
+.might-part-src { color: #5a5040; font-size: 0.66rem; }
+.might-sep { color: #3a3520; }
 .ly-bar-full { display: flex; height: 10px; border-radius: 4px; overflow: hidden; background: var(--border); margin-bottom: 4px; }
 .ly-nums-full { display: flex; gap: 14px; font-size: 0.72rem; margin-bottom: 6px; }
 .ly-reasons { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 2px; }
@@ -568,6 +577,15 @@ select:focus { outline: none; border-color: var(--gold-dim); }
       <div class="card-body" id="body-territory"></div>
     </div>
 
+    <!-- Might -->
+    <div class="card card-wide" id="card-might">
+      <div class="card-title" onclick="toggleCard('card-might')">
+        <span class="icon">⚔</span> Боевая мощь
+        <em class="chevron">▼</em>
+      </div>
+      <div class="card-body" id="body-might"></div>
+    </div>
+
     <!-- Loyalty -->
     <div class="card card-wide" id="card-loyalty">
       <div class="card-title" onclick="toggleCard('card-loyalty')">
@@ -720,6 +738,7 @@ function render(d, npFilter) {
   renderRetinue(d.hero);
   renderStaff(setts);
   renderTerritory(setts);
+  renderMight(setts);
   renderLoyalty(setts);
   renderFaith(setts, d.religion);
   renderSettlements(setts);
@@ -1137,10 +1156,8 @@ function renderTerritory(settlements) {
   if (!settlements || !settlements.length) { el.innerHTML = "<div class='placeholder-body'>Нет данных</div>"; return; }
 
   const hasLoyalty = settlements.some(s => s.loyalty);
-  const hasMight   = settlements.some(s => s.might);
   let html = `<table class="sett-table"><thead><tr>
     <th>НП</th><th>Население</th><th>Рост</th><th style="text-align:right">Домов</th>
-    ${hasMight ? '<th style="text-align:right">⚔ Мощь</th>' : ""}
     ${hasLoyalty ? "<th>Лояльность</th>" : ""}
   </tr></thead><tbody>`;
   settlements.forEach(s => {
@@ -1149,21 +1166,40 @@ function renderTerritory(settlements) {
       <td>${esc(s.population || "—")}</td>
       <td style="color:var(--green)">${esc(s.growth || "—")}</td>
       <td style="text-align:right;color:var(--muted)">${esc(s.houses || "—")}</td>
-      ${hasMight ? `<td style="text-align:right">${mightBadge(s.might)}</td>` : ""}
       ${hasLoyalty ? `<td>${loyaltyBar(s.loyalty)}</td>` : ""}
     </tr>`;
   });
   html += `</tbody></table>`;
-  if (hasMight) html += `<div class="staff-sub-note">⚔ <b>Боевая мощь</b> = сила обороны НП: ⌊бойцы÷5⌋ + мод лояльности + оборона(+1) + теги #боевая_мощь/#боевая_немощь. Бойцы: у игрока — стража, у нейтрала — ополчение ~1.4% населения. Наведи на число — расшивка.</div>`;
   el.innerHTML = html;
 }
 
-// ⚔ Боевая мощь — число с расшивкой в подсказке.
-function mightBadge(m) {
-  if (!m) return "—";
-  const cls = m.total > 0 ? "pos" : m.total < 0 ? "neg" : "zero";
-  const t = `Боевая мощь ${m.total}\n= ⌊${m.fighters}÷5⌋ база ${m.base}\n + лояльность ${m.loyalty >= 0 ? "+" : ""}${m.loyalty}\n + оборона +${m.defense}\n + теги ${m.tags >= 0 ? "+" : ""}${m.tags}\n(${m.fighters_src})`;
-  return `<span class="might-badge ${cls}" title="${esc(t)}">⚔ ${m.total}</span>`;
+// ── Боевая мощь (отдельный блок) ────────────────────────────────────────────
+function renderMight(settlements) {
+  const el = document.getElementById("body-might");
+  const list = (settlements || []).filter(s => s.might);
+  if (!list.length) { el.innerHTML = "<div class='placeholder-body'>Нет данных</div>"; return; }
+  let html = "";
+  list.forEach(s => {
+    const m = s.might;
+    const cls = m.total > 0 ? "pos" : m.total < 0 ? "neg" : "zero";
+    const sgn = v => (v >= 0 ? "+" : "") + v;
+    // Слагаемые считаются из данных НП: бойцы, мод лояльности, база обороны, теги.
+    const parts = [
+      `<span class="might-part"><b>${sgn(m.base)}</b> бойцы <span class="might-part-src">⌊${m.fighters}÷5⌋ · ${esc(m.fighters_src)}</span></span>`,
+      `<span class="might-part"><b>${sgn(m.loyalty)}</b> лояльность</span>`,
+      `<span class="might-part"><b>${sgn(m.defense)}</b> оборона</span>`,
+    ];
+    if (m.tags) parts.push(`<span class="might-part"><b>${sgn(m.tags)}</b> теги (#боевая_мощь/немощь)</span>`);
+    html += `<div class="might-row">
+      <div class="might-head">
+        <span class="might-np">${esc(s.name)}</span>
+        <span class="might-badge ${cls}">⚔ ${m.total}</span>
+      </div>
+      <div class="might-breakdown">${parts.join('<span class="might-sep">·</span>')}</div>
+    </div>`;
+  });
+  html += `<div class="staff-sub-note">⚔ <b>Боевая мощь</b> — сила обороны НП, считается автоматически: <b>+1 за каждые 5 бойцов</b> (у игрока бойцы = стража НП) + <b>мод лояльности</b> + <b>оборона +1</b> + теги <b>#боевая_мощь</b>/<b>#боевая_немощь</b>, если есть.</div>`;
+  el.innerHTML = html;
 }
 
 // ── Loyalty ───────────────────────────────────────────────────────────────────
