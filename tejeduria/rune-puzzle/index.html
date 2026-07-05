@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tejeduria — Руна-головоломка</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="../../shared/styles.css">
+  <style>
+    :root {
+      --bg: #0f0e1a;
+      --text: #e8e0ff;
+      --accent: #a29bfe;
+      --hit: #00b894;
+      --miss: #e74c3c;
+      --tile-bg: #1a1830;
+      --tile-border: rgba(162,155,254,0.3);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .screen { display: none; width: 100%; max-width: 380px; flex-direction: column; align-items: center; }
+    .screen.active { display: flex; }
+
+    /* ===== READY SCREEN ===== */
+    .game-title {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--accent);
+      text-align: center;
+      margin-bottom: 6px;
+      text-shadow: 0 0 20px rgba(162,155,254,0.5);
+    }
+    .game-subtitle {
+      font-size: 0.85rem;
+      color: rgba(232,224,255,0.5);
+      text-align: center;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .rune-preview-wrap {
+      position: relative;
+      margin-bottom: 16px;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(162,155,254,0.25);
+      box-shadow: 0 0 30px rgba(162,155,254,0.15);
+    }
+    .rune-preview-wrap canvas {
+      display: block;
+      width: 200px;
+      height: 200px;
+    }
+    .prompt-box {
+      width: 100%;
+      background: rgba(162,155,254,0.08);
+      border: 1px solid rgba(162,155,254,0.2);
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: var(--text);
+      margin-bottom: 14px;
+      text-align: center;
+    }
+    .info-chips {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .chip {
+      padding: 6px 14px;
+      background: rgba(162,155,254,0.1);
+      border: 1px solid rgba(162,155,254,0.25);
+      border-radius: 20px;
+      font-size: 0.82rem;
+      color: var(--accent);
+    }
+    .start-btn {
+      width: 100%;
+      padding: 15px;
+      border-radius: 14px;
+      border: none;
+      background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+      color: #fff;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      box-shadow: 0 4px 20px rgba(108,92,231,0.4);
+      transition: transform 0.1s;
+    }
+    .start-btn:active { transform: scale(0.97); }
+
+    /* ===== GAME SCREEN ===== */
+    .timer-bar-wrap {
+      width: 100%;
+      height: 6px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+    .timer-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #6c5ce7, #a29bfe);
+      border-radius: 3px;
+      transition: width 0.1s linear, background 0.3s;
+    }
+    .timer-bar.danger { background: linear-gradient(90deg, #e74c3c, #c0392b); }
+
+    .stats-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+      width: 100%;
+    }
+    .stat-box {
+      flex: 1;
+      text-align: center;
+      background: rgba(255,255,255,0.05);
+      border-radius: 10px;
+      padding: 8px 4px;
+    }
+    .stat-label { font-size: 0.7rem; color: rgba(232,224,255,0.45); text-transform: uppercase; letter-spacing: 0.08em; }
+    .stat-val { font-size: 1.3rem; font-weight: 800; color: var(--text); }
+
+    /* Puzzle grid */
+    .puzzle-grid {
+      position: relative;
+      display: grid;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #0a0917;
+      border: 1px solid rgba(162,155,254,0.15);
+    }
+    .tile {
+      position: relative;
+      background-color: var(--tile-bg);
+      cursor: pointer;
+      border: 1px solid rgba(162,155,254,0.12);
+      transition: transform 0.12s ease, box-shadow 0.12s;
+      background-repeat: no-repeat;
+    }
+    .tile:active { transform: scale(0.96); }
+    .tile.selected {
+      border-color: var(--accent);
+      box-shadow: 0 0 16px rgba(162,155,254,0.6), inset 0 0 8px rgba(162,155,254,0.15);
+      transform: scale(1.04);
+      z-index: 1;
+    }
+    .tile.solved-flash {
+      box-shadow: 0 0 14px rgba(0,184,148,0.6);
+      border-color: var(--hit);
+    }
+
+    /* ===== RESULT SCREEN ===== */
+    .result-icon { font-size: 3rem; margin-bottom: 10px; }
+    .outcome-badge {
+      font-size: 1.5rem;
+      font-weight: 800;
+      padding: 10px 28px;
+      border-radius: 30px;
+      margin-bottom: 16px;
+    }
+    .outcome-4 { background: rgba(162,155,254,0.15); border: 2px solid var(--accent); color: var(--accent); }
+    .outcome-3 { background: rgba(0,184,148,0.15); border: 2px solid var(--hit); color: var(--hit); }
+    .outcome-2 { background: rgba(0,184,148,0.1); border: 2px solid rgba(0,184,148,0.5); color: var(--hit); }
+    .outcome-0 { background: rgba(231,76,60,0.15); border: 2px solid var(--miss); color: var(--miss); }
+
+    .result-stats {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border-radius: 14px;
+      padding: 14px 16px;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+    .result-stat { text-align: center; flex: 1; }
+    .result-stat-label { font-size: 0.72rem; color: rgba(232,224,255,0.4); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+    .result-stat-val { font-size: 1.4rem; font-weight: 800; }
+  </style>
+</head>
+<body>
+
+<!-- READY SCREEN -->
+<div id="screen-ready" class="screen active">
+  <div class="game-title">◈ Руна-головоломка</div>
+  <div class="game-subtitle">Tejeduria · Плетение</div>
+  <div class="rune-preview-wrap">
+    <canvas id="preview-canvas" width="240" height="240"></canvas>
+  </div>
+  <div id="prompt-box" class="prompt-box" style="display:none"></div>
+  <div class="info-chips">
+    <span class="chip" id="chip-size"></span>
+    <span class="chip" id="chip-time"></span>
+    <span class="chip" id="chip-moves"></span>
+  </div>
+  <button class="start-btn" onclick="startGame()">Сложить руну</button>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="screen-game" class="screen">
+  <div class="timer-bar-wrap"><div class="timer-bar" id="timer-bar"></div></div>
+  <div class="stats-row">
+    <div class="stat-box">
+      <div class="stat-label">Время</div>
+      <div class="stat-val" id="stat-time">0:00</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Ходов</div>
+      <div class="stat-val" id="stat-moves">0</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Лимит</div>
+      <div class="stat-val" id="stat-limit"></div>
+    </div>
+  </div>
+  <div class="puzzle-grid" id="puzzle-grid"></div>
+</div>
+
+<!-- RESULT SCREEN -->
+<div id="screen-result" class="screen">
+  <div class="result-icon" id="result-icon">◈</div>
+  <div class="outcome-badge" id="outcome-badge"></div>
+  <div class="result-stats">
+    <div class="result-stat">
+      <div class="result-stat-label">Время</div>
+      <div class="result-stat-val" id="res-time" style="color:var(--accent)"></div>
+    </div>
+    <div class="result-stat">
+      <div class="result-stat-label">Ходов</div>
+      <div class="result-stat-val" id="res-moves" style="color:var(--text)"></div>
+    </div>
+    <div class="result-stat">
+      <div class="result-stat-label">Итог</div>
+      <div class="result-stat-val" id="res-solved" style="color:var(--hit)"></div>
+    </div>
+  </div>
+</div>
+
+<script src="../../shared/core.js"></script>
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+const N             = Math.min(5, Math.max(3, parseInt(gameData.size)       || 3));
+const TIME_LIMIT    = Math.max(30, parseInt(gameData.timeLimit)             || (N === 3 ? 120 : N === 4 ? 180 : 240));
+const SHUFFLE_MOVES = Math.max(10, parseInt(gameData.shuffleMoves)          || 50);
+const RUNE_INDEX    = Math.min(7, Math.max(0, parseInt(gameData.runeIndex) >= 0 ? parseInt(gameData.runeIndex) : (N - 3)));
+const PROMPT        = gameData.prompt || '';
+
+// Outcome time cutoffs (seconds) by size
+const BASE_TIMES = { 4: 60, 3: 90, 2: 150 }; // level → base seconds for N=4
+const SIZE_MULT  = N === 3 ? 0.5 : N === 5 ? 1.5 : 1.0;
+
+// ─── CANVAS RUNE DRAWING ──────────────────────────────────────────────────────
+const RUNE_BG     = '#1a1535';
+const RUNE_STROKE = '#c9b8ff';
+
+function drawRune(canvas, n, runeIdx) {
+  const ctx  = canvas.getContext('2d');
+  const sz   = canvas.width;
+  const cx   = sz / 2, cy = sz / 2, r = sz * 0.44;
+  const lw   = sz * 0.022;
+  const gridAlpha = 'rgba(162,155,254,0.12)';
+
+  ctx.fillStyle = RUNE_BG;
+  ctx.fillRect(0, 0, sz, sz);
+
+  // Tile boundary grid lines
+  const tileW = sz / n;
+  ctx.strokeStyle = gridAlpha;
+  ctx.lineWidth   = 1;
+  for (let i = 1; i < n; i++) {
+    ctx.beginPath(); ctx.moveTo(i * tileW, 0); ctx.lineTo(i * tileW, sz); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, i * tileW); ctx.lineTo(sz, i * tileW); ctx.stroke();
+  }
+
+  ctx.strokeStyle = RUNE_STROKE;
+  ctx.lineWidth   = lw;
+  ctx.lineCap     = 'round';
+  ctx.lineJoin    = 'round';
+
+  if (runeIdx === 0) {
+    // Крест с кольцами — circle + inner circle + 4 arms
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, r * 0.45, 0, Math.PI * 2); ctx.stroke();
+    [[0,-1],[1,0],[0,1],[-1,0]].forEach(([dx,dy]) => {
+      ctx.beginPath();
+      ctx.moveTo(cx + dx*r*0.45, cy + dy*r*0.45);
+      ctx.lineTo(cx + dx*r, cy + dy*r);
+      ctx.stroke();
+    });
+
+  } else if (runeIdx === 1) {
+    // Гексаграмма — hexagon + inner triangle + spokes
+    const hex = Array.from({length:6}, (_,i) => {
+      const a = Math.PI/3*i - Math.PI/6;
+      return [cx + r*Math.cos(a), cy + r*Math.sin(a)];
+    });
+    ctx.beginPath();
+    hex.forEach(([x,y],i) => i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y));
+    ctx.closePath(); ctx.stroke();
+    ctx.beginPath();
+    [hex[0],hex[2],hex[4]].forEach(([x,y],i) => i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y));
+    ctx.closePath(); ctx.stroke();
+    hex.forEach(([x,y]) => { ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(x,y); ctx.stroke(); });
+
+  } else if (runeIdx === 2) {
+    // Пентаграмма — 5-star + outer/inner circles + tip dots
+    const pts = Array.from({length:5}, (_,i) => {
+      const a = 2*Math.PI/5*i - Math.PI/2;
+      return [cx + r*Math.cos(a), cy + r*Math.sin(a)];
+    });
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath();
+    [0,2,4,1,3,0].forEach((pi,i) => i===0 ? ctx.moveTo(pts[pi][0],pts[pi][1]) : ctx.lineTo(pts[pi][0],pts[pi][1]));
+    ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, r*0.3, 0, Math.PI*2); ctx.stroke();
+    pts.forEach(([x,y]) => { ctx.beginPath(); ctx.arc(x, y, lw*1.8, 0, Math.PI*2); ctx.stroke(); });
+
+  } else if (runeIdx === 3) {
+    // Октаграмма — два квадрата под 45° + центральный круг
+    [0, Math.PI/4].forEach(offset => {
+      ctx.beginPath();
+      for (let i=0; i<4; i++) {
+        const a = offset + i*Math.PI/2;
+        const x = cx + r*Math.cos(a), y = cy + r*Math.sin(a);
+        i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+      }
+      ctx.closePath(); ctx.stroke();
+    });
+    ctx.beginPath(); ctx.arc(cx, cy, r*0.22, 0, Math.PI*2); ctx.stroke();
+
+  } else if (runeIdx === 4) {
+    // Трилистник — 3 пересекающихся круга + внешнее кольцо
+    const r4 = r*0.55, d4 = r*0.42;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
+    for (let i=0; i<3; i++) {
+      const a = i*2*Math.PI/3 - Math.PI/2;
+      ctx.beginPath(); ctx.arc(cx + d4*Math.cos(a), cy + d4*Math.sin(a), r4, 0, Math.PI*2); ctx.stroke();
+    }
+    ctx.beginPath(); ctx.arc(cx, cy, r*0.16, 0, Math.PI*2); ctx.fill();
+
+  } else if (runeIdx === 5) {
+    // Снежинка — 6 лучей с ветками + hexagonal rim
+    for (let i=0; i<6; i++) {
+      const a = i*Math.PI/3;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + r*Math.cos(a), cy + r*Math.sin(a)); ctx.stroke();
+      const bx = cx + r*0.6*Math.cos(a), by = cy + r*0.6*Math.sin(a);
+      const ba = a + Math.PI/2, bl = r*0.18;
+      ctx.beginPath(); ctx.moveTo(bx - bl*Math.cos(ba), by - bl*Math.sin(ba));
+      ctx.lineTo(bx + bl*Math.cos(ba), by + bl*Math.sin(ba)); ctx.stroke();
+    }
+    ctx.beginPath();
+    for (let i=0; i<6; i++) {
+      const a1 = i*Math.PI/3, a2 = (i+1)*Math.PI/3;
+      ctx.moveTo(cx + r*Math.cos(a1), cy + r*Math.sin(a1));
+      ctx.lineTo(cx + r*Math.cos(a2), cy + r*Math.sin(a2));
+    }
+    ctx.stroke();
+
+  } else if (runeIdx === 6) {
+    // Цветок жизни — центральный круг + 6 лепестков + внешнее кольцо
+    const r6 = r*0.5;
+    ctx.beginPath(); ctx.arc(cx, cy, r6, 0, Math.PI*2); ctx.stroke();
+    for (let i=0; i<6; i++) {
+      const a = i*Math.PI/3;
+      ctx.beginPath(); ctx.arc(cx + r6*Math.cos(a), cy + r6*Math.sin(a), r6, 0, Math.PI*2); ctx.stroke();
+    }
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
+
+  } else {
+    // Веретено — эллипс + вертикальная ось + 8 лучей
+    ctx.beginPath(); ctx.ellipse(cx, cy, r, r*0.4, 0, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, r*0.18, 0, Math.PI*2); ctx.stroke();
+    for (let i=0; i<8; i++) {
+      const a = i*Math.PI/4;
+      const r1 = r*0.22, r2 = i%2===0 ? r*0.88 : r*0.55;
+      ctx.beginPath();
+      ctx.moveTo(cx + r1*Math.cos(a), cy + r1*Math.sin(a));
+      ctx.lineTo(cx + r2*Math.cos(a), cy + r2*Math.sin(a));
+      ctx.stroke();
+    }
+  }
+}
+
+// ─── OFFSCREEN CANVAS + DATA URL ─────────────────────────────────────────────
+const GRID_PX  = Math.min(290, window.innerWidth - 48);
+const GAP      = 4;
+const TILE_PX  = Math.floor((GRID_PX - (N - 1) * GAP) / N);
+const CANVAS_PX = N * TILE_PX;
+
+const offCanvas    = document.createElement('canvas');
+offCanvas.width    = CANVAS_PX;
+offCanvas.height   = CANVAS_PX;
+drawRune(offCanvas, N, RUNE_INDEX);
+const runeDataURL = offCanvas.toDataURL('image/png');
+
+// Draw preview (200×200 canvas)
+const previewCanvas = document.getElementById('preview-canvas');
+drawRune(previewCanvas, N, RUNE_INDEX);
+
+// ─── READY SCREEN ─────────────────────────────────────────────────────────────
+if (PROMPT) {
+  const pb = document.getElementById('prompt-box');
+  pb.textContent = PROMPT;
+  pb.style.display = 'block';
+}
+document.getElementById('chip-size').textContent  = `${N}×${N} плиток`;
+document.getElementById('chip-time').textContent  = `${TIME_LIMIT} сек`;
+document.getElementById('chip-moves').textContent = `обмен парами`;
+document.getElementById('stat-limit').textContent = formatTime(TIME_LIMIT);
+
+// ─── PUZZLE STATE ─────────────────────────────────────────────────────────────
+const TOTAL = N * N;
+let state = [];        // state[pos] = tile_id (0..N*N-1)
+let selectedPos = -1;  // currently selected tile position (-1 = none)
+let moves = 0, gameOver = false, solved = false;
+let startTime = 0, elapsed = 0;
+let timerInterval = null;
+
+function initSolved() {
+  state = Array.from({length: TOTAL}, (_, i) => i);
+}
+
+function isSolved() {
+  return state.every((v, i) => v === i);
+}
+
+function shufflePuzzle() {
+  // Random pair swaps from solved state (always solvable)
+  for (let k = 0; k < SHUFFLE_MOVES; k++) {
+    const a = Math.floor(rng() * TOTAL);
+    let b;
+    do { b = Math.floor(rng() * TOTAL); } while (b === a);
+    [state[a], state[b]] = [state[b], state[a]];
+  }
+  // If somehow solved after shuffle, do one forced swap
+  if (isSolved()) { [state[0], state[1]] = [state[1], state[0]]; }
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function setTileBackground(div, tileId) {
+  const srcRow = Math.floor(tileId / N), srcCol = tileId % N;
+  div.style.backgroundImage    = `url('${runeDataURL}')`;
+  div.style.backgroundSize     = `${N * TILE_PX}px ${N * TILE_PX}px`;
+  div.style.backgroundPosition = `-${srcCol * TILE_PX}px -${srcRow * TILE_PX}px`;
+  div.style.backgroundRepeat   = 'no-repeat';
+}
+
+function renderGrid() {
+  const grid = document.getElementById('puzzle-grid');
+  grid.style.width       = GRID_PX + 'px';
+  grid.style.height      = GRID_PX + 'px';
+  grid.style.gridTemplateColumns = `repeat(${N}, ${TILE_PX}px)`;
+  grid.style.gap         = GAP + 'px';
+  grid.innerHTML         = '';
+
+  for (let pos = 0; pos < TOTAL; pos++) {
+    const div = document.createElement('div');
+    div.className = 'tile';
+    div.id        = `tile-pos-${pos}`;
+    div.style.width  = TILE_PX + 'px';
+    div.style.height = TILE_PX + 'px';
+    setTileBackground(div, state[pos]);
+    div.addEventListener('click', () => onTileClick(pos));
+    grid.appendChild(div);
+  }
+}
+
+function updateGridPositions() {
+  for (let pos = 0; pos < TOTAL; pos++) {
+    const div = document.getElementById(`tile-pos-${pos}`);
+    if (!div) continue;
+    setTileBackground(div, state[pos]);
+    div.className = 'tile' + (pos === selectedPos ? ' selected' : '');
+  }
+}
+
+// ─── GAME LOGIC ───────────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function startGame() {
+  initSolved();
+  shufflePuzzle();
+  renderGrid();
+  showScreen('screen-game');
+  moves       = 0;
+  selectedPos = -1;
+  gameOver    = false;
+  solved      = false;
+  startTime   = Date.now();
+  elapsed     = 0;
+
+  timerInterval = setInterval(tickTimer, 100);
+}
+
+function tickTimer() {
+  if (gameOver) return;
+  elapsed = (Date.now() - startTime) / 1000;
+  const pct = elapsed / TIME_LIMIT;
+  const bar = document.getElementById('timer-bar');
+  bar.style.width = Math.min(100, pct * 100) + '%';
+  bar.classList.toggle('danger', pct >= 0.8);
+  document.getElementById('stat-time').textContent  = formatTime(Math.floor(elapsed));
+  document.getElementById('stat-moves').textContent = moves;
+  if (elapsed >= TIME_LIMIT) endGame(false);
+}
+
+function onTileClick(pos) {
+  if (gameOver) return;
+
+  if (selectedPos === -1) {
+    // First tap — select this tile
+    selectedPos = pos;
+    const div = document.getElementById(`tile-pos-${pos}`);
+    if (div) div.className = 'tile selected';
+  } else if (selectedPos === pos) {
+    // Tap same tile — deselect
+    selectedPos = -1;
+    const div = document.getElementById(`tile-pos-${pos}`);
+    if (div) div.className = 'tile';
+  } else {
+    // Second tap — swap with selected
+    [state[selectedPos], state[pos]] = [state[pos], state[selectedPos]];
+    moves++;
+    selectedPos = -1;
+    updateGridPositions();
+    document.getElementById('stat-moves').textContent = moves;
+    if (isSolved()) endGame(true);
+  }
+}
+
+function endGame(win) {
+  if (gameOver) return;
+  gameOver = true;
+  clearInterval(timerInterval);
+  solved = win;
+
+  const timeSeconds = Math.floor(elapsed);
+
+  if (win) {
+    // Flash solved
+    document.querySelectorAll('.tile:not(.empty)').forEach(t => {
+      t.classList.add('solved-flash');
+    });
+  }
+
+  // Compute outcome
+  let outcome, level;
+  if (!win) {
+    outcome = 'Провал'; level = 0;
+  } else {
+    const t4 = Math.round(BASE_TIMES[4] * SIZE_MULT);
+    const t3 = Math.round(BASE_TIMES[3] * SIZE_MULT);
+    const t2 = Math.round(BASE_TIMES[2] * SIZE_MULT);
+    if      (timeSeconds <= t4) { outcome = 'Мастерски'; level = 4; }
+    else if (timeSeconds <= t3) { outcome = 'Отлично';   level = 3; }
+    else if (timeSeconds <= t2) { outcome = 'Хорошо';    level = 2; }
+    else                        { outcome = 'Хорошо';    level = 2; } // still solved
+  }
+
+  const icons = { 4: '◈', 3: '⬡', 2: '✦', 0: '💀' };
+  document.getElementById('result-icon').textContent = icons[level] || '◈';
+  const badge = document.getElementById('outcome-badge');
+  badge.textContent = outcome;
+  badge.className   = `outcome-badge outcome-${level}`;
+  document.getElementById('res-time').textContent   = formatTime(timeSeconds);
+  document.getElementById('res-moves').textContent  = moves;
+  document.getElementById('res-solved').textContent = win ? 'Успех' : 'Провал';
+  if (!win) document.getElementById('res-solved').style.color = 'var(--miss)';
+
+  setTimeout(() => showScreen('screen-result'), win ? 600 : 0);
+
+  const result = {
+    game:        'rune-puzzle',
+    size:        N,
+    solved:      win,
+    timeSeconds,
+    moves,
+    outcome,
+    level
+  };
+  setTimeout(() => sendResultToBot(result), win ? 1400 : 800);
+}
+
+// ─── UTILS ────────────────────────────────────────────────────────────────────
+function formatTime(s) {
+  const m = Math.floor(s / 60), sec = s % 60;
+  return `${m}:${String(sec).padStart(2, '0')}`;
+}
+</script>
+</body>
+</html>

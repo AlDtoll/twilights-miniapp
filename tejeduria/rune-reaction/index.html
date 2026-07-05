@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tejeduria — Руны реакции</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="../../shared/styles.css">
+  <style>
+    :root {
+      --bg: #0f0e1a;
+      --text: #e8e0ff;
+      --accent: #a29bfe;
+      --hit: #00b894;
+      --miss: #e74c3c;
+      --cell-bg: #1a1830;
+      --cell-border: rgba(162,155,254,0.25);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* ===== SCREEN MANAGEMENT ===== */
+    .screen { display: none; width: 100%; max-width: 380px; flex-direction: column; align-items: center; }
+    .screen.active { display: flex; }
+
+    /* ===== READY SCREEN ===== */
+    .game-title {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--accent);
+      text-align: center;
+      margin-bottom: 6px;
+      text-shadow: 0 0 20px rgba(162,155,254,0.5);
+    }
+    .game-subtitle {
+      font-size: 0.85rem;
+      color: rgba(232,224,255,0.5);
+      text-align: center;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .prompt-box {
+      width: 100%;
+      background: rgba(162,155,254,0.08);
+      border: 1px solid rgba(162,155,254,0.2);
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: var(--text);
+      margin-bottom: 18px;
+      text-align: center;
+    }
+    .info-chips {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .chip {
+      padding: 6px 14px;
+      background: rgba(162,155,254,0.1);
+      border: 1px solid rgba(162,155,254,0.25);
+      border-radius: 20px;
+      font-size: 0.82rem;
+      color: var(--accent);
+    }
+    .grid-preview {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 20px;
+      opacity: 0.4;
+    }
+    .preview-cell {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--cell-bg);
+      border: 1px solid var(--cell-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      color: rgba(162,155,254,0.4);
+    }
+    .start-btn {
+      width: 100%;
+      padding: 15px;
+      border-radius: 14px;
+      border: none;
+      background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+      color: #fff;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      box-shadow: 0 4px 20px rgba(108,92,231,0.4);
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .start-btn:active { transform: scale(0.97); box-shadow: 0 2px 10px rgba(108,92,231,0.3); }
+
+    /* ===== GAME SCREEN ===== */
+    .timer-bar-wrap {
+      width: 100%;
+      height: 6px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+      margin-bottom: 14px;
+      overflow: hidden;
+    }
+    .timer-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #a29bfe, #6c5ce7);
+      border-radius: 3px;
+      transition: width 0.1s linear, background 0.3s;
+      width: 100%;
+    }
+    .timer-bar.danger { background: linear-gradient(90deg, #e74c3c, #c0392b); }
+
+    .stats-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 14px;
+      width: 100%;
+    }
+    .stat-box {
+      flex: 1;
+      text-align: center;
+      background: rgba(255,255,255,0.05);
+      border-radius: 10px;
+      padding: 8px 4px;
+    }
+    .stat-label { font-size: 0.7rem; color: rgba(232,224,255,0.45); text-transform: uppercase; letter-spacing: 0.08em; }
+    .stat-val { font-size: 1.4rem; font-weight: 800; color: var(--text); }
+    .stat-val.green { color: var(--hit); }
+    .stat-val.red { color: var(--miss); }
+
+    .rune-grid {
+      display: grid;
+      gap: 8px;
+      width: 100%;
+    }
+    .rune-cell {
+      aspect-ratio: 1;
+      border-radius: 12px;
+      background: var(--cell-bg);
+      border: 2px solid var(--cell-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      color: rgba(162,155,254,0.35);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, color 0.15s, transform 0.1s;
+      position: relative;
+    }
+    .rune-cell:active { transform: scale(0.93); }
+    .rune-cell.active {
+      background: rgba(162,155,254,0.15);
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: 0 0 18px rgba(162,155,254,0.6), inset 0 0 12px rgba(162,155,254,0.08);
+      animation: pulse-glow 0.6s ease-in-out infinite alternate;
+    }
+    .rune-cell.hit {
+      background: rgba(0,184,148,0.2);
+      border-color: var(--hit);
+      color: var(--hit);
+      box-shadow: 0 0 12px rgba(0,184,148,0.4);
+    }
+    .rune-cell.miss {
+      background: rgba(231,76,60,0.15);
+      border-color: var(--miss);
+      color: var(--miss);
+    }
+
+    @keyframes pulse-glow {
+      from { box-shadow: 0 0 12px rgba(162,155,254,0.4), inset 0 0 8px rgba(162,155,254,0.05); }
+      to   { box-shadow: 0 0 28px rgba(162,155,254,0.8), inset 0 0 16px rgba(162,155,254,0.12); }
+    }
+
+    /* ===== RESULT SCREEN ===== */
+    .result-icon { font-size: 3rem; margin-bottom: 12px; }
+    .outcome-badge {
+      font-size: 1.5rem;
+      font-weight: 800;
+      padding: 10px 28px;
+      border-radius: 30px;
+      margin-bottom: 16px;
+    }
+    .outcome-4 { background: rgba(162,155,254,0.15); border: 2px solid var(--accent); color: var(--accent); }
+    .outcome-3 { background: rgba(0,184,148,0.15); border: 2px solid var(--hit); color: var(--hit); }
+    .outcome-2 { background: rgba(0,184,148,0.1); border: 2px solid rgba(0,184,148,0.5); color: var(--hit); }
+    .outcome-1 { background: rgba(255,193,7,0.1); border: 2px solid #ffc107; color: #ffc107; }
+    .outcome-0 { background: rgba(231,76,60,0.15); border: 2px solid var(--miss); color: var(--miss); }
+
+    .result-stats {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border-radius: 14px;
+      padding: 14px 16px;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+    .result-stat { text-align: center; flex: 1; }
+    .result-stat-label { font-size: 0.72rem; color: rgba(232,224,255,0.4); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+    .result-stat-val { font-size: 1.5rem; font-weight: 800; }
+  </style>
+</head>
+<body>
+
+<!-- READY SCREEN -->
+<div id="screen-ready" class="screen active">
+  <div class="game-title">✦ Руны реакции</div>
+  <div class="game-subtitle">Tejeduria · Испытание</div>
+  <div id="prompt-box" class="prompt-box" style="display:none"></div>
+  <div class="info-chips">
+    <span class="chip" id="chip-size"></span>
+    <span class="chip" id="chip-time"></span>
+    <span class="chip" id="chip-speed"></span>
+  </div>
+  <div id="grid-preview" class="grid-preview"></div>
+  <button class="start-btn" onclick="startGame()">Начать испытание</button>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="screen-game" class="screen">
+  <div class="timer-bar-wrap"><div class="timer-bar" id="timer-bar"></div></div>
+  <div class="stats-row">
+    <div class="stat-box">
+      <div class="stat-label">Точность</div>
+      <div class="stat-val" id="stat-hits">0</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Всего</div>
+      <div class="stat-val" id="stat-total">0</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Осталось</div>
+      <div class="stat-val" id="stat-time">—</div>
+    </div>
+  </div>
+  <div class="rune-grid" id="rune-grid"></div>
+</div>
+
+<!-- RESULT SCREEN -->
+<div id="screen-result" class="screen">
+  <div class="result-icon" id="result-icon">◈</div>
+  <div class="outcome-badge" id="outcome-badge"></div>
+  <div class="result-stats">
+    <div class="result-stat">
+      <div class="result-stat-label">Попаданий</div>
+      <div class="result-stat-val" id="res-hits" style="color:var(--hit)"></div>
+    </div>
+    <div class="result-stat">
+      <div class="result-stat-label">Точность</div>
+      <div class="result-stat-val" id="res-accuracy" style="color:var(--accent)"></div>
+    </div>
+    <div class="result-stat">
+      <div class="result-stat-label">Из</div>
+      <div class="result-stat-val" id="res-total" style="color:rgba(232,224,255,0.5)"></div>
+    </div>
+  </div>
+</div>
+
+<script src="../../shared/core.js"></script>
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+const N          = Math.min(5, Math.max(3, parseInt(gameData.size)       || 3));
+const TIME_LIMIT = Math.max(5, parseInt(gameData.timeLimit)              || 20);
+const SPEED      = Math.max(200, parseInt(gameData.speed)                || 1200);
+const PROMPT     = gameData.prompt || '';
+
+// Rune glyphs for cells
+const GLYPHS = ['◈', '◉', '⬡', '◇', '△', '⟁', '◎', '⬢', '✦', '⧫', '⬟', '◬', '⬖', '⬘', '⬙', '⬗'];
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let hits = 0, total = 0, activeCell = -1, gameOver = false;
+let startTime = 0, cellTimer = null, countdownInterval = null;
+let cellGlyphs = [];
+
+// ─── READY SCREEN SETUP ───────────────────────────────────────────────────────
+(function setupReady() {
+  if (PROMPT) {
+    const pb = document.getElementById('prompt-box');
+    pb.textContent = PROMPT;
+    pb.style.display = 'block';
+  }
+  document.getElementById('chip-size').textContent  = `${N}×${N} сетка`;
+  document.getElementById('chip-time').textContent  = `${TIME_LIMIT} сек`;
+  document.getElementById('chip-speed').textContent = `${SPEED} мс/руна`;
+
+  // Grid preview
+  const preview = document.getElementById('grid-preview');
+  preview.style.gridTemplateColumns = `repeat(${N}, 32px)`;
+  for (let i = 0; i < N * N; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'preview-cell';
+    cell.textContent = GLYPHS[Math.floor(rng() * GLYPHS.length)];
+    preview.appendChild(cell);
+  }
+})();
+
+// ─── BUILD GAME GRID ──────────────────────────────────────────────────────────
+function buildGrid() {
+  const grid = document.getElementById('rune-grid');
+  // Compute cell size: max width is 380, minus padding 16*2=32, minus gaps
+  const totalW = Math.min(380, window.innerWidth - 32);
+  const cellSize = Math.floor((totalW - (N - 1) * 8) / N);
+  grid.style.gridTemplateColumns = `repeat(${N}, ${cellSize}px)`;
+  grid.innerHTML = '';
+  cellGlyphs = [];
+  for (let i = 0; i < N * N; i++) {
+    const g = GLYPHS[Math.floor(rng() * GLYPHS.length)];
+    cellGlyphs.push(g);
+    const cell = document.createElement('div');
+    cell.className = 'rune-cell';
+    cell.id = `cell-${i}`;
+    cell.textContent = g;
+    cell.style.height = cellSize + 'px';
+    cell.style.fontSize = Math.round(cellSize * 0.4) + 'px';
+    cell.addEventListener('click', () => onCellTap(i));
+    grid.appendChild(cell);
+  }
+}
+
+// ─── GAME LOGIC ───────────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function startGame() {
+  buildGrid();
+  showScreen('screen-game');
+  startTime = Date.now();
+  gameOver = false;
+  hits = 0; total = 0;
+
+  // Countdown interval
+  countdownInterval = setInterval(() => {
+    if (gameOver) return;
+    const elapsed = (Date.now() - startTime) / 1000;
+    const remaining = Math.max(0, TIME_LIMIT - elapsed);
+    const pct = remaining / TIME_LIMIT;
+    const bar = document.getElementById('timer-bar');
+    bar.style.width = (pct * 100) + '%';
+    bar.classList.toggle('danger', pct < 0.25);
+    document.getElementById('stat-time').textContent = Math.ceil(remaining) + 's';
+    if (remaining <= 0) endGame();
+  }, 100);
+
+  nextCell();
+}
+
+function pickRandomCell() {
+  const n = N * N;
+  let idx;
+  do { idx = Math.floor(rng() * n); } while (idx === activeCell);
+  return idx;
+}
+
+function nextCell() {
+  if (gameOver) return;
+  const elapsed = (Date.now() - startTime) / 1000;
+  if (elapsed >= TIME_LIMIT) { endGame(); return; }
+
+  // Flash previous active as miss if not hit
+  if (activeCell >= 0) {
+    const prev = document.getElementById(`cell-${activeCell}`);
+    if (prev && prev.classList.contains('active')) {
+      // timed out without tap
+      total++;
+      prev.classList.remove('active');
+      prev.classList.add('miss');
+      updateStats();
+      setTimeout(() => {
+        if (prev) { prev.classList.remove('miss'); prev.textContent = cellGlyphs[activeCell]; }
+      }, 300);
+    }
+  }
+
+  activeCell = pickRandomCell();
+  const cell = document.getElementById(`cell-${activeCell}`);
+  if (cell) {
+    cell.classList.add('active');
+    cell.textContent = cellGlyphs[activeCell];
+  }
+
+  clearTimeout(cellTimer);
+  cellTimer = setTimeout(nextCell, SPEED);
+}
+
+function onCellTap(idx) {
+  if (gameOver) return;
+  const cell = document.getElementById(`cell-${idx}`);
+  if (!cell) return;
+
+  if (idx === activeCell) {
+    hits++;
+    total++;
+    cell.classList.remove('active');
+    cell.classList.add('hit');
+    updateStats();
+    clearTimeout(cellTimer);
+    setTimeout(() => {
+      if (cell) { cell.classList.remove('hit'); cell.textContent = cellGlyphs[idx]; }
+      if (!gameOver) nextCell();
+    }, 180);
+    activeCell = -1;
+  }
+  // tapping wrong cell: ignore (no penalty beyond missed active)
+}
+
+function updateStats() {
+  document.getElementById('stat-hits').textContent  = hits;
+  document.getElementById('stat-total').textContent = total;
+}
+
+function endGame() {
+  if (gameOver) return;
+  gameOver = true;
+  clearTimeout(cellTimer);
+  clearInterval(countdownInterval);
+
+  // Count current active cell as miss if it timed out
+  if (activeCell >= 0) {
+    const cell = document.getElementById(`cell-${activeCell}`);
+    if (cell && cell.classList.contains('active')) {
+      total++;
+      cell.classList.remove('active');
+    }
+    activeCell = -1;
+  }
+
+  const accuracy = total > 0 ? hits / total : 0;
+  let outcome, level;
+  if      (accuracy >= 0.85) { outcome = 'Мастерски'; level = 4; }
+  else if (accuracy >= 0.70) { outcome = 'Отлично';   level = 3; }
+  else if (accuracy >= 0.50) { outcome = 'Хорошо';    level = 2; }
+  else if (accuracy >= 0.30) { outcome = 'Неплохо';   level = 1; }
+  else                       { outcome = 'Провал';    level = 0; }
+
+  // Show result
+  const icons = ['💀', '🌑', '✦', '⬡', '◈'];
+  document.getElementById('result-icon').textContent = icons[level] || '◈';
+  const badge = document.getElementById('outcome-badge');
+  badge.textContent = outcome;
+  badge.className = `outcome-badge outcome-${level}`;
+  document.getElementById('res-hits').textContent     = hits;
+  document.getElementById('res-total').textContent    = total;
+  document.getElementById('res-accuracy').textContent = Math.round(accuracy * 100) + '%';
+
+  showScreen('screen-result');
+
+  const result = {
+    game:     'rune-reaction',
+    size:     N,
+    hits,
+    total,
+    accuracy: Math.round(accuracy * 1000) / 1000,
+    outcome,
+    level
+  };
+  setTimeout(() => sendResultToBot(result), 800);
+}
+</script>
+</body>
+</html>
