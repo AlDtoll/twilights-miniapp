@@ -202,11 +202,13 @@
       border-radius: 30px;
       margin-bottom: 16px;
     }
-    .outcome-4 { background: rgba(162,155,254,0.15); border: 2px solid var(--accent); color: var(--accent); }
-    .outcome-3 { background: rgba(0,184,148,0.15); border: 2px solid var(--hit); color: var(--hit); }
-    .outcome-2 { background: rgba(0,184,148,0.1); border: 2px solid rgba(0,184,148,0.5); color: var(--hit); }
-    .outcome-1 { background: rgba(255,193,7,0.1); border: 2px solid #ffc107; color: #ffc107; }
-    .outcome-0 { background: rgba(231,76,60,0.15); border: 2px solid var(--miss); color: var(--miss); }
+    .outcome-6 { background: rgba(255,215,0,0.15);   border: 2px solid #ffd700; color: #ffd700; }
+    .outcome-5 { background: rgba(162,155,254,0.18); border: 2px solid var(--accent); color: var(--accent); }
+    .outcome-4 { background: rgba(0,184,148,0.18);   border: 2px solid var(--hit); color: var(--hit); }
+    .outcome-3 { background: rgba(0,184,148,0.08);   border: 2px solid rgba(0,184,148,0.45); color: rgba(0,184,148,0.85); }
+    .outcome-2 { background: rgba(231,150,60,0.12);  border: 2px solid #e7963c; color: #e7963c; }
+    .outcome-1 { background: rgba(231,76,60,0.08);   border: 2px solid rgba(231,76,60,0.45); color: rgba(231,76,60,0.85); }
+    .outcome-0 { background: rgba(231,76,60,0.15);   border: 2px solid var(--miss); color: var(--miss); }
 
     .result-stats {
       width: 100%;
@@ -449,15 +451,18 @@ function endGame() {
   }
 
   const accuracy = total > 0 ? hits / total : 0;
+  // 6-level grading by accuracy
   let outcome, level;
-  if      (accuracy >= 0.85) { outcome = 'Мастерски'; level = 4; }
-  else if (accuracy >= 0.70) { outcome = 'Отлично';   level = 3; }
-  else if (accuracy >= 0.50) { outcome = 'Хорошо';    level = 2; }
-  else if (accuracy >= 0.30) { outcome = 'Неплохо';   level = 1; }
+  if      (accuracy >= 0.97) { outcome = 'Идеально';  level = 6; }
+  else if (accuracy >= 0.85) { outcome = 'Отлично';   level = 5; }
+  else if (accuracy >= 0.70) { outcome = 'Хорошо';    level = 4; }
+  else if (accuracy >= 0.55) { outcome = 'Приемлемо'; level = 3; }
+  else if (accuracy >= 0.35) { outcome = 'Неудовл.';  level = 2; }
+  else if (accuracy >  0)    { outcome = 'Плохо';     level = 1; }
   else                       { outcome = 'Провал';    level = 0; }
 
   // Show result
-  const icons = ['💀', '🌑', '✦', '⬡', '◈'];
+  const icons = { 6: '✦', 5: '◈', 4: '⬡', 3: '◇', 2: '○', 1: '·', 0: '💀' };
   document.getElementById('result-icon').textContent = icons[level] || '◈';
   const badge = document.getElementById('outcome-badge');
   badge.textContent = outcome;
