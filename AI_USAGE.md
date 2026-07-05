@@ -3,7 +3,7 @@
 ## Что это
 
 Telegram WebApp для мини-игр в ролевой игре Twilights.
-URL: `https://aldtoll.github.io/twilights-miniapp/`
+URL: `https://loreworlds.ru:8443/`
 Репо: `AlDtoll/twilights-miniapp`
 
 Скрипт запуска: `twilights/minigames/send_miniapp.py` в репо `twilights-world`.
@@ -298,7 +298,7 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" hex \
 - `--hex-hero` — JSON героя: `name`, `hp` (деф 100), `weapon`, `magic` (опц.), `emoji`, `atk`, `level`, `technique` / `techniques` (опц. приёмы).
   - `weapon`: sword, axe, ranged, heavy, dual, shield, unarmed, polearm, chain
   - `technique`: один id приёма (напр. `"sword_plastic"`) или `techniques`: массив id
-  - приёмы (`technique` / `techniques`): `sword_plastic`, `sword_lunge`, `sword_smear`, `acro_vault`, … — по одному или несколько, независимо от оружия/навыков на карточке
+  - опциональные приёмы (`technique` / `techniques`) — ровно 4, вешаются поверх базы независимо от оружия: `sword_plastic` (Пластичный удар: 40, 50% пробитие брони, +12 во фланге), `sword_lunge` (Выпад: сближение +45, сброс cd при ранении), `sword_smear` (Размазать клинок: заслон в силу стрелы, 30% второй слой, `mirroringOnUse`), `acro_vault` (Перепрыгнуть: прыжок 2 гекса через врага/препятствие, 1 👣 / 0 AP). Все cd 4.
   - `magic`: wizard, pyromancer, geomancer, aeromancer, aquamancer, druid, necro, demon, incenser, adept (`elementalist` — тип NPC, не magic героя)
 - `--hex-enemy` — JSON-массив врагов `[{type, name, hp?}]`.
 - `--hex-companions` — JSON-массив спутников игрока (те же типы юнитов).
@@ -307,6 +307,17 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" hex \
 - `--hex-walls` — явные стены (блокируют LoS) `[[col,row],…]`. Герой стартует в col 0, враги в col 10.
 - `--hex-player` — (legacy) старый список юнитов игрока; для FFT использовать `--hex-hero`.
 - `--max-rounds` — лимит раундов (1 раунд = ход игрока + ход врага). **Default: 5**. **Не поражение** — сигнал мастеру пересмотреть сцену: что произошло вокруг, новые условия для следующей проверки. В результате: `scene_revisit: true`, `outcome: "Пересмотр сцены"`, без `win`.
+
+Базовые приёмы по оружию (авто, зависят от `weapon`; урон / cd):
+- **sword** ⚔️ — Удар (40, cd0), Быстрый удар (25, cd0, 50%→+1 AP)
+- **axe** 🪓 — Рубящий удар (45, cd0), Вихрь (25 AoE·1, cd3), Раскол (50, cd2)
+- **ranged** 🏹 — Выстрел (30, дальн.6), Прицельный (40, cd2), Прострел (35, cd3)
+- **heavy** 🔨 — Дробящий (45, cd0), Волновой удар (30 AoE·wave, стан, cd3), Смерть молотом (60, cd4)
+- **dual** ⚔️ — Двойной удар (40, cd0), Скользящий рывок (35, дальн.2, cd2), Вихрь клинков (25 AoE·1, cd3)
+- **shield** 🛡️ — Удар щитом (35, cd0), Отбросить (25 + knockback, cd2), Заслон (барьер 35, cd3)
+- **unarmed** 👊 — Серия ударов (35, cd0), Захват (20 + reposition, cd2), Зеркальный удар (60, cd4)
+- **polearm** 🔱 — Копейный удар (35, дальн.2, cd0), Выпад (45, дальн.2, cd2), Тяжёлый замах (25 AoE·1, стан, cd3)
+- **chain** ⛓️ — Хлыст (35, дальн.2, cd0), Зацеп и контроль (25 + pull, cd2), Волна кинетики (40 + стан, cd4)
 
 Механика (как в коде):
 - **AP** 4/ход (герой). Навыки **1–2 AP**. **Рывок** 💨: +2 move, щит 5, кд 1.
@@ -469,6 +480,73 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" arkanoid \
 
 - `score` — набранные очки, `stage` — достигнутый уровень, `win` — пройдены ли все уровни, `lives` — остаток жизней.
 - `level` — тир результата (0–4): при победе зависит от остатка жизней, при поражении — от набранных очков.
+
+---
+
+### barrage — «Град ударов» (уклонение по колонкам + контратака в окно)
+
+Реалтайм-бой в духе space invaders. Герой внизу ходит по колонкам (тап по колонке). Сверху по колонкам
+падают удары врага (сначала телеграф ⚠️, потом падение 🔴) — надо уйти с колонки. Враг периодически
+открывает «окно» уязвимости 🎯 в одной из колонок — встань под него и жми «Удар». Оружие задаёт урон/скорость
+удара, магия (опц.) — спецэффект (nuke/shield/slow/heal).
+
+Исход как в hex/brawl: снёс HP врага → **Победа**; HP героя в 0 → **Поражение**; истёк таймер, герой жив →
+**Пересмотр сцены** (не поражение — мастер получает телеметрию и решает развитие).
+
+```bash
+python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" barrage \
+  --barrage-hero '{"name":"Кай","weapon":"sword","magic":"wizard","hp":100,"emoji":"⚔️"}' \
+  --barrage-enemy '{"type":"shadow","name":"Тень","hp":120}' \
+  --barrage-time 60
+```
+
+- `--barrage-hero` — JSON героя (как --brawl-hero): `weapon` (урон/скорость удара), `magic` опц. (спец), `hp`, `emoji`, `name`.
+- `--barrage-enemy` — JSON ОДНОГО босса сверху: `type` (shadow/warrior/archer/cadaver/demonologist/beast — задаёт темп ударов и окон), `name`, `hp`.
+- `--barrage-theme` — rift (деф) / manor / cave / road.
+- `--barrage-time` — секунд до scene_revisit (деф 60).
+- `--barrage-lanes` — число колонок 3–5 (деф 4).
+- `--barrage-aggression` — множитель темпа (деф 1.0; ≥1.5 — иногда два удара разом).
+
+Результат: `{"game":"barrage","outcome":"Победа|Поражение|Пересмотр сцены","win":true,"scene_revisit":false,"level":0-4,"enemy_hp_left":..,"hits_taken":..,"dodges":..,"strikes_hit":..,"strikes_perfect":..,"windows_missed":..,"magic_casts":..,"damage_dealt":..,"hero_hp_left":..}`
+
+---
+
+### rune-reaction — испытание реакции (сетка вспыхивающих рун)
+
+На сетке `size×size` поочерёдно вспыхивают руны — нужно коснуться активной руны, пока она горит.
+Проверяет скорость реакции и внимание. Быстрее вспышки (`--speed`) и больше сетка = сложнее.
+
+```bash
+python3 twilights/minigames/send_miniapp.py <chat_id> "🌀 Проверка реакции" rune-reaction \
+  --size 4 --time-limit 25 --speed 900 --prompt "Плетение требует концентрации."
+```
+
+- `--size 3|4|5` — размер сетки (по умолч. 3).
+- `--time-limit N` — лимит времени, сек (по умолч. 20).
+- `--speed N` — мс между сменами активной руны (меньше = быстрее = сложнее).
+- `--prompt "…"` — нарративный текст перед стартом.
+
+Результат: `{"game":"rune-reaction","size":N,"hits":N,"total":M,"accuracy":0.0-1.0,"outcome":"Мастерски|Отлично|Хорошо|Неплохо|Провал","level":0-4}`.
+Уровень по точности: ≥0.85→4, ≥0.70→3, ≥0.50→2, ≥0.30→1, иначе 0.
+
+### rune-puzzle — сложи руну (слайдер-пазл, 15-puzzle)
+
+Плитки руны перемешаны на сетке `size×size` — собрать исходный узор, меняя плитки местами.
+Проверяет пространственное мышление/усидчивость. Быстрее собрал = выше исход.
+
+```bash
+python3 twilights/minigames/send_miniapp.py <chat_id> "🧩 Сложи руну" rune-puzzle \
+  --size 3 --time-limit 120 --shuffle 40 --rune-index 2 --prompt "Восстанови плетение руны."
+```
+
+- `--size 3|4|5` — размер сетки (по умолч. 3; лимит по умолч. 120/180/240 сек).
+- `--time-limit N` — лимит времени, сек.
+- `--shuffle N` — число ходов перемешивания (больше = сложнее).
+- `--rune-index 0-7` — какой узор руны собирать.
+- `--prompt "…"` — нарративный текст перед стартом.
+
+Результат: `{"game":"rune-puzzle","size":N,"solved":true|false,"timeSeconds":N,"moves":N,"outcome":"Мастерски|Отлично|Хорошо|Провал","level":0-4}`.
+Не собрал за время → `solved:false`, «Провал», level 0. Собрал → уровень по затраченному времени.
 
 ---
 

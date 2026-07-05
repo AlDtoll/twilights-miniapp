@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Tejeduria — Руна-головоломка</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="../../shared/styles.css">
+  <link rel="stylesheet" href="../shared/styles.css">
   <style>
     :root {
       --bg: #0f0e1a;
@@ -169,6 +169,13 @@
       box-shadow: 0 0 14px rgba(0,184,148,0.6);
       border-color: var(--hit);
     }
+    .tile.correct {
+      border-color: rgba(0,184,148,0.5);
+      box-shadow: inset 0 0 6px rgba(0,184,148,0.12);
+    }
+    .tile.free-tile {
+      opacity: 0.35;
+    }
 
     /* ===== RESULT SCREEN ===== */
     .result-icon { font-size: 3rem; margin-bottom: 10px; }
@@ -179,10 +186,13 @@
       border-radius: 30px;
       margin-bottom: 16px;
     }
-    .outcome-4 { background: rgba(162,155,254,0.15); border: 2px solid var(--accent); color: var(--accent); }
-    .outcome-3 { background: rgba(0,184,148,0.15); border: 2px solid var(--hit); color: var(--hit); }
-    .outcome-2 { background: rgba(0,184,148,0.1); border: 2px solid rgba(0,184,148,0.5); color: var(--hit); }
-    .outcome-0 { background: rgba(231,76,60,0.15); border: 2px solid var(--miss); color: var(--miss); }
+    .outcome-6 { background: rgba(255,215,0,0.15);   border: 2px solid #ffd700; color: #ffd700; }
+    .outcome-5 { background: rgba(162,155,254,0.18); border: 2px solid var(--accent); color: var(--accent); }
+    .outcome-4 { background: rgba(0,184,148,0.18);   border: 2px solid var(--hit); color: var(--hit); }
+    .outcome-3 { background: rgba(0,184,148,0.08);   border: 2px solid rgba(0,184,148,0.45); color: rgba(0,184,148,0.85); }
+    .outcome-2 { background: rgba(231,150,60,0.12);  border: 2px solid #e7963c; color: #e7963c; }
+    .outcome-1 { background: rgba(231,76,60,0.08);   border: 2px solid rgba(231,76,60,0.45); color: rgba(231,76,60,0.85); }
+    .outcome-0 { background: rgba(231,76,60,0.15);   border: 2px solid var(--miss); color: var(--miss); }
 
     .result-stats {
       width: 100%;
@@ -256,7 +266,7 @@
   </div>
 </div>
 
-<script src="../../shared/core.js"></script>
+<script src="../shared/core.js"></script>
 <script>
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const N             = Math.min(5, Math.max(3, parseInt(gameData.size)       || 3));
@@ -296,6 +306,19 @@ function drawRune(canvas, n, runeIdx) {
   ctx.lineWidth   = lw;
   ctx.lineCap     = 'round';
   ctx.lineJoin    = 'round';
+
+  // Asymmetric corner marker — tiny notch in top-left so tile 0 is always unique
+  const mk = sz * 0.055;
+  ctx.strokeStyle = RUNE_STROKE;
+  ctx.lineWidth   = lw * 0.7;
+  ctx.globalAlpha = 0.55;
+  ctx.beginPath();
+  ctx.moveTo(mk * 2, mk * 0.5);
+  ctx.lineTo(mk * 0.5, mk * 0.5);
+  ctx.lineTo(mk * 0.5, mk * 2);
+  ctx.stroke();
+  ctx.globalAlpha = 1.0;
+  ctx.lineWidth   = lw;
 
   if (runeIdx === 0) {
     // Крест с кольцами — circle + inner circle + 4 arms
@@ -413,6 +436,32 @@ offCanvas.height   = CANVAS_PX;
 drawRune(offCanvas, N, RUNE_INDEX);
 const runeDataURL = offCanvas.toDataURL('image/png');
 
+// Detect which tiles have visible rune content (vs blank background)
+// Background = #1a1535 = rgb(26,21,53). Grid lines are ~rgba(162,155,254,0.12) → diff≈56.
+// Rune strokes are bright (#c9b8ff) → diff≥300. Threshold 80 skips grid lines, catches strokes.
+const significantTiles = (() => {
+  const ctx2  = offCanvas.getContext('2d');
+  const BG    = [26, 21, 53];
+  const THRESH = 80;
+  const PAD   = Math.floor(TILE_PX * 0.18); // avoid border grid lines
+  const INNER = TILE_PX - PAD * 2;
+  const STEPS = 4;
+  const NTILES = N * N;
+  return Array.from({length: NTILES}, (_, tileId) => {
+    const col = tileId % N, row = Math.floor(tileId / N);
+    const x0 = col * TILE_PX + PAD, y0 = row * TILE_PX + PAD;
+    for (let si = 0; si < STEPS; si++) {
+      for (let sj = 0; sj < STEPS; sj++) {
+        const px = x0 + Math.floor((si + 0.5) * INNER / STEPS);
+        const py = y0 + Math.floor((sj + 0.5) * INNER / STEPS);
+        const d  = ctx2.getImageData(px, py, 1, 1).data;
+        if (Math.abs(d[0]-BG[0]) + Math.abs(d[1]-BG[1]) + Math.abs(d[2]-BG[2]) > THRESH) return true;
+      }
+    }
+    return false;
+  });
+})();
+
 // Draw preview (200×200 canvas)
 const previewCanvas = document.getElementById('preview-canvas');
 drawRune(previewCanvas, N, RUNE_INDEX);
@@ -441,7 +490,8 @@ function initSolved() {
 }
 
 function isSolved() {
-  return state.every((v, i) => v === i);
+  // Only significant (content-bearing) tiles must be in their canonical positions
+  return significantTiles.every((sig, i) => !sig || state[i] === i);
 }
 
 function shufflePuzzle() {
@@ -480,6 +530,7 @@ function renderGrid() {
     div.style.width  = TILE_PX + 'px';
     div.style.height = TILE_PX + 'px';
     setTileBackground(div, state[pos]);
+    if (!significantTiles[state[pos]]) div.classList.add('free-tile');
     div.addEventListener('click', () => onTileClick(pos));
     grid.appendChild(div);
   }
@@ -490,7 +541,12 @@ function updateGridPositions() {
     const div = document.getElementById(`tile-pos-${pos}`);
     if (!div) continue;
     setTileBackground(div, state[pos]);
-    div.className = 'tile' + (pos === selectedPos ? ' selected' : '');
+    const tileId     = state[pos];
+    const isSelected = pos === selectedPos;
+    const isSig      = significantTiles[tileId];
+    div.className = 'tile'
+      + (isSelected ? ' selected' : '')
+      + (!isSig && !isSelected ? ' free-tile' : '');
   }
 }
 
@@ -566,21 +622,29 @@ function endGame(win) {
     });
   }
 
-  // Compute outcome
+  // Compute outcome by move count (6 levels + Провал)
+  // Thresholds calibrated on player data: 3×3≈6, 4×4≈12, 5×5≈21 optimal moves
+  const MOVE_THRESHOLDS = {
+    3: [6,  9,  12, 18, 27],
+    4: [12, 18, 24, 36, 54],
+    5: [21, 31, 42, 63, 95],
+  };
+  const GRADE_NAMES = ['Провал', 'Плохо', 'Неудовл.', 'Приемлемо', 'Хорошо', 'Отлично', 'Идеально'];
   let outcome, level;
   if (!win) {
     outcome = 'Провал'; level = 0;
   } else {
-    const t4 = Math.round(BASE_TIMES[4] * SIZE_MULT);
-    const t3 = Math.round(BASE_TIMES[3] * SIZE_MULT);
-    const t2 = Math.round(BASE_TIMES[2] * SIZE_MULT);
-    if      (timeSeconds <= t4) { outcome = 'Мастерски'; level = 4; }
-    else if (timeSeconds <= t3) { outcome = 'Отлично';   level = 3; }
-    else if (timeSeconds <= t2) { outcome = 'Хорошо';    level = 2; }
-    else                        { outcome = 'Хорошо';    level = 2; } // still solved
+    const thr = MOVE_THRESHOLDS[N] || MOVE_THRESHOLDS[3];
+    if      (moves <= thr[0]) level = 6;
+    else if (moves <= thr[1]) level = 5;
+    else if (moves <= thr[2]) level = 4;
+    else if (moves <= thr[3]) level = 3;
+    else if (moves <= thr[4]) level = 2;
+    else                      level = 1;
+    outcome = GRADE_NAMES[level];
   }
 
-  const icons = { 4: '◈', 3: '⬡', 2: '✦', 0: '💀' };
+  const icons = { 6: '✦', 5: '◈', 4: '⬡', 3: '◇', 2: '○', 1: '·', 0: '💀' };
   document.getElementById('result-icon').textContent = icons[level] || '◈';
   const badge = document.getElementById('outcome-badge');
   badge.textContent = outcome;
