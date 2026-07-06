@@ -1062,7 +1062,24 @@
             "mod": 0,
             "reasons": []
           },
-          "faith": null,
+          "faith": {
+            "cults": [
+              {
+                "name": "Природный культ (друидизм)",
+                "count": 1,
+                "pct": 20
+              },
+              {
+                "name": "Айдан «Кот»",
+                "count": 1,
+                "pct": 20
+              }
+            ],
+            "neutral": 3,
+            "neutral_pct": 60,
+            "mod": 0,
+            "reasons": []
+          },
           "might": {
             "total": 3,
             "fighters": 1,
@@ -1317,7 +1334,24 @@
             "mod": 0,
             "reasons": []
           },
-          "faith": null,
+          "faith": {
+            "cults": [
+              {
+                "name": "Айдан «Кот»",
+                "count": 2,
+                "pct": 20
+              },
+              {
+                "name": "Мизеракль",
+                "count": 1,
+                "pct": 10
+              }
+            ],
+            "neutral": 7,
+            "neutral_pct": 70,
+            "mod": 0,
+            "reasons": []
+          },
           "might": {
             "total": 3,
             "fighters": 1,
@@ -1522,7 +1556,24 @@
             "mod": 0,
             "reasons": []
           },
-          "faith": null,
+          "faith": {
+            "cults": [
+              {
+                "name": "Тёмный культ",
+                "count": 2,
+                "pct": 20
+              },
+              {
+                "name": "Айдан «Кот»",
+                "count": 1,
+                "pct": 10
+              }
+            ],
+            "neutral": 7,
+            "neutral_pct": 70,
+            "mod": 0,
+            "reasons": []
+          },
           "might": {
             "total": 3,
             "fighters": 1,

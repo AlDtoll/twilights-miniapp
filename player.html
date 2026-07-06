@@ -1267,18 +1267,17 @@ function renderLoyalty(settlements) {
 }
 
 // ── Religion / Вера ─────────────────────────────────────────────────────────
-const FAITH_PALETTE = ["#8a6ac0", "#4a8a5a", "#c08a4a", "#4a7ac0", "#c04a6a",
-                       "#5ab0a0", "#b0a04a", "#a05ac0", "#c07a4a", "#6a8ac0"];
-// Цвет закреплён за НАЗВАНИЕМ культа (одинаковый во всех НП и в общей структуре).
-// Регистрируется при первом появлении; overview рендерится первым и содержит все культы игрока.
-const FAITH_COLOR_MAP = {};
-let _faithColorNext = 0;
+// Детерминированный цвет культа по ИМЕНИ: одинаковый в дашборде и на карте.
+// FAITH_KNOWN/FAITH_PALETTE продублированы в map.html — держать синхронными.
+const FAITH_PALETTE = ['#c8a84a', '#6a8ab0', '#a06ab0', '#4a8a5a', '#b07a4a', '#5ab0a8',
+  '#b0526a', '#7a8a3a', '#8a6ac0', '#c07a9a', '#4a7ac0', '#9a9a4a', '#c05a4a', '#5a9ac0'];
+const FAITH_KNOWN = ['Мизеракль', 'Кипона', 'Тенета', 'Лето', 'Айдан «Кот»', 'Омнус', 'Бурий',
+  'Природный культ (друидизм)', 'Тёмный культ', 'Светлый культ', 'Культ войны', 'Культ разума', 'Местный культ'];
 function faithColor(name) {
-  if (name in FAITH_COLOR_MAP) return FAITH_COLOR_MAP[name];
-  const col = FAITH_PALETTE[_faithColorNext % FAITH_PALETTE.length];
-  FAITH_COLOR_MAP[name] = col;
-  _faithColorNext++;
-  return col;
+  const i = FAITH_KNOWN.indexOf(name);
+  if (i >= 0) return FAITH_PALETTE[i % FAITH_PALETTE.length];
+  let h = 0; for (let k = 0; k < name.length; k++) h = (h * 31 + name.charCodeAt(k)) >>> 0;
+  return FAITH_PALETTE[h % FAITH_PALETTE.length];
 }
 
 function faithBar(f) {

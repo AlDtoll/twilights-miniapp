@@ -733,7 +733,10 @@ async function openCellDetails(cellData, x, y) {
   const cell = cells.find(c => areaHead(c) === norm(cellData.name)
                             || norm(c.file) === norm(cellData.name));
   if (cell && cell.settlements && cell.settlements.length) {
-    areaNps.innerHTML = headHtml + descHtml + cell.settlements.map(renderNeutralNPCard).join('');
+    // Сводку по религии показываем, только если НП больше одного — для
+    // единственного НП аггрегат дублировал бы его же полосу.
+    const agg = cell.settlements.length > 1 ? faithAggregate(cell.settlements) : '';
+    areaNps.innerHTML = headHtml + descHtml + agg + cell.settlements.map(renderNeutralNPCard).join('');
   }
 }
 
@@ -762,16 +765,18 @@ function esc(t) {
 
 const LY_COLORS = { 'Л': '#4a8a5a', 'Н': '#7a6e5a', 'НЛ': '#8a3a2a' };
 const LY_LABELS = { 'Л': 'Лояльные', 'Н': 'Нейтральные', 'НЛ': 'Нелояльные' };
-const FAITH_COLORS = ['#c8a84a', '#6a8ab0', '#a06ab0', '#4a8a5a', '#b07a4a', '#8a8a8a'];
-// Цвет закреплён за НАЗВАНИЕМ культа — одинаковый во всех клетках, а не по позиции в списке.
-const FAITH_COLOR_MAP = {};
-let _faithColorNext = 0;
+// Детерминированный цвет культа по ИМЕНИ: одинаковый в карте и дашборде,
+// в любой клетке, независимо от порядка в списке. FAITH_KNOWN/FAITH_PALETTE
+// продублированы в player.html — держать синхронными (см. MINIAPP.md).
+const FAITH_PALETTE = ['#c8a84a', '#6a8ab0', '#a06ab0', '#4a8a5a', '#b07a4a', '#5ab0a8',
+  '#b0526a', '#7a8a3a', '#8a6ac0', '#c07a9a', '#4a7ac0', '#9a9a4a', '#c05a4a', '#5a9ac0'];
+const FAITH_KNOWN = ['Мизеракль', 'Кипона', 'Тенета', 'Лето', 'Айдан «Кот»', 'Омнус', 'Бурий',
+  'Природный культ (друидизм)', 'Тёмный культ', 'Светлый культ', 'Культ войны', 'Культ разума', 'Местный культ'];
 function faithColor(name) {
-  if (name in FAITH_COLOR_MAP) return FAITH_COLOR_MAP[name];
-  const col = FAITH_COLORS[_faithColorNext % FAITH_COLORS.length];
-  FAITH_COLOR_MAP[name] = col;
-  _faithColorNext++;
-  return col;
+  const i = FAITH_KNOWN.indexOf(name);
+  if (i >= 0) return FAITH_PALETTE[i % FAITH_PALETTE.length];
+  let h = 0; for (let k = 0; k < name.length; k++) h = (h * 31 + name.charCodeAt(k)) >>> 0;
+  return FAITH_PALETTE[h % FAITH_PALETTE.length];
 }
 
 function pct(n, d) { return d > 0 ? Math.round(n / d * 100) : 0; }
@@ -804,7 +809,7 @@ function loyaltyBlock(ly, houses) {
     + `<div class="np-bar-legend">${legend}</div>`;
 }
 
-function faithBlock(f) {
+function faithBlock(f, title) {
   if (!f || !f.cults || !f.cults.length) return '';
   const cults = f.cults;
   const bar = cults.map(c =>
@@ -813,9 +818,27 @@ function faithBlock(f) {
   const legend = cults.map(c =>
     `<span><span class="np-dot" style="background:${faithColor(c.name)}"></span>${esc(c.name)} <b>${c.count} · ${c.pct}%</b></span>`).join('')
     + (f.neutral > 0 ? `<span><span class="np-dot" style="background:#3a3520"></span>без культа <b>${f.neutral} · ${f.neutral_pct}%</b></span>` : '');
-  return `<div class="np-sub">Религия</div>`
+  return `<div class="np-sub">${title || 'Религия'}</div>`
     + `<div class="np-bar">${bar}</div>`
     + `<div class="np-bar-legend">${legend}</div>`;
+}
+
+// Сводная религия по всей клетке: суммируем дома по культам во всех НП.
+// pct считаем от общего числа душ культа+без-культа, чтобы аггрегат был
+// сопоставим с per-НП полосами (те же цвета — faithColor по имени).
+function faithAggregate(settlements) {
+  const tally = {}; let neutral = 0, total = 0;
+  for (const s of settlements) {
+    const f = s.faith; if (!f) continue;
+    for (const c of (f.cults || [])) { tally[c.name] = (tally[c.name] || 0) + c.count; total += c.count; }
+    if (f.neutral) { neutral += f.neutral; total += f.neutral; }
+  }
+  if (total <= 0) return '';
+  const cults = Object.entries(tally)
+    .map(([name, count]) => ({ name, count, pct: Math.round(count / total * 100) }))
+    .sort((a, b) => b.count - a.count);
+  const agg = { cults, neutral, neutral_pct: Math.round(neutral / total * 100) };
+  return `<div class="area-faith-agg">${faithBlock(agg, 'Религия области')}</div>`;
 }
 
 function promyslyBlock(promysly) {
