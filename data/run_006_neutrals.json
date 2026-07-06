@@ -1504,41 +1504,37 @@
             "Л": 56,
             "Н": 16,
             "НЛ": 8,
-            "mod": -1,
-            "reasons": [
-              "-1 вера (религия)"
-            ]
+            "mod": 0,
+            "reasons": []
           },
           "faith": {
             "cults": [
               {
                 "name": "Культ войны",
-                "count": 40,
-                "pct": 50
+                "count": 50,
+                "pct": 62
               },
               {
                 "name": "Природный культ (друидизм)",
-                "count": 25,
-                "pct": 31
+                "count": 19,
+                "pct": 24
               },
               {
                 "name": "Местный культ",
-                "count": 15,
-                "pct": 19
+                "count": 11,
+                "pct": 14
               }
             ],
             "neutral": 0,
             "neutral_pct": 0,
-            "mod": -1,
-            "reasons": [
-              "−1 религиозный раскол (2 культа ≥25%)"
-            ]
+            "mod": 0,
+            "reasons": []
           },
           "might": {
-            "total": 4,
+            "total": 5,
             "fighters": 11,
             "base": 2,
-            "loyalty": 1,
+            "loyalty": 2,
             "defense": 1,
             "tags": 0,
             "fighters_src": "ополчение ~1.4% от 800",
