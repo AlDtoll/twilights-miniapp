@@ -1558,12 +1558,12 @@
             "reasons": []
           },
           "might": {
-            "total": 8,
+            "total": 7,
             "fighters": 11,
             "base": 2,
             "loyalty": 2,
             "defense": 1,
-            "tags": 2,
+            "tags": 1,
             "war_cult": 1,
             "fighters_src": "ополчение ~1.4% от 800",
             "neutral": true
