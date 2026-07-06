@@ -748,12 +748,16 @@ function renderNPCard(s) {
     `<div class="np-stat"><span class="np-stat-label">${st.category}:</span> ${st.fact}/${st.norm} ${st.status}</div>`
   ).join('');
   const growth = (s.growth != null && s.growth !== '') ? s.growth : null;
+  const houses_m = String(s.houses || '').match(/\d+/);
+  const houses = houses_m ? parseInt(houses_m[0]) : 0;
   return `<div class="np-card">
     <div class="np-card-name">${s.name}</div>
     ${s.population != null ? `<div class="np-stat"><span class="np-stat-label">Население:</span> ${s.population}</div>` : ''}
     ${growth != null ? `<div class="np-stat"><span class="np-stat-label">Рост:</span> ${growth}</div>` : ''}
     ${staff}
     ${blds ? `<div class="np-buildings">Постройки: ${blds}</div>` : ''}
+    ${loyaltyBlock(s.loyalty, houses)}
+    ${promyslyBlock(s.promysly)}
   </div>`;
 }
 
