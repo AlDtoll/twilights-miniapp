@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Карта — Сумерки мира</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -608,7 +609,34 @@ function parseToon(text) {
   return root;
 }
 
+// Direct Link Mini App: t.me/twilightsHelperBot/map?startapp=<mode>-<...>
+// Апп один (map.html), поэтому режим кодируется в start_param:
+//   map-<run>            → показать карту забега
+//   dash-<player>-<run>  → это /dash из группы: редиректим на дашборд
+// start_param допускает только [A-Za-z0-9_-]; run_006 и имена игроков без «-», разделитель «-» безопасен.
+function startParamRun() {
+  const tg = window.Telegram && window.Telegram.WebApp;
+  if (tg) { tg.ready(); if (tg.expand) tg.expand(); }
+  const sp = tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param;
+  if (!sp) return null;
+  const parts = sp.split("-");
+  const mode = parts[0];
+  if (mode === "dash") {
+    const player = parts[1] || "";
+    const run = parts.slice(2).join("-");
+    const q = [];
+    if (player) q.push("player=" + encodeURIComponent(player));
+    if (run) q.push("run=" + encodeURIComponent(run));
+    location.replace("player.html" + (q.length ? "?" + q.join("&") : ""));
+    return "__redirect__";
+  }
+  if (mode === "map") return parts.slice(1).join("-") || null;
+  return null;
+}
+
 async function initMap() {
+  const spRun = startParamRun();
+  if (spRun === "__redirect__") return;  // ушли на дашборд
   try {
     const res = await fetch(`data/map_cells.toon?_=${Date.now()}`);
     const parsed = parseToon(await res.text());
@@ -618,7 +646,7 @@ async function initMap() {
     const sel = document.getElementById("run-sel");
     sel.innerHTML = runs.map(r => `<option value="${r}">${runLabel(r)}</option>`).join("");
     // ?run=run_005 в URL → открыть конкретный забег (для нескольких активных); иначе последний.
-    const urlRun = new URLSearchParams(location.search).get("run");
+    const urlRun = new URLSearchParams(location.search).get("run") || spRun;
     currentRun = (urlRun && RUNS_META[urlRun]) ? urlRun : (runs[0] || "run_004");
     sel.value = currentRun;
     CELLS = (RUNS_META[currentRun] || { cells: {} }).cells;
