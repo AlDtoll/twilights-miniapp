@@ -1481,20 +1481,67 @@
       "file": "varvarskie_stoibisha",
       "settlements": [
         {
-          "name": "О разбивке НП",
-          "population": null,
-          "houses": null,
-          "promysly": [],
-          "loyalty": null,
-          "faith": null,
+          "name": "Волчий Стан",
+          "population": "~800",
+          "houses": "80",
+          "promysly": [
+            {
+              "name": "Охота и скотоводство",
+              "tier": "1",
+              "chain": "—",
+              "owner": "племя"
+            },
+            {
+              "name": "Родовая кузня",
+              "tier": "1",
+              "chain": "оружие/утварь",
+              "owner": "племенной кузнец"
+            }
+          ],
+          "loyalty": {
+            "уклад": "Крепкий",
+            "Тип": "нейтральная",
+            "Л": 56,
+            "Н": 16,
+            "НЛ": 8,
+            "mod": -1,
+            "reasons": [
+              "-1 вера (религия)"
+            ]
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Культ войны",
+                "count": 40,
+                "pct": 50
+              },
+              {
+                "name": "Природный культ (друидизм)",
+                "count": 25,
+                "pct": 31
+              },
+              {
+                "name": "Местный культ",
+                "count": 15,
+                "pct": 19
+              }
+            ],
+            "neutral": 0,
+            "neutral_pct": 0,
+            "mod": -1,
+            "reasons": [
+              "−1 религиозный раскол (2 культа ≥25%)"
+            ]
+          },
           "might": {
-            "total": 3,
-            "fighters": 0,
-            "base": 0,
-            "loyalty": 2,
+            "total": 4,
+            "fighters": 11,
+            "base": 2,
+            "loyalty": 1,
             "defense": 1,
             "tags": 0,
-            "fighters_src": "ополчение ~1.4% от 0",
+            "fighters_src": "ополчение ~1.4% от 800",
             "neutral": true
           }
         }
