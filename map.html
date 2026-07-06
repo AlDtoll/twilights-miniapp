@@ -466,8 +466,10 @@ function rebuildMap() {
           if (isPinching) return;
           const pm = data.type.match(/^t-player-(\w+)$/);
           if (pm) { openCell(data, pm[1]); e.stopPropagation(); return; }
-          if (data.type === 't-neutral') { openNeutralCell(data); e.stopPropagation(); return; }
-          openGenericCell(data, x, y);
+          // Любая не-игрока клетка (нейтрал/горы/море/опасная/шхеры/туман) —
+          // единый оверлей: описание + НП, если они заведены. Тип клетки НЕ
+          // влияет на клик: значок — визуальная подсказка, а не гейт данных.
+          openCellDetails(data, x, y);
           e.stopPropagation();
         });
       }
@@ -698,17 +700,41 @@ const TYPE_LABELS = {
   't-unknown': 'Туман — неизвестно',
 };
 
-function openGenericCell(cellData, x, y) {
+// Единый оверлей для НЕ-игрока клетки: тип-подпись + координаты + описание,
+// и разбивка НП, если она есть в neutrals JSON. Раньше нейтралы шли в один
+// путь, а горы/море/опасная/шхеры — в другой (без НП-поиска). Теперь путь
+// один: значок клетки — визуальная подсказка, а не гейт данных. Некоторые
+// клетки будут БЕЗ НП — это нормально, просто раздел не отрисовывается.
+async function openCellDetails(cellData, x, y) {
   areaTitle.textContent = cellData.pop ? `${cellData.name} (~${cellData.pop} чел.)` : cellData.name;
   areaDash.style.display = 'none';
   areaOverlay.classList.add('open');
   const label = TYPE_LABELS[cellData.type] || '';
   const coord = `(${x > 0 ? '+' : ''}${x}, ${y > 0 ? '+' : ''}${y})`;
-  const parts = [`<div class="area-desc" style="opacity:.7">${label ? label + ' · ' : ''}${coord}</div>`];
-  parts.push(cellData.note
-    ? `<div class="area-desc">${cellData.note}</div>`
-    : '<div class="area-loading">Подробностей по этой клетке пока нет</div>');
-  areaNps.innerHTML = parts.join('');
+  const headHtml = `<div class="area-desc" style="opacity:.7">${label ? label + ' · ' : ''}${coord}</div>`;
+  const descHtml = cellData.note ? `<div class="area-desc">${cellData.note}</div>` : '';
+  areaNps.innerHTML = headHtml + descHtml;
+
+  // Пытаемся найти клетку в neutrals JSON забега — если есть, добавим блок НП.
+  // Если файла нет / клетки нет / список НП пуст — блок не рисуем (некоторые
+  // клетки в принципе без НП: море, скалы, туман).
+  if (!neutralCache[currentRun]) {
+    try {
+      const res = await fetch(`data/${currentRun}_neutrals.json?_=${Date.now()}`);
+      neutralCache[currentRun] = res.ok ? await res.json() : { cells: [] };
+    } catch {
+      neutralCache[currentRun] = { cells: [] };
+    }
+  }
+  const norm = t => (t || '').trim().toLowerCase();
+  // c.area = "Название — нейтральная клетка (x, y)"; из toon приходит только «Название».
+  const areaHead = c => norm((c.area || '').split(' — ')[0]);
+  const cells = neutralCache[currentRun].cells || [];
+  const cell = cells.find(c => areaHead(c) === norm(cellData.name)
+                            || norm(c.file) === norm(cellData.name));
+  if (cell && cell.settlements && cell.settlements.length) {
+    areaNps.innerHTML = headHtml + descHtml + cell.settlements.map(renderNeutralNPCard).join('');
+  }
 }
 
 function renderNPCard(s) {
@@ -733,36 +759,6 @@ function esc(t) {
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-async function openNeutralCell(cellData) {
-  areaTitle.textContent = cellData.name;
-  areaDash.style.display = 'none';   // у нейтрала нет дашборда игрока
-  areaOverlay.classList.add('open');
-
-  const descHtml = cellData.note
-    ? `<div class="area-desc">${cellData.note}</div>`
-    : '';
-  areaNps.innerHTML = descHtml + '<div class="area-loading">Загрузка НП…</div>';
-
-  if (!neutralCache[currentRun]) {
-    try {
-      const res = await fetch(`data/${currentRun}_neutrals.json?_=${Date.now()}`);
-      neutralCache[currentRun] = res.ok ? await res.json() : { cells: [] };
-    } catch {
-      neutralCache[currentRun] = { cells: [] };
-    }
-  }
-  const norm = t => (t || '').trim().toLowerCase();
-  // c.area = "Название — нейтральная клетка (x, y)"; из toon приходит только «Название».
-  // Матч по первой части до « — », иначе фолбэк — по имени файла.
-  const areaHead = c => norm((c.area || '').split(' — ')[0]);
-  const cells = neutralCache[currentRun].cells || [];
-  const cell = cells.find(c => areaHead(c) === norm(cellData.name)
-                            || norm(c.file) === norm(cellData.name));
-  const npHtml = (cell && cell.settlements.length)
-    ? cell.settlements.map(renderNeutralNPCard).join('')
-    : '<div class="area-loading">Разбивка НП для этой клетки ещё не заведена</div>';
-  areaNps.innerHTML = descHtml + npHtml;
-}
 
 const LY_COLORS = { 'Л': '#4a8a5a', 'Н': '#7a6e5a', 'НЛ': '#8a3a2a' };
 const LY_LABELS = { 'Л': 'Лояльные', 'Н': 'Нейтральные', 'НЛ': 'Нелояльные' };
