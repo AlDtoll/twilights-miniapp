@@ -998,6 +998,12 @@ function renderHero(hero) {
     html += `</div>`;
   }
 
+  // Покровительство
+  if (hero.patronage) {
+    html += `<div class="hero-section-title">Покровительство</div>`;
+    html += `<div class="hero-item">${mdBold(hero.patronage)}</div>`;
+  }
+
   // Skills
   if ((hero.skills || []).length) {
     html += `<div class="hero-section-title">Навыки</div>`;
