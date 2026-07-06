@@ -680,10 +680,12 @@ async function openCell(cellData, playerType) {
   const inArea = all.filter(s => (s.area || s.name) === cellData.name);
   const settlements = (inArea.length ? inArea : all).slice().sort((a, b) =>
     (a.name === cellData.name ? 0 : 1) - (b.name === cellData.name ? 0 : 1));
+  // Короткая сводка по религии области — та же логика, что у нейтралов.
+  const agg = settlements.length > 1 ? faithAggregate(settlements) : '';
   const npHtml = settlements.length
     ? settlements.map(renderNPCard).join('')
     : '<div class="area-loading">НП не найдены в данных</div>';
-  areaNps.innerHTML = descHtml + npHtml;
+  areaNps.innerHTML = descHtml + agg + npHtml;
 }
 
 function closeArea() {
