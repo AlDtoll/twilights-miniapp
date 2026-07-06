@@ -144,35 +144,40 @@
     "patronage": "**Тенета** — тёмный культ разлома; дар-наставник «Он» получен в ритуале Тенеты, герой связан с культом.",
     "skills": [
       {
-        "name": "- Демонолог (I)",
+        "name": "Демонолог (I)",
+        "techniques": [
+          {
+            "name": "«Пленение»",
+            "kind": "приём"
+          }
+        ],
+        "bank": 0,
+        "ups": 0,
+        "next_threshold": 10
+      },
+      {
+        "name": "Древковое оружие (I)",
         "techniques": [],
         "bank": 0,
         "ups": 0,
         "next_threshold": 10
       },
       {
-        "name": "- Древковое оружие (I)",
+        "name": "Путешественник (I)",
         "techniques": [],
         "bank": 0,
         "ups": 0,
         "next_threshold": 10
       },
       {
-        "name": "- Путешественник (I)",
+        "name": "Травничество (I)",
         "techniques": [],
         "bank": 0,
         "ups": 0,
         "next_threshold": 10
       },
       {
-        "name": "- Травничество (I)",
-        "techniques": [],
-        "bank": 0,
-        "ups": 0,
-        "next_threshold": 10
-      },
-      {
-        "name": "- **Лидерство (0)**",
+        "name": "Лидерство (0)",
         "techniques": [],
         "bank": 5,
         "ups": 0,
