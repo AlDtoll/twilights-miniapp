@@ -739,8 +739,11 @@ async function openNeutralCell(cellData) {
     }
   }
   const norm = t => (t || '').trim().toLowerCase();
+  // c.area = "Название — нейтральная клетка (x, y)"; из toon приходит только «Название».
+  // Матч по первой части до « — », иначе фолбэк — по имени файла.
+  const areaHead = c => norm((c.area || '').split(' — ')[0]);
   const cells = neutralCache[currentRun].cells || [];
-  const cell = cells.find(c => norm(c.area) === norm(cellData.name)
+  const cell = cells.find(c => areaHead(c) === norm(cellData.name)
                             || norm(c.file) === norm(cellData.name));
   const npHtml = (cell && cell.settlements.length)
     ? cell.settlements.map(renderNeutralNPCard).join('')
