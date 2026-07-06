@@ -1466,6 +1466,21 @@ function renderSettlements(setts) {
         }</div>` : ""}`;
     }
 
+    // Боевая мощь (та же логика, что в карточке «Боевая мощь» — здесь рядом с лояльностью/верой НП)
+    const mgt = s.might;
+    if (mgt) {
+      const mcls = mgt.total > 0 ? "pos" : mgt.total < 0 ? "neg" : "zero";
+      const sgn = v => (v >= 0 ? "+" : "") + v;
+      const mparts = [
+        `<span class="might-part"><b>${sgn(mgt.base)}</b> бойцы <span class="might-part-src">⌊${mgt.fighters}÷5⌋ · ${esc(mgt.fighters_src)}</span></span>`,
+        `<span class="might-part"><b>${sgn(mgt.loyalty)}</b> лояльность</span>`,
+        `<span class="might-part"><b>${sgn(mgt.defense)}</b> оборона</span>`,
+      ];
+      if (mgt.tags) mparts.push(`<span class="might-part"><b>${sgn(mgt.tags)}</b> теги</span>`);
+      html += `<div class="np-sec" style="display:flex;align-items:center">Боевая мощь <span class="might-badge ${mcls}" style="margin-left:auto">⚔ ${mgt.total}</span></div>
+        <div class="might-breakdown" style="margin-bottom:4px">${mparts.join('<span class="might-sep">·</span>')}</div>`;
+    }
+
     // Вера
     const fth = s.faith;
     if (fth && fth.cults && fth.cults.length) {
