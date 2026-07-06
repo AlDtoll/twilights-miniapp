@@ -286,6 +286,8 @@ body {
 .skill-name { color: var(--text); font-weight: bold; }
 .skill-meta { display: flex; gap: 10px; margin-top: 3px; flex-wrap: wrap; }
 .skill-bank { color: var(--gold); font-size: 0.7rem; }
+.skill-ups { color: var(--muted); font-size: 0.7rem; }
+.skill-thr { color: #8a9ab5; font-size: 0.7rem; }
 .skill-tech { color: #7acc8a; font-size: 0.7rem; font-style: italic; }
 .skill-passive { color: #b58ad6; font-size: 0.7rem; font-style: italic; }
 .hero-section-title {
@@ -1065,6 +1067,10 @@ function renderHero(hero) {
     html += `<div class="hero-section-title">Навыки</div>`;
     hero.skills.forEach(s => {
       const bankHtml = s.bank !== null && s.bank !== undefined ? `<span class="skill-bank">банк: ${s.bank}</span>` : "";
+      const upsHtml = (s.ups !== null && s.ups !== undefined)
+        ? `<span class="skill-ups">апов: ${s.ups}</span>` : "";
+      const thrHtml = (s.next_threshold != null)
+        ? `<span class="skill-thr">след. порог: ${s.next_threshold}${(s.bank != null && s.bank >= s.next_threshold) ? " ✓" : ""}</span>` : "";
       const techHtml = (s.techniques || []).map(t => {
         const name = (typeof t === "string") ? t : t.name;
         const kind = (typeof t === "string") ? "приём" : (t.kind || "приём");
@@ -1073,7 +1079,7 @@ function renderHero(hero) {
       }).join("");
       html += `<div class="skill-row">
         <div class="skill-name">${mdBold(s.name)}</div>
-        <div class="skill-meta">${bankHtml}${techHtml}</div>
+        <div class="skill-meta">${bankHtml}${upsHtml}${thrHtml}${techHtml}</div>
       </div>`;
     });
   }
