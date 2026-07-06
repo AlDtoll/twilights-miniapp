@@ -329,7 +329,7 @@
   <div class="leg-item"><div class="leg-dot" style="background:#252320"></div>Горный хребет</div>
   <div class="leg-item"><div class="leg-dot" style="background:#071020"></div>Море</div>
   <div class="leg-item"><div class="leg-dot" style="background:#1c2418;border:1px solid #2a6a6a"></div>Шхеры</div>
-  <div class="leg-item"><div class="leg-dot" style="background:#2a0f0f"></div>Злое место</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#2a0f0f"></div>Опасная область</div>
   <div class="leg-item"><div class="leg-dot" style="background:#1a1814;border:1px solid #2a2520"></div>Неизвестно</div>
 </div>
 
@@ -467,17 +467,7 @@ function rebuildMap() {
           const pm = data.type.match(/^t-player-(\w+)$/);
           if (pm) { openCell(data, pm[1]); e.stopPropagation(); return; }
           if (data.type === 't-neutral') { openNeutralCell(data); e.stopPropagation(); return; }
-          if (selectedCell === cell) {
-            cell.classList.remove('selected');
-            selectedCell = null;
-            panel.style.display = 'none';
-          } else {
-            if (selectedCell) selectedCell.classList.remove('selected');
-            selectedCell = cell;
-            cell.classList.add('selected');
-            panel.innerHTML = infoHtml(data, x, y);
-            panel.style.display = 'block';
-          }
+          openGenericCell(data, x, y);
           e.stopPropagation();
         });
       }
@@ -696,6 +686,29 @@ async function openCell(cellData, playerType) {
 
 function closeArea() {
   areaOverlay.classList.remove('open');
+}
+
+// Любая прочая клетка (горы / море / шхеры / опасная область): открываем тот же
+// оверлей с названием, типом, координатами и примечанием — без разбивки НП.
+const TYPE_LABELS = {
+  't-mountain': 'Горы / хребет',
+  't-ocean': 'Море',
+  't-skerry': 'Шхеры / архипелаг',
+  't-evil': 'Опасная область',
+  't-unknown': 'Туман — неизвестно',
+};
+
+function openGenericCell(cellData, x, y) {
+  areaTitle.textContent = cellData.pop ? `${cellData.name} (~${cellData.pop} чел.)` : cellData.name;
+  areaDash.style.display = 'none';
+  areaOverlay.classList.add('open');
+  const label = TYPE_LABELS[cellData.type] || '';
+  const coord = `(${x > 0 ? '+' : ''}${x}, ${y > 0 ? '+' : ''}${y})`;
+  const parts = [`<div class="area-desc" style="opacity:.7">${label ? label + ' · ' : ''}${coord}</div>`];
+  parts.push(cellData.note
+    ? `<div class="area-desc">${cellData.note}</div>`
+    : '<div class="area-loading">Подробностей по этой клетке пока нет</div>');
+  areaNps.innerHTML = parts.join('');
 }
 
 function renderNPCard(s) {
