@@ -6,7 +6,7 @@
   "user_id": 579387502,
   "telegram": "@aldtoll",
   "season": "1",
-  "active_phase": null,
+  "active_phase": "leader",
   "finance": {
     "start": 8000,
     "income": [
@@ -55,6 +55,10 @@
       {
         "label": "Малое святилище (Тенета) на разломе содержание (5000 × 5%)",
         "amount": 250
+      },
+      {
+        "label": "Стража (7 × 20 × 90)",
+        "amount": 12600
       }
     ],
     "receipts": [],
@@ -114,12 +118,16 @@
         {
           "label": "Малое святилище (Тенета) на разломе содержание (5000 × 5%)",
           "amount": 250
+        },
+        {
+          "label": "Стража (7 × 20 × 90)",
+          "amount": 12600
         }
       ]
     },
     "total_income": 29466,
-    "total_expenses": 2050,
-    "balance": 35416
+    "total_expenses": 14650,
+    "balance": 22816
   },
   "buildings": {
     "slots": {
@@ -143,16 +151,16 @@
   "events": {
     "points": {
       "player": {
-        "total": 0,
-        "left": 0
+        "total": 3,
+        "left": 3
       },
       "chancellor": {
-        "name": "не найден",
+        "name": "Мьеслав «Каменщик»",
         "total": 0,
         "left": 0
       },
       "captain": {
-        "name": "не найден",
+        "name": "Хмур «Осока»",
         "total": 0,
         "left": 0
       }
@@ -172,7 +180,7 @@
     ],
     "assignments": [],
     "custom": [],
-    "po_title": "Преступления и опасности (не найден — П&О)",
+    "po_title": "Преступления и опасности (Хмур «Осока» — П&О)",
     "po": []
   },
   "hero": {
@@ -245,9 +253,9 @@
   "staff": [
     {
       "category": "Стража (бойцы)",
-      "fact": "0",
+      "fact": "7",
       "norm": "7",
-      "status": "⚠️ нет стражи (+1d2 П&О)",
+      "status": "✅",
       "np": "Полутенье"
     },
     {
@@ -353,9 +361,9 @@
       "staff": [
         {
           "category": "Стража (бойцы)",
-          "fact": "0",
+          "fact": "7",
           "norm": "7",
-          "status": "⚠️ нет стражи (+1d2 П&О)",
+          "status": "✅",
           "np": "Полутенье"
         },
         {
@@ -421,6 +429,10 @@
         {
           "label": "Малое святилище (Тенета) на разломе содержание (5000 × 5%)",
           "amount": 250
+        },
+        {
+          "label": "Стража (7 × 20 × 90)",
+          "amount": 12600
         }
       ],
       "stash": [],
@@ -429,10 +441,9 @@
         "Н": 19,
         "НЛ": 4,
         "Тип": "стартовая",
-        "mod": -1,
+        "mod": 0,
         "reasons": [
           "+1 стартовая",
-          "−1 нехватка стражи (0/7)",
           "−1 нехватка клерков (0/2)"
         ]
       },
@@ -455,14 +466,14 @@
         "reasons": []
       },
       "might": {
-        "total": 0,
-        "fighters": 0,
-        "base": 0,
-        "loyalty": -1,
+        "total": 2,
+        "fighters": 7,
+        "base": 1,
+        "loyalty": 0,
         "defense": 1,
         "tags": 0,
         "tag_list": [],
-        "fighters_src": "стража 0",
+        "fighters_src": "стража 7",
         "neutral": false
       },
       "eff_breakdown": {
