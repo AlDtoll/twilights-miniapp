@@ -256,6 +256,8 @@
   .np-might.pos { color: #c8a84a; }
   .np-might.neg { color: #8a3a2a; }
   .np-might.zero { color: #7a6e5a; }
+  .np-might-breakdown { font-size: 0.66rem; color: #7a6e5a; margin: 2px 0 4px; display: flex; flex-wrap: wrap; gap: 2px 6px; }
+  .np-might-part b { color: #a89a7a; }
   .np-sub { font-size: 0.72rem; color: #7a6e5a; margin: 8px 0 4px; letter-spacing: 0.03em; }
   .np-ly-mod { font-weight: bold; margin-left: 6px; }
   .np-ly-mod.pos { color: #c8a84a; }
@@ -834,9 +836,21 @@ function pct(n, d) { return d > 0 ? Math.round(n / d * 100) : 0; }
 function mightBlock(m) {
   if (!m) return '';
   const cls = m.total > 0 ? 'pos' : m.total < 0 ? 'neg' : 'zero';
+  const sgn = v => (v >= 0 ? '+' : '') + v;
   const tip = `Боевая мощь ${m.total}\n= ⌊${m.fighters}÷5⌋ база ${m.base}\n + лояльность ${m.loyalty >= 0 ? '+' : ''}${m.loyalty}\n + оборона +${m.defense}\n + теги ${m.tags >= 0 ? '+' : ''}${m.tags}\n(${m.fighters_src})`;
+  // Все слагаемые видимой строкой (тултип на мобиле недоступен): база/лояльность/оборона + каждый тег с причиной.
+  const parts = [
+    `<span class="np-might-part"><b>${sgn(m.base)}</b> бойцы</span>`,
+    `<span class="np-might-part"><b>${sgn(m.loyalty)}</b> лоял.</span>`,
+    `<span class="np-might-part"><b>${sgn(m.defense)}</b> оборона</span>`,
+  ];
+  const tl = m.tag_list || [];
+  if (tl.length) tl.forEach(t => parts.push(
+    `<span class="np-might-part"><b>${sgn(t.value)}</b> ${t.reason ? esc(t.reason) : 'тег'}</span>`));
+  else if (m.tags) parts.push(`<span class="np-might-part"><b>${sgn(m.tags)}</b> теги</span>`);
   return `<div class="np-stat"><span class="np-stat-label">Боевая мощь:</span> `
-    + `<span class="np-might ${cls}" title="${esc(tip)}">⚔ ${m.total}</span></div>`;
+    + `<span class="np-might ${cls}" title="${esc(tip)}">⚔ ${m.total}</span></div>`
+    + `<div class="np-might-breakdown">${parts.join(' · ')}</div>`;
 }
 
 function loyaltyBlock(ly, houses, might) {

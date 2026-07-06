@@ -1246,6 +1246,19 @@ function renderTerritory(settlements) {
 }
 
 // ── Боевая мощь (отдельный блок) ────────────────────────────────────────────
+// Отдельная плашка на КАЖДЫЙ тег боевой мощи/немощи (с причиной), а не общая сумма.
+function mightTagParts(m) {
+  const sgn = v => (v >= 0 ? "+" : "") + v;
+  const tl = m.tag_list || [];
+  if (tl.length) {
+    return tl.map(t => {
+      const reason = t.reason ? ` <span class="might-part-src">${esc(t.reason)}</span>` : "";
+      return `<span class="might-part"><b>${sgn(t.value)}</b> тег${reason}</span>`;
+    });
+  }
+  return m.tags ? [`<span class="might-part"><b>${sgn(m.tags)}</b> теги (#боевая_мощь/немощь)</span>`] : [];
+}
+
 function renderMight(settlements) {
   const el = document.getElementById("body-might");
   const list = (settlements || []).filter(s => s.might);
@@ -1261,7 +1274,7 @@ function renderMight(settlements) {
       `<span class="might-part"><b>${sgn(m.loyalty)}</b> лояльность</span>`,
       `<span class="might-part"><b>${sgn(m.defense)}</b> оборона</span>`,
     ];
-    if (m.tags) parts.push(`<span class="might-part"><b>${sgn(m.tags)}</b> теги (#боевая_мощь/немощь)</span>`);
+    mightTagParts(m).forEach(p => parts.push(p));
     html += `<div class="might-row">
       <div class="might-head">
         <span class="might-np">${esc(s.name)}</span>
@@ -1538,7 +1551,7 @@ function renderSettlements(setts) {
         `<span class="might-part"><b>${sgn(mgt.loyalty)}</b> лояльность</span>`,
         `<span class="might-part"><b>${sgn(mgt.defense)}</b> оборона</span>`,
       ];
-      if (mgt.tags) mparts.push(`<span class="might-part"><b>${sgn(mgt.tags)}</b> теги</span>`);
+      mightTagParts(mgt).forEach(p => mparts.push(p));
       html += `<div class="np-sec" style="display:flex;align-items:center">Боевая мощь <span class="might-badge ${mcls}" style="margin-left:auto">⚔ ${mgt.total}</span></div>
         <div class="might-breakdown" style="margin-bottom:4px">${mparts.join('<span class="might-sep">·</span>')}</div>`;
     }
