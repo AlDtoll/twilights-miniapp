@@ -485,27 +485,37 @@
             "kind": "приём"
           }
         ],
-        "bank": 8
+        "bank": 8,
+        "ups": 0,
+        "next_threshold": 10
       },
       {
         "name": "Аквамантия (I)",
         "techniques": [],
-        "bank": 5
+        "bank": 5,
+        "ups": 0,
+        "next_threshold": 10
       },
       {
         "name": "Акробатика (I)",
         "techniques": [],
-        "bank": 7
+        "bank": 7,
+        "ups": 0,
+        "next_threshold": 10
       },
       {
         "name": "Инженерия (I)",
         "techniques": [],
-        "bank": 6
+        "bank": 6,
+        "ups": 0,
+        "next_threshold": 10
       },
       {
         "name": "Лидерство (0)",
         "techniques": [],
-        "bank": 5
+        "bank": 5,
+        "ups": 0,
+        "next_threshold": 10
       },
       {
         "name": "Тактика (I)",
@@ -515,12 +525,16 @@
             "kind": "техника"
           }
         ],
-        "bank": 5
+        "bank": 5,
+        "ups": 1,
+        "next_threshold": 12
       },
       {
         "name": "Строительство (0)",
         "techniques": [],
-        "bank": 2
+        "bank": 2,
+        "ups": 0,
+        "next_threshold": 10
       }
     ],
     "features": [

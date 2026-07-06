@@ -166,27 +166,37 @@
             "kind": "приём"
           }
         ],
-        "bank": 0
+        "bank": 0,
+        "ups": null,
+        "next_threshold": null
       },
       {
         "name": "Сабля (0)",
         "techniques": [],
-        "bank": 0
+        "bank": 0,
+        "ups": null,
+        "next_threshold": null
       },
       {
         "name": "Лидерство (0)",
         "techniques": [],
-        "bank": 0
+        "bank": 0,
+        "ups": null,
+        "next_threshold": null
       },
       {
         "name": "Алхимия (0)",
         "techniques": [],
-        "bank": 0
+        "bank": 0,
+        "ups": null,
+        "next_threshold": null
       },
       {
         "name": "Тактика (0)",
         "techniques": [],
-        "bank": 9
+        "bank": 9,
+        "ups": null,
+        "next_threshold": null
       }
     ],
     "features": [

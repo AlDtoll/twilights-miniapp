@@ -482,22 +482,30 @@
             "kind": "приём"
           }
         ],
-        "bank": 5
+        "bank": 5,
+        "ups": 0,
+        "next_threshold": 10
       },
       {
         "name": "Аэромантия (I)",
         "techniques": [],
-        "bank": 1
+        "bank": 1,
+        "ups": 0,
+        "next_threshold": 10
       },
       {
         "name": "Лидерство (I)",
         "techniques": [],
-        "bank": 5
+        "bank": 5,
+        "ups": 0,
+        "next_threshold": 10
       },
       {
         "name": "Резьба по дереву (I)",
         "techniques": [],
-        "bank": 0
+        "bank": 0,
+        "ups": 0,
+        "next_threshold": 10
       },
       {
         "name": "Тактика (II)",
@@ -507,7 +515,9 @@
             "kind": "приём"
           }
         ],
-        "bank": 0
+        "bank": 0,
+        "ups": 2,
+        "next_threshold": 14
       }
     ],
     "features": [
