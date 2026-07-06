@@ -323,6 +323,18 @@ body {
 .ly-l  { color: var(--green); }
 .ly-n  { color: var(--muted); }
 .ly-nl { color: var(--red); }
+.hearth-stats { display: flex; gap: 8px; margin-bottom: 12px; }
+.hearth-stat { flex: 1; text-align: center; padding: 8px 4px; background: #1a1814; border-radius: 8px; }
+.hearth-num { font-size: 1.5rem; font-weight: bold; color: var(--text); }
+.hearth-num.pos { color: var(--green); }
+.hearth-num.neg { color: var(--red); }
+.hearth-lbl { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+.hearth-note { font-size: 0.8rem; color: var(--muted); margin-bottom: 10px; line-height: 1.4; }
+.hearth-hint-title { font-size: 0.75rem; color: var(--gold); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 5px; }
+.hearth-hint { list-style: none; padding: 0; margin: 0; }
+.hearth-hint li { font-size: 0.78rem; color: var(--text); padding: 3px 0; border-bottom: 1px solid #1a1814; line-height: 1.35; }
+.hearth-hint li:last-child { border-bottom: none; }
+.hearth-cost { color: var(--muted); font-size: 0.74rem; }
 .ly-card { padding: 10px 0 14px; border-bottom: 1px solid var(--border); }
 .ly-card:last-child { border-bottom: none; }
 .ly-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
@@ -545,6 +557,15 @@ select:focus { outline: none; border-color: var(--gold-dim); }
       <div class="card-body" id="body-events"></div>
     </div>
 
+    <!-- Hearth -->
+    <div class="card card-wide" id="card-hearth">
+      <div class="card-title" onclick="toggleCard('card-hearth')">
+        <span class="icon">🔥</span> Очаг
+        <em class="chevron">▼</em>
+      </div>
+      <div class="card-body" id="body-hearth"></div>
+    </div>
+
     <!-- Hero -->
     <div class="card card-wide" id="card-hero">
       <div class="card-title" onclick="toggleCard('card-hero')">
@@ -738,6 +759,7 @@ function render(d, npFilter) {
   renderFinance(d.finance, npFilter);
   renderBuildings(d.buildings, setts);
   renderEvents(d.events);
+  renderHearth(d.hearth);
   renderHero(d.hero);
   renderRetinue(d.hero);
   renderStaff(setts);
@@ -982,6 +1004,40 @@ function renderEventItem(item) {
   </div>`;
 }
 
+// ── Hearth ────────────────────────────────────────────────────────────────────
+const HEARTH_ACTIONS = [
+  ["Тренировка навыка", "1 очко (0.5 с оборудованием); первый раз навыком за фазу — +2 в банк"],
+  ["Переосмысление", "1 очко — открыть новый уровень навыка"],
+  ["Изучение рецепта / текста", "1 очко"],
+  ["Крафт снаряжения / расходников", "1 очко (0.5 в оборудованной мастерской профиля)"],
+  ["Закупка снаряжения", "1 очко (0.5 в своей оборудованной лавке)"],
+  ["Отношения с NPC", "1 очко — наладить связь"],
+  ["Админ-действие", "вместо тренировки = 1 очко разрешения лидера"],
+];
+
+function renderHearth(h) {
+  const el = document.getElementById("body-hearth");
+  if (!h || h.total == null) {
+    el.innerHTML = `<div class="hearth-note">Фаза очага в этом сезоне ещё не начиналась — пул действий появится, когда мастер её откроет.</div>`
+      + hearthHint();
+    return;
+  }
+  const total = h.total, remaining = h.remaining, spent = total - remaining;
+  const remCls = remaining <= 0 ? "neg" : "pos";
+  el.innerHTML = `
+    <div class="hearth-stats">
+      <div class="hearth-stat"><div class="hearth-num">${total}</div><div class="hearth-lbl">всего</div></div>
+      <div class="hearth-stat"><div class="hearth-num">${spent}</div><div class="hearth-lbl">потрачено</div></div>
+      <div class="hearth-stat"><div class="hearth-num ${remCls}">${remaining}</div><div class="hearth-lbl">осталось</div></div>
+    </div>` + hearthHint();
+}
+
+function hearthHint() {
+  const rows = HEARTH_ACTIONS.map(([a, c]) =>
+    `<li><b>${esc(a)}</b> — <span class="hearth-cost">${esc(c)}</span></li>`).join("");
+  return `<div class="hearth-hint-title">Что можно делать</div><ul class="hearth-hint">${rows}</ul>`;
+}
+
 // ── Hero ──────────────────────────────────────────────────────────────────────
 function renderHero(hero) {
   if (!hero) { document.getElementById("body-hero").innerHTML = "<div class='placeholder-body'>Нет данных</div>"; return; }
@@ -1208,7 +1264,7 @@ function renderMight(settlements) {
       <div class="might-breakdown">${parts.join('<span class="might-sep">·</span>')}</div>
     </div>`;
   });
-  html += `<div class="staff-sub-note">⚔ <b>Боевая мощь</b> — сила обороны НП, считается автоматически: <b>+1 за каждые 5 бойцов</b> (у игрока бойцы = стража НП) + <b>мод лояльности</b> + <b>оборона +1</b> + теги <b>#боевая_мощь</b>/<b>#боевая_немощь</b>, если есть.</div>`;
+  html += `<div class="staff-sub-note">⚔ <b>Боевая мощь</b> — сила обороны НП, считается автоматически: <b>+1 за каждые 5 бойцов</b> (у игрока бойцы = стража НП) + <b>мод лояльности</b> + <b>оборона +1</b> + теги <b>#боевая_мощь</b>/<b>#боевая_немощь</b>. Тематический авто-тег: если Культ войны — топ культ НП с преобладанием (≥50% дворов), к тегам добавляется <b>+1 (#боевая_мощь_1_культ_войны)</b>.</div>`;
   el.innerHTML = html;
 }
 
