@@ -599,6 +599,10 @@
     }
   ],
   "religion": null,
+  "hearth": {
+    "remaining": null,
+    "total": null
+  },
   "settlements": [
     {
       "name": "Соляный Берег",

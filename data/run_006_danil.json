@@ -288,6 +288,10 @@
     "neutral_pct": 63,
     "threshold_pct": 15
   },
+  "hearth": {
+    "remaining": null,
+    "total": null
+  },
   "settlements": [
     {
       "name": "Полутенье",

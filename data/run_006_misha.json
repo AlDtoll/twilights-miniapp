@@ -290,6 +290,10 @@
     "neutral_pct": 43,
     "threshold_pct": 15
   },
+  "hearth": {
+    "remaining": null,
+    "total": null
+  },
   "settlements": [
     {
       "name": "Плёсово",
