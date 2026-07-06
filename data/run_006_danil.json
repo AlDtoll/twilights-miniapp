@@ -423,8 +423,8 @@
     "cults": [
       {
         "name": "Тенета",
-        "count": 21,
-        "pct": 23,
+        "count": 20,
+        "pct": 22,
         "events": true
       },
       {
@@ -446,8 +446,8 @@
         "events": false
       }
     ],
-    "neutral": 55,
-    "neutral_pct": 61,
+    "neutral": 56,
+    "neutral_pct": 62,
     "threshold_pct": 15
   },
   "hearth": {
@@ -670,12 +670,12 @@
           },
           {
             "name": "Тенета",
-            "count": 4,
-            "pct": 16
+            "count": 3,
+            "pct": 12
           }
         ],
-        "neutral": 15,
-        "neutral_pct": 60,
+        "neutral": 16,
+        "neutral_pct": 64,
         "mod": 0,
         "reasons": []
       },
