@@ -159,7 +159,7 @@
     "patronage": "",
     "skills": [
       {
-        "name": "Волшебник (0)",
+        "name": "Волшебник (I)",
         "techniques": [
           {
             "name": "Телекинез",
@@ -167,36 +167,36 @@
           }
         ],
         "bank": 0,
-        "ups": null,
-        "next_threshold": null
+        "ups": 0,
+        "next_threshold": 10
       },
       {
-        "name": "Сабля (0)",
+        "name": "Сабля (I)",
         "techniques": [],
         "bank": 0,
-        "ups": null,
-        "next_threshold": null
+        "ups": 0,
+        "next_threshold": 10
       },
       {
-        "name": "Лидерство (0)",
+        "name": "Лидерство (I)",
         "techniques": [],
         "bank": 0,
-        "ups": null,
-        "next_threshold": null
+        "ups": 0,
+        "next_threshold": 10
       },
       {
-        "name": "Алхимия (0)",
+        "name": "Алхимия (I)",
         "techniques": [],
         "bank": 0,
-        "ups": null,
-        "next_threshold": null
+        "ups": 0,
+        "next_threshold": 10
       },
       {
         "name": "Тактика (0)",
         "techniques": [],
         "bank": 9,
-        "ups": null,
-        "next_threshold": null
+        "ups": 0,
+        "next_threshold": 10
       }
     ],
     "features": [
