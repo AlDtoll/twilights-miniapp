@@ -401,6 +401,7 @@
         "loyalty": -1,
         "defense": 1,
         "tags": 0,
+        "war_cult": 0,
         "fighters_src": "стража 0",
         "neutral": false
       },
@@ -501,6 +502,7 @@
         "loyalty": -1,
         "defense": 1,
         "tags": 0,
+        "war_cult": 0,
         "fighters_src": "стража 0",
         "neutral": false
       },
@@ -601,6 +603,7 @@
         "loyalty": -1,
         "defense": 1,
         "tags": 0,
+        "war_cult": 0,
         "fighters_src": "стража 0",
         "neutral": false
       },
