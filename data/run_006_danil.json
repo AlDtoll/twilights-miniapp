@@ -301,8 +301,8 @@
     "cults": [
       {
         "name": "Тенета",
-        "count": 19,
-        "pct": 21,
+        "count": 20,
+        "pct": 22,
         "events": true
       },
       {
@@ -324,8 +324,8 @@
         "events": false
       }
     ],
-    "neutral": 57,
-    "neutral_pct": 63,
+    "neutral": 56,
+    "neutral_pct": 62,
     "threshold_pct": 15
   },
   "hearth": {
@@ -429,8 +429,8 @@
         "cults": [
           {
             "name": "Тенета",
-            "count": 15,
-            "pct": 30
+            "count": 16,
+            "pct": 32
           },
           {
             "name": "Лето",
@@ -438,8 +438,8 @@
             "pct": 14
           }
         ],
-        "neutral": 28,
-        "neutral_pct": 56,
+        "neutral": 27,
+        "neutral_pct": 54,
         "mod": 0,
         "reasons": []
       },
