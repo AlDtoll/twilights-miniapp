@@ -754,9 +754,11 @@ function renderNPCard(s) {
     <div class="np-card-name">${s.name}</div>
     ${s.population != null ? `<div class="np-stat"><span class="np-stat-label">Население:</span> ${s.population}</div>` : ''}
     ${growth != null ? `<div class="np-stat"><span class="np-stat-label">Рост:</span> ${growth}</div>` : ''}
+    ${mightBlock(s.might)}
     ${staff}
     ${blds ? `<div class="np-buildings">Постройки: ${blds}</div>` : ''}
     ${loyaltyBlock(s.loyalty, houses)}
+    ${faithBlock(s.faith)}
     ${promyslyBlock(s.promysly)}
   </div>`;
 }
