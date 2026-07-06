@@ -6,7 +6,7 @@
   "user_id": 1700257736,
   "telegram": "@Мишачья",
   "season": "1",
-  "active_phase": null,
+  "active_phase": "leader",
   "finance": {
     "start": 8000,
     "income": [
@@ -55,6 +55,10 @@
       {
         "label": "Дом Спасителя содержание (5000 × 5%)",
         "amount": 250
+      },
+      {
+        "label": "Стража (7 × 20 × 90)",
+        "amount": 12600
       }
     ],
     "receipts": [],
@@ -114,12 +118,16 @@
         {
           "label": "Дом Спасителя содержание (5000 × 5%)",
           "amount": 250
+        },
+        {
+          "label": "Стража (7 × 20 × 90)",
+          "amount": 12600
         }
       ]
     },
     "total_income": 34715,
-    "total_expenses": 2050,
-    "balance": 40665
+    "total_expenses": 14650,
+    "balance": 28065
   },
   "buildings": {
     "slots": {
@@ -238,9 +246,9 @@
   "staff": [
     {
       "category": "Стража (бойцы)",
-      "fact": "0",
+      "fact": "7",
       "norm": "7",
-      "status": "⚠️ нет стражи (+1d2 П&О)",
+      "status": "✅",
       "np": "Плёсово"
     },
     {
@@ -334,9 +342,9 @@
       "staff": [
         {
           "category": "Стража (бойцы)",
-          "fact": "0",
+          "fact": "7",
           "norm": "7",
-          "status": "⚠️ нет стражи (+1d2 П&О)",
+          "status": "✅",
           "np": "Плёсово"
         },
         {
@@ -402,6 +410,10 @@
         {
           "label": "Дом Спасителя содержание (5000 × 5%)",
           "amount": 250
+        },
+        {
+          "label": "Стража (7 × 20 × 90)",
+          "amount": 12600
         }
       ],
       "stash": [],
@@ -410,10 +422,9 @@
         "Н": 12,
         "НЛ": 2,
         "Тип": "стартовая",
-        "mod": -1,
+        "mod": 0,
         "reasons": [
           "+1 стартовая",
-          "−1 нехватка стражи (0/7)",
           "−1 нехватка клерков (0/2)"
         ]
       },
@@ -436,14 +447,14 @@
         "reasons": []
       },
       "might": {
-        "total": 0,
-        "fighters": 0,
-        "base": 0,
-        "loyalty": -1,
+        "total": 2,
+        "fighters": 7,
+        "base": 1,
+        "loyalty": 0,
         "defense": 1,
         "tags": 0,
         "tag_list": [],
-        "fighters_src": "стража 0",
+        "fighters_src": "стража 7",
         "neutral": false
       },
       "eff_breakdown": {
