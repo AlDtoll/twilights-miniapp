@@ -56,7 +56,6 @@
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
-            "war_cult": 0,
             "fighters_src": "ополчение ~1.4% от 500",
             "neutral": true
           }
@@ -113,7 +112,6 @@
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
-            "war_cult": 0,
             "fighters_src": "ополчение ~1.4% от 400",
             "neutral": true
           }
@@ -158,13 +156,12 @@
             "reasons": []
           },
           "might": {
-            "total": 5,
+            "total": 4,
             "fighters": 4,
             "base": 1,
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
-            "war_cult": 1,
             "fighters_src": "ополчение ~1.4% от 250",
             "neutral": true
           }
@@ -215,7 +212,6 @@
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
-            "war_cult": 0,
             "fighters_src": "ополчение ~1.4% от 150",
             "neutral": true
           }
@@ -267,7 +263,6 @@
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
-            "war_cult": 0,
             "fighters_src": "ополчение ~1.4% от 150",
             "neutral": true
           }
@@ -323,13 +318,12 @@
             "reasons": []
           },
           "might": {
-            "total": 5,
+            "total": 4,
             "fighters": 7,
             "base": 1,
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
-            "war_cult": 1,
             "fighters_src": "ополчение ~1.4% от 500",
             "neutral": true
           }
@@ -375,7 +369,6 @@
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
-            "war_cult": 0,
             "fighters_src": "ополчение ~1.4% от 200",
             "neutral": true
           }
@@ -421,7 +414,6 @@
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
-            "war_cult": 0,
             "fighters_src": "ополчение ~1.4% от 100",
             "neutral": true
           }
@@ -483,7 +475,6 @@
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
-            "war_cult": 0,
             "fighters_src": "ополчение ~1.4% от 800",
             "neutral": true
           }
@@ -545,7 +536,6 @@
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
-            "war_cult": 0,
             "fighters_src": "ополчение ~1.4% от 200",
             "neutral": true
           }
@@ -602,7 +592,6 @@
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
-            "war_cult": 0,
             "fighters_src": "ополчение ~1.4% от 800",
             "neutral": true
           }
@@ -659,7 +648,6 @@
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
-            "war_cult": 0,
             "fighters_src": "ополчение ~1.4% от 150",
             "neutral": true
           }
@@ -721,7 +709,6 @@
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
-            "war_cult": 0,
             "fighters_src": "ополчение ~1.4% от 500",
             "neutral": true
           }
@@ -773,7 +760,6 @@
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
-            "war_cult": 0,
             "fighters_src": "ополчение ~1.4% от 150",
             "neutral": true
           }
@@ -835,7 +821,6 @@
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
-            "war_cult": 0,
             "fighters_src": "ополчение ~1.4% от 350",
             "neutral": true
           }
@@ -891,7 +876,6 @@
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
-            "war_cult": 0,
             "fighters_src": "ополчение ~1.4% от 350",
             "neutral": true
           }
@@ -942,7 +926,6 @@
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
-            "war_cult": 0,
             "fighters_src": "ополчение ~1.4% от 300",
             "neutral": true
           }
@@ -1004,7 +987,6 @@
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
-            "war_cult": 0,
             "fighters_src": "ополчение ~1.4% от 250",
             "neutral": true
           }
@@ -1055,7 +1037,6 @@
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
-            "war_cult": 0,
             "fighters_src": "ополчение ~1.4% от 200",
             "neutral": true
           }
@@ -1106,7 +1087,6 @@
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
-            "war_cult": 0,
             "fighters_src": "ополчение ~1.4% от 50",
             "neutral": true
           }
@@ -1168,7 +1148,6 @@
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
-            "war_cult": 0,
             "fighters_src": "ополчение ~1.4% от 450",
             "neutral": true
           }
@@ -1214,7 +1193,6 @@
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
-            "war_cult": 0,
             "fighters_src": "ополчение ~1.4% от 450",
             "neutral": true
           }
@@ -1276,7 +1254,6 @@
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
-            "war_cult": 0,
             "fighters_src": "ополчение ~1.4% от 750",
             "neutral": true
           }
@@ -1326,13 +1303,12 @@
             "reasons": []
           },
           "might": {
-            "total": 4,
+            "total": 3,
             "fighters": 2,
             "base": 0,
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
-            "war_cult": 1,
             "fighters_src": "ополчение ~1.4% от 150",
             "neutral": true
           }
@@ -1383,7 +1359,6 @@
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
-            "war_cult": 0,
             "fighters_src": "ополчение ~1.4% от 100",
             "neutral": true
           }
@@ -1440,7 +1415,6 @@
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
-            "war_cult": 0,
             "fighters_src": "ополчение ~1.4% от 450",
             "neutral": true
           }
@@ -1496,7 +1470,6 @@
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
-            "war_cult": 0,
             "fighters_src": "ополчение ~1.4% от 450",
             "neutral": true
           }
@@ -1563,8 +1536,7 @@
             "base": 2,
             "loyalty": 2,
             "defense": 1,
-            "tags": 1,
-            "war_cult": 1,
+            "tags": 2,
             "fighters_src": "ополчение ~1.4% от 800",
             "neutral": true
           }
@@ -1626,7 +1598,6 @@
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
-            "war_cult": 0,
             "fighters_src": "ополчение ~1.4% от 200",
             "neutral": true
           }
@@ -1677,7 +1648,6 @@
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
-            "war_cult": 0,
             "fighters_src": "ополчение ~1.4% от 100",
             "neutral": true
           }
