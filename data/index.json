@@ -9,7 +9,8 @@
     "run_005_danil.json",
     "run_005_misha.json",
     "run_006_danil.json",
-    "run_006_misha.json"
+    "run_006_misha.json",
+    "run_006_neutrals.json"
   ],
   "entries": [
     {
@@ -81,6 +82,13 @@
       "player": "misha",
       "char_name": "Лапс «Ко»",
       "player_name": "Миша"
+    },
+    {
+      "file": "run_006_neutrals.json",
+      "run": "run_006",
+      "player": "neutrals",
+      "char_name": null,
+      "player_name": null
     }
   ]
 }
