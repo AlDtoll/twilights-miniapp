@@ -349,10 +349,23 @@ function switchRun(run) {
   currentRun = run;
   const meta = RUNS_META[run] || { cells: {} };
   CELLS = meta.cells || {};
+  rebuildPlayerMeta();
   const t = "Карта — " + runLabel(run);
   document.getElementById("map-title").textContent = t;
   document.title = t;
   rebuildMap();
+}
+
+// Слоты t-player-N — ПОСТЕЙЗОННЫ: в разных забегах номер 1 — разные игроки.
+// Поэтому PLAYER_META перестраиваем ТОЛЬКО из клеток текущего забега (при switchRun и init).
+// Легаси-ключи lak/klo/dun (run_004) не трогаем — они не пересекаются с новыми числовыми.
+function rebuildPlayerMeta() {
+  Object.keys(PLAYER_META).forEach(k => { if (/^\w+$/.test(k) && !['lak','klo','dun'].includes(k)) delete PLAYER_META[k]; });
+  const cells = ((RUNS_META[currentRun] || { cells: {} }).cells) || {};
+  Object.values(cells).forEach(c => {
+    const pm = (typeof c === 'object' && c.type ? c.type : '').match(/^t-player-(\w+)$/);
+    if (pm && c.player) PLAYER_META[pm[1]] = { key: c.player, name: c.name };
+  });
 }
 
 const MARGIN = 2;  // фог-кольцо вокруг клеток: область героя не на границе, карта расширяема
@@ -610,11 +623,6 @@ async function initMap() {
     const runs = Object.keys(parsed).sort().reverse(); // последний забег — первым/по умолчанию
     RUNS_META = {};
     runs.forEach(r => { RUNS_META[r] = { label: runLabel(r), cells: parsed[r] || {} }; });
-    // Слот игрока (t-player-N) → dir для перехода в дашборд: из поля player: в toon.
-    runs.forEach(r => Object.values(parsed[r] || {}).forEach(c => {
-      const pm = (typeof c === 'object' && c.type ? c.type : '').match(/^t-player-(\w+)$/);
-      if (pm && c.player) PLAYER_META[pm[1]] = { key: c.player, name: c.name };
-    }));
     const sel = document.getElementById("run-sel");
     sel.innerHTML = runs.map(r => `<option value="${r}">${runLabel(r)}</option>`).join("");
     // ?run=run_005 в URL → открыть конкретный забег (для нескольких активных); иначе последний.
@@ -622,6 +630,7 @@ async function initMap() {
     currentRun = (urlRun && RUNS_META[urlRun]) ? urlRun : (runs[0] || "run_004");
     sel.value = currentRun;
     CELLS = (RUNS_META[currentRun] || { cells: {} }).cells;
+    rebuildPlayerMeta();  // Слоты t-player-N — только по клеткам currentRun (см. rebuildPlayerMeta).
     const t = "Карта — " + runLabel(currentRun);
     document.getElementById("map-title").textContent = t;
     document.title = t;
