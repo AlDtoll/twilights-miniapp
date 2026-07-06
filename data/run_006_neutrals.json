@@ -1477,6 +1477,30 @@
       ]
     },
     {
+      "area": "Варварские Стойбища — нейтральная клетка (-3, +2)",
+      "file": "varvarskie_stoibisha",
+      "settlements": [
+        {
+          "name": "О разбивке НП",
+          "population": null,
+          "houses": null,
+          "promysly": [],
+          "loyalty": null,
+          "faith": null,
+          "might": {
+            "total": 3,
+            "fighters": 0,
+            "base": 0,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "fighters_src": "ополчение ~1.4% от 0",
+            "neutral": true
+          }
+        }
+      ]
+    },
+    {
       "area": "Варварский Порубеж — нейтральная клетка (-3, 0)",
       "file": "varvarskiy_porubezh",
       "settlements": [
