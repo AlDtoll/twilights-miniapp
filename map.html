@@ -257,6 +257,19 @@
   .np-might.neg { color: #8a3a2a; }
   .np-might.zero { color: #7a6e5a; }
   .np-sub { font-size: 0.72rem; color: #7a6e5a; margin: 8px 0 4px; letter-spacing: 0.03em; }
+  .np-ly-mod { font-weight: bold; margin-left: 6px; }
+  .np-ly-mod.pos { color: #c8a84a; }
+  .np-ly-mod.neg { color: #8a3a2a; }
+  .np-ly-mod.zero { color: #7a6e5a; }
+  .np-ly-reasons { list-style: none; margin: 4px 0 0; padding: 0; font-size: 0.66rem; color: #9a8a6a; }
+  .np-ly-reasons li { line-height: 1.5; }
+  .np-ly-reasons li.pos { color: #7aa87a; }
+  .np-ly-reasons li.neg { color: #b06a5a; }
+  .np-ly-might { font-size: 0.68rem; color: #9a8a6a; margin-top: 4px; }
+  .np-ly-might b.pos { color: #c8a84a; }
+  .np-ly-might b.neg { color: #8a3a2a; }
+  .np-ly-might b.zero { color: #7a6e5a; }
+  .np-ly-hint { color: #6a6050; }
   .np-bar { display: flex; height: 12px; border-radius: 3px; overflow: hidden; margin: 3px 0 5px; background: #2e2a22; }
   .np-bar span { height: 100%; }
   .np-bar-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 0.68rem; color: #9a8a6a; }
@@ -785,7 +798,7 @@ function renderNPCard(s) {
     ${mightBlock(s.might)}
     ${staff}
     ${blds ? `<div class="np-buildings">Постройки: ${blds}</div>` : ''}
-    ${loyaltyBlock(s.loyalty, houses)}
+    ${loyaltyBlock(s.loyalty, houses, s.might)}
     ${faithBlock(s.faith)}
     ${promyslyBlock(s.promysly)}
   </div>`;
@@ -826,7 +839,7 @@ function mightBlock(m) {
     + `<span class="np-might ${cls}" title="${esc(tip)}">⚔ ${m.total}</span></div>`;
 }
 
-function loyaltyBlock(ly, houses) {
+function loyaltyBlock(ly, houses, might) {
   if (!ly) return '';
   const supporters = ly.supporters || {};
   const rows = [['Л', ly['Л'] || 0], ['Н', ly['Н'] || 0], ['НЛ', ly['НЛ'] || 0]];
@@ -841,9 +854,31 @@ function loyaltyBlock(ly, houses) {
     + Object.entries(supporters).filter(([, v]) => v > 0).map(([who, v]) =>
     `<span><span class="np-dot" style="background:#c8a84a"></span>Сторонники ${esc(who)} <b>${v} · ${pct(v, denom)}%</b></span>`).join('');
   const uklad = ly['уклад'] || ly['Тип'];
-  return `<div class="np-sub">Лояльность${uklad ? ' · ' + esc(uklad) : ''}</div>`
+  // Модификатор лояльности (та же логика, что в дашборде): бейдж «мод ±N» + причины.
+  // Данные считаются и для нейтралов (generate_miniapp_data), просто не рисовались.
+  const mod = ly.mod || 0;
+  const modCls = mod > 0 ? 'pos' : mod < 0 ? 'neg' : 'zero';
+  const modBadge = ` <span class="np-ly-mod ${modCls}">мод ${mod > 0 ? '+' : ''}${mod}</span>`;
+  const reasons = ly.reasons || [];
+  const reasonsHtml = reasons.length
+    ? `<ul class="np-ly-reasons">${reasons.map(r => {
+        const c = r.startsWith('+') ? 'pos' : (r.startsWith('−') || r.startsWith('-')) ? 'neg' : '';
+        return `<li class="${c}">${esc(r)}</li>`;
+      }).join('')}</ul>`
+    : '';
+  // Вклад лояльности в боевую мощь виден только в тултипе мощи, а на мобиле тултипов нет —
+  // дублируем сюда явной строкой (для нейтралов это mod + база +2 ополчения).
+  const mLoy = might ? (might.loyalty || 0) : null;
+  const mightHint = (mLoy != null && might.neutral && mLoy !== mod)
+    ? ` <span class="np-ly-hint">(мод ${mod > 0 ? '+' : ''}${mod} + ${mLoy - mod} ополчение)</span>` : '';
+  const mCls = mLoy > 0 ? 'pos' : mLoy < 0 ? 'neg' : 'zero';
+  const mightLine = (mLoy != null)
+    ? `<div class="np-ly-might">Вклад в боевую мощь: <b class="${mCls}">${mLoy >= 0 ? '+' : ''}${mLoy}</b>${mightHint}</div>` : '';
+  return `<div class="np-sub">Лояльность${uklad ? ' · ' + esc(uklad) : ''}${modBadge}</div>`
     + `<div class="np-bar">${bar}</div>`
-    + `<div class="np-bar-legend">${legend}</div>`;
+    + `<div class="np-bar-legend">${legend}</div>`
+    + reasonsHtml
+    + mightLine;
 }
 
 function faithBlock(f, title) {
@@ -898,7 +933,7 @@ function renderNeutralNPCard(s) {
     ${s.population ? `<div class="np-stat"><span class="np-stat-label">Население:</span> ${esc(s.population)}</div>` : ''}
     ${s.houses ? `<div class="np-stat"><span class="np-stat-label">Домов:</span> ${esc(s.houses)}</div>` : ''}
     ${mightBlock(s.might)}
-    ${loyaltyBlock(s.loyalty, houses)}
+    ${loyaltyBlock(s.loyalty, houses, s.might)}
     ${faithBlock(s.faith)}
     ${promyslyBlock(s.promysly)}
   </div>`;
