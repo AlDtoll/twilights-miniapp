@@ -71,6 +71,10 @@
       {
         "label": "Клерки (1 × 20 × 90)",
         "amount": 1800
+      },
+      {
+        "label": "Стража (2 × 20 × 90)",
+        "amount": 3600
       }
     ],
     "receipts": [],
@@ -149,11 +153,17 @@
           "label": "Клерки (1 × 20 × 90)",
           "amount": 1800
         }
+      ],
+      "Затулье": [
+        {
+          "label": "Стража (2 × 20 × 90)",
+          "amount": 3600
+        }
       ]
     },
     "total_income": 34715,
-    "total_expenses": 27250,
-    "balance": 15465
+    "total_expenses": 30850,
+    "balance": 11865
   },
   "buildings": {
     "slots": {
@@ -314,9 +324,9 @@
     },
     {
       "category": "Стража (бойцы)",
-      "fact": "0",
+      "fact": "2",
       "norm": "2",
-      "status": "⚠️ пусто",
+      "status": "✅",
       "np": "Затулье"
     },
     {
@@ -618,9 +628,9 @@
       "staff": [
         {
           "category": "Стража (бойцы)",
-          "fact": "0",
+          "fact": "2",
           "norm": "2",
-          "status": "⚠️ пусто",
+          "status": "✅",
           "np": "Затулье"
         },
         {
@@ -673,17 +683,21 @@
           "amount": 416
         }
       ],
-      "expenses_np": [],
+      "expenses_np": [
+        {
+          "label": "Стража (2 × 20 × 90)",
+          "amount": 3600
+        }
+      ],
       "stash": [],
       "loyalty": {
         "Л": 9,
         "Н": 5,
         "НЛ": 1,
         "Тип": "стартовая",
-        "mod": -1,
+        "mod": 0,
         "reasons": [
           "+1 стартовая",
-          "−1 нехватка стражи (0/2)",
           "−1 нехватка клерков (0/1)"
         ]
       },
@@ -706,14 +720,14 @@
         "reasons": []
       },
       "might": {
-        "total": 0,
-        "fighters": 0,
+        "total": 1,
+        "fighters": 2,
         "base": 0,
-        "loyalty": -1,
+        "loyalty": 0,
         "defense": 1,
         "tags": 0,
         "tag_list": [],
-        "fighters_src": "стража 0",
+        "fighters_src": "стража 2",
         "neutral": false
       },
       "eff_breakdown": {
