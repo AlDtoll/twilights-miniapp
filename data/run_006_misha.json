@@ -63,6 +63,10 @@
       {
         "label": "Клерки (2 × 20 × 90)",
         "amount": 3600
+      },
+      {
+        "label": "Стража (4 × 20 × 90)",
+        "amount": 7200
       }
     ],
     "receipts": [],
@@ -131,11 +135,17 @@
           "label": "Клерки (2 × 20 × 90)",
           "amount": 3600
         }
+      ],
+      "Лугово": [
+        {
+          "label": "Стража (4 × 20 × 90)",
+          "amount": 7200
+        }
       ]
     },
     "total_income": 34715,
-    "total_expenses": 18250,
-    "balance": 24465
+    "total_expenses": 25450,
+    "balance": 17265
   },
   "buildings": {
     "slots": {
@@ -275,9 +285,9 @@
     },
     {
       "category": "Стража (бойцы)",
-      "fact": "0",
+      "fact": "4",
       "norm": "4",
-      "status": "⚠️ нет стражи (+1d2 П&О)",
+      "status": "✅",
       "np": "Лугово"
     },
     {
@@ -483,9 +493,9 @@
       "staff": [
         {
           "category": "Стража (бойцы)",
-          "fact": "0",
+          "fact": "4",
           "norm": "4",
-          "status": "⚠️ нет стражи (+1d2 П&О)",
+          "status": "✅",
           "np": "Лугово"
         },
         {
@@ -532,17 +542,21 @@
           "amount": 713
         }
       ],
-      "expenses_np": [],
+      "expenses_np": [
+        {
+          "label": "Стража (4 × 20 × 90)",
+          "amount": 7200
+        }
+      ],
       "stash": [],
       "loyalty": {
         "Л": 14,
         "Н": 8,
         "НЛ": 3,
         "Тип": "стартовая",
-        "mod": -2,
+        "mod": -1,
         "reasons": [
           "+1 стартовая",
-          "−1 нехватка стражи (0/4)",
           "−1 нехватка клерков (0/1)",
           "-1 вера (религия)"
         ]
@@ -568,14 +582,14 @@
         ]
       },
       "might": {
-        "total": -1,
-        "fighters": 0,
-        "base": 0,
-        "loyalty": -2,
+        "total": 1,
+        "fighters": 4,
+        "base": 1,
+        "loyalty": -1,
         "defense": 1,
         "tags": 0,
         "tag_list": [],
-        "fighters_src": "стража 0",
+        "fighters_src": "стража 4",
         "neutral": false
       },
       "eff_breakdown": {
