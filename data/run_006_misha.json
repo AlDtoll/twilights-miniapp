@@ -295,19 +295,19 @@
     "cults": [
       {
         "name": "Кипона",
-        "count": 41,
-        "pct": 46,
+        "count": 44,
+        "pct": 49,
         "events": true
       },
       {
         "name": "Мизеракль",
-        "count": 10,
-        "pct": 11,
+        "count": 11,
+        "pct": 12,
         "events": false
       }
     ],
-    "neutral": 39,
-    "neutral_pct": 43,
+    "neutral": 35,
+    "neutral_pct": 39,
     "threshold_pct": 15
   },
   "hearth": {
@@ -411,17 +411,17 @@
         "cults": [
           {
             "name": "Кипона",
-            "count": 22,
-            "pct": 44
+            "count": 23,
+            "pct": 46
           },
           {
             "name": "Мизеракль",
-            "count": 5,
-            "pct": 10
+            "count": 6,
+            "pct": 12
           }
         ],
-        "neutral": 23,
-        "neutral_pct": 46,
+        "neutral": 21,
+        "neutral_pct": 42,
         "mod": 0,
         "reasons": []
       },
@@ -519,8 +519,8 @@
         "cults": [
           {
             "name": "Кипона",
-            "count": 13,
-            "pct": 52
+            "count": 14,
+            "pct": 56
           },
           {
             "name": "Мизеракль",
@@ -528,11 +528,11 @@
             "pct": 8
           }
         ],
-        "neutral": 10,
-        "neutral_pct": 40,
+        "neutral": 9,
+        "neutral_pct": 36,
         "mod": -1,
         "reasons": [
-          "−1 Кипона преобладает (52%), герой без бога"
+          "−1 Кипона преобладает (56%), герой без бога"
         ]
       },
       "might": {
@@ -634,8 +634,8 @@
         "cults": [
           {
             "name": "Кипона",
-            "count": 6,
-            "pct": 40
+            "count": 7,
+            "pct": 47
           },
           {
             "name": "Мизеракль",
@@ -643,8 +643,8 @@
             "pct": 20
           }
         ],
-        "neutral": 6,
-        "neutral_pct": 40,
+        "neutral": 5,
+        "neutral_pct": 33,
         "mod": 0,
         "reasons": []
       },
