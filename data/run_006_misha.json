@@ -317,7 +317,7 @@
             "kind": "приём"
           }
         ],
-        "bank": 0,
+        "bank": 1,
         "ups": 0,
         "next_threshold": 10
       },
@@ -338,7 +338,7 @@
       {
         "name": "Алхимия (I)",
         "techniques": [],
-        "bank": 0,
+        "bank": 2,
         "ups": 0,
         "next_threshold": 10
       },
