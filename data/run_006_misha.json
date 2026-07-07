@@ -585,12 +585,18 @@
           {
             "name": "Кипона",
             "count": 23,
-            "pct": 46
+            "pct": 46,
+            "rel_mod": 1,
+            "rel_reasons": [
+              "+1 благословение лидера (ещё 2)"
+            ]
           },
           {
             "name": "Мизеракль",
             "count": 6,
-            "pct": 12
+            "pct": 12,
+            "rel_mod": 0,
+            "rel_reasons": []
           }
         ],
         "neutral": 21,
@@ -709,12 +715,18 @@
           {
             "name": "Кипона",
             "count": 14,
-            "pct": 56
+            "pct": 56,
+            "rel_mod": 1,
+            "rel_reasons": [
+              "+1 благословение лидера (ещё 2)"
+            ]
           },
           {
             "name": "Мизеракль",
             "count": 2,
-            "pct": 8
+            "pct": 8,
+            "rel_mod": 0,
+            "rel_reasons": []
           }
         ],
         "neutral": 9,
@@ -840,12 +852,18 @@
           {
             "name": "Кипона",
             "count": 7,
-            "pct": 47
+            "pct": 47,
+            "rel_mod": 1,
+            "rel_reasons": [
+              "+1 благословение лидера (ещё 2)"
+            ]
           },
           {
             "name": "Мизеракль",
             "count": 3,
-            "pct": 20
+            "pct": 20,
+            "rel_mod": 0,
+            "rel_reasons": []
           }
         ],
         "neutral": 5,
