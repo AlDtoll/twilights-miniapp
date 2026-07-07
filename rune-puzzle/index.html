@@ -206,6 +206,21 @@
     .result-stat { text-align: center; flex: 1; }
     .result-stat-label { font-size: 0.72rem; color: rgba(232,224,255,0.4); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
     .result-stat-val { font-size: 1.4rem; font-weight: 800; }
+    .move-grades {
+      margin: 10px auto 4px;
+      max-width: 280px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 3px 10px;
+      font-size: 0.8rem;
+      background: rgba(30,22,60,0.5);
+      border: 1px solid rgba(201,184,255,0.14);
+      border-radius: 12px;
+      padding: 10px 14px;
+    }
+    .move-grades .mg-title { grid-column: 1 / -1; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(232,224,255,0.45); margin-bottom: 2px; }
+    .move-grades .mg-moves { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--accent, #c9b8ff); }
+    .move-grades .mg-name  { text-align: left; color: rgba(232,224,255,0.85); }
   </style>
 </head>
 <body>
@@ -226,6 +241,7 @@
   <div style="font-size:0.82rem;color:rgba(232,224,255,0.68);line-height:1.45;margin:12px 6px 4px;text-align:center">
     🎯 Важно <b>число ходов</b>, а не скорость. Собери руну за меньшее число перемещений — время лишь ограничитель.
   </div>
+  <div id="move-grades" class="move-grades"></div>
   <button class="start-btn" onclick="startGame()">Сложить руну</button>
 </div>
 
@@ -281,6 +297,14 @@ const PROMPT        = gameData.prompt || '';
 // Outcome time cutoffs (seconds) by size
 const BASE_TIMES = { 4: 60, 3: 90, 2: 150 }; // level → base seconds for N=4
 const SIZE_MULT  = N === 3 ? 0.5 : N === 5 ? 1.5 : 1.0;
+
+// Грейд по числу ходов (оптимум ≈ 6/12/21 для 3×3/4×4/5×5). Время — только лимит.
+const MOVE_THRESHOLDS = {
+  3: [6,  9,  12, 18, 27],
+  4: [12, 18, 24, 36, 54],
+  5: [21, 31, 42, 63, 95],
+};
+const GRADE_NAMES = ['Провал', 'Плохо', 'Неудовл.', 'Приемлемо', 'Хорошо', 'Отлично', 'Идеально'];
 
 // ─── CANVAS RUNE DRAWING ──────────────────────────────────────────────────────
 const RUNE_BG     = '#1a1535';
@@ -480,6 +504,22 @@ document.getElementById('chip-time').textContent  = `${TIME_LIMIT} сек`;
 document.getElementById('chip-moves').textContent = `обмен парами`;
 document.getElementById('stat-limit').textContent = formatTime(TIME_LIMIT);
 
+// Пороги грейда по числу ходов для текущего размера
+(function renderMoveGrades() {
+  const thr = MOVE_THRESHOLDS[N] || MOVE_THRESHOLDS[3];
+  const rows = [
+    [`≤${thr[0]}`, GRADE_NAMES[6]],
+    [`≤${thr[1]}`, GRADE_NAMES[5]],
+    [`≤${thr[2]}`, GRADE_NAMES[4]],
+    [`≤${thr[3]}`, GRADE_NAMES[3]],
+    [`≤${thr[4]}`, GRADE_NAMES[2]],
+    [`>${thr[4]}`, GRADE_NAMES[1]],
+  ];
+  const el = document.getElementById('move-grades');
+  el.innerHTML = `<div class="mg-title">Ходов → исход (${N}×${N})</div>` +
+    rows.map(([m, n]) => `<span class="mg-moves">${m}</span><span class="mg-name">${n}</span>`).join('');
+})();
+
 // ─── PUZZLE STATE ─────────────────────────────────────────────────────────────
 const TOTAL = N * N;
 let state = [];        // state[pos] = tile_id (0..N*N-1)
@@ -625,14 +665,7 @@ function endGame(win) {
     });
   }
 
-  // Compute outcome by move count (6 levels + Провал)
-  // Thresholds calibrated on player data: 3×3≈6, 4×4≈12, 5×5≈21 optimal moves
-  const MOVE_THRESHOLDS = {
-    3: [6,  9,  12, 18, 27],
-    4: [12, 18, 24, 36, 54],
-    5: [21, 31, 42, 63, 95],
-  };
-  const GRADE_NAMES = ['Провал', 'Плохо', 'Неудовл.', 'Приемлемо', 'Хорошо', 'Отлично', 'Идеально'];
+  // Исход по числу ходов (пороги — в CONFIG: MOVE_THRESHOLDS/GRADE_NAMES)
   let outcome, level;
   if (!win) {
     outcome = 'Провал'; level = 0;
