@@ -849,6 +849,15 @@ function renderFinance(f, npFilter) {
   </div>`;
 
   if (!npFilter) {
+    // Прибыль = доходы − расходы (постоянный операционный баланс, сразу после расходов)
+    const profit   = showTotals.income - showTotals.expenses;
+    const profCls  = profit >= 0 ? "pos" : "neg";
+    const profSign = profit >= 0 ? "+" : "";
+    html += `<div class="treasury-total">
+      <span class="label">Прибыль</span>
+      <span class="amount ${profCls}">${profSign}${fmt(profit)} мон</span>
+    </div>`;
+
     // Поступления
     const receipts     = f.receipts  || [];
     const totalReceipts = receipts.reduce((a, i) => a + i.amount, 0);
@@ -871,17 +880,17 @@ function renderFinance(f, npFilter) {
       html += `<div class="treasury-row"><span class="label" style="font-style:italic">—</span><span class="amount neg">−0</span></div>`;
     }
 
-    // Прибыль (крупно)
-    const profit   = showTotals.income - showTotals.expenses + totalReceipts - totalSpendings;
-    const profCls  = profit >= 0 ? "pos" : "neg";
-    const profSign = profit >= 0 ? "+" : "";
+    // Итог за сезон (крупно) = прибыль + поступления − траты
+    const seasonTotal = profit + totalReceipts - totalSpendings;
+    const stCls  = seasonTotal >= 0 ? "pos" : "neg";
+    const stSign = seasonTotal >= 0 ? "+" : "";
     html += `<div class="treasury-total">
-      <span class="label">Прибыль</span>
-      <span class="amount ${profCls}">${profSign}${fmt(profit)} мон</span>
+      <span class="label">Итог за сезон</span>
+      <span class="amount ${stCls}">${stSign}${fmt(seasonTotal)} мон</span>
     </div>`;
 
     // Казна на конец (крупно)
-    const endTreasury = (f.start || 0) + profit;
+    const endTreasury = (f.start || 0) + seasonTotal;
     const endCls  = endTreasury >= 0 ? "pos" : "neg";
     html += `<div class="treasury-total" style="border-top:2px solid var(--gold-dim);margin-top:6px;padding-top:8px">
       <span class="label" style="color:var(--text)">Казна на конец</span>
