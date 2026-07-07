@@ -1415,6 +1415,23 @@ function faithOverview(rel) {
   </div>`;
 }
 
+// Модификаторы РЕЛИГИИ по культам (к броску веры) — отличны от вклада веры в лояльность.
+function faithRelMods(f) {
+  if (!f || !f.cults) return "";
+  const rows = f.cults.filter(c => (c.rel_mod || 0) !== 0).map(c => {
+    const rm = c.rel_mod || 0;
+    const cls = rm > 0 ? "pos" : "neg";
+    const sign = rm > 0 ? `+${rm}` : String(rm);
+    const rs = (c.rel_reasons || []).map(r => {
+      const rcls = r.startsWith("+") ? "pos" : (r.startsWith("−") || r.startsWith("-")) ? "neg" : "";
+      return `<li class="${rcls}">${esc(r)}</li>`;
+    }).join("");
+    return `<li><span class="${cls}">${esc(c.name)}: религ. ${sign}</span>${rs ? `<ul class="ly-reasons" style="margin:2px 0 4px 12px">${rs}</ul>` : ""}</li>`;
+  }).join("");
+  if (!rows) return "";
+  return `<div style="margin-top:4px"><div style="color:var(--muted);font-size:0.68rem;margin-bottom:2px">Модификаторы религии (к броску веры)</div><ul class="ly-reasons">${rows}</ul></div>`;
+}
+
 function renderFaith(settlements, religion) {
   const el = document.getElementById("body-faith");
   if (!el) return;
@@ -1450,6 +1467,7 @@ function renderFaith(settlements, religion) {
       ${faithBar(f)}
       <div class="faith-legend">${legend}</div>
       ${reasons ? `<ul class="ly-reasons">${reasons}</ul>` : ""}
+      ${faithRelMods(f)}
     </div>`;
   });
   el.innerHTML = html;
@@ -1583,7 +1601,8 @@ function renderSettlements(setts) {
       html += `<div class="np-sec" style="display:flex;align-items:center">Вера <span style="color:var(--muted);font-weight:normal;margin-left:auto">лоял. <span class="ly-card-mod ${fmodCls}">${fmodStr}</span></span></div>
         ${faithBar(fth)}
         <div class="faith-legend" style="margin-bottom:4px">${flegend}</div>
-        ${freasons ? `<ul class="ly-reasons">${freasons}</ul>` : ""}`;
+        ${freasons ? `<ul class="ly-reasons">${freasons}</ul>` : ""}
+        ${faithRelMods(fth)}`;
     }
 
     // Промыслы (что есть в НП — NPC-предприятия; Т-предприятия идут в требования тиров)
