@@ -6,7 +6,7 @@
   "user_id": 579387502,
   "telegram": "@aldtoll",
   "season": "1",
-  "active_phase": "adventure_done",
+  "active_phase": "idle",
   "finance": {
     "start": 8000,
     "income": [
@@ -328,7 +328,7 @@
             "kind": "приём"
           }
         ],
-        "bank": 4,
+        "bank": 8,
         "ups": 0,
         "next_threshold": 10
       },
@@ -488,8 +488,8 @@
     "threshold_pct": 15
   },
   "hearth": {
-    "remaining": null,
-    "total": null
+    "remaining": 1,
+    "total": 1
   },
   "settlements": [
     {
