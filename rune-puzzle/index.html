@@ -223,6 +223,9 @@
     <span class="chip" id="chip-time"></span>
     <span class="chip" id="chip-moves"></span>
   </div>
+  <div style="font-size:0.82rem;color:rgba(232,224,255,0.68);line-height:1.45;margin:12px 6px 4px;text-align:center">
+    🎯 Важно <b>число ходов</b>, а не скорость. Собери руну за меньшее число перемещений — время лишь ограничитель.
+  </div>
   <button class="start-btn" onclick="startGame()">Сложить руну</button>
 </div>
 
@@ -270,7 +273,7 @@
 <script>
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const N             = Math.min(5, Math.max(3, parseInt(gameData.size)       || 3));
-const TIME_LIMIT    = Math.max(30, parseInt(gameData.timeLimit)             || (N === 3 ? 120 : N === 4 ? 180 : 240));
+const TIME_LIMIT    = Math.max(30, parseInt(gameData.timeLimit)             || (N === 3 ? 30 : N === 4 ? 40 : 50));
 const SHUFFLE_MOVES = Math.max(10, parseInt(gameData.shuffleMoves)          || 50);
 const RUNE_INDEX    = Math.min(7, Math.max(0, parseInt(gameData.runeIndex) >= 0 ? parseInt(gameData.runeIndex) : (N - 3)));
 const PROMPT        = gameData.prompt || '';
