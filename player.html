@@ -1576,9 +1576,14 @@ function renderSettlements(setts) {
       ).join("") + (fth.neutral > 0
         ? `<span class="fl-item fl-neutral"><span class="fl-dot" style="background:var(--border)"></span>нейтр. ${fth.neutral_pct}%</span>`
         : "");
+      const freasons = (fth.reasons || []).map(r => {
+        const cls = r.startsWith("+") ? "pos" : (r.startsWith("−") || r.startsWith("-")) ? "neg" : "";
+        return `<li class="${cls}">${esc(r)}</li>`;
+      }).join("");
       html += `<div class="np-sec" style="display:flex;align-items:center">Вера <span style="color:var(--muted);font-weight:normal;margin-left:auto">лоял. <span class="ly-card-mod ${fmodCls}">${fmodStr}</span></span></div>
         ${faithBar(fth)}
-        <div class="faith-legend" style="margin-bottom:4px">${flegend}</div>`;
+        <div class="faith-legend" style="margin-bottom:4px">${flegend}</div>
+        ${freasons ? `<ul class="ly-reasons">${freasons}</ul>` : ""}`;
     }
 
     // Промыслы (что есть в НП — NPC-предприятия; Т-предприятия идут в требования тиров)
