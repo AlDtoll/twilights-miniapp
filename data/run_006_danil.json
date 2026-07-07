@@ -6,7 +6,7 @@
   "user_id": 579387502,
   "telegram": "@aldtoll",
   "season": "1",
-  "active_phase": "adventure_done",
+  "active_phase": "leader",
   "finance": {
     "start": 8000,
     "income": [
@@ -209,7 +209,7 @@
     "points": {
       "player": {
         "total": 3,
-        "left": 2
+        "left": 1
       },
       "chancellor": {
         "name": "Мьеслав «Каменщик»",
@@ -263,7 +263,7 @@
       },
       {
         "text": "Одран «Дозор» слёг с тяжёлой хворью — старый сектант, обойдённый с канцлером; жар, кашель кровью; Волох просит лечения",
-        "done": false,
+        "done": true,
         "tags": [],
         "mon": 0
       }
