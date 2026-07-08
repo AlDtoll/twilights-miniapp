@@ -346,7 +346,7 @@
       {
         "name": "Алхимия (I)",
         "techniques": [],
-        "bank": 4,
+        "bank": 6,
         "ups": 0,
         "next_threshold": 10
       },
@@ -358,9 +358,23 @@
             "kind": "приём"
           }
         ],
-        "bank": 2,
+        "bank": 4,
         "ups": 1,
         "next_threshold": 12
+      },
+      {
+        "name": "Риторика (0)",
+        "techniques": [],
+        "bank": 1,
+        "ups": 0,
+        "next_threshold": 10
+      },
+      {
+        "name": "Наблюдательность (0)",
+        "techniques": [],
+        "bank": 1,
+        "ups": 0,
+        "next_threshold": 10
       }
     ],
     "features": [
