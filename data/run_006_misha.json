@@ -6,7 +6,7 @@
   "user_id": 1700257736,
   "telegram": "@Мишачья",
   "season": "1",
-  "active_phase": "adventure_done",
+  "active_phase": "idle",
   "finance": {
     "start": 8000,
     "income": [
@@ -332,7 +332,7 @@
       {
         "name": "Сабля (I)",
         "techniques": [],
-        "bank": 2,
+        "bank": 3,
         "ups": 0,
         "next_threshold": 10
       },
@@ -351,11 +351,16 @@
         "next_threshold": 10
       },
       {
-        "name": "Тактика (0)",
-        "techniques": [],
-        "bank": 12,
-        "ups": 0,
-        "next_threshold": 10
+        "name": "Тактика (I)",
+        "techniques": [
+          {
+            "name": "Подготовка",
+            "kind": "приём"
+          }
+        ],
+        "bank": 2,
+        "ups": 1,
+        "next_threshold": 12
       }
     ],
     "features": [
@@ -460,8 +465,8 @@
     "threshold_pct": 15
   },
   "hearth": {
-    "remaining": null,
-    "total": null
+    "remaining": 1,
+    "total": 1
   },
   "settlements": [
     {
