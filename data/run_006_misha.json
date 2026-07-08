@@ -6,7 +6,7 @@
   "user_id": 1700257736,
   "telegram": "@Мишачья",
   "season": "1",
-  "active_phase": "adventure",
+  "active_phase": "adventure_done",
   "finance": {
     "start": 8000,
     "income": [
@@ -325,7 +325,7 @@
             "kind": "приём"
           }
         ],
-        "bank": 1,
+        "bank": 5,
         "ups": 0,
         "next_threshold": 10
       },
@@ -339,21 +339,21 @@
       {
         "name": "Лидерство (I)",
         "techniques": [],
-        "bank": 0,
+        "bank": 2,
         "ups": 0,
         "next_threshold": 10
       },
       {
         "name": "Алхимия (I)",
         "techniques": [],
-        "bank": 2,
+        "bank": 4,
         "ups": 0,
         "next_threshold": 10
       },
       {
         "name": "Тактика (0)",
         "techniques": [],
-        "bank": 10,
+        "bank": 12,
         "ups": 0,
         "next_threshold": 10
       }
