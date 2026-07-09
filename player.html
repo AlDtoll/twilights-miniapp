@@ -368,6 +368,10 @@ body {
 .ly-conseq.warn { color: var(--amber, #c08a4a); background: rgba(192,138,74,0.10); }
 .ly-conseq.crit { color: var(--red); background: rgba(192,74,106,0.12); }
 .ly-legend { font-size: 0.66rem; color: var(--muted); margin-top: 10px; line-height: 1.4; }
+.roll-delta { font-size: 0.68rem; color: var(--muted); margin-top: 5px; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.roll-delta .rd-label { color: var(--muted); }
+.roll-delta .rd-pos { color: var(--green); font-weight: 600; }
+.roll-delta .rd-neg { color: var(--red); font-weight: 600; }
 .staff-eff-hint { color: var(--red); font-size: 0.68rem; }
 .staff-sub-note { font-size: 0.66rem; color: var(--muted); margin-top: 8px; line-height: 1.4; }
 .faith-card { padding: 10px 0 14px; border-bottom: 1px solid var(--border); }
@@ -1296,6 +1300,23 @@ function renderMight(settlements) {
   el.innerHTML = html;
 }
 
+// Подпись изменения по дворам за последний сезонный ролл (лояльность/религия).
+// delta: {ключ: ±N}. Пусто/нет — ничего не рисуем.
+function rollDeltaCaption(delta) {
+  if (!delta) return "";
+  const parts = Object.entries(delta)
+    .filter(([, v]) => v !== 0)
+    .map(([k, v]) => {
+      const pos = v > 0;
+      const cls = pos ? "rd-pos" : "rd-neg";
+      const arr = pos ? "▲" : "▼";
+      const sign = pos ? `+${v}` : String(v);
+      return `<span class="${cls}">${esc(k)} ${sign} ${arr}</span>`;
+    });
+  if (!parts.length) return "";
+  return `<div class="roll-delta"><span class="rd-label">за ролл сезона (двор.):</span> ${parts.join(" · ")}</div>`;
+}
+
 // ── Loyalty ───────────────────────────────────────────────────────────────────
 function renderLoyalty(settlements) {
   const el = document.getElementById("body-loyalty");
@@ -1345,6 +1366,7 @@ function renderLoyalty(settlements) {
         <span class="ly-n">Н ${n} (${np}%)</span>
         <span class="ly-nl">НЛ ${nl} (${nlp}%)</span>
       </div>
+      ${rollDeltaCaption(ly.delta)}
       ${supportersHtml(ly.supporters)}
       ${reasonsHtml ? `<ul class="ly-reasons">${reasonsHtml}</ul>` : ""}
       ${conseq}
@@ -1466,6 +1488,7 @@ function renderFaith(settlements, religion) {
       </div>
       ${faithBar(f)}
       <div class="faith-legend">${legend}</div>
+      ${rollDeltaCaption(f.delta)}
       ${reasons ? `<ul class="ly-reasons">${reasons}</ul>` : ""}
       ${faithRelMods(f)}
     </div>`;
