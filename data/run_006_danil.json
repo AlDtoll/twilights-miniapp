@@ -6,7 +6,7 @@
   "user_id": 579387502,
   "telegram": "@aldtoll",
   "season": "2",
-  "active_phase": "hearth",
+  "active_phase": "idle",
   "finance": {
     "start": 1446,
     "income": [
@@ -390,7 +390,7 @@
             "kind": "приём"
           }
         ],
-        "bank": 8,
+        "bank": 11,
         "ups": 0,
         "next_threshold": 10
       },
