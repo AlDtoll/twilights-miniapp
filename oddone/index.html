@@ -479,8 +479,8 @@ function initOddone(){
   ooTotalTicks=secs*10;
   ooRounds=(gameData.rounds||[]).map(function(r){
     if(r.items)return r;
-    const size=r.size||9;
-    const arr=Array(size).fill(r.majority);
+    const size=r.count||r.size||9;
+    const arr=Array(size).fill(r.main||r.majority);
     const pos=Math.floor(Math.random()*size);
     arr[pos]=r.odd;
     return{items:arr,answer:pos};
