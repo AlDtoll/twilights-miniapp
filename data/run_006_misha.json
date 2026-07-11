@@ -427,14 +427,14 @@
       {
         "name": "Риторика (0)",
         "techniques": [],
-        "bank": 1,
+        "bank": 3,
         "ups": 0,
         "next_threshold": 10
       },
       {
         "name": "Наблюдательность (0)",
         "techniques": [],
-        "bank": 1,
+        "bank": 3,
         "ups": 0,
         "next_threshold": 10
       }
