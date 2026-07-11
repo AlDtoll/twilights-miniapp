@@ -242,6 +242,7 @@
 // ---- FINDALL ----
 let faGrid = [], faTarget = '', faCols = 6, faFound = 0, faTotal = 0, faWrongTaps = 0;
 let faTimerInterval = null, faTotalTicks = 0, faTicksLeft = 0, faWrongPenalty = 'time', faTimePenalty = 3;
+let faGenerated = false;
 
 function initFindall() {
   document.getElementById('findall-game').style.display = '';
@@ -251,6 +252,7 @@ function initFindall() {
   faWrongPenalty = gameData.wrongPenalty || 'time';
   faTimePenalty = typeof gameData.timePenalty === 'number' ? gameData.timePenalty : 3;
   if (!faGrid.length) {
+    faGenerated = true;
     const pool = ['★','▲','●','■','♦','✦','❤','♠'];
     const sh = pool.slice().sort(function(){ return Math.random() - 0.5; });
     faTarget = sh[0];
@@ -345,7 +347,7 @@ function faFinish() {
     '<div style="font-size:1rem;color:var(--tg-theme-hint-color,#aaa)">' + effectiveFound + ' из ' + faTotal + wrongStr + ' · ' + timeSpent + ' сек</div>' +
     '</div>';
   setTimeout(function() {
-    sendResultToBot({game:'findall', found:faFound, effectiveFound, total:faTotal, wrongTaps:faWrongTaps, outcome, level, timeSpent});
+    sendResultToBot({game:'findall', found:faFound, effectiveFound, total:faTotal, wrongTaps:faWrongTaps, outcome, level, timeSpent, generated:faGenerated});
   }, 600);
 }
 
