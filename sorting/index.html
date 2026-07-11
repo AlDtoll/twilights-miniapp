@@ -477,6 +477,15 @@ function sortRandShuffle(arr){const a=arr.slice();for(let i=a.length-1;i>0;i--){
 function initSorting(){
   document.getElementById('sorting-game').style.display='';
   sortRounds=gameData.rounds||[];
+  if(!sortRounds.length){
+    const nRounds=2+Math.floor(Math.random()*2);
+    for(let r=0;r<nRounds;r++){
+      const n=4,vals=[];
+      while(vals.length<n){const v=1+Math.floor(Math.random()*99);if(vals.indexOf(v)<0)vals.push(v);}
+      const order=Math.random()<0.5?'asc':'desc';
+      sortRounds.push({items:vals.map(function(v){return{label:String(v),value:v};}),order:order,prompt:'Расставь по '+(order==='asc'?'возрастанию':'убыванию')});
+    }
+  }
   const secs=gameData.timeLimit||20;
   sortTotalTicks=secs*10;
   document.getElementById('sort-ready-title').textContent=gameData.prompt||'Порядок';

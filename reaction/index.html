@@ -179,6 +179,8 @@
   .rx-stats { display: flex; justify-content: center; gap: 20px; margin-bottom: 10px; font-size: 0.85rem; color: var(--tg-theme-hint-color,#aaa); }
   .rx-display { font-size: 4.5rem; height: 120px; display: flex; align-items: center; justify-content: center; border-radius: 20px; background: rgba(255,255,255,0.04); border: 2px solid rgba(255,255,255,0.08); margin-bottom: 14px; transition: background 0.1s, border-color 0.1s; }
   .rx-display.rx-target { background: rgba(108,92,231,0.15); border-color: rgba(108,92,231,0.4); }
+  @keyframes rx-tick { 0% { transform: scale(0.6); opacity: 0.15; } 60% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  .rx-display.rx-flash { animation: rx-tick 0.22s ease-out; }
   .rx-tap-btn { width: 100%; padding: 20px; border-radius: 16px; border: none; background: var(--tg-theme-button-color,#6c5ce7); color: #fff; font-size: 1.1rem; font-weight: 700; cursor: pointer; }
   .rx-tap-btn:active { transform: scale(0.96); }
   .rx-tap-btn:disabled { opacity: 0.4; cursor: default; }
@@ -516,7 +518,9 @@ function rxNextSymbol(){
   rxTapWindow=true;
   const d=document.getElementById('rx-display');
   d.textContent=rxCurrent;
-  d.className='rx-display'+(rxCurrent===rxTarget?' rx-target':'');
+  d.classList.remove('rx-flash');
+  void d.offsetWidth;
+  d.className='rx-display'+(rxCurrent===rxTarget?' rx-target':'')+' rx-flash';
 }
 
 function rxTap(){

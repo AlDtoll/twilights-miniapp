@@ -485,6 +485,15 @@ function initOddone(){
     arr[pos]=r.odd;
     return{items:arr,answer:pos};
   });
+  if(!ooRounds.length){
+    const pool=['★','▲','●','■','♦','✦','❤','♠','🔥','💎'];
+    for(let r=0;r<3;r++){
+      const sh=pool.slice().sort(function(){return Math.random()-0.5;});
+      const size=9,arr=Array(size).fill(sh[0]),pos=Math.floor(Math.random()*size);
+      arr[pos]=sh[1];
+      ooRounds.push({items:arr,answer:pos});
+    }
+  }
   document.getElementById('oo-ready-title').textContent=gameData.prompt||'Найди лишнего';
   document.getElementById('oo-ready-info').textContent=ooRounds.length+' раундов · '+secs+' сек';
 }

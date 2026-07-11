@@ -250,6 +250,19 @@ function initFindall() {
   faCols = gameData.cols || 6;
   faWrongPenalty = gameData.wrongPenalty || 'time';
   faTimePenalty = typeof gameData.timePenalty === 'number' ? gameData.timePenalty : 3;
+  if (!faGrid.length) {
+    const pool = ['★','▲','●','■','♦','✦','❤','♠'];
+    const sh = pool.slice().sort(function(){ return Math.random() - 0.5; });
+    faTarget = sh[0];
+    const distractors = sh.slice(1, 4);
+    faCols = 6;
+    const cells = 30;
+    faGrid = [];
+    for (let i = 0; i < cells; i++) faGrid.push(distractors[Math.floor(Math.random() * distractors.length)]);
+    const nTargets = 6 + Math.floor(Math.random() * 4);
+    const idxs = Array.from({ length: cells }, function(_, i){ return i; }).sort(function(){ return Math.random() - 0.5; }).slice(0, nTargets);
+    idxs.forEach(function(i){ faGrid[i] = faTarget; });
+  }
   const secs = gameData.timeLimit || 15;
   faTotalTicks = secs * 10;
   faTotal = faGrid.filter(x => x === faTarget).length;
