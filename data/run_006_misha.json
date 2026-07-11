@@ -6,7 +6,7 @@
   "user_id": 1700257736,
   "telegram": "@Мишачья",
   "season": "2",
-  "active_phase": "hearth",
+  "active_phase": "idle",
   "finance": {
     "start": 2392,
     "income": [
@@ -387,7 +387,7 @@
             "kind": "приём"
           }
         ],
-        "bank": 9,
+        "bank": 11,
         "ups": 0,
         "next_threshold": 10
       },
