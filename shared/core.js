@@ -55,6 +55,9 @@ const _subtitles = { blackjack: 'Игра в 21', timing: 'Тайминг', comp
 /* ---- result delivery: tg.sendData + close ---- */
 function sendResultToBot(result) {
   if (gameData.chat_id) result.source_chat_id = gameData.chat_id;
+  // Корреляционный ключ запуска: возвращаем nonce из gameData как есть — так
+  // launch-лог (вход) и result-лог (выход) джойнятся 1:1, без угадывания по времени.
+  if (gameData.nonce && result.nonce == null) result.nonce = gameData.nonce;
   try { tg.sendData(JSON.stringify(result)); tg.close(); }
   catch (e) {
     document.body.innerHTML = `<div style="padding:20px;font-family:sans-serif;background:#1a1a2e;color:#eee;min-height:100vh"><h2>Результат</h2><pre style="background:rgba(255,255,255,0.1);padding:12px;border-radius:8px;overflow-x:auto;font-size:0.8rem">${JSON.stringify(result, null, 2)}</pre></div>`;

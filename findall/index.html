@@ -347,7 +347,8 @@ function faFinish() {
     '<div style="font-size:1rem;color:var(--tg-theme-hint-color,#aaa)">' + effectiveFound + ' из ' + faTotal + wrongStr + ' · ' + timeSpent + ' сек</div>' +
     '</div>';
   setTimeout(function() {
-    sendResultToBot({game:'findall', found:faFound, effectiveFound, total:faTotal, wrongTaps:faWrongTaps, outcome, level, timeSpent, generated:faGenerated});
+    sendResultToBot({game:'findall', found:faFound, effectiveFound, total:faTotal, wrongTaps:faWrongTaps, outcome, level, timeSpent, generated:faGenerated,
+      process:{found:faFound, wrongTaps:faWrongTaps, total:faTotal, gridSize:faGrid.length, cols:faCols, timedOut:faTicksLeft<=0}});
   }, 600);
 }
 

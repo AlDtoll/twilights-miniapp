@@ -486,6 +486,7 @@ const M3_SIZE = 6;
 let m3Grid = [], m3Sel = null, m3Score = 0, m3Moves = 0, m3MaxMoves = 15;
 let m3UseTimer = false, m3TimeLeft = 0, m3MaxTime = 0, m3TimerInt = null;
 let m3Done = false, m3Animating = false, m3Combo = 0;
+let m3MaxCombo = 0, m3Cascades = 0;
 
 function m3Gem() { return Math.floor(rng() * M3_COLORS.length); }
 
@@ -506,6 +507,7 @@ function initMatch3() {
   }
 
   m3Score = 0; m3Done = false; m3Animating = false; m3Combo = 0; m3Sel = null;
+  m3MaxCombo = 0; m3Cascades = 0;
 
   m3Grid = Array.from({length: M3_SIZE}, () => new Array(M3_SIZE).fill(0));
   for (let r = 0; r < M3_SIZE; r++) {
@@ -707,6 +709,8 @@ function m3Cascade() {
     return;
   }
   m3Combo++;
+  m3Cascades++;
+  if (m3Combo > m3MaxCombo) m3MaxCombo = m3Combo;
   const n = matches.length;
   // Базовые очки: каждый гем = 10 очков
   // Комбо: +10 за каждый каскад свыше первого
@@ -759,7 +763,8 @@ function m3End() {
   banner.style.display = '';
   banner.className = 'result-banner '+(level>=2?'result-good':level===1?'result-mid':'result-bad');
   banner.textContent = `${score} очков — ${label}`;
-  setTimeout(() => sendResultToBot({game:'match3', score, outcome:label, level, timeSpent:Math.round((Date.now()-m3StartTime)/1000)}), 700);
+  setTimeout(() => sendResultToBot({game:'match3', score, outcome:label, level, timeSpent:Math.round((Date.now()-m3StartTime)/1000),
+    process:{movesUsed:m3MaxMoves-m3Moves, maxMoves:m3MaxMoves, cascades:m3Cascades, maxCombo:m3MaxCombo}}), 700);
 }
 
 initMatch3();

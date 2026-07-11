@@ -480,6 +480,7 @@
 let rxTarget='',rxSymbols=[],rxInterval=1200,rxHits=0,rxMisses=0,rxFalse=0;
 let rxTimerInterval=null,rxSymInterval=null,rxTotalTicks=0,rxTicksLeft=0;
 let rxCurrent=null,rxTapWindow=false,rxDone=false;
+let rxTimes=[],rxTargetShownAt=0;
 
 function initReaction(){
   document.getElementById('reaction-game').style.display='';
@@ -497,7 +498,7 @@ function initReaction(){
 function rxStart(){
   document.getElementById('rx-ready').style.display='none';
   document.getElementById('rx-play').style.display='';
-  rxHits=0;rxMisses=0;rxFalse=0;rxDone=false;rxTicksLeft=rxTotalTicks;
+  rxHits=0;rxMisses=0;rxFalse=0;rxDone=false;rxTicksLeft=rxTotalTicks;rxTimes=[];rxTargetShownAt=0;
   document.getElementById('rx-hits').textContent='0';document.getElementById('rx-false').textContent='0';
   rxTimerInterval=setInterval(function(){
     rxTicksLeft=Math.max(0,rxTicksLeft-1);
@@ -516,6 +517,7 @@ function rxNextSymbol(){
   const rate=gameData.targetRatio||0.35;
   rxCurrent=Math.random()<rate?rxTarget:rxSymbols.filter(function(s){return s!==rxTarget;})[Math.floor(Math.random()*(rxSymbols.length-1))];
   rxTapWindow=true;
+  if(rxCurrent===rxTarget)rxTargetShownAt=Date.now();
   const d=document.getElementById('rx-display');
   d.textContent=rxCurrent;
   d.classList.remove('rx-flash');
@@ -528,6 +530,7 @@ function rxTap(){
   const d=document.getElementById('rx-display');
   if(rxCurrent===rxTarget&&rxTapWindow){
     rxHits++;rxTapWindow=false;
+    if(rxTargetShownAt)rxTimes.push(Date.now()-rxTargetShownAt);
     document.getElementById('rx-hits').textContent=rxHits;
     d.style.background='rgba(0,184,148,0.35)';d.style.transform='scale(0.92)';
     setTimeout(function(){if(d){d.style.background='';d.style.transform='';}},180);
@@ -549,7 +552,9 @@ function rxFinish(){
   const rxTotal=rxHits+rxMisses;
   const wrongStr=rxFalse>0?' · '+rxFalse+' ложных':'';
   document.getElementById('reaction-game').innerHTML='<div style="text-align:center;padding:20px"><div style="font-size:1.4rem;font-weight:700;margin-bottom:8px">'+outcome+'</div><div style="font-size:1rem;color:var(--tg-theme-hint-color,#aaa)">'+rxHits+' из '+rxTotal+wrongStr+'</div></div>';
-  setTimeout(function(){sendResultToBot({game:'reaction',hits:rxHits,misses:rxMisses,falseAlarms:rxFalse,total:rxTotal,outcome,level,timeSpent});},600);
+  const avgRt=rxTimes.length?Math.round(rxTimes.reduce(function(a,b){return a+b;},0)/rxTimes.length):null;
+  setTimeout(function(){sendResultToBot({game:'reaction',hits:rxHits,misses:rxMisses,falseAlarms:rxFalse,total:rxTotal,outcome,level,timeSpent,
+    process:{avgReactionMs:avgRt,reactionTimesMs:rxTimes,targetRatio:gameData.targetRatio||0.35,tickMs:rxInterval}});},600);
 }
 
 // ---- Entry ----

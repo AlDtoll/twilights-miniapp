@@ -485,6 +485,7 @@
 <script src="../shared/core.js"></script>
 <script>
 let timingPos = 0, timingDir = 1, timingStopped = false, timingRAF = null, timingSlowing = false;
+let timingSlowCount = 0;
 let timingTotalTime = 20, timingTimeLeft = 0, timingTimerInt = null;
 // Цвет зоны по уровню: 0=красный, 1=оранжевый, 2=жёлтый, 3=зелёный
 const ZONE_COLORS = ['#e74c3c','#f39c12','#f1c40f','#00b894'];
@@ -536,7 +537,7 @@ function timingStart() {
   document.getElementById('timing-ready').style.display = 'none';
   document.getElementById('timing-play').style.display = '';
 
-  timingPos = 0; timingDir = 1; timingStopped = false; timingSlowing = false;
+  timingPos = 0; timingDir = 1; timingStopped = false; timingSlowing = false; timingSlowCount = 0;
   timingTimeLeft = timingTotalTime;
 
   const speed = window._timingSpeed;
@@ -585,6 +586,7 @@ function timingStart() {
 function timingSlow() {
   if (timingStopped || timingSlowing) return;
   timingSlowing = true;
+  timingSlowCount++;
   document.getElementById('timing-slow-btn').disabled = true;
   setTimeout(() => {
     if (!timingStopped) {
@@ -609,7 +611,9 @@ function timingStop() {
   document.getElementById('timing-result-label').style.color = ZONE_COLORS[Math.min(outcome.level ?? 0, ZONE_COLORS.length-1)];
   document.getElementById('timing-slow-btn').disabled = true;
   document.getElementById('timing-stop-btn').disabled = true;
-  setTimeout(() => sendResultToBot({game:'timing', position:pos, outcome:outcome.label, level, timeSpent:Math.round((Date.now()-timStartTime)/1000)}), 600);
+  const autoStopped = timingTimeLeft <= 0;
+  setTimeout(() => sendResultToBot({game:'timing', position:pos, outcome:outcome.label, level, timeSpent:Math.round((Date.now()-timStartTime)/1000),
+    process:{position:pos, slowUsed:timingSlowCount, autoStopped, speed:window._timingSpeed}}), 600);
 }
 
 // ---- AUTO-START (per-page entry; replaces monolith game dispatch) ----

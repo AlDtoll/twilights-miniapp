@@ -469,7 +469,7 @@
 </div>
 <script src="../shared/core.js"></script>
 <script>
-let sortRounds=[],sortIdx=0,sortCorrect=0,sortTapOrder=[],sortCurrentItems=[];
+let sortRounds=[],sortIdx=0,sortCorrect=0,sortTapOrder=[],sortCurrentItems=[],sortRoundResults=[];
 let sortTimerInterval=null,sortTotalTicks=0,sortTicksLeft=0,sortGenerated=false;
 
 function sortRandShuffle(arr){const a=arr.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
@@ -537,6 +537,7 @@ function sortTap(di,btn,round){
     const ok=sortTapOrder.every(function(d,pos){return sortCurrentItems[d].value===sorted[pos].value;});
     const fb=document.getElementById('sort-feedback');
     fb.textContent=ok?'Верно':'Нет';fb.style.color=ok?'#00b894':'#e74c3c';
+    sortRoundResults.push(ok?1:0);
     if(ok)sortCorrect++;
     sortIdx++;setTimeout(sortShowRound,800);
   }
@@ -550,7 +551,8 @@ function sortFinish(){
   if(pct>=1){outcome='Идеально';level=4;}else if(pct>=0.8){outcome='Отлично';level=3;}
   else if(pct>=0.6){outcome='Хорошо';level=2;}else if(pct>=0.4){outcome='Неплохо';level=1;}else{outcome='Слабо';level=0;}
   document.getElementById('sorting-game').innerHTML='<div style="text-align:center;padding:20px"><div style="font-size:1.4rem;font-weight:700;margin-bottom:8px">'+outcome+'</div><div style="font-size:1rem;color:var(--tg-theme-hint-color,#aaa)">'+sortCorrect+' из '+total+' · '+timeSpent+' сек</div></div>';
-  setTimeout(function(){sendResultToBot({game:'sorting',correct:sortCorrect,total,timeSpent,outcome,level,generated:sortGenerated});},600);
+  setTimeout(function(){sendResultToBot({game:'sorting',correct:sortCorrect,total,timeSpent,outcome,level,generated:sortGenerated,
+    process:{perRound:sortRoundResults,roundsPlayed:sortRoundResults.length,roundsTotal:total}});},600);
 }
 
 initSorting();
