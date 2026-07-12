@@ -446,8 +446,8 @@
     "cults": [
       {
         "name": "Тенета",
-        "count": 22,
-        "pct": 24,
+        "count": 23,
+        "pct": 26,
         "events": true
       },
       {
@@ -469,8 +469,8 @@
         "events": false
       }
     ],
-    "neutral": 54,
-    "neutral_pct": 60,
+    "neutral": 53,
+    "neutral_pct": 59,
     "threshold_pct": 15
   },
   "hearth": {
@@ -584,8 +584,8 @@
         "cults": [
           {
             "name": "Тенета",
-            "count": 16,
-            "pct": 32,
+            "count": 17,
+            "pct": 34,
             "rel_mod": 2,
             "rel_reasons": [
               "+1 святилище (Тенета)",
@@ -600,10 +600,13 @@
             "rel_reasons": []
           }
         ],
-        "neutral": 27,
-        "neutral_pct": 54,
+        "neutral": 26,
+        "neutral_pct": 52,
         "mod": 0,
-        "reasons": []
+        "reasons": [],
+        "delta": {
+          "Тенета": 1
+        }
       },
       "might": {
         "total": 3,
@@ -721,11 +724,10 @@
             "name": "Тенета",
             "count": 5,
             "pct": 20,
-            "rel_mod": 3,
+            "rel_mod": 2,
             "rel_reasons": [
               "+1 святилище (Тенета)",
-              "+1 герой культа Тенета",
-              "+1 убеждение нейтралов идеал (×1)"
+              "+1 герой культа Тенета"
             ]
           }
         ],
