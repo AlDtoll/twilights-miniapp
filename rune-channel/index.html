@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Twilights — Поток руны</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="../shared/styles.css">
+  <style>
+    :root {
+      --bg: #0f0e1a;
+      --text: #e8e0ff;
+      --accent: #a29bfe;
+      --hit: #00b894;
+      --miss: #e74c3c;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 16px; user-select: none; -webkit-user-select: none;
+    }
+    .screen { display: none; width: 100%; max-width: 380px; flex-direction: column; align-items: center; }
+    .screen.active { display: flex; }
+
+    .game-title {
+      font-size: 1.6rem; font-weight: 800; color: var(--accent);
+      text-align: center; margin-bottom: 6px; text-shadow: 0 0 20px rgba(162,155,254,0.5);
+    }
+    .game-subtitle {
+      font-size: 0.85rem; color: rgba(232,224,255,0.5); text-align: center;
+      letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 20px;
+    }
+    .prompt-box {
+      width: 100%; background: rgba(162,155,254,0.08); border: 1px solid rgba(162,155,254,0.2);
+      border-radius: 14px; padding: 14px 16px; font-size: 0.95rem; line-height: 1.6;
+      color: var(--text); margin-bottom: 18px; text-align: center;
+    }
+    .info-chips { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+    .chip {
+      padding: 6px 14px; background: rgba(162,155,254,0.1); border: 1px solid rgba(162,155,254,0.25);
+      border-radius: 20px; font-size: 0.82rem; color: var(--accent);
+    }
+    .start-btn {
+      width: 100%; padding: 15px; border-radius: 14px; border: none;
+      background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: #fff;
+      font-size: 1.1rem; font-weight: 700; cursor: pointer; letter-spacing: 0.05em;
+      box-shadow: 0 4px 20px rgba(108,92,231,0.4); transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .start-btn:active { transform: scale(0.97); box-shadow: 0 2px 10px rgba(108,92,231,0.3); }
+
+    .status-line {
+      font-size: 0.95rem; font-weight: 700; margin-bottom: 10px; min-height: 1.3em;
+      text-align: center; letter-spacing: 0.03em; color: var(--accent); transition: color 0.15s;
+    }
+    .status-line.good { color: var(--hit); }
+    .status-line.bad  { color: var(--miss); }
+
+    .hold-meter {
+      width: 100%; max-width: 360px; height: 8px; border-radius: 6px;
+      background: rgba(162,155,254,0.12); overflow: hidden; margin-bottom: 10px;
+    }
+    .hold-fill { height: 100%; width: 0%; background: linear-gradient(90deg,#00b894,#a29bfe); transition: width 0.1s linear; }
+
+    .canvas-wrap {
+      position: relative; border-radius: 16px; overflow: hidden;
+      background: radial-gradient(circle at 50% 40%, #17152b, #0f0e1a 75%);
+      border: 1px solid rgba(162,155,254,0.18); box-shadow: inset 0 0 40px rgba(162,155,254,0.06);
+      touch-action: none;
+    }
+    #flow { display: block; touch-action: none; }
+
+    .result-icon { font-size: 3rem; margin-bottom: 12px; }
+    .outcome-badge { font-size: 1.5rem; font-weight: 800; padding: 10px 28px; border-radius: 30px; margin-bottom: 16px; }
+    .outcome-6 { background: rgba(255,215,0,0.15);   border: 2px solid #ffd700; color: #ffd700; }
+    .outcome-5 { background: rgba(162,155,254,0.18); border: 2px solid var(--accent); color: var(--accent); }
+    .outcome-4 { background: rgba(0,184,148,0.18);   border: 2px solid var(--hit); color: var(--hit); }
+    .outcome-3 { background: rgba(0,184,148,0.08);   border: 2px solid rgba(0,184,148,0.45); color: rgba(0,184,148,0.85); }
+    .outcome-2 { background: rgba(231,150,60,0.12);  border: 2px solid #e7963c; color: #e7963c; }
+    .outcome-1 { background: rgba(231,76,60,0.08);   border: 2px solid rgba(231,76,60,0.45); color: rgba(231,76,60,0.85); }
+    .outcome-0 { background: rgba(231,76,60,0.15);   border: 2px solid var(--miss); color: var(--miss); }
+    .result-stats {
+      width: 100%; background: rgba(255,255,255,0.04); border-radius: 14px;
+      padding: 14px 16px; display: flex; gap: 12px; justify-content: center;
+    }
+    .result-stat { text-align: center; flex: 1; }
+    .result-stat-label { font-size: 0.72rem; color: rgba(232,224,255,0.4); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+    .result-stat-val { font-size: 1.5rem; font-weight: 800; }
+  </style>
+</head>
+<body>
+
+<!-- READY -->
+<div id="screen-ready" class="screen active">
+  <div class="game-title">◉ Поток руны</div>
+  <div class="game-subtitle">Twilights · Выдержка</div>
+  <div id="prompt-box" class="prompt-box" style="display:none"></div>
+  <div class="info-chips">
+    <span class="chip" id="chip-laps"></span>
+    <span class="chip" id="chip-diff"></span>
+  </div>
+  <div class="prompt-box" style="background:rgba(255,255,255,0.03)">
+    Руна-огонёк течёт по узору. Прижми к ней палец и <b>удерживай поток</b> — веди за огоньком, не отставая и не съезжая. Чем дольше держишь, тем чище исход.
+  </div>
+  <button class="start-btn" onclick="startGame()">Войти в поток</button>
+</div>
+
+<!-- GAME -->
+<div id="screen-game" class="screen">
+  <div class="status-line" id="status">Прижми палец к огоньку ◉</div>
+  <div class="hold-meter"><div class="hold-fill" id="hold-fill"></div></div>
+  <div class="canvas-wrap" id="cwrap"><canvas id="flow"></canvas></div>
+</div>
+
+<!-- RESULT -->
+<div id="screen-result" class="screen">
+  <div class="result-icon" id="result-icon">◉</div>
+  <div class="outcome-badge" id="outcome-badge"></div>
+  <div class="result-stats">
+    <div class="result-stat">
+      <div class="result-stat-label">Удержание</div>
+      <div class="result-stat-val" id="res-hold" style="color:var(--hit)"></div>
+    </div>
+    <div class="result-stat">
+      <div class="result-stat-label">Точность</div>
+      <div class="result-stat-val" id="res-acc" style="color:var(--accent)"></div>
+    </div>
+    <div class="result-stat">
+      <div class="result-stat-label">Срывов</div>
+      <div class="result-stat-val" id="res-breaks" style="color:rgba(232,224,255,0.6)"></div>
+    </div>
+  </div>
+</div>
+
+<script src="../shared/core.js"></script>
+<script>
+// ─── PATH LIBRARY (normalized 0..1, closed loops) ───────────────────────────
+const PATHS = [
+  [[.5,.12],[.77,.23],[.88,.5],[.77,.77],[.5,.88],[.23,.77],[.12,.5],[.23,.23]],          // 0 octagon
+  [[.5,.5],[.68,.30],[.85,.5],[.68,.70],[.5,.5],[.32,.30],[.15,.5],[.32,.70]],            // 1 figure-eight
+  [[.5,.10],[.86,.5],[.5,.90],[.14,.5]],                                                   // 2 diamond
+  [[.5,.14],[.85,.80],[.15,.80]],                                                          // 3 triangle
+  [[.18,.30],[.42,.30],[.42,.55],[.66,.55],[.66,.30],[.86,.30],[.86,.78],[.18,.78]],       // 4 square-wave loop
+];
+
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+const DIFF   = Math.min(5, Math.max(3, parseInt(gameData.size) || 3));   // 3 easy .. 5 hard
+const GI     = (gameData.runeIndex != null && gameData.runeIndex >= 0 && gameData.runeIndex < PATHS.length)
+                 ? gameData.runeIndex : Math.floor(rng() * PATHS.length);
+const PATH   = PATHS[GI];
+const LAPS   = Math.min(5, Math.max(1, parseInt(gameData.laps) || 2));
+const PROMPT = gameData.prompt || '';
+
+// difficulty knobs: harder = smaller hold radius + faster lap
+const HOLD_R_FR = ({3:0.145, 4:0.115, 5:0.092})[DIFF];   // capture radius (fraction of canvas)
+const LAP_MS    = ({3:4400,  4:3500,  5:2800 })[DIFF];    // one lap duration
+const DURATION  = LAP_MS * LAPS;
+const LEAD      = 900;                                     // stationary lead-in before flow starts
+const S         = 720;                                     // arc-length samples
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let cvs, ctx, DIM, samples = [], HOLD_R;
+let fingerDown = false, fingerPos = null;
+let onTime = 0, totalTime = 0, breaks = 0, wasOn = false;
+let devSum = 0, devCount = 0;
+let startTs = null, lastTs = null, done = false;
+
+document.getElementById('chip-laps').textContent = LAPS + (LAPS === 1 ? ' круг' : ' круга');
+document.getElementById('chip-diff').textContent = ['','','','мягкий','средний','быстрый'][DIFF] + ' поток';
+if (PROMPT) { const pb = document.getElementById('prompt-box'); pb.textContent = PROMPT; pb.style.display = 'block'; }
+
+function setStatus(txt, cls) {
+  const el = document.getElementById('status');
+  el.textContent = txt; el.className = 'status-line ' + (cls || '');
+}
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function dist(a, b) { return Math.hypot(a[0] - b[0], a[1] - b[1]); }
+
+// resample a closed polyline into S evenly-spaced points
+function resampleClosed(nodes) {
+  const loop = nodes.concat([nodes[0]]);
+  const segLen = [], cum = [0];
+  let total = 0;
+  for (let i = 0; i < loop.length - 1; i++) {
+    const d = dist(loop[i], loop[i + 1]);
+    segLen.push(d); total += d; cum.push(total);
+  }
+  const out = [];
+  for (let k = 0; k < S; k++) {
+    const target = (k / S) * total;
+    let seg = 0;
+    while (seg < segLen.length - 1 && cum[seg + 1] < target) seg++;
+    const t = segLen[seg] > 0 ? (target - cum[seg]) / segLen[seg] : 0;
+    const a = loop[seg], b = loop[seg + 1];
+    out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
+  }
+  return out;
+}
+
+function startGame() {
+  showScreen('screen-game');
+  DIM = Math.min(360, window.innerWidth - 32);
+  cvs = document.getElementById('flow');
+  const dpr = window.devicePixelRatio || 1;
+  cvs.width = DIM * dpr; cvs.height = DIM * dpr;
+  cvs.style.width = DIM + 'px'; cvs.style.height = DIM + 'px';
+  ctx = cvs.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const pad = DIM * 0.14, span = DIM - pad * 2;
+  samples = resampleClosed(PATH).map(([x, y]) => [pad + x * span, pad + y * span]);
+  HOLD_R = DIM * HOLD_R_FR;
+  attachPointer();
+  requestAnimationFrame(frame);
+}
+
+// ─── POINTER ──────────────────────────────────────────────────────────────────
+function localPt(ev) {
+  const r = cvs.getBoundingClientRect();
+  return [ev.clientX - r.left, ev.clientY - r.top];
+}
+function attachPointer() {
+  cvs.addEventListener('pointerdown', ev => { if (done) return; ev.preventDefault(); fingerDown = true; fingerPos = localPt(ev); try { cvs.setPointerCapture(ev.pointerId); } catch (e) {} });
+  cvs.addEventListener('pointermove', ev => { if (done || !fingerDown) return; ev.preventDefault(); fingerPos = localPt(ev); });
+  cvs.addEventListener('pointerup',   ev => { if (done) return; ev.preventDefault(); fingerDown = false; });
+  cvs.addEventListener('pointercancel', () => { fingerDown = false; });
+}
+
+// ─── LOOP ─────────────────────────────────────────────────────────────────────
+function orbAt(u) {
+  const idx = Math.floor(u * S) % S;
+  return samples[idx];
+}
+
+function frame(ts) {
+  if (done) return;
+  if (startTs == null) { startTs = ts; lastTs = ts; }
+  const elapsed = ts - startTs;
+  const dt = ts - lastTs; lastTs = ts;
+  const active = elapsed > LEAD;
+
+  let u = 0, on = false;
+  if (!active) {
+    u = 0;
+  } else {
+    const te = elapsed - LEAD;
+    const prog = (te / DURATION) * LAPS;   // laps traversed (float)
+    if (prog >= LAPS) { finishGame(); return; }
+    u = prog % 1;
+  }
+
+  const orb = orbAt(u);
+  if (active) {
+    on = fingerDown && fingerPos && dist(fingerPos, orb) <= HOLD_R;
+    totalTime += dt;
+    if (on) onTime += dt;
+    if (fingerDown && fingerPos) { devSum += dist(fingerPos, orb); devCount++; }
+    if (wasOn && !on) breaks++;
+    wasOn = on;
+  }
+
+  draw(orb, active, on);
+  const meter = totalTime > 0 ? onTime / totalTime : 0;
+  document.getElementById('hold-fill').style.width = Math.round(meter * 100) + '%';
+  if (!active) setStatus('Прижми палец к огоньку ◉', '');
+  else if (on)  setStatus('Держишь поток ✦', 'good');
+  else          setStatus('Поток теряется — догоняй!', 'bad');
+
+  requestAnimationFrame(frame);
+}
+
+// ─── DRAW ─────────────────────────────────────────────────────────────────────
+function draw(orb, active, on) {
+  ctx.clearRect(0, 0, DIM, DIM);
+  // path
+  ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.strokeStyle = 'rgba(162,155,254,0.22)';
+  ctx.beginPath(); ctx.moveTo(samples[0][0], samples[0][1]);
+  for (let i = 1; i < samples.length; i++) ctx.lineTo(samples[i][0], samples[i][1]);
+  ctx.closePath(); ctx.stroke();
+
+  // finger position ring
+  if (fingerDown && fingerPos) {
+    ctx.beginPath(); ctx.arc(fingerPos[0], fingerPos[1], 16, 0, Math.PI * 2);
+    ctx.strokeStyle = on ? 'rgba(0,184,148,0.8)' : 'rgba(231,76,60,0.7)';
+    ctx.lineWidth = 2.5; ctx.stroke();
+  }
+
+  // orb
+  const col = on ? '0,184,148' : (active ? '162,155,254' : '162,155,254');
+  ctx.beginPath(); ctx.arc(orb[0], orb[1], 15, 0, Math.PI * 2);
+  ctx.fillStyle = `rgba(${col},0.95)`;
+  ctx.shadowColor = `rgba(${col},0.9)`; ctx.shadowBlur = on ? 24 : 16;
+  ctx.fill(); ctx.shadowBlur = 0;
+  // capture halo
+  ctx.beginPath(); ctx.arc(orb[0], orb[1], HOLD_R, 0, Math.PI * 2);
+  ctx.strokeStyle = `rgba(${col},0.28)`; ctx.lineWidth = 1.5; ctx.stroke();
+  if (!active) {
+    ctx.fillStyle = '#fff'; ctx.font = '15px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('◉', orb[0], orb[1]);
+  }
+}
+
+// ─── FINISH / GRADE ─────────────────────────────────────────────────────────
+function finishGame() {
+  if (done) return;
+  done = true;
+  const holdFrac = totalTime > 0 ? onTime / totalTime : 0;
+  const avgDevFr = devCount > 0 ? (devSum / devCount) / DIM : 1;
+  const accuracy = Math.max(0, Math.min(1, 1 - avgDevFr / HOLD_R_FR));
+  gradeAndSend(holdFrac, accuracy, breaks);
+}
+
+function gradeAndSend(holdFrac, accuracy, breaks) {
+  const q = Math.max(0, holdFrac - breaks * 0.015);
+  let outcome, level;
+  if      (q >= 0.92) { outcome = 'Совершенный поток'; level = 6; }
+  else if (q >= 0.80) { outcome = 'Отлично';   level = 5; }
+  else if (q >= 0.65) { outcome = 'Хорошо';    level = 4; }
+  else if (q >= 0.50) { outcome = 'Приемлемо'; level = 3; }
+  else if (q >= 0.30) { outcome = 'Неудовл.';  level = 2; }
+  else if (q > 0)     { outcome = 'Плохо';     level = 1; }
+  else                { outcome = 'Провал';    level = 0; }
+
+  const icons = { 6:'✦', 5:'◉', 4:'⬡', 3:'◇', 2:'○', 1:'·', 0:'💀' };
+  document.getElementById('result-icon').textContent = icons[level] || '◉';
+  const badge = document.getElementById('outcome-badge');
+  badge.textContent = outcome; badge.className = `outcome-badge outcome-${level}`;
+  document.getElementById('res-hold').textContent   = Math.round(holdFrac * 100) + '%';
+  document.getElementById('res-acc').textContent    = Math.round(accuracy * 100) + '%';
+  document.getElementById('res-breaks').textContent = breaks;
+
+  setStatus(level >= 4 ? 'Поток удержан ✦' : 'Поток рассеян', level >= 4 ? 'good' : 'bad');
+  document.getElementById('hold-fill').style.width = Math.round(holdFrac * 100) + '%';
+  setTimeout(() => showScreen('screen-result'), 500);
+
+  const result = {
+    game: 'rune-channel',
+    path: GI,
+    difficulty: DIFF,
+    laps: LAPS,
+    hold: Math.round(holdFrac * 1000) / 1000,
+    accuracy: Math.round(accuracy * 1000) / 1000,
+    breaks,
+    outcome, level,
+  };
+  setTimeout(() => sendResultToBot(result), 1200);
+}
+</script>
+</body>
+</html>
