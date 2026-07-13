@@ -155,9 +155,9 @@ let cvs, ctx, DIM, cx, cy, R, holeR, bandW;
 let rot = [];            // current rotation offset per ring (integer)
 let moves = 0, done = false, flash = 0;
 
-// initial scramble (seeded via rng); ensure not already solved
+// initial scramble (seeded via rng); ensure not already solved (see isSolved below)
 for (let k = 0; k < RINGS; k++) rot.push(Math.floor(rng() * SLOTS));
-if (rot.every(v => ((v % SLOTS) + SLOTS) % SLOTS === 0)) rot[0] = (rot[0] + 1) % SLOTS;
+if (isSolved()) rot[0] = norm(rot[0] + 1 + Math.floor(rng() * (SLOTS - 1)));
 
 document.getElementById('chip-rings').textContent = RINGS + ' кольца · ' + SLOTS + ' спиц';
 document.getElementById('chip-diff').textContent  = ['','','','лёгкий','сцепленный','мастер'][DIFF] + ' замок';
@@ -172,7 +172,14 @@ function showScreen(id) {
   document.getElementById(id).classList.add('active');
 }
 function norm(v) { return ((v % SLOTS) + SLOTS) % SLOTS; }
-function alignedCount() { return rot.filter(v => norm(v) === 0).length; }
+// Alignment is RELATIVE: a spoke is one colour when all rings share the SAME
+// offset (at any value), not when they sit at zero. aligned = size of the
+// largest group of rings that agree on an offset; solved when all agree.
+function alignedCount() {
+  const counts = {};
+  for (const v of rot) { const n = norm(v); counts[n] = (counts[n] || 0) + 1; }
+  return Math.max(...Object.values(counts));
+}
 function isSolved() { return alignedCount() === RINGS; }
 
 function startGame() {
@@ -282,13 +289,14 @@ function finishLock() {
   const aligned = alignedCount();
   const frac = RINGS > 0 ? aligned / RINGS : 0;
 
+  // aligned >= 1 always (a ring agrees with itself), so gate on moves to avoid
+  // a free grade from a lucky scramble the player never touched.
   let outcome, level;
-  if      (aligned === RINGS) { outcome = 'Замок открыт'; level = 6; }
-  else if (frac >= 0.66)      { outcome = 'Почти';     level = 4; }
-  else if (frac >= 0.34)      { outcome = 'Частично';  level = 3; }
-  else if (frac > 0)          { outcome = 'Слабо';     level = 2; }
-  else if (moves > 0)         { outcome = 'Заперт';    level = 1; }
-  else                        { outcome = 'Провал';    level = 0; }
+  if      (moves === 0)       { outcome = 'Провал';       level = 0; }
+  else if (aligned === RINGS) { outcome = 'Замок открыт'; level = 6; }
+  else if (frac >= 0.66)      { outcome = 'Почти';        level = 4; }
+  else if (frac >= 0.34)      { outcome = 'Частично';     level = 3; }
+  else                        { outcome = 'Слабо';        level = 2; }
 
   const icons = { 6:'✦', 5:'◈', 4:'⬡', 3:'◇', 2:'○', 1:'·', 0:'💀' };
   document.getElementById('result-icon').textContent = icons[level] || '◈';
