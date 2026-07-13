@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Twilights — Замок рун</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="../shared/styles.css">
+  <style>
+    :root {
+      --bg: #0f0e1a;
+      --text: #e8e0ff;
+      --accent: #a29bfe;
+      --hit: #00b894;
+      --miss: #e74c3c;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 16px; user-select: none; -webkit-user-select: none;
+    }
+    .screen { display: none; width: 100%; max-width: 380px; flex-direction: column; align-items: center; }
+    .screen.active { display: flex; }
+
+    .game-title {
+      font-size: 1.6rem; font-weight: 800; color: var(--accent);
+      text-align: center; margin-bottom: 6px; text-shadow: 0 0 20px rgba(162,155,254,0.5);
+    }
+    .game-subtitle {
+      font-size: 0.85rem; color: rgba(232,224,255,0.5); text-align: center;
+      letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 20px;
+    }
+    .prompt-box {
+      width: 100%; background: rgba(162,155,254,0.08); border: 1px solid rgba(162,155,254,0.2);
+      border-radius: 14px; padding: 14px 16px; font-size: 0.95rem; line-height: 1.6;
+      color: var(--text); margin-bottom: 18px; text-align: center;
+    }
+    .info-chips { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+    .chip {
+      padding: 6px 14px; background: rgba(162,155,254,0.1); border: 1px solid rgba(162,155,254,0.25);
+      border-radius: 20px; font-size: 0.82rem; color: var(--accent);
+    }
+    .start-btn {
+      width: 100%; padding: 15px; border-radius: 14px; border: none;
+      background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: #fff;
+      font-size: 1.1rem; font-weight: 700; cursor: pointer; letter-spacing: 0.05em;
+      box-shadow: 0 4px 20px rgba(108,92,231,0.4); transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .start-btn:active { transform: scale(0.97); box-shadow: 0 2px 10px rgba(108,92,231,0.3); }
+
+    .status-line {
+      font-size: 0.95rem; font-weight: 700; margin-bottom: 10px; min-height: 1.3em;
+      text-align: center; letter-spacing: 0.03em; color: var(--accent); transition: color 0.15s;
+    }
+    .status-line.good { color: var(--hit); }
+    .status-line.bad  { color: var(--miss); }
+
+    .canvas-wrap {
+      position: relative; border-radius: 16px; overflow: hidden;
+      background: radial-gradient(circle at 50% 50%, #17152b, #0f0e1a 80%);
+      border: 1px solid rgba(162,155,254,0.18); box-shadow: inset 0 0 40px rgba(162,155,254,0.06);
+      touch-action: none;
+    }
+    #lock { display: block; touch-action: none; }
+    .btn-row { display: flex; gap: 10px; width: 100%; margin-top: 14px; }
+    .mini-btn {
+      flex: 1; padding: 12px; border-radius: 12px; border: none; cursor: pointer;
+      font-size: 0.92rem; font-weight: 600; color: var(--text);
+      background: rgba(255,255,255,0.06);
+    }
+    .mini-btn.primary { background: linear-gradient(135deg,#6c5ce7,#a29bfe); color:#fff; font-weight:700; }
+    .hint { font-size:0.78rem; color:rgba(232,224,255,0.45); margin-top:8px; text-align:center; }
+
+    .result-icon { font-size: 3rem; margin-bottom: 12px; }
+    .outcome-badge { font-size: 1.5rem; font-weight: 800; padding: 10px 28px; border-radius: 30px; margin-bottom: 16px; }
+    .outcome-6 { background: rgba(255,215,0,0.15);   border: 2px solid #ffd700; color: #ffd700; }
+    .outcome-5 { background: rgba(162,155,254,0.18); border: 2px solid var(--accent); color: var(--accent); }
+    .outcome-4 { background: rgba(0,184,148,0.18);   border: 2px solid var(--hit); color: var(--hit); }
+    .outcome-3 { background: rgba(0,184,148,0.08);   border: 2px solid rgba(0,184,148,0.45); color: rgba(0,184,148,0.85); }
+    .outcome-2 { background: rgba(231,150,60,0.12);  border: 2px solid #e7963c; color: #e7963c; }
+    .outcome-1 { background: rgba(231,76,60,0.08);   border: 2px solid rgba(231,76,60,0.45); color: rgba(231,76,60,0.85); }
+    .outcome-0 { background: rgba(231,76,60,0.15);   border: 2px solid var(--miss); color: var(--miss); }
+    .result-stats {
+      width: 100%; background: rgba(255,255,255,0.04); border-radius: 14px;
+      padding: 14px 16px; display: flex; gap: 12px; justify-content: center;
+    }
+    .result-stat { text-align: center; flex: 1; }
+    .result-stat-label { font-size: 0.72rem; color: rgba(232,224,255,0.4); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+    .result-stat-val { font-size: 1.5rem; font-weight: 800; }
+  </style>
+</head>
+<body>
+
+<!-- READY -->
+<div id="screen-ready" class="screen active">
+  <div class="game-title">◈ Замок рун</div>
+  <div class="game-subtitle">Twilights · Головоломка</div>
+  <div id="prompt-box" class="prompt-box" style="display:none"></div>
+  <div class="info-chips">
+    <span class="chip" id="chip-rings"></span>
+    <span class="chip" id="chip-diff"></span>
+  </div>
+  <div class="prompt-box" style="background:rgba(255,255,255,0.03)">
+    Вращай кольца рун (тап справа от кольца — по часовой, слева — против). Совмести узор так, чтобы каждая радиальная спица стала <b>одного цвета</b> — тогда замок откроется.
+  </div>
+  <button class="start-btn" onclick="startGame()">Открыть замок</button>
+</div>
+
+<!-- GAME -->
+<div id="screen-game" class="screen">
+  <div class="status-line" id="status">Совмести спицы в единый цвет</div>
+  <div class="canvas-wrap" id="cwrap"><canvas id="lock"></canvas></div>
+  <div class="hint">Тап по кольцу: справа ↻ · слева ↺</div>
+  <div class="btn-row">
+    <button class="mini-btn primary" onclick="finishLock()">Завершить</button>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div id="screen-result" class="screen">
+  <div class="result-icon" id="result-icon">◈</div>
+  <div class="outcome-badge" id="outcome-badge"></div>
+  <div class="result-stats">
+    <div class="result-stat">
+      <div class="result-stat-label">Кольца</div>
+      <div class="result-stat-val" id="res-rings" style="color:var(--hit)"></div>
+    </div>
+    <div class="result-stat">
+      <div class="result-stat-label">Ходов</div>
+      <div class="result-stat-val" id="res-moves" style="color:var(--accent)"></div>
+    </div>
+  </div>
+</div>
+
+<script src="../shared/core.js"></script>
+<script>
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+const DIFF   = Math.min(5, Math.max(3, parseInt(gameData.size) || 3));
+const PROMPT = gameData.prompt || '';
+const CFG = ({
+  3: { RINGS: 3, SLOTS: 6, COUPLED: false },
+  4: { RINGS: 3, SLOTS: 6, COUPLED: true  },
+  5: { RINGS: 4, SLOTS: 8, COUPLED: true  },
+})[DIFF];
+const RINGS = CFG.RINGS, SLOTS = CFG.SLOTS, COUPLED = CFG.COUPLED;
+
+const PALETTE = ['#e74c3c','#00b894','#a29bfe','#f1c40f','#3498db','#e67e22','#1abc9c','#ff6b9d'];
+const RGLYPH  = ['ᚠ','ᚨ','ᚱ','ᚦ','ᛉ','ᛊ','ᛟ','ᛃ'];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let cvs, ctx, DIM, cx, cy, R, holeR, bandW;
+let rot = [];            // current rotation offset per ring (integer)
+let moves = 0, done = false, flash = 0;
+
+// initial scramble (seeded via rng); ensure not already solved
+for (let k = 0; k < RINGS; k++) rot.push(Math.floor(rng() * SLOTS));
+if (rot.every(v => ((v % SLOTS) + SLOTS) % SLOTS === 0)) rot[0] = (rot[0] + 1) % SLOTS;
+
+document.getElementById('chip-rings').textContent = RINGS + ' кольца · ' + SLOTS + ' спиц';
+document.getElementById('chip-diff').textContent  = ['','','','лёгкий','сцепленный','мастер'][DIFF] + ' замок';
+if (PROMPT) { const pb = document.getElementById('prompt-box'); pb.textContent = PROMPT; pb.style.display = 'block'; }
+
+function setStatus(txt, cls) {
+  const el = document.getElementById('status');
+  el.textContent = txt; el.className = 'status-line ' + (cls || '');
+}
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function norm(v) { return ((v % SLOTS) + SLOTS) % SLOTS; }
+function alignedCount() { return rot.filter(v => norm(v) === 0).length; }
+function isSolved() { return alignedCount() === RINGS; }
+
+function startGame() {
+  showScreen('screen-game');
+  DIM = Math.min(340, window.innerWidth - 32);
+  cvs = document.getElementById('lock');
+  const dpr = window.devicePixelRatio || 1;
+  cvs.width = DIM * dpr; cvs.height = DIM * dpr;
+  cvs.style.width = DIM + 'px'; cvs.style.height = DIM + 'px';
+  ctx = cvs.getContext('2d');
+  ctx.scale(dpr, dpr);
+  cx = DIM / 2; cy = DIM / 2;
+  R = DIM * 0.46; holeR = R * 0.20; bandW = (R - holeR) / RINGS;
+  attachPointer();
+  draw();
+}
+
+// ─── POINTER ──────────────────────────────────────────────────────────────────
+function localPt(ev) {
+  const r = cvs.getBoundingClientRect();
+  return [ev.clientX - r.left, ev.clientY - r.top];
+}
+function attachPointer() {
+  cvs.addEventListener('pointerdown', onTap);
+}
+function onTap(ev) {
+  if (done) return;
+  ev.preventDefault();
+  const [px, py] = localPt(ev);
+  const d = Math.hypot(px - cx, py - cy);
+  if (d < holeR || d > R) return;
+  const k = Math.min(RINGS - 1, Math.floor((R - d) / bandW));   // 0 = outer
+  const dir = (px >= cx) ? 1 : -1;
+  rotateRing(k, dir);
+}
+function rotateRing(k, dir) {
+  moves++;
+  rot[k] = rot[k] + dir;
+  if (COUPLED && k < RINGS - 1) rot[k + 1] = rot[k + 1] + dir;   // gear-couple to inner ring
+  draw();
+  if (isSolved()) {
+    flash = 1;
+    setStatus('Узор совмещён — замок открыт ✦', 'good');
+    draw();
+    setTimeout(() => finishLock(), 650);
+  } else {
+    setStatus('Совмести спицы в единый цвет', '');
+  }
+}
+
+// ─── DRAW ─────────────────────────────────────────────────────────────────────
+function ringRadii(k) {
+  const outer = R - k * bandW;
+  const inner = outer - bandW;
+  return [inner, outer];
+}
+function draw() {
+  ctx.clearRect(0, 0, DIM, DIM);
+  const step = (Math.PI * 2) / SLOTS;
+  for (let k = 0; k < RINGS; k++) {
+    const [rIn, rOut] = ringRadii(k);
+    for (let j = 0; j < SLOTS; j++) {
+      const colIdx = norm(j - rot[k]);
+      const aMid = -Math.PI / 2 + j * step;
+      const a0 = aMid - step / 2, a1 = aMid + step / 2;
+      // sector
+      ctx.beginPath();
+      ctx.arc(cx, cy, rOut, a0, a1);
+      ctx.arc(cx, cy, rIn, a1, a0, true);
+      ctx.closePath();
+      ctx.fillStyle = PALETTE[colIdx % PALETTE.length];
+      ctx.globalAlpha = flash ? 1 : 0.9;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = 'rgba(15,14,26,0.85)'; ctx.lineWidth = 2; ctx.stroke();
+      // rune glyph
+      const rr = (rIn + rOut) / 2;
+      const gx = cx + Math.cos(aMid) * rr, gy = cy + Math.sin(aMid) * rr;
+      ctx.fillStyle = 'rgba(15,14,26,0.8)';
+      ctx.font = `${Math.round(bandW * 0.44)}px serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(RGLYPH[colIdx % RGLYPH.length], gx, gy);
+    }
+  }
+  // center hub
+  ctx.beginPath(); ctx.arc(cx, cy, holeR, 0, Math.PI * 2);
+  ctx.fillStyle = isSolved() ? 'rgba(0,184,148,0.9)' : 'rgba(162,155,254,0.25)';
+  if (isSolved()) { ctx.shadowColor = 'rgba(0,184,148,0.8)'; ctx.shadowBlur = 20; }
+  ctx.fill(); ctx.shadowBlur = 0;
+  ctx.fillStyle = '#0f0e1a'; ctx.font = `${Math.round(holeR * 0.9)}px serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(isSolved() ? '✦' : '◈', cx, cy);
+  // top marker (the lock line)
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - R - 2);
+  ctx.lineTo(cx - 8, cy - R - 14);
+  ctx.lineTo(cx + 8, cy - R - 14);
+  ctx.closePath();
+  ctx.fillStyle = '#e8e0ff'; ctx.fill();
+  flash = 0;
+}
+
+// ─── FINISH / GRADE ─────────────────────────────────────────────────────────
+function finishLock() {
+  if (done) return;
+  done = true;
+  const aligned = alignedCount();
+  const frac = RINGS > 0 ? aligned / RINGS : 0;
+
+  let outcome, level;
+  if      (aligned === RINGS) { outcome = 'Замок открыт'; level = 6; }
+  else if (frac >= 0.66)      { outcome = 'Почти';     level = 4; }
+  else if (frac >= 0.34)      { outcome = 'Частично';  level = 3; }
+  else if (frac > 0)          { outcome = 'Слабо';     level = 2; }
+  else if (moves > 0)         { outcome = 'Заперт';    level = 1; }
+  else                        { outcome = 'Провал';    level = 0; }
+
+  const icons = { 6:'✦', 5:'◈', 4:'⬡', 3:'◇', 2:'○', 1:'·', 0:'💀' };
+  document.getElementById('result-icon').textContent = icons[level] || '◈';
+  const badge = document.getElementById('outcome-badge');
+  badge.textContent = outcome; badge.className = `outcome-badge outcome-${level}`;
+  document.getElementById('res-rings').textContent = aligned + '/' + RINGS;
+  document.getElementById('res-moves').textContent = moves;
+
+  setStatus(aligned === RINGS ? 'Замок открыт ✦' : 'Замок не поддался', aligned === RINGS ? 'good' : 'bad');
+  setTimeout(() => showScreen('screen-result'), 500);
+
+  const result = {
+    game: 'rune-lock',
+    difficulty: DIFF,
+    rings: RINGS,
+    slots: SLOTS,
+    aligned,
+    fraction: Math.round(frac * 1000) / 1000,
+    moves,
+    outcome, level,
+  };
+  setTimeout(() => sendResultToBot(result), 1200);
+}
+</script>
+</body>
+</html>
