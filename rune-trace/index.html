@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Twilights — Начертание руны</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="../shared/styles.css">
+  <style>
+    :root {
+      --bg: #0f0e1a;
+      --text: #e8e0ff;
+      --accent: #a29bfe;
+      --hit: #00b894;
+      --miss: #e74c3c;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 16px; user-select: none; -webkit-user-select: none;
+    }
+    .screen { display: none; width: 100%; max-width: 380px; flex-direction: column; align-items: center; }
+    .screen.active { display: flex; }
+
+    .game-title {
+      font-size: 1.6rem; font-weight: 800; color: var(--accent);
+      text-align: center; margin-bottom: 6px; text-shadow: 0 0 20px rgba(162,155,254,0.5);
+    }
+    .game-subtitle {
+      font-size: 0.85rem; color: rgba(232,224,255,0.5); text-align: center;
+      letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 20px;
+    }
+    .prompt-box {
+      width: 100%; background: rgba(162,155,254,0.08); border: 1px solid rgba(162,155,254,0.2);
+      border-radius: 14px; padding: 14px 16px; font-size: 0.95rem; line-height: 1.6;
+      color: var(--text); margin-bottom: 18px; text-align: center;
+    }
+    .info-chips { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+    .chip {
+      padding: 6px 14px; background: rgba(162,155,254,0.1); border: 1px solid rgba(162,155,254,0.25);
+      border-radius: 20px; font-size: 0.82rem; color: var(--accent);
+    }
+    .start-btn {
+      width: 100%; padding: 15px; border-radius: 14px; border: none;
+      background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: #fff;
+      font-size: 1.1rem; font-weight: 700; cursor: pointer; letter-spacing: 0.05em;
+      box-shadow: 0 4px 20px rgba(108,92,231,0.4); transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .start-btn:active { transform: scale(0.97); box-shadow: 0 2px 10px rgba(108,92,231,0.3); }
+
+    .status-line {
+      font-size: 0.95rem; font-weight: 700; margin-bottom: 12px; min-height: 1.3em;
+      text-align: center; letter-spacing: 0.03em; color: var(--accent); transition: color 0.2s;
+    }
+    .status-line.good { color: var(--hit); }
+    .status-line.bad  { color: var(--miss); }
+
+    .canvas-wrap {
+      position: relative; border-radius: 16px; overflow: hidden;
+      background: radial-gradient(circle at 50% 40%, #17152b, #0f0e1a 75%);
+      border: 1px solid rgba(162,155,254,0.18); box-shadow: inset 0 0 40px rgba(162,155,254,0.06);
+      touch-action: none;
+    }
+    #trace { display: block; touch-action: none; }
+
+    .result-icon { font-size: 3rem; margin-bottom: 12px; }
+    .outcome-badge { font-size: 1.5rem; font-weight: 800; padding: 10px 28px; border-radius: 30px; margin-bottom: 16px; }
+    .outcome-6 { background: rgba(255,215,0,0.15);   border: 2px solid #ffd700; color: #ffd700; }
+    .outcome-5 { background: rgba(162,155,254,0.18); border: 2px solid var(--accent); color: var(--accent); }
+    .outcome-4 { background: rgba(0,184,148,0.18);   border: 2px solid var(--hit); color: var(--hit); }
+    .outcome-3 { background: rgba(0,184,148,0.08);   border: 2px solid rgba(0,184,148,0.45); color: rgba(0,184,148,0.85); }
+    .outcome-2 { background: rgba(231,150,60,0.12);  border: 2px solid #e7963c; color: #e7963c; }
+    .outcome-1 { background: rgba(231,76,60,0.08);   border: 2px solid rgba(231,76,60,0.45); color: rgba(231,76,60,0.85); }
+    .outcome-0 { background: rgba(231,76,60,0.15);   border: 2px solid var(--miss); color: var(--miss); }
+    .result-stats {
+      width: 100%; background: rgba(255,255,255,0.04); border-radius: 14px;
+      padding: 14px 16px; display: flex; gap: 12px; justify-content: center;
+    }
+    .result-stat { text-align: center; flex: 1; }
+    .result-stat-label { font-size: 0.72rem; color: rgba(232,224,255,0.4); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+    .result-stat-val { font-size: 1.5rem; font-weight: 800; }
+  </style>
+</head>
+<body>
+
+<!-- READY -->
+<div id="screen-ready" class="screen active">
+  <div class="game-title">✦ Начертание руны</div>
+  <div class="game-subtitle">Twilights · Твёрдость руки</div>
+  <div id="prompt-box" class="prompt-box" style="display:none"></div>
+  <div class="info-chips">
+    <span class="chip" id="chip-nodes"></span>
+    <span class="chip" id="chip-diff"></span>
+  </div>
+  <div class="prompt-box" style="background:rgba(255,255,255,0.03)">
+    Обведи руну одним росчерком — от узла ✦ по линии, не отрывая палец и не съезжая с пути.
+    Точность и непрерывность решают исход.
+  </div>
+  <button class="start-btn" onclick="startGame()">Начать начертание</button>
+</div>
+
+<!-- GAME -->
+<div id="screen-game" class="screen">
+  <div class="status-line" id="status">Начни от светящегося узла ✦</div>
+  <div class="canvas-wrap" id="cwrap"><canvas id="trace"></canvas></div>
+  <button class="start-btn" id="give-up" style="margin-top:16px;background:rgba(255,255,255,0.06);box-shadow:none;font-size:0.95rem;font-weight:600" onclick="giveUp()">Завершить начертание</button>
+</div>
+
+<!-- RESULT -->
+<div id="screen-result" class="screen">
+  <div class="result-icon" id="result-icon">◈</div>
+  <div class="outcome-badge" id="outcome-badge"></div>
+  <div class="result-stats">
+    <div class="result-stat">
+      <div class="result-stat-label">Пройдено</div>
+      <div class="result-stat-val" id="res-comp" style="color:var(--hit)"></div>
+    </div>
+    <div class="result-stat">
+      <div class="result-stat-label">Точность</div>
+      <div class="result-stat-val" id="res-acc" style="color:var(--accent)"></div>
+    </div>
+    <div class="result-stat">
+      <div class="result-stat-label">Отрывов</div>
+      <div class="result-stat-val" id="res-breaks" style="color:rgba(232,224,255,0.6)"></div>
+    </div>
+  </div>
+</div>
+
+<script src="../shared/core.js"></script>
+<script>
+// ─── GLYPH LIBRARY (normalized 0..1 polylines) ─────────────────────────────
+const GLYPHS = [
+  [[.20,.20],[.80,.20],[.20,.80],[.80,.80]],                         // 0 zigzag Z
+  [[.35,.10],[.60,.42],[.40,.50],[.66,.90]],                         // 1 bolt
+  [[.18,.22],[.50,.82],[.82,.22]],                                   // 2 chevron
+  [[.15,.28],[.45,.28],[.45,.58],[.75,.58],[.75,.86]],               // 3 stair
+  [[.50,.10],[.86,.50],[.50,.90],[.14,.50],[.50,.10]],               // 4 diamond loop
+  [[.14,.86],[.30,.14],[.50,.60],[.70,.14],[.86,.86]],               // 5 M-rune
+  [[.78,.20],[.28,.20],[.28,.70],[.66,.70],[.66,.44]],               // 6 hook
+  [[.18,.16],[.82,.84],[.50,.50],[.82,.16],[.18,.84]],               // 7 star-cross
+];
+
+// ─── CONFIG ────────────────────────────────────────────────────────────────
+const DIFF     = Math.min(5, Math.max(3, parseInt(gameData.size) || 3)); // 3 easy .. 5 hard
+const GI       = (gameData.runeIndex != null && gameData.runeIndex >= 0 && gameData.runeIndex < GLYPHS.length)
+                   ? gameData.runeIndex : Math.floor(rng() * GLYPHS.length);
+const GLYPH    = GLYPHS[GI];
+const PROMPT   = gameData.prompt || '';
+
+// difficulty knobs: harder = smaller hit radius + stricter deviation tolerance
+const HIT_R_FR = ({3:0.13, 4:0.105, 5:0.085})[DIFF];   // node capture radius (fraction of canvas)
+const TOL_FR   = ({3:0.115, 4:0.09, 5:0.07})[DIFF];    // avg deviation giving 0 accuracy (fraction)
+
+// ─── STATE ──────────────────────────────────────────────────────────────────
+let cvs, ctx, DIM, pts = [];           // pts = glyph points scaled to canvas px
+let hitCount = 0;                       // nodes reached (0 = none, starts at 1 after touching node 0)
+let tracing = false;
+let breaks = 0;                          // times finger lifted before completion
+let devSum = 0, devCount = 0;            // deviation accumulation
+let trail = [];                          // player path points (for drawing)
+let done = false, started = false;
+
+document.getElementById('chip-nodes').textContent = `${GLYPHS[GI].length} узла`;
+document.getElementById('chip-diff').textContent  = ['','','','лёгкая','средняя','сложная'][DIFF] + ' рука';
+if (PROMPT) { const pb = document.getElementById('prompt-box'); pb.textContent = PROMPT; pb.style.display = 'block'; }
+
+function setStatus(txt, cls) {
+  const el = document.getElementById('status');
+  el.textContent = txt; el.className = 'status-line ' + (cls || '');
+}
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function startGame() {
+  showScreen('screen-game');
+  const wrap = document.getElementById('cwrap');
+  DIM = Math.min(360, window.innerWidth - 32);
+  cvs = document.getElementById('trace');
+  const dpr = window.devicePixelRatio || 1;
+  cvs.width = DIM * dpr; cvs.height = DIM * dpr;
+  cvs.style.width = DIM + 'px'; cvs.style.height = DIM + 'px';
+  ctx = cvs.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const pad = DIM * 0.12;
+  const span = DIM - pad * 2;
+  pts = GLYPH.map(([x, y]) => [pad + x * span, pad + y * span]);
+  draw();
+  attachPointer();
+}
+
+// ─── GEOMETRY ─────────────────────────────────────────────────────────────
+function dist(a, b) { return Math.hypot(a[0] - b[0], a[1] - b[1]); }
+function distToSeg(p, a, b) {
+  const vx = b[0] - a[0], vy = b[1] - a[1];
+  const wx = p[0] - a[0], wy = p[1] - a[1];
+  const len2 = vx * vx + vy * vy;
+  let t = len2 > 0 ? (wx * vx + wy * vy) / len2 : 0;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(p[0] - (a[0] + t * vx), p[1] - (a[1] + t * vy));
+}
+
+// ─── DRAW ─────────────────────────────────────────────────────────────────
+function draw() {
+  ctx.clearRect(0, 0, DIM, DIM);
+  // ideal path — faint dashed
+  ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.strokeStyle = 'rgba(162,155,254,0.22)';
+  ctx.setLineDash([6, 8]);
+  ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+  ctx.stroke(); ctx.setLineDash([]);
+
+  // completed segments — bright
+  if (hitCount > 1) {
+    ctx.strokeStyle = 'rgba(0,184,148,0.85)'; ctx.lineWidth = 5;
+    ctx.shadowColor = 'rgba(0,184,148,0.6)'; ctx.shadowBlur = 10;
+    ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < hitCount; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+    ctx.stroke(); ctx.shadowBlur = 0;
+  }
+
+  // player trail
+  if (trail.length > 1) {
+    ctx.strokeStyle = 'rgba(232,224,255,0.55)'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(trail[0][0], trail[0][1]);
+    for (let i = 1; i < trail.length; i++) ctx.lineTo(trail[i][0], trail[i][1]);
+    ctx.stroke();
+  }
+
+  // nodes
+  for (let i = 0; i < pts.length; i++) {
+    const [x, y] = pts[i];
+    const isStart = (i === 0);
+    const hit = (i < hitCount);
+    const next = (i === hitCount);
+    let r = isStart ? 13 : 10;
+    if (next && !done) r = 14;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+    if (hit)       { ctx.fillStyle = 'rgba(0,184,148,0.9)'; ctx.shadowColor = 'rgba(0,184,148,0.7)'; ctx.shadowBlur = 12; }
+    else if (next) { ctx.fillStyle = 'rgba(162,155,254,0.95)'; ctx.shadowColor = 'rgba(162,155,254,0.9)'; ctx.shadowBlur = 16; }
+    else           { ctx.fillStyle = 'rgba(162,155,254,0.28)'; ctx.shadowBlur = 0; }
+    ctx.fill(); ctx.shadowBlur = 0;
+    // start marker ✦
+    if (isStart && hitCount === 0) {
+      ctx.fillStyle = '#fff'; ctx.font = '16px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('✦', x, y);
+    }
+    // order number on future nodes
+    if (!hit && !next && !isStart) {
+      ctx.fillStyle = 'rgba(232,224,255,0.5)'; ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(String(i + 1), x, y);
+    }
+  }
+}
+
+// ─── POINTER ──────────────────────────────────────────────────────────────
+function localPt(ev) {
+  const r = cvs.getBoundingClientRect();
+  return [ev.clientX - r.left, ev.clientY - r.top];
+}
+
+function attachPointer() {
+  cvs.addEventListener('pointerdown', onDown);
+  cvs.addEventListener('pointermove', onMove);
+  cvs.addEventListener('pointerup', onUp);
+  cvs.addEventListener('pointercancel', onUp);
+}
+
+function onDown(ev) {
+  if (done) return;
+  ev.preventDefault();
+  const p = localPt(ev);
+  const HIT_R = DIM * HIT_R_FR;
+  // Must (re)start near the last hit node (node 0 at the very beginning)
+  const anchor = pts[Math.max(0, hitCount - 1)];
+  if (hitCount === 0) {
+    if (dist(p, pts[0]) <= DIM * 0.16) {
+      hitCount = 1; tracing = true; trail = [p];
+      try { cvs.setPointerCapture(ev.pointerId); } catch (e) {}
+      setStatus('Веди по линии…', '');
+      draw();
+    } else {
+      setStatus('Начни от узла ✦', 'bad');
+    }
+    return;
+  }
+  // resuming after a lift
+  if (dist(p, anchor) <= HIT_R * 1.4) {
+    tracing = true; trail = [p];
+    try { cvs.setPointerCapture(ev.pointerId); } catch (e) {}
+    setStatus('Веди по линии…', '');
+  } else {
+    setStatus('Вернись к последнему узлу, чтобы продолжить', 'bad');
+  }
+}
+
+function onMove(ev) {
+  if (!tracing || done) return;
+  ev.preventDefault();
+  const p = localPt(ev);
+  trail.push(p); if (trail.length > 400) trail.shift();
+
+  // deviation from current ideal segment (anchor → nextTarget)
+  const a = pts[hitCount - 1];
+  const b = pts[hitCount] || a;
+  if (pts[hitCount]) {
+    devSum += distToSeg(p, a, b); devCount++;
+  }
+
+  // reached next node?
+  const HIT_R = DIM * HIT_R_FR;
+  if (pts[hitCount] && dist(p, pts[hitCount]) <= HIT_R) {
+    hitCount++;
+    if (hitCount >= pts.length) { finish(); return; }
+  }
+  draw();
+}
+
+function onUp(ev) {
+  if (!tracing || done) return;
+  ev.preventDefault();
+  tracing = false;
+  if (hitCount < pts.length) {
+    breaks++;
+    setStatus(`Палец оторван (${breaks}). Коснись последнего узла, чтобы продолжить`, 'bad');
+  }
+  draw();
+}
+
+// ─── FINISH / GRADE ─────────────────────────────────────────────────────────
+function finish() {
+  if (done) return;
+  done = true; tracing = false;
+  draw();
+  const total = pts.length;
+  const compFrac = Math.min(1, hitCount / total);
+  const avgDev = devCount > 0 ? devSum / devCount : DIM; // px
+  const avgDevFr = avgDev / DIM;
+  const accuracy = Math.max(0, Math.min(1, 1 - avgDevFr / TOL_FR));
+  gradeAndSend(compFrac, accuracy, breaks);
+}
+
+// Player ends early (button). Grades whatever progress was made.
+function giveUp() {
+  if (done) return;
+  const el = document.getElementById('give-up');
+  if (el) el.style.display = 'none';
+  finish();
+}
+
+function gradeAndSend(compFrac, accuracy, breaks) {
+  const gu = document.getElementById('give-up'); if (gu) gu.style.display = 'none';
+  const completed = compFrac >= 1;
+  let outcome, level;
+  if (!completed) {
+    if      (compFrac >= 0.80) { outcome = 'Приемлемо'; level = 3; }
+    else if (compFrac >= 0.55) { outcome = 'Неудовл.';  level = 2; }
+    else if (compFrac > 0)     { outcome = 'Плохо';     level = 1; }
+    else                       { outcome = 'Провал';    level = 0; }
+  } else {
+    const q = accuracy - breaks * 0.12;
+    if      (q >= 0.90) { outcome = 'Совершенный росчерк'; level = 6; }
+    else if (q >= 0.74) { outcome = 'Отлично';   level = 5; }
+    else if (q >= 0.55) { outcome = 'Хорошо';    level = 4; }
+    else                { outcome = 'Приемлемо'; level = 3; }
+  }
+
+  const icons = { 6:'✦', 5:'◈', 4:'⬡', 3:'◇', 2:'○', 1:'·', 0:'💀' };
+  document.getElementById('result-icon').textContent = icons[level] || '◈';
+  const badge = document.getElementById('outcome-badge');
+  badge.textContent = outcome; badge.className = `outcome-badge outcome-${level}`;
+  document.getElementById('res-comp').textContent   = Math.round(compFrac * 100) + '%';
+  document.getElementById('res-acc').textContent    = Math.round(accuracy * 100) + '%';
+  document.getElementById('res-breaks').textContent = breaks;
+
+  setStatus(completed ? 'Руна начертана ✦' : 'Начертание прервано', completed ? 'good' : 'bad');
+  setTimeout(() => showScreen('screen-result'), 500);
+
+  const result = {
+    game: 'rune-trace',
+    glyph: GI,
+    difficulty: DIFF,
+    completion: Math.round(compFrac * 1000) / 1000,
+    accuracy: Math.round(accuracy * 1000) / 1000,
+    breaks,
+    outcome, level,
+  };
+  setTimeout(() => sendResultToBot(result), 1200);
+}
+</script>
+</body>
+</html>

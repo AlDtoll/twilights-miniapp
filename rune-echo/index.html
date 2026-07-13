@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Twilights — Эхо рун</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="../shared/styles.css">
+  <style>
+    :root {
+      --bg: #0f0e1a;
+      --text: #e8e0ff;
+      --accent: #a29bfe;
+      --hit: #00b894;
+      --miss: #e74c3c;
+      --cell-bg: #1a1830;
+      --cell-border: rgba(162,155,254,0.25);
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 16px; user-select: none; -webkit-user-select: none;
+    }
+    .screen { display: none; width: 100%; max-width: 380px; flex-direction: column; align-items: center; }
+    .screen.active { display: flex; }
+
+    .game-title {
+      font-size: 1.6rem; font-weight: 800; color: var(--accent);
+      text-align: center; margin-bottom: 6px; text-shadow: 0 0 20px rgba(162,155,254,0.5);
+    }
+    .game-subtitle {
+      font-size: 0.85rem; color: rgba(232,224,255,0.5); text-align: center;
+      letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 20px;
+    }
+    .prompt-box {
+      width: 100%; background: rgba(162,155,254,0.08); border: 1px solid rgba(162,155,254,0.2);
+      border-radius: 14px; padding: 14px 16px; font-size: 0.95rem; line-height: 1.6;
+      color: var(--text); margin-bottom: 18px; text-align: center;
+    }
+    .info-chips { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+    .chip {
+      padding: 6px 14px; background: rgba(162,155,254,0.1); border: 1px solid rgba(162,155,254,0.25);
+      border-radius: 20px; font-size: 0.82rem; color: var(--accent);
+    }
+    .start-btn {
+      width: 100%; padding: 15px; border-radius: 14px; border: none;
+      background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: #fff;
+      font-size: 1.1rem; font-weight: 700; cursor: pointer; letter-spacing: 0.05em;
+      box-shadow: 0 4px 20px rgba(108,92,231,0.4); transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .start-btn:active { transform: scale(0.97); box-shadow: 0 2px 10px rgba(108,92,231,0.3); }
+
+    .status-line {
+      font-size: 1rem; font-weight: 700; margin-bottom: 14px; min-height: 1.4em;
+      text-align: center; letter-spacing: 0.04em; transition: color 0.2s;
+    }
+    .status-line.watch { color: var(--accent); }
+    .status-line.echo  { color: var(--hit); }
+    .status-line.fail  { color: var(--miss); }
+
+    .progress-dots { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; justify-content: center; }
+    .pdot {
+      width: 9px; height: 9px; border-radius: 50%;
+      background: rgba(162,155,254,0.18); border: 1px solid rgba(162,155,254,0.3);
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+    .pdot.done { background: var(--hit); border-color: var(--hit); box-shadow: 0 0 8px rgba(0,184,148,0.6); }
+    .pdot.cur  { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 10px rgba(162,155,254,0.8); }
+
+    .rune-grid { display: grid; gap: 8px; width: 100%; }
+    .rune-cell {
+      aspect-ratio: 1; border-radius: 12px; background: var(--cell-bg);
+      border: 2px solid var(--cell-border); display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem; color: rgba(162,155,254,0.35); cursor: pointer;
+      transition: background 0.12s, border-color 0.12s, box-shadow 0.12s, color 0.12s, transform 0.08s;
+      position: relative;
+    }
+    .rune-cell.locked { pointer-events: none; }
+    .rune-cell:active { transform: scale(0.94); }
+    .rune-cell.flash {
+      background: rgba(162,155,254,0.22); border-color: var(--accent); color: #fff;
+      box-shadow: 0 0 26px rgba(162,155,254,0.85), inset 0 0 16px rgba(162,155,254,0.15);
+    }
+    .rune-cell.tap {
+      background: rgba(0,184,148,0.25); border-color: var(--hit); color: var(--hit);
+      box-shadow: 0 0 16px rgba(0,184,148,0.5);
+    }
+    .rune-cell.wrong {
+      background: rgba(231,76,60,0.22); border-color: var(--miss); color: var(--miss);
+      box-shadow: 0 0 16px rgba(231,76,60,0.5);
+    }
+
+    .result-icon { font-size: 3rem; margin-bottom: 12px; }
+    .outcome-badge { font-size: 1.5rem; font-weight: 800; padding: 10px 28px; border-radius: 30px; margin-bottom: 16px; }
+    .outcome-6 { background: rgba(255,215,0,0.15);   border: 2px solid #ffd700; color: #ffd700; }
+    .outcome-5 { background: rgba(162,155,254,0.18); border: 2px solid var(--accent); color: var(--accent); }
+    .outcome-4 { background: rgba(0,184,148,0.18);   border: 2px solid var(--hit); color: var(--hit); }
+    .outcome-3 { background: rgba(0,184,148,0.08);   border: 2px solid rgba(0,184,148,0.45); color: rgba(0,184,148,0.85); }
+    .outcome-2 { background: rgba(231,150,60,0.12);  border: 2px solid #e7963c; color: #e7963c; }
+    .outcome-1 { background: rgba(231,76,60,0.08);   border: 2px solid rgba(231,76,60,0.45); color: rgba(231,76,60,0.85); }
+    .outcome-0 { background: rgba(231,76,60,0.15);   border: 2px solid var(--miss); color: var(--miss); }
+    .result-stats {
+      width: 100%; background: rgba(255,255,255,0.04); border-radius: 14px;
+      padding: 14px 16px; display: flex; gap: 12px; justify-content: center;
+    }
+    .result-stat { text-align: center; flex: 1; }
+    .result-stat-label { font-size: 0.72rem; color: rgba(232,224,255,0.4); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+    .result-stat-val { font-size: 1.5rem; font-weight: 800; }
+  </style>
+</head>
+<body>
+
+<!-- READY -->
+<div id="screen-ready" class="screen active">
+  <div class="game-title">✦ Эхо рун</div>
+  <div class="game-subtitle">Twilights · Испытание памяти</div>
+  <div id="prompt-box" class="prompt-box" style="display:none"></div>
+  <div class="info-chips">
+    <span class="chip" id="chip-size"></span>
+    <span class="chip" id="chip-target"></span>
+  </div>
+  <div class="prompt-box" style="background:rgba(255,255,255,0.03)">
+    Руны вспыхивают по очереди. Запомни узор и повтори его, касаясь рун в том же порядке.
+    С каждым кругом цепочка длиннее.
+  </div>
+  <button class="start-btn" onclick="startGame()">Начать испытание</button>
+</div>
+
+<!-- GAME -->
+<div id="screen-game" class="screen">
+  <div class="status-line watch" id="status">Смотри…</div>
+  <div class="progress-dots" id="dots"></div>
+  <div class="rune-grid" id="grid"></div>
+</div>
+
+<!-- RESULT -->
+<div id="screen-result" class="screen">
+  <div class="result-icon" id="result-icon">◈</div>
+  <div class="outcome-badge" id="outcome-badge"></div>
+  <div class="result-stats">
+    <div class="result-stat">
+      <div class="result-stat-label">Цепочка</div>
+      <div class="result-stat-val" id="res-reached" style="color:var(--hit)"></div>
+    </div>
+    <div class="result-stat">
+      <div class="result-stat-label">Из</div>
+      <div class="result-stat-val" id="res-target" style="color:rgba(232,224,255,0.5)"></div>
+    </div>
+    <div class="result-stat">
+      <div class="result-stat-label">Точность</div>
+      <div class="result-stat-val" id="res-pct" style="color:var(--accent)"></div>
+    </div>
+  </div>
+</div>
+
+<script src="../shared/core.js"></script>
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────────────
+const N       = Math.min(5, Math.max(3, parseInt(gameData.size)   || 3));
+const TARGET  = Math.min(20, Math.max(3, parseInt(gameData.target) || (N + 3)));
+const FLASH   = Math.max(200, parseInt(gameData.flashSpeed)        || 520);
+const GAP     = Math.max(120, Math.round(FLASH * 0.45));
+const PROMPT  = gameData.prompt || '';
+
+const RGLYPHS = ['◈','◉','⬡','◇','△','⟁','◎','⬢','✦','⧫','⬟','◬','⬖','⬘','⬙','⬗','◆','●','▲','■','⬥','⬦','⬧','⬨','⬩'];
+
+// ─── STATE ────────────────────────────────────────────────────────────────
+let sequence = [];        // full pre-generated sequence of cell indices
+let cellGlyphs = [];      // glyph per cell
+let round = 0;            // current round length being tested
+let inputPos = 0;         // player's position in current echo
+let maxReached = 0;       // longest fully-correct chain
+let busy = false;         // true while flashing (input locked)
+let gameOver = false;
+
+// ─── READY SETUP ──────────────────────────────────────────────────────────
+(function setupReady() {
+  if (PROMPT) { const pb = document.getElementById('prompt-box'); pb.textContent = PROMPT; pb.style.display = 'block'; }
+  document.getElementById('chip-size').textContent   = `${N}×${N} рун`;
+  document.getElementById('chip-target').textContent = `цепочка до ${TARGET}`;
+})();
+
+function setStatus(txt, cls) {
+  const el = document.getElementById('status');
+  el.textContent = txt;
+  el.className = 'status-line ' + (cls || '');
+}
+
+function buildGrid() {
+  const grid = document.getElementById('grid');
+  const totalW = Math.min(380, window.innerWidth - 32);
+  const cellSize = Math.floor((totalW - (N - 1) * 8) / N);
+  grid.style.gridTemplateColumns = `repeat(${N}, ${cellSize}px)`;
+  grid.innerHTML = '';
+  cellGlyphs = [];
+  for (let i = 0; i < N * N; i++) {
+    const g = RGLYPHS[Math.floor(rng() * RGLYPHS.length)];
+    cellGlyphs.push(g);
+    const cell = document.createElement('div');
+    cell.className = 'rune-cell locked';
+    cell.id = `cell-${i}`;
+    cell.textContent = g;
+    cell.style.height = cellSize + 'px';
+    cell.style.fontSize = Math.round(cellSize * 0.42) + 'px';
+    cell.addEventListener('click', () => onTap(i));
+    grid.appendChild(cell);
+  }
+}
+
+function buildDots() {
+  const dots = document.getElementById('dots');
+  dots.innerHTML = '';
+  for (let i = 0; i < round; i++) {
+    const d = document.createElement('div');
+    d.className = 'pdot';
+    d.id = `dot-${i}`;
+    dots.appendChild(d);
+  }
+}
+
+function updateDots() {
+  for (let i = 0; i < round; i++) {
+    const d = document.getElementById(`dot-${i}`);
+    if (!d) continue;
+    d.className = 'pdot' + (i < inputPos ? ' done' : (i === inputPos ? ' cur' : ''));
+  }
+}
+
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function startGame() {
+  buildGrid();
+  showScreen('screen-game');
+  // Pre-generate full sequence (can repeat cells; avoid same twice in a row for readability)
+  const n = N * N;
+  sequence = [];
+  let prev = -1;
+  for (let i = 0; i < TARGET; i++) {
+    let idx;
+    do { idx = Math.floor(rng() * n); } while (idx === prev && n > 1);
+    sequence.push(idx); prev = idx;
+  }
+  round = 1;
+  maxReached = 0;
+  nextRound();
+}
+
+function lockGrid(lock) {
+  document.querySelectorAll('.rune-cell').forEach(c => c.classList.toggle('locked', lock));
+}
+
+async function nextRound() {
+  if (gameOver) return;
+  inputPos = 0;
+  buildDots();
+  updateDots();
+  busy = true;
+  lockGrid(true);
+  setStatus(`Круг ${round} · смотри…`, 'watch');
+  await sleep(500);
+  for (let i = 0; i < round; i++) {
+    if (gameOver) return;
+    await flashCell(sequence[i]);
+    await sleep(GAP);
+  }
+  busy = false;
+  lockGrid(false);
+  setStatus('Повтори узор', 'echo');
+}
+
+async function flashCell(idx) {
+  const cell = document.getElementById(`cell-${idx}`);
+  if (!cell) return;
+  cell.classList.add('flash');
+  await sleep(FLASH);
+  cell.classList.remove('flash');
+}
+
+function onTap(idx) {
+  if (busy || gameOver) return;
+  const cell = document.getElementById(`cell-${idx}`);
+  if (!cell) return;
+
+  const expected = sequence[inputPos];
+  if (idx === expected) {
+    cell.classList.add('tap');
+    setTimeout(() => cell && cell.classList.remove('tap'), 200);
+    inputPos++;
+    updateDots();
+    if (inputPos >= round) {
+      // round cleared
+      maxReached = round;
+      if (round >= TARGET) { endGame(true); return; }
+      busy = true; lockGrid(true);
+      setStatus('Верно! ✦', 'echo');
+      round++;
+      setTimeout(nextRound, 650);
+    }
+  } else {
+    // wrong tap → game over
+    cell.classList.add('wrong');
+    const exp = document.getElementById(`cell-${expected}`);
+    if (exp) { exp.classList.add('flash'); }
+    setStatus('Узор нарушен', 'fail');
+    gameOver = true;
+    lockGrid(true);
+    setTimeout(() => endGame(false), 900);
+  }
+}
+
+function endGame(win) {
+  gameOver = true;
+  const frac = maxReached / TARGET;
+  let outcome, level;
+  if      (win || frac >= 1.0) { outcome = 'Совершенный отклик'; level = 6; }
+  else if (frac >= 0.80)       { outcome = 'Отлично';   level = 5; }
+  else if (frac >= 0.60)       { outcome = 'Хорошо';    level = 4; }
+  else if (frac >= 0.45)       { outcome = 'Приемлемо'; level = 3; }
+  else if (frac >= 0.30)       { outcome = 'Неудовл.';  level = 2; }
+  else if (maxReached > 0)     { outcome = 'Плохо';     level = 1; }
+  else                         { outcome = 'Провал';    level = 0; }
+
+  const icons = { 6:'✦', 5:'◈', 4:'⬡', 3:'◇', 2:'○', 1:'·', 0:'💀' };
+  document.getElementById('result-icon').textContent = icons[level] || '◈';
+  const badge = document.getElementById('outcome-badge');
+  badge.textContent = outcome;
+  badge.className = `outcome-badge outcome-${level}`;
+  document.getElementById('res-reached').textContent = maxReached;
+  document.getElementById('res-target').textContent  = TARGET;
+  document.getElementById('res-pct').textContent     = Math.round(frac * 100) + '%';
+
+  showScreen('screen-result');
+
+  const result = {
+    game: 'rune-echo',
+    size: N,
+    target: TARGET,
+    reached: maxReached,
+    fraction: Math.round(frac * 1000) / 1000,
+    win: !!win,
+    outcome, level,
+  };
+  setTimeout(() => sendResultToBot(result), 800);
+}
+</script>
+</body>
+</html>
