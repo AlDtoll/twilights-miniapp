@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Twilights — Ковка руны</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="../shared/styles.css">
+  <style>
+    :root {
+      --bg: #0f0e1a;
+      --text: #e8e0ff;
+      --accent: #a29bfe;
+      --hit: #00b894;
+      --miss: #e74c3c;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 16px; user-select: none; -webkit-user-select: none;
+    }
+    .screen { display: none; width: 100%; max-width: 380px; flex-direction: column; align-items: center; }
+    .screen.active { display: flex; }
+
+    .game-title {
+      font-size: 1.6rem; font-weight: 800; color: var(--accent);
+      text-align: center; margin-bottom: 6px; text-shadow: 0 0 20px rgba(162,155,254,0.5);
+    }
+    .game-subtitle {
+      font-size: 0.85rem; color: rgba(232,224,255,0.5); text-align: center;
+      letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 20px;
+    }
+    .prompt-box {
+      width: 100%; background: rgba(162,155,254,0.08); border: 1px solid rgba(162,155,254,0.2);
+      border-radius: 14px; padding: 14px 16px; font-size: 0.95rem; line-height: 1.6;
+      color: var(--text); margin-bottom: 18px; text-align: center;
+    }
+    .info-chips { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+    .chip {
+      padding: 6px 14px; background: rgba(162,155,254,0.1); border: 1px solid rgba(162,155,254,0.25);
+      border-radius: 20px; font-size: 0.82rem; color: var(--accent);
+    }
+    .start-btn {
+      width: 100%; padding: 15px; border-radius: 14px; border: none;
+      background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: #fff;
+      font-size: 1.1rem; font-weight: 700; cursor: pointer; letter-spacing: 0.05em;
+      box-shadow: 0 4px 20px rgba(108,92,231,0.4); transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .start-btn:active { transform: scale(0.97); box-shadow: 0 2px 10px rgba(108,92,231,0.3); }
+
+    .status-line {
+      font-size: 0.95rem; font-weight: 700; margin-bottom: 10px; min-height: 1.3em;
+      text-align: center; letter-spacing: 0.03em; color: var(--accent); transition: color 0.15s;
+    }
+    .status-line.good { color: var(--hit); }
+    .status-line.bad  { color: var(--miss); }
+
+    .canvas-wrap {
+      position: relative; border-radius: 16px; overflow: hidden;
+      background: radial-gradient(circle at 50% 30%, #17152b, #0f0e1a 80%);
+      border: 1px solid rgba(162,155,254,0.18); box-shadow: inset 0 0 40px rgba(162,155,254,0.06);
+      touch-action: none;
+    }
+    #forge { display: block; touch-action: none; }
+    .btn-row { display: flex; gap: 10px; width: 100%; margin-top: 14px; }
+    .mini-btn {
+      flex: 1; padding: 12px; border-radius: 12px; border: none; cursor: pointer;
+      font-size: 0.92rem; font-weight: 600; color: var(--text);
+      background: rgba(255,255,255,0.06);
+    }
+    .mini-btn.primary { background: linear-gradient(135deg,#6c5ce7,#a29bfe); color:#fff; font-weight:700; }
+
+    .result-icon { font-size: 3rem; margin-bottom: 12px; }
+    .outcome-badge { font-size: 1.5rem; font-weight: 800; padding: 10px 28px; border-radius: 30px; margin-bottom: 16px; }
+    .outcome-6 { background: rgba(255,215,0,0.15);   border: 2px solid #ffd700; color: #ffd700; }
+    .outcome-5 { background: rgba(162,155,254,0.18); border: 2px solid var(--accent); color: var(--accent); }
+    .outcome-4 { background: rgba(0,184,148,0.18);   border: 2px solid var(--hit); color: var(--hit); }
+    .outcome-3 { background: rgba(0,184,148,0.08);   border: 2px solid rgba(0,184,148,0.45); color: rgba(0,184,148,0.85); }
+    .outcome-2 { background: rgba(231,150,60,0.12);  border: 2px solid #e7963c; color: #e7963c; }
+    .outcome-1 { background: rgba(231,76,60,0.08);   border: 2px solid rgba(231,76,60,0.45); color: rgba(231,76,60,0.85); }
+    .outcome-0 { background: rgba(231,76,60,0.15);   border: 2px solid var(--miss); color: var(--miss); }
+    .result-stats {
+      width: 100%; background: rgba(255,255,255,0.04); border-radius: 14px;
+      padding: 14px 16px; display: flex; gap: 12px; justify-content: center;
+    }
+    .result-stat { text-align: center; flex: 1; }
+    .result-stat-label { font-size: 0.72rem; color: rgba(232,224,255,0.4); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+    .result-stat-val { font-size: 1.5rem; font-weight: 800; }
+  </style>
+</head>
+<body>
+
+<!-- READY -->
+<div id="screen-ready" class="screen active">
+  <div class="game-title">⚒ Ковка руны</div>
+  <div class="game-subtitle">Twilights · Пространство</div>
+  <div id="prompt-box" class="prompt-box" style="display:none"></div>
+  <div class="info-chips">
+    <span class="chip" id="chip-shards"></span>
+    <span class="chip" id="chip-diff"></span>
+  </div>
+  <div class="prompt-box" style="background:rgba(255,255,255,0.03)">
+    Руна разбита на осколки. Перетащи каждый на своё место в контуре сверху — когда осколок ложится верно, он <b>прикипает</b>. Собери руну целиком.
+  </div>
+  <button class="start-btn" onclick="startGame()">Начать ковку</button>
+</div>
+
+<!-- GAME -->
+<div id="screen-game" class="screen">
+  <div class="status-line" id="status">Перетащи осколки в контур</div>
+  <div class="canvas-wrap" id="cwrap"><canvas id="forge"></canvas></div>
+  <div class="btn-row">
+    <button class="mini-btn" onclick="scatterAgain()">Разбросать</button>
+    <button class="mini-btn primary" onclick="finishForge()">Завершить</button>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div id="screen-result" class="screen">
+  <div class="result-icon" id="result-icon">⚒</div>
+  <div class="outcome-badge" id="outcome-badge"></div>
+  <div class="result-stats">
+    <div class="result-stat">
+      <div class="result-stat-label">Осколки</div>
+      <div class="result-stat-val" id="res-shards" style="color:var(--hit)"></div>
+    </div>
+    <div class="result-stat">
+      <div class="result-stat-label">Собрано</div>
+      <div class="result-stat-val" id="res-frac" style="color:var(--accent)"></div>
+    </div>
+  </div>
+</div>
+
+<script src="../shared/core.js"></script>
+<script>
+// ─── RUNE LIBRARY (each shard = list of [r,c] cells in an N×N glyph) ───────────
+const RUNES = [
+  { N: 5, shards: [                          // 0 diamond
+      [[0,2],[1,1],[1,2],[1,3]],
+      [[2,0],[2,1],[3,1]],
+      [[2,3],[2,4],[3,3]],
+      [[2,2],[3,2],[4,2]],
+  ]},
+  { N: 5, shards: [                          // 1 cross
+      [[0,2],[1,2]],
+      [[3,2],[4,2]],
+      [[2,0],[2,1]],
+      [[2,3],[2,4]],
+      [[2,2]],
+  ]},
+  { N: 5, shards: [                          // 2 T-rune
+      [[0,0],[0,1],[0,2]],
+      [[0,3],[0,4]],
+      [[1,2],[2,2],[3,2]],
+  ]},
+];
+const SHARD_COLORS = ['#e74c3c','#00b894','#a29bfe','#f1c40f','#3498db','#e67e22'];
+
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+const DIFF   = Math.min(5, Math.max(3, parseInt(gameData.size) || 3));
+const RI     = (gameData.runeIndex != null && gameData.runeIndex >= 0 && gameData.runeIndex < RUNES.length)
+                 ? gameData.runeIndex : Math.floor(rng() * RUNES.length);
+const RUNE   = RUNES[RI];
+const N      = RUNE.N;
+const PROMPT = gameData.prompt || '';
+const SHOW_OUTLINE = DIFF <= 4;     // на сложном 5 — только рамка, без подсказки-контура
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let cvs, ctx, DIM, CELL, TRAY_Y, H;
+let shards = [];                    // {cells, minr, minc, w, h, x, y, hx, hy, locked, color}
+let drag = null;                    // {idx, dx, dy}
+let done = false, moved = false;
+
+// build shard objects
+RUNE.shards.forEach((cells, i) => {
+  const rs = cells.map(c => c[0]), cs = cells.map(c => c[1]);
+  const minr = Math.min(...rs), minc = Math.min(...cs);
+  shards.push({
+    cells, minr, minc,
+    w: (Math.max(...cs) - minc + 1),
+    h: (Math.max(...rs) - minr + 1),
+    color: SHARD_COLORS[i % SHARD_COLORS.length],
+    x: 0, y: 0, hx: 0, hy: 0, locked: false,
+  });
+});
+const NSHARDS = shards.length;
+
+document.getElementById('chip-shards').textContent = NSHARDS + ' осколков';
+document.getElementById('chip-diff').textContent  = ['','','','лёгкая','средняя','сложная'][DIFF] + ' ковка';
+if (PROMPT) { const pb = document.getElementById('prompt-box'); pb.textContent = PROMPT; pb.style.display = 'block'; }
+
+function setStatus(txt, cls) {
+  const el = document.getElementById('status');
+  el.textContent = txt; el.className = 'status-line ' + (cls || '');
+}
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function startGame() {
+  showScreen('screen-game');
+  DIM = Math.min(340, window.innerWidth - 32);
+  CELL = DIM / N;
+  TRAY_Y = DIM + CELL * 0.4;
+  H = DIM + CELL * 3.0;
+  cvs = document.getElementById('forge');
+  const dpr = window.devicePixelRatio || 1;
+  cvs.width = DIM * dpr; cvs.height = H * dpr;
+  cvs.style.width = DIM + 'px'; cvs.style.height = H + 'px';
+  ctx = cvs.getContext('2d');
+  ctx.scale(dpr, dpr);
+  // home positions
+  shards.forEach(s => { s.hx = s.minc * CELL; s.hy = s.minr * CELL; });
+  scatterAgain();
+  attachPointer();
+}
+
+function scatterAgain() {
+  if (done) return;
+  // spread shards across the tray row, keeping within width
+  let tx = CELL * 0.3;
+  let ty = TRAY_Y;
+  shards.forEach(s => {
+    s.locked = false;
+    const wpx = s.w * CELL;
+    if (tx + wpx > DIM - CELL * 0.3) { tx = CELL * 0.3; ty += CELL * 1.25; }
+    s.x = tx + (rng() - 0.5) * CELL * 0.3;
+    s.y = ty + (rng() - 0.5) * CELL * 0.2;
+    tx += wpx + CELL * 0.5;
+  });
+  setStatus('Перетащи осколки в контур', '');
+  draw();
+}
+
+// ─── POINTER ──────────────────────────────────────────────────────────────────
+function localPt(ev) {
+  const r = cvs.getBoundingClientRect();
+  return [ev.clientX - r.left, ev.clientY - r.top];
+}
+function shardAt(px, py) {
+  for (let i = shards.length - 1; i >= 0; i--) {
+    const s = shards[i]; if (s.locked) continue;
+    for (const [r, c] of s.cells) {
+      const cx = s.x + (c - s.minc) * CELL, cy = s.y + (r - s.minr) * CELL;
+      if (px >= cx && px < cx + CELL && py >= cy && py < cy + CELL) return i;
+    }
+  }
+  return -1;
+}
+function attachPointer() {
+  cvs.addEventListener('pointerdown', onDown);
+  cvs.addEventListener('pointermove', onMove);
+  cvs.addEventListener('pointerup', onUp);
+  cvs.addEventListener('pointercancel', onUp);
+}
+function onDown(ev) {
+  if (done) return;
+  ev.preventDefault();
+  const [px, py] = localPt(ev);
+  const idx = shardAt(px, py);
+  if (idx < 0) return;
+  const s = shards[idx];
+  drag = { idx, dx: px - s.x, dy: py - s.y };
+  // bring to top
+  shards.splice(idx, 1); shards.push(s);
+  drag.idx = shards.length - 1;
+  try { cvs.setPointerCapture(ev.pointerId); } catch (e) {}
+}
+function onMove(ev) {
+  if (done || !drag) return;
+  ev.preventDefault();
+  const [px, py] = localPt(ev);
+  const s = shards[drag.idx];
+  s.x = px - drag.dx; s.y = py - drag.dy; moved = true;
+  draw();
+}
+function onUp(ev) {
+  if (done || !drag) return;
+  ev.preventDefault();
+  const s = shards[drag.idx];
+  // snap if close to home
+  if (Math.hypot(s.x - s.hx, s.y - s.hy) < CELL * 0.55) {
+    s.x = s.hx; s.y = s.hy; s.locked = true;
+    setStatus('Осколок прикипел ✦', 'good');
+  }
+  drag = null;
+  draw();
+  if (shards.every(sh => sh.locked)) finishForge();
+}
+
+// ─── DRAW ─────────────────────────────────────────────────────────────────────
+function draw() {
+  ctx.clearRect(0, 0, DIM, H);
+  // assembly frame
+  ctx.strokeStyle = 'rgba(162,155,254,0.28)'; ctx.lineWidth = 2;
+  ctx.strokeRect(1, 1, DIM - 2, DIM - 2);
+  // target outline (hint)
+  if (SHOW_OUTLINE) {
+    for (const s of shards) {
+      for (const [r, c] of s.cells) {
+        const x = c * CELL, y = r * CELL;
+        ctx.fillStyle = 'rgba(162,155,254,0.09)';
+        ctx.fillRect(x + 2, y + 2, CELL - 4, CELL - 4);
+        ctx.strokeStyle = 'rgba(162,155,254,0.18)'; ctx.lineWidth = 1;
+        ctx.strokeRect(x + 2, y + 2, CELL - 4, CELL - 4);
+      }
+    }
+  }
+  // tray divider
+  ctx.strokeStyle = 'rgba(162,155,254,0.12)'; ctx.setLineDash([5, 6]);
+  ctx.beginPath(); ctx.moveTo(0, DIM); ctx.lineTo(DIM, DIM); ctx.stroke(); ctx.setLineDash([]);
+  // shards
+  for (const s of shards) {
+    for (const [r, c] of s.cells) {
+      const x = s.x + (c - s.minc) * CELL, y = s.y + (r - s.minr) * CELL;
+      ctx.fillStyle = s.color;
+      ctx.globalAlpha = s.locked ? 1 : 0.92;
+      roundRect(x + 2, y + 2, CELL - 4, CELL - 4, 5); ctx.fill();
+      ctx.globalAlpha = 1;
+      if (s.locked) { ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1.5; ctx.stroke(); }
+    }
+  }
+}
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+// ─── FINISH / GRADE ─────────────────────────────────────────────────────────
+function finishForge() {
+  if (done) return;
+  done = true;
+  const placed = shards.filter(s => s.locked).length;
+  const frac = NSHARDS > 0 ? placed / NSHARDS : 0;
+
+  let outcome, level;
+  if      (placed === NSHARDS) { outcome = 'Руна выкована'; level = 6; }
+  else if (frac >= 0.80)       { outcome = 'Отлично';   level = 5; }
+  else if (frac >= 0.60)       { outcome = 'Хорошо';    level = 4; }
+  else if (frac >= 0.40)       { outcome = 'Приемлемо'; level = 3; }
+  else if (frac > 0)           { outcome = 'Неудовл.';  level = 2; }
+  else if (moved)              { outcome = 'Плохо';     level = 1; }
+  else                         { outcome = 'Провал';    level = 0; }
+
+  const icons = { 6:'✦', 5:'⚒', 4:'⬡', 3:'◇', 2:'○', 1:'·', 0:'💀' };
+  document.getElementById('result-icon').textContent = icons[level] || '⚒';
+  const badge = document.getElementById('outcome-badge');
+  badge.textContent = outcome; badge.className = `outcome-badge outcome-${level}`;
+  document.getElementById('res-shards').textContent = placed + '/' + NSHARDS;
+  document.getElementById('res-frac').textContent   = Math.round(frac * 100) + '%';
+
+  setStatus(placed === NSHARDS ? 'Руна выкована ✦' : 'Ковка завершена', placed === NSHARDS ? 'good' : 'bad');
+  draw();
+  setTimeout(() => showScreen('screen-result'), 500);
+
+  const result = {
+    game: 'rune-forge',
+    rune: RI,
+    difficulty: DIFF,
+    shards: NSHARDS,
+    placed,
+    fraction: Math.round(frac * 1000) / 1000,
+    outcome, level,
+  };
+  setTimeout(() => sendResultToBot(result), 1200);
+}
+</script>
+</body>
+</html>
