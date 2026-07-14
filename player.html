@@ -372,6 +372,7 @@ body {
 .roll-delta .rd-label { color: var(--muted); }
 .roll-delta .rd-pos { color: var(--green); font-weight: 600; }
 .roll-delta .rd-neg { color: var(--red); font-weight: 600; }
+.roll-delta .rd-none { color: var(--muted); font-style: italic; }
 .staff-eff-hint { color: var(--red); font-size: 0.68rem; }
 .staff-sub-note { font-size: 0.66rem; color: var(--muted); margin-top: 8px; line-height: 1.4; }
 .faith-card { padding: 10px 0 14px; border-bottom: 1px solid var(--border); }
@@ -1301,7 +1302,9 @@ function renderMight(settlements) {
 }
 
 // Подпись изменения по дворам за последний сезонный ролл (лояльность/религия).
-// delta: {ключ: ±N}. Пусто/нет — ничего не рисуем.
+// delta: {ключ: ±N}. undefined/null → секция не роллилась в этом сезоне, ничего
+// не рисуем. Присутствует (в т.ч. пустой объект) → ролл был; если ненулевых
+// изменений нет — явно пишем «изменений нет», чтобы строка не пропадала.
 function rollDeltaCaption(delta) {
   if (!delta) return "";
   const parts = Object.entries(delta)
@@ -1313,8 +1316,10 @@ function rollDeltaCaption(delta) {
       const sign = pos ? `+${v}` : String(v);
       return `<span class="${cls}">${esc(k)} ${sign} ${arr}</span>`;
     });
-  if (!parts.length) return "";
-  return `<div class="roll-delta"><span class="rd-label">за ролл сезона (двор.):</span> ${parts.join(" · ")}</div>`;
+  const body = parts.length
+    ? parts.join(" · ")
+    : `<span class="rd-none">изменений нет</span>`;
+  return `<div class="roll-delta"><span class="rd-label">за ролл сезона (двор.):</span> ${body}</div>`;
 }
 
 // ── Loyalty ───────────────────────────────────────────────────────────────────
