@@ -219,9 +219,9 @@
     "slots": {
       "base": 2,
       "extra": 0,
-      "used": 0,
+      "used": 1,
       "max_extra": 2,
-      "free": 2
+      "free": 1
     },
     "buildings": [
       {
@@ -237,6 +237,14 @@
         "cost": 2000,
         "status": "🔨 С1 (1 сезон)",
         "maint": 100,
+        "rate": 5,
+        "hands": 0
+      },
+      {
+        "name": "Кузница-филиал",
+        "cost": 5000,
+        "status": "🔨 С3 (1 сезон)",
+        "maint": 250,
         "rate": 5,
         "hands": 0
       }
@@ -756,6 +764,14 @@
           "cost": 2000,
           "status": "🔨 С1 (1 сезон)",
           "maint": 100,
+          "rate": 5,
+          "hands": 0
+        },
+        {
+          "name": "Кузница-филиал",
+          "cost": 5000,
+          "status": "🔨 С3 (1 сезон)",
+          "maint": 250,
           "rate": 5,
           "hands": 0
         }
