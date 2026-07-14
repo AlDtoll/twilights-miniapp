@@ -236,7 +236,7 @@
     "points": {
       "player": {
         "total": 3,
-        "left": 2
+        "left": 1
       },
       "chancellor": {
         "name": "Мьеслав «Каменщик»",
@@ -323,7 +323,7 @@
     "custom": [
       {
         "text": "Заём у внешнего кредитора через канцлера Мьеслава",
-        "done": false,
+        "done": true,
         "tags": [
           "#заём"
         ],
