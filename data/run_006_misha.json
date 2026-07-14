@@ -763,7 +763,8 @@
         "neutral": 21,
         "neutral_pct": 42,
         "mod": 0,
-        "reasons": []
+        "reasons": [],
+        "delta": {}
       },
       "might": {
         "total": 4,
@@ -994,7 +995,8 @@
         "reasons": [
           "+1 стартовая",
           "-2 вера (религия)"
-        ]
+        ],
+        "delta": {}
       },
       "faith": {
         "cults": [

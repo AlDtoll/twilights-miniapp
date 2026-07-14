@@ -654,7 +654,8 @@
         "mod": 1,
         "reasons": [
           "+1 стартовая"
-        ]
+        ],
+        "delta": {}
       },
       "faith": {
         "cults": [
@@ -785,7 +786,8 @@
         "mod": 1,
         "reasons": [
           "+1 стартовая"
-        ]
+        ],
+        "delta": {}
       },
       "faith": {
         "cults": [
@@ -810,7 +812,8 @@
         "neutral": 14,
         "neutral_pct": 56,
         "mod": 0,
-        "reasons": []
+        "reasons": [],
+        "delta": {}
       },
       "might": {
         "total": 3,
@@ -900,7 +903,8 @@
         "mod": 1,
         "reasons": [
           "+1 стартовая"
-        ]
+        ],
+        "delta": {}
       },
       "faith": {
         "cults": [
@@ -924,7 +928,8 @@
         "neutral": 13,
         "neutral_pct": 87,
         "mod": 0,
-        "reasons": []
+        "reasons": [],
+        "delta": {}
       },
       "might": {
         "total": 2,
