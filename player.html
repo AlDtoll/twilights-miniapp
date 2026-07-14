@@ -1301,11 +1301,13 @@ function renderMight(settlements) {
   el.innerHTML = html;
 }
 
-// Подпись изменения по дворам за последний сезонный ролл (лояльность/религия).
-// delta: {ключ: ±N}. undefined/null → секция не роллилась в этом сезоне, ничего
-// не рисуем. Присутствует (в т.ч. пустой объект) → ролл был; если ненулевых
-// изменений нет — явно пишем «изменений нет», чтобы строка не пропадала.
-function rollDeltaCaption(delta) {
+// Подпись изменения по дворам. delta: {ключ: ±N}.
+//   label     — текст перед значениями.
+//   showEmpty  — если true и ненулевых изменений нет, пишем «изменений нет»
+//                (для сезонного ролла: ролл был, но без сдвигов — строка не должна
+//                пропадать). Если false — при пустом/undefined ничего не рисуем
+//                (для движений от действий игрока: нет действий → нет строки).
+function rollDeltaCaption(delta, label = "за ролл сезона (двор.):", showEmpty = true) {
   if (!delta) return "";
   const parts = Object.entries(delta)
     .filter(([, v]) => v !== 0)
@@ -1316,10 +1318,11 @@ function rollDeltaCaption(delta) {
       const sign = pos ? `+${v}` : String(v);
       return `<span class="${cls}">${esc(k)} ${sign} ${arr}</span>`;
     });
+  if (!parts.length && !showEmpty) return "";
   const body = parts.length
     ? parts.join(" · ")
     : `<span class="rd-none">изменений нет</span>`;
-  return `<div class="roll-delta"><span class="rd-label">за ролл сезона (двор.):</span> ${body}</div>`;
+  return `<div class="roll-delta"><span class="rd-label">${esc(label)}</span> ${body}</div>`;
 }
 
 // ── Loyalty ───────────────────────────────────────────────────────────────────
@@ -1372,6 +1375,7 @@ function renderLoyalty(settlements) {
         <span class="ly-nl">НЛ ${nl} (${nlp}%)</span>
       </div>
       ${rollDeltaCaption(ly.delta)}
+      ${rollDeltaCaption(ly.action_delta, "за твои действия (двор.):", false)}
       ${supportersHtml(ly.supporters)}
       ${reasonsHtml ? `<ul class="ly-reasons">${reasonsHtml}</ul>` : ""}
       ${conseq}
