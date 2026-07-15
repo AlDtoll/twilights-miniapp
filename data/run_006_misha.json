@@ -6,7 +6,7 @@
   "user_id": 1700257736,
   "telegram": "@Мишачья",
   "season": "3",
-  "active_phase": "idle",
+  "active_phase": "hearth",
   "finance": {
     "start": 3079,
     "income": [
@@ -658,8 +658,8 @@
     "threshold_pct": 15
   },
   "hearth": {
-    "remaining": null,
-    "total": null
+    "remaining": 1,
+    "total": 1
   },
   "settlements": [
     {
