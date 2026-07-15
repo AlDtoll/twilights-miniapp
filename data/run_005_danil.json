@@ -761,6 +761,7 @@
       "eff_breakdown": {
         "base": 85,
         "loyalty_penalty": 2,
+        "loyalty_bonus": 0,
         "total": 83
       }
     },
@@ -866,6 +867,7 @@
       "eff_breakdown": {
         "base": 85,
         "loyalty_penalty": 2,
+        "loyalty_bonus": 0,
         "total": 83
       }
     },
@@ -977,6 +979,7 @@
       "eff_breakdown": {
         "base": 75,
         "loyalty_penalty": 8,
+        "loyalty_bonus": 0,
         "total": 67
       }
     }

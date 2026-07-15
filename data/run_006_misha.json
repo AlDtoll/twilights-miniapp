@@ -246,7 +246,7 @@
     "points": {
       "player": {
         "total": 5,
-        "left": 2
+        "left": 1
       },
       "chancellor": {
         "name": "Драгош «Голова»",
@@ -330,7 +330,7 @@
       },
       {
         "text": "Крепен «Тесак» пришёл лично: Хельга ждёт Лапса в подземном городе; гномы могут дать заём на «неденежных» условиях (доля/поставки) в обмен на визит",
-        "done": false,
+        "done": true,
         "tags": [],
         "mon": 0
       },
@@ -792,6 +792,7 @@
       "eff_breakdown": {
         "base": 90,
         "loyalty_penalty": 0,
+        "loyalty_bonus": 0,
         "total": 90
       }
     },
@@ -922,6 +923,7 @@
       "eff_breakdown": {
         "base": 90,
         "loyalty_penalty": 12,
+        "loyalty_bonus": 0,
         "total": 78
       }
     },
@@ -1057,6 +1059,7 @@
       "eff_breakdown": {
         "base": 90,
         "loyalty_penalty": 0,
+        "loyalty_bonus": 0,
         "total": 90
       }
     }
