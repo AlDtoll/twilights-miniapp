@@ -6,7 +6,7 @@
   "user_id": 579387502,
   "telegram": "@aldtoll",
   "season": "3",
-  "active_phase": "hearth",
+  "active_phase": "idle",
   "finance": {
     "start": 480,
     "income": [
@@ -377,16 +377,16 @@
     "patronage": "**Тенета** — тёмный культ разлома; дар-наставник «Он» получен в ритуале Тенеты, герой связан с культом.",
     "skills": [
       {
-        "name": "Демонолог (I)",
+        "name": "Демонолог (II)",
         "techniques": [
           {
-            "name": "«Пленение», «ОН-Слово»",
+            "name": "«Пленение», «ОН-Слово», «Контроль»",
             "kind": "приём"
           }
         ],
-        "bank": 12,
-        "ups": 0,
-        "next_threshold": 10
+        "bank": 2,
+        "ups": 1,
+        "next_threshold": 12
       },
       {
         "name": "Древковое оружие (I)",
