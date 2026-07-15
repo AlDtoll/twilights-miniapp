@@ -547,7 +547,7 @@
       {
         "name": "Наблюдательность (0)",
         "techniques": [],
-        "bank": 7,
+        "bank": 8,
         "ups": 0,
         "next_threshold": 10
       }
