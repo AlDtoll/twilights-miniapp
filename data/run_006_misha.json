@@ -533,7 +533,7 @@
             "kind": "приём"
           }
         ],
-        "bank": 4,
+        "bank": 6,
         "ups": 1,
         "next_threshold": 12
       },
@@ -547,7 +547,7 @@
       {
         "name": "Наблюдательность (0)",
         "techniques": [],
-        "bank": 5,
+        "bank": 7,
         "ups": 0,
         "next_threshold": 10
       }
