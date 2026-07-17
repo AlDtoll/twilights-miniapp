@@ -733,9 +733,7 @@
         "neutral_pct": 52,
         "mod": 0,
         "reasons": [],
-        "delta": {
-          "Тенета": 1
-        }
+        "delta": {}
       },
       "might": {
         "total": 3,
