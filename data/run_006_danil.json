@@ -101,6 +101,10 @@
       {
         "label": "Заём Крон Сундук (Троеглаз, 30%/год)",
         "amount": 10000
+      },
+      {
+        "label": "Заём Крон Сундук #2 (Троеглаз, 25%/год)",
+        "amount": 10000
       }
     ],
     "spendings": [
@@ -221,7 +225,7 @@
     },
     "total_income": 34623,
     "total_expenses": 36710,
-    "balance": 2915
+    "balance": 12915
   },
   "buildings": {
     "slots": {
@@ -384,7 +388,7 @@
             "kind": "приём"
           }
         ],
-        "bank": 2,
+        "bank": 4,
         "ups": 1,
         "next_threshold": 12
       },
@@ -398,7 +402,7 @@
       {
         "name": "Путешественник (I)",
         "techniques": [],
-        "bank": 4,
+        "bank": 6,
         "ups": 0,
         "next_threshold": 10
       },
@@ -462,6 +466,13 @@
         "name": "Рукопашный бой (0)",
         "techniques": [],
         "bank": 2,
+        "ups": 0,
+        "next_threshold": 10
+      },
+      {
+        "name": "Экономика (0)",
+        "techniques": [],
+        "bank": 1,
         "ups": 0,
         "next_threshold": 10
       }
