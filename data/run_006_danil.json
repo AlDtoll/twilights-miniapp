@@ -119,6 +119,10 @@
       {
         "label": "Охрана овец Сумерки",
         "amount": 218
+      },
+      {
+        "label": "Покрытие долга Скальинских купцов (арбитраж Т6)",
+        "amount": 600
       }
     ],
     "income_by": {
@@ -225,7 +229,7 @@
     },
     "total_income": 34623,
     "total_expenses": 36710,
-    "balance": 12915
+    "balance": 12315
   },
   "buildings": {
     "slots": {
@@ -416,7 +420,7 @@
       {
         "name": "Лидерство (0)",
         "techniques": [],
-        "bank": 13,
+        "bank": 15,
         "ups": 0,
         "next_threshold": 10
       },
@@ -458,7 +462,7 @@
       {
         "name": "Риторика (0)",
         "techniques": [],
-        "bank": 1,
+        "bank": 6,
         "ups": 0,
         "next_threshold": 10
       },
