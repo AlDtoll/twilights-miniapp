@@ -12,23 +12,6 @@ URL: `https://loreworlds.ru:8443/`
 
 ## Игры
 
-### choice — выбор из вариантов
-
-Игрок видит вопрос и нажимает один из вариантов. Опционально — подсказка появляется после выбора.
-
-```bash
-python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" choice \
-  --prompt "<вопрос>" \
-  --options "<вар1>|<вар2>|<вар3>" \
-  --hints "<hint1>||<hint3>"
-```
-
-- `--hints` — подсказки параллельно вариантам, через `|`. Пустая строка = нет подсказки для этого варианта.
-
-Результат: `{"game":"choice","choice":0,"text":"В лес"}`
-
----
-
 ### blackjack — игра в 21
 
 Игрок набирает очки, стараясь не превысить 21. Навыки героя — модификаторы.
@@ -508,7 +491,7 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" arkanoid \
 открывает «окно» уязвимости 🎯 в одной из колонок — встань под него и жми «Удар». Оружие задаёт урон/скорость
 удара, магия (опц.) — спецэффект (nuke/shield/slow/heal).
 
-Исход как в hex/brawl: снёс HP врага → **Победа**; HP героя в 0 → **Поражение**; истёк таймер, герой жив →
+Исход как в hex: снёс HP врага → **Победа**; HP героя в 0 → **Поражение**; истёк таймер, герой жив →
 **Пересмотр сцены** (не поражение — мастер получает телеметрию и решает развитие).
 
 ```bash
@@ -518,7 +501,7 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" barrage \
   --barrage-time 60
 ```
 
-- `--barrage-hero` — JSON героя (как --brawl-hero): `weapon` (урон/скорость удара), `magic` опц. (спец), `hp`, `emoji`, `name`.
+- `--barrage-hero` — JSON героя (как --hex-hero): `weapon` (урон/скорость удара), `magic` опц. (спец), `hp`, `emoji`, `name`.
 - `--barrage-enemy` — JSON ОДНОГО босса сверху: `type` (shadow/warrior/archer/cadaver/demonologist/beast — задаёт темп ударов и окон), `name`, `hp`.
 - `--barrage-theme` — rift (деф) / manor / cave / road.
 - `--barrage-time` — секунд до scene_revisit (деф 60).
@@ -740,7 +723,7 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "◈ Открой замо
 | Параметр | Что это | Куда идёт |
 |---|---|---|
 | **3-й позиционный** `"<текст>"` | подпись сообщения (над кнопкой в чате) | только в Telegram-сообщение, **в игру НЕ попадает** |
-| **`--prompt "<…>"`** | вопрос/критерий ВНУТРИ игры | в WebApp: compare рисует над раундом, choice — вопрос, sorting/estimate — заголовок |
+| **`--prompt "<…>"`** | вопрос/критерий ВНУТРИ игры | в WebApp: compare рисует над раундом, sorting/estimate — заголовок |
 
 Пример разницы (compare):
 ```bash
@@ -749,11 +732,11 @@ python3 twilights/minigames/send_miniapp.py <chat_id> \
   --prompt "Что дороже для стражника?" \       # ← критерий В ИГРЕ (над раундом)
   --rounds '[{"pairs":[{"left":"Меч","right":"Кошель","answer":"right"}]}]'
 ```
-Если задать только `"<текст>"` без `--prompt` — игра покажет свой дефолт («Что больше?»), а не твой критерий. **Для compare/choice/estimate `--prompt` обязателен.**
+Если задать только `"<текст>"` без `--prompt` — игра покажет свой дефолт («Что больше?»), а не твой критерий. **Для compare/estimate `--prompt` обязателен.**
 
 | Параметр | Игры | Описание |
 |---|---|---|
-| `--prompt` | compare, choice, estimate, sorting… | Вопрос/критерий ВНУТРИ игры (не подпись!) |
+| `--prompt` | compare, estimate, sorting… | Вопрос/критерий ВНУТРИ игры (не подпись!) |
 | `--thresholds` | bj, timing, sequence, match3 | Пороги успеха |
 | `--source-chat` | все | Куда добавить source_chat_id в результат (для мастера) |
 | `--label` | все | Текст кнопки (иначе — автоматический) |
@@ -764,7 +747,7 @@ python3 twilights/minigames/send_miniapp.py <chat_id> \
 - `--caption "<…>"` → подпись сообщения (3-й позиционный send_miniapp);
 - `--prompt "<…>"` → критерий ВНУТРИ игры (send_miniapp `--prompt`).
 
-Если `--caption` не задан — подпись берётся из `--prompt`. Для compare/choice всегда указывай `--prompt`.
+Если `--caption` не задан — подпись берётся из `--prompt`. Для compare/estimate всегда указывай `--prompt`.
 
 ---
 
@@ -798,7 +781,6 @@ python3 twilights/minigames/send_miniapp.py <chat_id> \
 | Оценка и счёт | estimate — больше точек (до 20), меньше showTime |
 | Предвидение, магия | blackjack `foresight-both` или `foresight-suit` |
 | Удача | blackjack без модификаторов, пороги мягче |
-| Харизма, убеждение | choice `--hints` — игрок видит последствия |
 | Организация, порядок | sorting — больше элементов, сложнее критерий |
 | Сравнение и оценка | compare — больше раундов, меньше общее время |
 

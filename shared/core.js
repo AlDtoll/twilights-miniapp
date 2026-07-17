@@ -45,7 +45,7 @@ if (_gameKey && localStorage.getItem(_gameKey)) {
 if (_gameKey) { try { localStorage.setItem(_gameKey, '1'); } catch (e) {} }
 
 /* ---- current game key + subtitle map ---- */
-const game = gameData.game || 'choice';
+const game = gameData.game || 'blackjack';
 const _subtitles = { blackjack: 'Игра в 21', timing: 'Тайминг', compare: 'Сравнение', findall: 'Найди все', memory: 'Пары', oddone: 'Лишний', reaction: 'Реакция', sorting: 'Порядок', estimate: 'Оцени число', card: 'Карточный бой', hex: 'Тактический бой', arkanoid: 'Арканоид', match3fight: 'Бой 3-в-ряд' };
 (function () {
   const el = document.getElementById('subtitle');

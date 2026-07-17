@@ -22,7 +22,7 @@ Page load order (every game page):
 ### /shared/core.js — page-globals visible to game `<script>`
 - `tg` — `window.Telegram.WebApp`; `tg.ready()`, `tg.expand()` called; pinch-zoom blockers installed.
 - `gameData` (object) + `_gameKey` — base64 `?data=` decode; replay-lock screen (`throw 'already_played'`).
-- `game` (string, default `'choice'`), `_subtitles` map, auto-sets `#subtitle` text if present.
+- `game` (string, default `'blackjack'`), `_subtitles` map, auto-sets `#subtitle` text if present.
 - `sendResultToBot(result)` — injects `source_chat_id`, `tg.sendData(JSON)` + `tg.close()`, fallback dump.
 - `makePRNG(seed)` (mulberry32), `rng` (seeded if `gameData.seed`, else `Math.random`), `shuffle(arr)`.
 - `M3_COLORS` — 5-color gem palette (match3 + match3fight base palette).
