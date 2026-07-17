@@ -855,7 +855,7 @@ if (_gameKey && localStorage.getItem(_gameKey)) {
 // Ставим метку сразу при старте — любое обновление страницы покажет экран блокировки
 if (_gameKey) { try { localStorage.setItem(_gameKey, '1'); } catch(e) {} }
 
-const game = gameData.game || 'choice';
+const game = gameData.game || 'blackjack';
 const _subtitles={blackjack:'Игра в 21',timing:'Тайминг',compare:'Сравнение',findall:'Найди все',memory:'Пары',oddone:'Лишний',reaction:'Реакция',sorting:'Порядок',estimate:'Оцени число',card:'Карточный бой',hex:'Тактический бой',arkanoid:'Арканоид'};
 document.getElementById('subtitle').textContent=_subtitles[game]||'Выбор';
 
