@@ -280,10 +280,16 @@
         "count": 15,
         "pct": 15,
         "events": false
+      },
+      {
+        "name": "Айдан «Кот»",
+        "count": 10,
+        "pct": 10,
+        "events": false
       }
     ],
-    "neutral": 85,
-    "neutral_pct": 85,
+    "neutral": 75,
+    "neutral_pct": 75,
     "threshold_pct": 15
   },
   "hearth": {
@@ -375,10 +381,17 @@
             "pct": 30,
             "rel_mod": 0,
             "rel_reasons": []
+          },
+          {
+            "name": "Айдан «Кот»",
+            "count": 10,
+            "pct": 20,
+            "rel_mod": 0,
+            "rel_reasons": []
           }
         ],
-        "neutral": 35,
-        "neutral_pct": 70,
+        "neutral": 25,
+        "neutral_pct": 50,
         "mod": 0,
         "reasons": []
       },
