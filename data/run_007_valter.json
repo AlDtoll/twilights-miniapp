@@ -1,7 +1,7 @@
 {
   "run": "run_007",
   "player": "valter",
-  "char_name": "(персонаж)",
+  "char_name": "Конрад «Оруженосец»",
   "player_name": "Егор",
   "user_id": 445288231,
   "telegram": "@ValterTasadar",
@@ -10,16 +10,26 @@
   "finance": {
     "start": 0,
     "income": [],
-    "expenses": [],
+    "expenses": [
+      {
+        "label": "Содержание Маг-волхва (спутник, 15 × 90)",
+        "amount": 1350
+      }
+    ],
     "receipts": [],
     "spendings": [],
     "income_by": {},
     "expenses_by": {
-      "Общие": []
+      "Общие": [
+        {
+          "label": "Содержание Маг-волхва (спутник, 15 × 90)",
+          "amount": 1350
+        }
+      ]
     },
     "total_income": 0,
-    "total_expenses": 0,
-    "balance": 0
+    "total_expenses": 1350,
+    "balance": -1350
   },
   "buildings": {
     "slots": {
@@ -41,38 +51,121 @@
     "po": []
   },
   "hero": {
-    "name": "(персонаж)",
-    "patronage": "",
-    "skills": [],
-    "features": [],
+    "name": "Конрад «Оруженосец»",
+    "patronage": "Нейтрально-философствующий (без бога)",
+    "skills": [
+      {
+        "name": "Стрелок (пороховое) (I)",
+        "techniques": [],
+        "bank": 0,
+        "ups": 0,
+        "next_threshold": 10
+      },
+      {
+        "name": "Адепт нейтрального круга (I)",
+        "techniques": [],
+        "bank": 0,
+        "ups": 0,
+        "next_threshold": 10
+      },
+      {
+        "name": "Лидерство (I)",
+        "techniques": [
+          {
+            "name": "«Учитель стрелков»",
+            "kind": "приём"
+          }
+        ],
+        "bank": 0,
+        "ups": 0,
+        "next_threshold": 10
+      },
+      {
+        "name": "Инженер (I)",
+        "techniques": [],
+        "bank": 0,
+        "ups": 0,
+        "next_threshold": 10
+      }
+    ],
+    "features": [
+      "Аномальная удача — черта съедена арсеналом (Пример 4 phase0.md — прямое соединение с воинской чертой + Инженером). Механического бонуса отдельно нет; врождённая репутация «везунчика» живёт в нарративе (слух: «пули словно сами обходят его стороной»). Механическая реализация — через переосмысление Адепта (Слово Фортуны)."
+    ],
     "status": {
       "HP": "100%"
     },
-    "retinue": [],
-    "retinue_slots": null,
+    "retinue": [
+      "**Маг-волхв** — человек-компаньон, друг детства Конрада, маг-адепт народного склада (без определённого культа); попутчик и помощник; бонусы: магическая поддержка в бою/приключении; штрафы: не любит закрытых храмов светлых культов; слот 1.0"
+    ],
+    "retinue_slots": {
+      "total": 1.0,
+      "used": 1.0
+    },
     "items": []
   },
   "staff": [
     {
       "category": "Стража (бойцы)",
       "fact": "0",
+      "norm": "7",
+      "status": "⚠️ нет стражи (+1d2 П&О)",
+      "np": "Утёсная гавань"
+    },
+    {
+      "category": "Клерки",
+      "fact": "0",
+      "norm": "2",
+      "status": "⚠️ нет клерков (+1d2 происш.)",
+      "np": "Утёсная гавань"
+    },
+    {
+      "category": "Рабочие руки",
+      "fact": "0",
+      "norm": "10",
+      "status": "✅",
+      "np": "Утёсная гавань"
+    },
+    {
+      "category": "Стража (бойцы)",
+      "fact": "0",
       "norm": "0",
       "status": "—",
-      "np": "(название НП)"
+      "np": "Рудный двор"
     },
     {
       "category": "Клерки",
       "fact": "0",
       "norm": "0",
       "status": "—",
-      "np": "(название НП)"
+      "np": "Рудный двор"
     },
     {
       "category": "Рабочие руки",
       "fact": "0",
       "norm": "0",
       "status": "—",
-      "np": "(название НП)"
+      "np": "Рудный двор"
+    },
+    {
+      "category": "Стража (бойцы)",
+      "fact": "0",
+      "norm": "0",
+      "status": "—",
+      "np": "Мыс Стража"
+    },
+    {
+      "category": "Клерки",
+      "fact": "0",
+      "norm": "0",
+      "status": "—",
+      "np": "Мыс Стража"
+    },
+    {
+      "category": "Рабочие руки",
+      "fact": "0",
+      "norm": "0",
+      "status": "—",
+      "np": "Мыс Стража"
     }
   ],
   "religion": null,
@@ -82,32 +175,160 @@
   },
   "settlements": [
     {
-      "name": "(название НП)",
-      "area": "(название НП)",
-      "population": "0",
+      "name": "Утёсная гавань",
+      "area": "Утёсная гавань",
+      "population": "~500",
       "growth": null,
-      "houses": "0",
+      "houses": "50",
+      "staff": [
+        {
+          "category": "Стража (бойцы)",
+          "fact": "0",
+          "norm": "7",
+          "status": "⚠️ нет стражи (+1d2 П&О)",
+          "np": "Утёсная гавань"
+        },
+        {
+          "category": "Клерки",
+          "fact": "0",
+          "norm": "2",
+          "status": "⚠️ нет клерков (+1d2 происш.)",
+          "np": "Утёсная гавань"
+        },
+        {
+          "category": "Рабочие руки",
+          "fact": "0",
+          "norm": "10",
+          "status": "✅",
+          "np": "Утёсная гавань"
+        }
+      ],
+      "buildings": [],
+      "promysly": [],
+      "income": [],
+      "expenses_np": [],
+      "stash": [],
+      "loyalty": {
+        "Л": 0,
+        "Н": 0,
+        "НЛ": 0,
+        "Тип": "стартовая",
+        "mod": -1,
+        "reasons": [
+          "+1 стартовая",
+          "−1 нехватка стражи (0/7)",
+          "−1 нехватка клерков (0/2)"
+        ]
+      },
+      "faith": null,
+      "might": {
+        "total": 0,
+        "fighters": 0,
+        "base": 0,
+        "loyalty": -1,
+        "defense": 1,
+        "tags": 0,
+        "tag_list": [],
+        "fighters_src": "стража 0",
+        "neutral": false
+      },
+      "eff_breakdown": {
+        "base": 100,
+        "loyalty_penalty": 0,
+        "loyalty_bonus": 0,
+        "total": 100
+      }
+    },
+    {
+      "name": "Рудный двор",
+      "area": "Рудный двор",
+      "population": "~300",
+      "growth": null,
+      "houses": "30",
       "staff": [
         {
           "category": "Стража (бойцы)",
           "fact": "0",
           "norm": "0",
           "status": "—",
-          "np": "(название НП)"
+          "np": "Рудный двор"
         },
         {
           "category": "Клерки",
           "fact": "0",
           "norm": "0",
           "status": "—",
-          "np": "(название НП)"
+          "np": "Рудный двор"
         },
         {
           "category": "Рабочие руки",
           "fact": "0",
           "norm": "0",
           "status": "—",
-          "np": "(название НП)"
+          "np": "Рудный двор"
+        }
+      ],
+      "buildings": [],
+      "promysly": [],
+      "income": [],
+      "expenses_np": [],
+      "stash": [],
+      "loyalty": {
+        "Л": 0,
+        "Н": 0,
+        "НЛ": 0,
+        "Тип": "стартовая",
+        "mod": 1,
+        "reasons": [
+          "+1 стартовая"
+        ]
+      },
+      "faith": null,
+      "might": {
+        "total": 2,
+        "fighters": 0,
+        "base": 0,
+        "loyalty": 1,
+        "defense": 1,
+        "tags": 0,
+        "tag_list": [],
+        "fighters_src": "стража 0",
+        "neutral": false
+      },
+      "eff_breakdown": {
+        "base": 100,
+        "loyalty_penalty": 0,
+        "loyalty_bonus": 0,
+        "total": 100
+      }
+    },
+    {
+      "name": "Мыс Стража",
+      "area": "Мыс Стража",
+      "population": "~200",
+      "growth": null,
+      "houses": "20",
+      "staff": [
+        {
+          "category": "Стража (бойцы)",
+          "fact": "0",
+          "norm": "0",
+          "status": "—",
+          "np": "Мыс Стража"
+        },
+        {
+          "category": "Клерки",
+          "fact": "0",
+          "norm": "0",
+          "status": "—",
+          "np": "Мыс Стража"
+        },
+        {
+          "category": "Рабочие руки",
+          "fact": "0",
+          "norm": "0",
+          "status": "—",
+          "np": "Мыс Стража"
         }
       ],
       "buildings": [],
