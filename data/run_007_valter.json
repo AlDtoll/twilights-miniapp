@@ -272,7 +272,20 @@
       "np": "Мыс Стража"
     }
   ],
-  "religion": null,
+  "religion": {
+    "total_houses": 100,
+    "cults": [
+      {
+        "name": "Кипона",
+        "count": 15,
+        "pct": 15,
+        "events": false
+      }
+    ],
+    "neutral": 85,
+    "neutral_pct": 85,
+    "threshold_pct": 15
+  },
   "hearth": {
     "remaining": null,
     "total": null
@@ -354,7 +367,21 @@
           "−1 нехватка клерков (0/2)"
         ]
       },
-      "faith": null,
+      "faith": {
+        "cults": [
+          {
+            "name": "Кипона",
+            "count": 15,
+            "pct": 30,
+            "rel_mod": 0,
+            "rel_reasons": []
+          }
+        ],
+        "neutral": 35,
+        "neutral_pct": 70,
+        "mod": 0,
+        "reasons": []
+      },
       "might": {
         "total": 1,
         "fighters": 0,
