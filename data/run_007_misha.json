@@ -240,8 +240,8 @@
     "cults": [
       {
         "name": "Айдан «Кот»",
-        "count": 20,
-        "pct": 20,
+        "count": 28,
+        "pct": 28,
         "events": true
       },
       {
@@ -257,8 +257,8 @@
         "events": false
       }
     ],
-    "neutral": 50,
-    "neutral_pct": 50,
+    "neutral": 42,
+    "neutral_pct": 42,
     "threshold_pct": 15
   },
   "hearth": {
@@ -447,11 +447,12 @@
         "Н": 10,
         "НЛ": 2,
         "Тип": "стартовая",
-        "mod": -1,
+        "mod": -2,
         "reasons": [
           "+1 стартовая",
           "−1 нехватка стражи (0/4)",
-          "−1 нехватка клерков (0/1)"
+          "−1 нехватка клерков (0/1)",
+          "-1 вера (религия)"
         ]
       },
       "faith": {
@@ -462,18 +463,27 @@
             "pct": 40,
             "rel_mod": 0,
             "rel_reasons": []
+          },
+          {
+            "name": "Айдан «Кот»",
+            "count": 8,
+            "pct": 27,
+            "rel_mod": 0,
+            "rel_reasons": []
           }
         ],
-        "neutral": 18,
-        "neutral_pct": 60,
-        "mod": 0,
-        "reasons": []
+        "neutral": 10,
+        "neutral_pct": 33,
+        "mod": -1,
+        "reasons": [
+          "−1 религиозный раскол (2 культа ≥25%)"
+        ]
       },
       "might": {
-        "total": 0,
+        "total": -1,
         "fighters": 0,
         "base": 0,
-        "loyalty": -1,
+        "loyalty": -2,
         "defense": 1,
         "tags": 0,
         "tag_list": [],
