@@ -64,180 +64,6 @@
       ]
     },
     {
-      "area": "Гончие Пороги — нейтральная клетка (1, 0)",
-      "file": "gonchie_porogi",
-      "settlements": [
-        {
-          "name": "Гончие Пороги",
-          "population": "~400",
-          "houses": "40",
-          "promysly": [
-            {
-              "name": "—",
-              "tier": "1",
-              "chain": "—",
-              "owner": "местные"
-            }
-          ],
-          "loyalty": {
-            "уклад": "смута",
-            "Тип": "нейтральная",
-            "Л": 16,
-            "Н": 16,
-            "НЛ": 8,
-            "mod": 0,
-            "reasons": []
-          },
-          "faith": {
-            "cults": [
-              {
-                "name": "Культ разума",
-                "count": 19,
-                "pct": 48
-              },
-              {
-                "name": "Кипона",
-                "count": 7,
-                "pct": 18
-              },
-              {
-                "name": "Светлый культ",
-                "count": 2,
-                "pct": 5
-              }
-            ],
-            "neutral": 12,
-            "neutral_pct": 30,
-            "mod": 0,
-            "reasons": []
-          },
-          "might": {
-            "total": 4,
-            "fighters": 6,
-            "base": 1,
-            "loyalty": 2,
-            "defense": 1,
-            "tags": 0,
-            "tag_list": [],
-            "fighters_src": "ополчение ~1.4% от 400",
-            "neutral": true
-          }
-        },
-        {
-          "name": "Гончие Пороги-Верхние",
-          "population": "~150",
-          "houses": "15",
-          "promysly": [
-            {
-              "name": "—",
-              "tier": "1",
-              "chain": "—",
-              "owner": "местные"
-            }
-          ],
-          "loyalty": {
-            "уклад": "смута",
-            "Тип": "нейтральная",
-            "Л": 6,
-            "Н": 6,
-            "НЛ": 3,
-            "mod": 0,
-            "reasons": []
-          },
-          "faith": {
-            "cults": [
-              {
-                "name": "Культ разума",
-                "count": 7,
-                "pct": 47
-              },
-              {
-                "name": "Кипона",
-                "count": 3,
-                "pct": 20
-              },
-              {
-                "name": "Светлый культ",
-                "count": 1,
-                "pct": 7
-              }
-            ],
-            "neutral": 4,
-            "neutral_pct": 27,
-            "mod": 0,
-            "reasons": []
-          },
-          "might": {
-            "total": 3,
-            "fighters": 2,
-            "base": 0,
-            "loyalty": 2,
-            "defense": 1,
-            "tags": 0,
-            "tag_list": [],
-            "fighters_src": "ополчение ~1.4% от 150",
-            "neutral": true
-          }
-        },
-        {
-          "name": "Гончие Пороги-Нижние",
-          "population": "~250",
-          "houses": "25",
-          "promysly": [
-            {
-              "name": "—",
-              "tier": "1",
-              "chain": "—",
-              "owner": "местные"
-            }
-          ],
-          "loyalty": {
-            "уклад": "смута",
-            "Тип": "нейтральная",
-            "Л": 10,
-            "Н": 10,
-            "НЛ": 5,
-            "mod": 0,
-            "reasons": []
-          },
-          "faith": {
-            "cults": [
-              {
-                "name": "Культ разума",
-                "count": 12,
-                "pct": 48
-              },
-              {
-                "name": "Кипона",
-                "count": 4,
-                "pct": 16
-              },
-              {
-                "name": "Светлый культ",
-                "count": 1,
-                "pct": 4
-              }
-            ],
-            "neutral": 8,
-            "neutral_pct": 32,
-            "mod": 0,
-            "reasons": []
-          },
-          "might": {
-            "total": 4,
-            "fighters": 4,
-            "base": 1,
-            "loyalty": 2,
-            "defense": 1,
-            "tags": 0,
-            "tag_list": [],
-            "fighters_src": "ополчение ~1.4% от 250",
-            "neutral": true
-          }
-        }
-      ]
-    },
-    {
       "area": "Гостиный Порт — нейтральная клетка (2, 2)",
       "file": "gostinyy_port",
       "settlements": [
@@ -818,6 +644,180 @@
             "tags": 0,
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 500",
+            "neutral": true
+          }
+        }
+      ]
+    },
+    {
+      "area": "Кремневая Гряда — нейтральная клетка (1, 0)",
+      "file": "kremnevaya_gryada",
+      "settlements": [
+        {
+          "name": "Кремневая Гряда",
+          "population": "~400",
+          "houses": "40",
+          "promysly": [
+            {
+              "name": "Каменотёсное",
+              "tier": "1",
+              "chain": "камень→изделие",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "смута",
+            "Тип": "нейтральная",
+            "Л": 16,
+            "Н": 16,
+            "НЛ": 8,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Бурий",
+                "count": 15,
+                "pct": 38
+              },
+              {
+                "name": "Местный культ",
+                "count": 8,
+                "pct": 20
+              },
+              {
+                "name": "Мизеракль",
+                "count": 5,
+                "pct": 12
+              }
+            ],
+            "neutral": 12,
+            "neutral_pct": 30,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 4,
+            "fighters": 6,
+            "base": 1,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "tag_list": [],
+            "fighters_src": "ополчение ~1.4% от 400",
+            "neutral": true
+          }
+        },
+        {
+          "name": "Кремневая Гряда-Верхняя",
+          "population": "~150",
+          "houses": "15",
+          "promysly": [
+            {
+              "name": "Скотоводство",
+              "tier": "1",
+              "chain": "молоко→масло/сыр",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "смута",
+            "Тип": "нейтральная",
+            "Л": 6,
+            "Н": 6,
+            "НЛ": 3,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Бурий",
+                "count": 6,
+                "pct": 40
+              },
+              {
+                "name": "Местный культ",
+                "count": 3,
+                "pct": 20
+              },
+              {
+                "name": "Мизеракль",
+                "count": 2,
+                "pct": 13
+              }
+            ],
+            "neutral": 4,
+            "neutral_pct": 27,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 3,
+            "fighters": 2,
+            "base": 0,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "tag_list": [],
+            "fighters_src": "ополчение ~1.4% от 150",
+            "neutral": true
+          }
+        },
+        {
+          "name": "Кремневая Гряда-Нижняя",
+          "population": "~250",
+          "houses": "25",
+          "promysly": [
+            {
+              "name": "Охота",
+              "tier": "1",
+              "chain": "охота→кожа→обувь",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "смута",
+            "Тип": "нейтральная",
+            "Л": 10,
+            "Н": 10,
+            "НЛ": 5,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Бурий",
+                "count": 10,
+                "pct": 40
+              },
+              {
+                "name": "Местный культ",
+                "count": 5,
+                "pct": 20
+              },
+              {
+                "name": "Мизеракль",
+                "count": 3,
+                "pct": 12
+              }
+            ],
+            "neutral": 7,
+            "neutral_pct": 28,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 4,
+            "fighters": 4,
+            "base": 1,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "tag_list": [],
+            "fighters_src": "ополчение ~1.4% от 250",
             "neutral": true
           }
         }
@@ -1445,177 +1445,119 @@
       "settlements": [
         {
           "name": "Верёвочный Волок",
-          "population": "~450",
-          "houses": "45",
+          "population": "~1000",
+          "houses": "100",
           "promysly": [
             {
-              "name": "—",
+              "name": "Купеческие пристани",
+              "tier": "2",
+              "chain": "приём/погрузка обозов",
+              "owner": "барон + гильдия"
+            },
+            {
+              "name": "Волочная артель",
               "tier": "1",
-              "chain": "—",
+              "chain": "грузы на волоке",
               "owner": "местные"
             }
           ],
           "loyalty": {
-            "уклад": "смута",
+            "уклад": "под властителем",
             "Тип": "нейтральная",
-            "Л": 18,
-            "Н": 18,
-            "НЛ": 9,
-            "mod": -1,
-            "reasons": [
-              "-1 вера (религия)"
-            ]
+            "Л": 70,
+            "Н": 20,
+            "НЛ": 10,
+            "mod": 0,
+            "reasons": []
           },
           "faith": {
             "cults": [
               {
-                "name": "Тёмный культ",
-                "count": 18,
+                "name": "Айдан «Кот»",
+                "count": 40,
                 "pct": 40
               },
               {
-                "name": "Культ войны",
-                "count": 12,
-                "pct": 27
+                "name": "Кипона",
+                "count": 20,
+                "pct": 20
               },
               {
-                "name": "Лето",
-                "count": 2,
-                "pct": 4
+                "name": "Светлый культ",
+                "count": 10,
+                "pct": 10
               }
             ],
-            "neutral": 13,
-            "neutral_pct": 29,
-            "mod": -1,
-            "reasons": [
-              "−1 религиозный раскол (2 культа ≥25%)"
-            ]
-          },
-          "might": {
-            "total": 3,
-            "fighters": 6,
-            "base": 1,
-            "loyalty": 1,
-            "defense": 1,
-            "tags": 0,
-            "tag_list": [],
-            "fighters_src": "ополчение ~1.4% от 450",
-            "neutral": true
-          }
-        },
-        {
-          "name": "Верёвочный Волок-Пристань",
-          "population": "~300",
-          "houses": "30",
-          "promysly": [
-            {
-              "name": "—",
-              "tier": "1",
-              "chain": "—",
-              "owner": "местные"
-            }
-          ],
-          "loyalty": {
-            "уклад": "смута",
-            "Тип": "нейтральная",
-            "Л": 12,
-            "Н": 12,
-            "НЛ": 6,
-            "mod": -1,
-            "reasons": [
-              "-1 вера (религия)"
-            ]
-          },
-          "faith": {
-            "cults": [
-              {
-                "name": "Тёмный культ",
-                "count": 12,
-                "pct": 40
-              },
-              {
-                "name": "Культ войны",
-                "count": 8,
-                "pct": 27
-              },
-              {
-                "name": "Лето",
-                "count": 1,
-                "pct": 3
-              }
-            ],
-            "neutral": 9,
+            "neutral": 30,
             "neutral_pct": 30,
-            "mod": -1,
-            "reasons": [
-              "−1 религиозный раскол (2 культа ≥25%)"
-            ]
-          },
-          "might": {
-            "total": 3,
-            "fighters": 4,
-            "base": 1,
-            "loyalty": 1,
-            "defense": 1,
-            "tags": 0,
-            "tag_list": [],
-            "fighters_src": "ополчение ~1.4% от 300",
-            "neutral": true
-          }
-        },
-        {
-          "name": "Верёвочный Волок-Волок",
-          "population": "~50",
-          "houses": "5",
-          "promysly": [
-            {
-              "name": "—",
-              "tier": "1",
-              "chain": "—",
-              "owner": "местные"
-            }
-          ],
-          "loyalty": {
-            "уклад": "смута",
-            "Тип": "нейтральная",
-            "Л": 2,
-            "Н": 2,
-            "НЛ": 1,
-            "mod": 0,
-            "reasons": []
-          },
-          "faith": {
-            "cults": [
-              {
-                "name": "Тёмный культ",
-                "count": 2,
-                "pct": 40
-              },
-              {
-                "name": "Культ войны",
-                "count": 1,
-                "pct": 20
-              },
-              {
-                "name": "Лето",
-                "count": 1,
-                "pct": 20
-              }
-            ],
-            "neutral": 1,
-            "neutral_pct": 20,
             "mod": 0,
             "reasons": []
           },
           "might": {
-            "total": 3,
-            "fighters": 1,
-            "base": 0,
+            "total": 6,
+            "fighters": 14,
+            "base": 3,
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
-            "fighters_src": "ополчение ~1.4% от 50",
+            "fighters_src": "ополчение ~1.4% от 1000",
+            "neutral": true
+          }
+        },
+        {
+          "name": "Малые Пристани",
+          "population": "~500",
+          "houses": "50",
+          "promysly": [
+            {
+              "name": "Рыбная ловля",
+              "tier": "1",
+              "chain": "рыба→засол→припасы",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "под властителем",
+            "Тип": "нейтральная",
+            "Л": 35,
+            "Н": 10,
+            "НЛ": 5,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Айдан «Кот»",
+                "count": 20,
+                "pct": 40
+              },
+              {
+                "name": "Кипона",
+                "count": 10,
+                "pct": 20
+              },
+              {
+                "name": "Светлый культ",
+                "count": 5,
+                "pct": 10
+              }
+            ],
+            "neutral": 15,
+            "neutral_pct": 30,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 4,
+            "fighters": 7,
+            "base": 1,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "tag_list": [],
+            "fighters_src": "ополчение ~1.4% от 500",
             "neutral": true
           }
         }
