@@ -9,17 +9,45 @@
   "active_phase": null,
   "finance": {
     "start": 0,
-    "income": [],
+    "income": [
+      {
+        "label": "Налог (63 × 5 × 90 × 100%)",
+        "amount": 28350
+      },
+      {
+        "label": "Лавки (0 × 3 × 90 × 100%)",
+        "amount": 0
+      },
+      {
+        "label": "Торговцы (0 × 6 × 90 × 100%)",
+        "amount": 0
+      }
+    ],
     "expenses": [],
     "receipts": [],
     "spendings": [],
-    "income_by": {},
+    "income_by": {
+      "Былицы": [
+        {
+          "label": "Налог (63 × 5 × 90 × 100%)",
+          "amount": 28350
+        },
+        {
+          "label": "Лавки (0 × 3 × 90 × 100%)",
+          "amount": 0
+        },
+        {
+          "label": "Торговцы (0 × 6 × 90 × 100%)",
+          "amount": 0
+        }
+      ]
+    },
     "expenses_by": {
       "Общие": []
     },
-    "total_income": 0,
+    "total_income": 28350,
     "total_expenses": 0,
-    "balance": 0
+    "balance": 28350
   },
   "buildings": {
     "slots": {
@@ -203,7 +231,20 @@
       ],
       "buildings": [],
       "promysly": [],
-      "income": [],
+      "income": [
+        {
+          "label": "Налог (63 × 5 × 90 × 100%)",
+          "amount": 28350
+        },
+        {
+          "label": "Лавки (0 × 3 × 90 × 100%)",
+          "amount": 0
+        },
+        {
+          "label": "Торговцы (0 × 6 × 90 × 100%)",
+          "amount": 0
+        }
+      ],
       "expenses_np": [],
       "stash": [],
       "loyalty": {
