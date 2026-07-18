@@ -941,10 +941,8 @@
             "Л": 48,
             "Н": 16,
             "НЛ": 16,
-            "mod": -1,
-            "reasons": [
-              "-1 вера (религия)"
-            ]
+            "mod": 0,
+            "reasons": []
           },
           "faith": {
             "cults": [
@@ -954,28 +952,26 @@
                 "pct": 50
               },
               {
-                "name": "Херец",
-                "count": 20,
-                "pct": 25
-              },
-              {
                 "name": "Тенета",
                 "count": 10,
                 "pct": 12
+              },
+              {
+                "name": "Херец",
+                "count": 5,
+                "pct": 6
               }
             ],
-            "neutral": 10,
-            "neutral_pct": 12,
-            "mod": -1,
-            "reasons": [
-              "−1 религиозный раскол (2 культа ≥25%)"
-            ]
+            "neutral": 25,
+            "neutral_pct": 31,
+            "mod": 0,
+            "reasons": []
           },
           "might": {
-            "total": 5,
+            "total": 6,
             "fighters": 11,
             "base": 2,
-            "loyalty": 1,
+            "loyalty": 2,
             "defense": 1,
             "tags": 1,
             "tag_list": [
