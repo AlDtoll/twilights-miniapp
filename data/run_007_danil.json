@@ -63,6 +63,10 @@
       {
         "label": "Клерки (1 × 20 × 90)",
         "amount": 1800
+      },
+      {
+        "label": "Стража (2 × 20 × 90)",
+        "amount": 3600
       }
     ],
     "receipts": [],
@@ -132,11 +136,17 @@
           "label": "Клерки (1 × 20 × 90)",
           "amount": 1800
         }
+      ],
+      "Каменка": [
+        {
+          "label": "Стража (2 × 20 × 90)",
+          "amount": 3600
+        }
       ]
     },
     "total_income": 33314,
-    "total_expenses": 32400,
-    "balance": 8914
+    "total_expenses": 36000,
+    "balance": 5314
   },
   "buildings": {
     "slots": {
@@ -297,9 +307,9 @@
     },
     {
       "category": "Стража (бойцы)",
-      "fact": "0",
+      "fact": "2",
       "norm": "2",
-      "status": "⚠️ нет стражи (+1d2 П&О)",
+      "status": "✅",
       "np": "Каменка"
     },
     {
@@ -598,9 +608,9 @@
       "staff": [
         {
           "category": "Стража (бойцы)",
-          "fact": "0",
+          "fact": "2",
           "norm": "2",
-          "status": "⚠️ нет стражи (+1d2 П&О)",
+          "status": "✅",
           "np": "Каменка"
         },
         {
@@ -650,17 +660,21 @@
           "amount": 0
         }
       ],
-      "expenses_np": [],
+      "expenses_np": [
+        {
+          "label": "Стража (2 × 20 × 90)",
+          "amount": 3600
+        }
+      ],
       "stash": [],
       "loyalty": {
         "Л": 4,
         "Н": 8,
         "НЛ": 3,
         "Тип": "стартовая",
-        "mod": -1,
+        "mod": 0,
         "reasons": [
           "+1 стартовая",
-          "−1 нехватка стражи (0/2)",
           "−1 нехватка клерков (0/1)"
         ],
         "delta": {
@@ -687,14 +701,14 @@
         "delta": {}
       },
       "might": {
-        "total": 0,
-        "fighters": 0,
+        "total": 1,
+        "fighters": 2,
         "base": 0,
-        "loyalty": -1,
+        "loyalty": 0,
         "defense": 1,
         "tags": 0,
         "tag_list": [],
-        "fighters_src": "стража 0",
+        "fighters_src": "стража 2",
         "neutral": false
       },
       "eff_breakdown": {
