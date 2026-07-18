@@ -120,6 +120,80 @@
       ]
     },
     {
+      "area": "Гостиный Порт — нейтральная клетка (2, 2)",
+      "file": "gostinyy_port",
+      "settlements": [
+        {
+          "name": "Гостиный Порт",
+          "population": "~2000",
+          "houses": "200",
+          "promysly": [
+            {
+              "name": "Рыбная ловля",
+              "tier": "1",
+              "chain": "рыба→засол→припасы",
+              "owner": "местные"
+            },
+            {
+              "name": "Кузня",
+              "tier": "1",
+              "chain": "руда→железо→изделие",
+              "owner": "местные"
+            },
+            {
+              "name": "Кожевня",
+              "tier": "2",
+              "chain": "кожа→обувь/упряжь",
+              "owner": "купеческая гильдия"
+            }
+          ],
+          "loyalty": {
+            "уклад": "смута",
+            "Тип": "нейтральная",
+            "Л": 80,
+            "Н": 80,
+            "НЛ": 40,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Кипона",
+                "count": 60,
+                "pct": 30
+              },
+              {
+                "name": "Айдан «Кот»",
+                "count": 40,
+                "pct": 20
+              },
+              {
+                "name": "Мизеракль",
+                "count": 15,
+                "pct": 8
+              }
+            ],
+            "neutral": 85,
+            "neutral_pct": 42,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 9,
+            "fighters": 28,
+            "base": 6,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "tag_list": [],
+            "fighters_src": "ополчение ~1.4% от 2000",
+            "neutral": true
+          }
+        }
+      ]
+    },
+    {
       "area": "Кабанья Тропа — нейтральная клетка (1, 2)",
       "file": "kabanya_tropa",
       "settlements": [
@@ -565,58 +639,6 @@
       ]
     },
     {
-      "area": "Северо-Западные Предгорья — нейтральная клетка (2, 2) #предгорье",
-      "file": "severo_zapadnyye_predgorya",
-      "settlements": [
-        {
-          "name": "Северо-Западные Предгорья",
-          "population": "~300",
-          "houses": "30",
-          "promysly": [
-            {
-              "name": "Охота",
-              "tier": "1",
-              "chain": "охота→кожа→обувь",
-              "owner": "местные"
-            }
-          ],
-          "loyalty": {
-            "уклад": "глушь",
-            "Тип": "нейтральная",
-            "Л": 6,
-            "Н": 21,
-            "НЛ": 3,
-            "mod": 0,
-            "reasons": []
-          },
-          "faith": {
-            "cults": [
-              {
-                "name": "Кипона",
-                "count": 7,
-                "pct": 23
-              }
-            ],
-            "neutral": 23,
-            "neutral_pct": 77,
-            "mod": 0,
-            "reasons": []
-          },
-          "might": {
-            "total": 4,
-            "fighters": 4,
-            "base": 1,
-            "loyalty": 2,
-            "defense": 1,
-            "tags": 0,
-            "tag_list": [],
-            "fighters_src": "ополчение ~1.4% от 300",
-            "neutral": true
-          }
-        }
-      ]
-    },
-    {
       "area": "Соляной Тракт — нейтральная клетка (1, -1) #предгорье",
       "file": "solyanoy_trakt",
       "settlements": [
@@ -949,58 +971,6 @@
       ]
     },
     {
-      "area": "Юго-Восточное Прибрежье — нейтральная клетка (4, 0) #предгорье",
-      "file": "yugo_vostochnoye_priberezhye",
-      "settlements": [
-        {
-          "name": "Юго-Восточное Прибрежье",
-          "population": "~300",
-          "houses": "30",
-          "promysly": [
-            {
-              "name": "Охота",
-              "tier": "1",
-              "chain": "охота→кожа→обувь",
-              "owner": "местные"
-            }
-          ],
-          "loyalty": {
-            "уклад": "глушь",
-            "Тип": "нейтральная",
-            "Л": 6,
-            "Н": 21,
-            "НЛ": 3,
-            "mod": 0,
-            "reasons": []
-          },
-          "faith": {
-            "cults": [
-              {
-                "name": "Кипона",
-                "count": 7,
-                "pct": 23
-              }
-            ],
-            "neutral": 23,
-            "neutral_pct": 77,
-            "mod": 0,
-            "reasons": []
-          },
-          "might": {
-            "total": 4,
-            "fighters": 4,
-            "base": 1,
-            "loyalty": 2,
-            "defense": 1,
-            "tags": 0,
-            "tag_list": [],
-            "fighters_src": "ополчение ~1.4% от 300",
-            "neutral": true
-          }
-        }
-      ]
-    },
-    {
       "area": "Юго-Западные Предгорья — нейтральная клетка (2, 0) #предгорье",
       "file": "yugo_zapadnyye_predgorya",
       "settlements": [
@@ -1105,11 +1075,11 @@
       ]
     },
     {
-      "area": "Западная Долина — нейтральная клетка (2, 1)",
-      "file": "zapadnaya_dolina",
+      "area": "Западные Предгорья — нейтральная клетка (2, 1)",
+      "file": "zapadnye_predgorya",
       "settlements": [
         {
-          "name": "Западная Долина",
+          "name": "Западные Предгорья",
           "population": "~300",
           "houses": "30",
           "promysly": [
@@ -1132,7 +1102,7 @@
           "faith": {
             "cults": [
               {
-                "name": "Кипона",
+                "name": "Бурий",
                 "count": 8,
                 "pct": 27
               }
