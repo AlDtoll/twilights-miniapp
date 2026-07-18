@@ -245,20 +245,20 @@
         "events": true
       },
       {
+        "name": "Бурий",
+        "count": 20,
+        "pct": 20,
+        "events": true
+      },
+      {
         "name": "Кипона",
         "count": 10,
         "pct": 10,
         "events": false
-      },
-      {
-        "name": "Бурий",
-        "count": 8,
-        "pct": 8,
-        "events": false
       }
     ],
-    "neutral": 62,
-    "neutral_pct": 62,
+    "neutral": 50,
+    "neutral_pct": 50,
     "threshold_pct": 15
   },
   "hearth": {
@@ -454,7 +454,21 @@
           "−1 нехватка клерков (0/1)"
         ]
       },
-      "faith": null,
+      "faith": {
+        "cults": [
+          {
+            "name": "Бурий",
+            "count": 12,
+            "pct": 40,
+            "rel_mod": 0,
+            "rel_reasons": []
+          }
+        ],
+        "neutral": 18,
+        "neutral_pct": 60,
+        "mod": 0,
+        "reasons": []
+      },
       "might": {
         "total": 0,
         "fighters": 0,
