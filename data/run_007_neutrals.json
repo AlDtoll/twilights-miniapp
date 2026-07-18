@@ -565,6 +565,58 @@
       ]
     },
     {
+      "area": "Северо-Западные Предгорья — нейтральная клетка (2, 2) #предгорье",
+      "file": "severo_zapadnyye_predgorya",
+      "settlements": [
+        {
+          "name": "Северо-Западные Предгорья",
+          "population": "~300",
+          "houses": "30",
+          "promysly": [
+            {
+              "name": "Охота",
+              "tier": "1",
+              "chain": "охота→кожа→обувь",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "глушь",
+            "Тип": "нейтральная",
+            "Л": 6,
+            "Н": 21,
+            "НЛ": 3,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Кипона",
+                "count": 7,
+                "pct": 23
+              }
+            ],
+            "neutral": 23,
+            "neutral_pct": 77,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 4,
+            "fighters": 4,
+            "base": 1,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "tag_list": [],
+            "fighters_src": "ополчение ~1.4% от 300",
+            "neutral": true
+          }
+        }
+      ]
+    },
+    {
       "area": "Соляной Тракт — нейтральная клетка (1, -1) #предгорье",
       "file": "solyanoy_trakt",
       "settlements": [
@@ -891,6 +943,162 @@
             "tags": 0,
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 1200",
+            "neutral": true
+          }
+        }
+      ]
+    },
+    {
+      "area": "Юго-Восточное Прибрежье — нейтральная клетка (4, 0) #предгорье",
+      "file": "yugo_vostochnoye_priberezhye",
+      "settlements": [
+        {
+          "name": "Юго-Восточное Прибрежье",
+          "population": "~300",
+          "houses": "30",
+          "promysly": [
+            {
+              "name": "Охота",
+              "tier": "1",
+              "chain": "охота→кожа→обувь",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "глушь",
+            "Тип": "нейтральная",
+            "Л": 6,
+            "Н": 21,
+            "НЛ": 3,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Кипона",
+                "count": 7,
+                "pct": 23
+              }
+            ],
+            "neutral": 23,
+            "neutral_pct": 77,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 4,
+            "fighters": 4,
+            "base": 1,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "tag_list": [],
+            "fighters_src": "ополчение ~1.4% от 300",
+            "neutral": true
+          }
+        }
+      ]
+    },
+    {
+      "area": "Юго-Западные Предгорья — нейтральная клетка (2, 0) #предгорье",
+      "file": "yugo_zapadnyye_predgorya",
+      "settlements": [
+        {
+          "name": "Юго-Западные Предгорья",
+          "population": "~300",
+          "houses": "30",
+          "promysly": [
+            {
+              "name": "Охота",
+              "tier": "1",
+              "chain": "охота→кожа→обувь",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "глушь",
+            "Тип": "нейтральная",
+            "Л": 6,
+            "Н": 21,
+            "НЛ": 3,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Бурий",
+                "count": 7,
+                "pct": 23
+              }
+            ],
+            "neutral": 23,
+            "neutral_pct": 77,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 4,
+            "fighters": 4,
+            "base": 1,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "tag_list": [],
+            "fighters_src": "ополчение ~1.4% от 300",
+            "neutral": true
+          }
+        }
+      ]
+    },
+    {
+      "area": "Южные Предгорья — нейтральная клетка (3, 0) #предгорье",
+      "file": "yuzhnyye_predgorya",
+      "settlements": [
+        {
+          "name": "Южные Предгорья",
+          "population": "~400",
+          "houses": "40",
+          "promysly": [
+            {
+              "name": "Охота",
+              "tier": "1",
+              "chain": "охота→кожа→обувь",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "глушь",
+            "Тип": "нейтральная",
+            "Л": 8,
+            "Н": 28,
+            "НЛ": 4,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Бурий",
+                "count": 10,
+                "pct": 25
+              }
+            ],
+            "neutral": 30,
+            "neutral_pct": 75,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 4,
+            "fighters": 6,
+            "base": 1,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "tag_list": [],
+            "fighters_src": "ополчение ~1.4% от 400",
             "neutral": true
           }
         }
