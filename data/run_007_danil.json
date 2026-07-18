@@ -499,10 +499,34 @@
         "count": 60,
         "pct": 55,
         "events": true
+      },
+      {
+        "name": "Бурий",
+        "count": 8,
+        "pct": 7,
+        "events": false
+      },
+      {
+        "name": "Айдан «Кот»",
+        "count": 6,
+        "pct": 5,
+        "events": false
+      },
+      {
+        "name": "Мизеракль",
+        "count": 5,
+        "pct": 5,
+        "events": false
+      },
+      {
+        "name": "Херец",
+        "count": 3,
+        "pct": 3,
+        "events": false
       }
     ],
-    "neutral": 50,
-    "neutral_pct": 45,
+    "neutral": 28,
+    "neutral_pct": 25,
     "threshold_pct": 15
   },
   "hearth": {
@@ -605,10 +629,24 @@
             "rel_reasons": [
               "+1 герой культа Культ войны"
             ]
+          },
+          {
+            "name": "Айдан «Кот»",
+            "count": 4,
+            "pct": 6,
+            "rel_mod": 0,
+            "rel_reasons": []
+          },
+          {
+            "name": "Херец",
+            "count": 3,
+            "pct": 4,
+            "rel_mod": 0,
+            "rel_reasons": []
           }
         ],
-        "neutral": 29,
-        "neutral_pct": 41,
+        "neutral": 22,
+        "neutral_pct": 31,
         "mod": 1,
         "reasons": [
           "+1 Культ войны преобладает (59%), герой-единоверец"
@@ -728,10 +766,24 @@
             "rel_reasons": [
               "+1 герой культа Культ войны"
             ]
+          },
+          {
+            "name": "Мизеракль",
+            "count": 5,
+            "pct": 20,
+            "rel_mod": 0,
+            "rel_reasons": []
+          },
+          {
+            "name": "Бурий",
+            "count": 3,
+            "pct": 12,
+            "rel_mod": 0,
+            "rel_reasons": []
           }
         ],
-        "neutral": 9,
-        "neutral_pct": 36,
+        "neutral": 1,
+        "neutral_pct": 4,
         "mod": 1,
         "reasons": [
           "+1 Культ войны преобладает (64%), герой-единоверец"
@@ -852,6 +904,13 @@
       "faith": {
         "cults": [
           {
+            "name": "Бурий",
+            "count": 5,
+            "pct": 33,
+            "rel_mod": 0,
+            "rel_reasons": []
+          },
+          {
             "name": "Культ войны",
             "count": 3,
             "pct": 20,
@@ -859,10 +918,17 @@
             "rel_reasons": [
               "+1 герой культа Культ войны"
             ]
+          },
+          {
+            "name": "Айдан «Кот»",
+            "count": 2,
+            "pct": 13,
+            "rel_mod": 0,
+            "rel_reasons": []
           }
         ],
-        "neutral": 12,
-        "neutral_pct": 80,
+        "neutral": 5,
+        "neutral_pct": 33,
         "mod": 0,
         "reasons": [],
         "delta": {}
