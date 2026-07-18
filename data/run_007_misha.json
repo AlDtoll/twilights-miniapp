@@ -87,21 +87,45 @@
   },
   "buildings": {
     "slots": {
-      "base": 0,
+      "base": 2,
       "extra": 0,
-      "used": 0,
-      "max_extra": 0,
-      "free": 0
+      "used": 1,
+      "max_extra": 2,
+      "free": 1
     },
-    "buildings": []
+    "buildings": [
+      {
+        "name": "Дом",
+        "cost": 5000,
+        "status": "🔨 С1 (1 сезон)",
+        "maint": 50,
+        "rate": 5,
+        "hands": 0
+      }
+    ]
   },
   "events": {
-    "points": {},
+    "points": {
+      "player": {
+        "total": 0,
+        "left": 0
+      },
+      "chancellor": {
+        "name": "—",
+        "total": 0,
+        "left": 0
+      },
+      "captain": {
+        "name": "—",
+        "total": 0,
+        "left": 0
+      }
+    },
     "incidents": [],
     "visitors": [],
     "assignments": [],
     "custom": [],
-    "po_title": "Преступления и опасности (капитан — П&О)",
+    "po_title": "Преступления и опасности (— — П&О)",
     "po": []
   },
   "hero": {
@@ -246,8 +270,24 @@
           "np": "Чистозерье"
         }
       ],
-      "buildings": [],
-      "promysly": [],
+      "buildings": [
+        {
+          "name": "Дом",
+          "cost": 5000,
+          "status": "🔨 С1 (1 сезон)",
+          "maint": 50,
+          "rate": 5,
+          "hands": 0
+        }
+      ],
+      "promysly": [
+        {
+          "name": "Рыбная ловля",
+          "tier": "1",
+          "chain": "рыба→засол→припасы",
+          "owner": "NPC"
+        }
+      ],
       "income": [
         {
           "label": "Налог (63 × 5 × 90 × 100%)",
@@ -265,9 +305,9 @@
       "expenses_np": [],
       "stash": [],
       "loyalty": {
-        "Л": 0,
-        "Н": 0,
-        "НЛ": 0,
+        "Л": 45,
+        "Н": 20,
+        "НЛ": 5,
         "Тип": "стартовая",
         "mod": -1,
         "reasons": [
@@ -325,7 +365,14 @@
         }
       ],
       "buildings": [],
-      "promysly": [],
+      "promysly": [
+        {
+          "name": "Охота",
+          "tier": "1",
+          "chain": "охота→кожа→обувь",
+          "owner": "NPC"
+        }
+      ],
       "income": [
         {
           "label": "Налог (27 × 5 × 90 × 100%)",
@@ -343,9 +390,9 @@
       "expenses_np": [],
       "stash": [],
       "loyalty": {
-        "Л": 0,
-        "Н": 0,
-        "НЛ": 0,
+        "Л": 18,
+        "Н": 10,
+        "НЛ": 2,
         "Тип": "стартовая",
         "mod": -1,
         "reasons": [
