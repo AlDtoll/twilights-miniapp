@@ -47,7 +47,12 @@
         "amount": 0
       }
     ],
-    "expenses": [],
+    "expenses": [
+      {
+        "label": "Стража (10 × 20 × 90)",
+        "amount": 18000
+      }
+    ],
     "receipts": [],
     "spendings": [],
     "income_by": {
@@ -95,11 +100,17 @@
       ]
     },
     "expenses_by": {
-      "Общие": []
+      "Общие": [],
+      "Былицы": [
+        {
+          "label": "Стража (10 × 20 × 90)",
+          "amount": 18000
+        }
+      ]
     },
     "total_income": 33314,
-    "total_expenses": 0,
-    "balance": 41314
+    "total_expenses": 18000,
+    "balance": 23314
   },
   "buildings": {
     "slots": {
@@ -127,12 +138,12 @@
         "left": 0
       },
       "chancellor": {
-        "name": "—",
+        "name": "Мокей «Прямой»",
         "total": 0,
         "left": 0
       },
       "captain": {
-        "name": "—",
+        "name": "Сотник Драча",
         "total": 0,
         "left": 0
       }
@@ -218,9 +229,9 @@
   "staff": [
     {
       "category": "Стража (бойцы)",
-      "fact": "0",
+      "fact": "10",
       "norm": "10",
-      "status": "⚠️ нет стражи (+1d2 П&О)",
+      "status": "✅",
       "np": "Былицы"
     },
     {
@@ -308,9 +319,9 @@
       "staff": [
         {
           "category": "Стража (бойцы)",
-          "fact": "0",
+          "fact": "10",
           "norm": "10",
-          "status": "⚠️ нет стражи (+1d2 П&О)",
+          "status": "✅",
           "np": "Былицы"
         },
         {
@@ -357,17 +368,21 @@
           "amount": 383
         }
       ],
-      "expenses_np": [],
+      "expenses_np": [
+        {
+          "label": "Стража (10 × 20 × 90)",
+          "amount": 18000
+        }
+      ],
       "stash": [],
       "loyalty": {
         "Л": 33,
         "Н": 28,
         "НЛ": 9,
         "Тип": "стартовая",
-        "mod": 0,
+        "mod": 1,
         "reasons": [
           "+1 стартовая",
-          "−1 нехватка стражи (0/10)",
           "−1 нехватка клерков (0/3)",
           "+1 вера (религия)"
         ],
@@ -400,10 +415,10 @@
         }
       },
       "might": {
-        "total": 2,
-        "fighters": 0,
-        "base": 0,
-        "loyalty": 0,
+        "total": 5,
+        "fighters": 10,
+        "base": 2,
+        "loyalty": 1,
         "defense": 1,
         "tags": 1,
         "tag_list": [
@@ -412,7 +427,7 @@
             "reason": "культ войны (топ ≥50%)"
           }
         ],
-        "fighters_src": "стража 0",
+        "fighters_src": "стража 10",
         "neutral": false
       },
       "eff_breakdown": {
