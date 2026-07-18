@@ -243,10 +243,16 @@
         "count": 20,
         "pct": 20,
         "events": true
+      },
+      {
+        "name": "Кипона",
+        "count": 10,
+        "pct": 10,
+        "events": false
       }
     ],
-    "neutral": 80,
-    "neutral_pct": 80,
+    "neutral": 70,
+    "neutral_pct": 70,
     "threshold_pct": 15
   },
   "hearth": {
@@ -337,10 +343,17 @@
             "pct": 29,
             "rel_mod": 0,
             "rel_reasons": []
+          },
+          {
+            "name": "Кипона",
+            "count": 10,
+            "pct": 14,
+            "rel_mod": 0,
+            "rel_reasons": []
           }
         ],
-        "neutral": 50,
-        "neutral_pct": 71,
+        "neutral": 40,
+        "neutral_pct": 57,
         "mod": 0,
         "reasons": []
       },
