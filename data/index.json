@@ -9,7 +9,10 @@
     "run_005_danil.json",
     "run_005_misha.json",
     "run_006_danil.json",
-    "run_006_misha.json"
+    "run_006_misha.json",
+    "run_007_danil.json",
+    "run_007_misha.json",
+    "run_007_valter.json"
   ],
   "entries": [
     {
@@ -81,6 +84,27 @@
       "player": "misha",
       "char_name": "Лапс «Ко»",
       "player_name": "Миша"
+    },
+    {
+      "file": "run_007_danil.json",
+      "run": "run_007",
+      "player": "danil",
+      "char_name": "Пало «Умный»",
+      "player_name": "Данил"
+    },
+    {
+      "file": "run_007_misha.json",
+      "run": "run_007",
+      "player": "misha",
+      "char_name": "(персонаж)",
+      "player_name": "Миша"
+    },
+    {
+      "file": "run_007_valter.json",
+      "run": "run_007",
+      "player": "valter",
+      "char_name": "(персонаж)",
+      "player_name": "Егор"
     }
   ]
 }

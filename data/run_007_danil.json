@@ -1,0 +1,367 @@
+{
+  "run": "run_007",
+  "player": "danil",
+  "char_name": "Пало «Умный»",
+  "player_name": "Данил",
+  "user_id": 579387502,
+  "telegram": "@aldtoll",
+  "season": "1",
+  "active_phase": null,
+  "finance": {
+    "start": 0,
+    "income": [],
+    "expenses": [],
+    "receipts": [],
+    "spendings": [],
+    "income_by": {},
+    "expenses_by": {
+      "Общие": []
+    },
+    "total_income": 0,
+    "total_expenses": 0,
+    "balance": 0
+  },
+  "buildings": {
+    "slots": {
+      "base": 0,
+      "extra": 0,
+      "used": 0,
+      "max_extra": 0,
+      "free": 0
+    },
+    "buildings": []
+  },
+  "events": {
+    "points": {},
+    "incidents": [],
+    "visitors": [],
+    "assignments": [],
+    "custom": [],
+    "po_title": "Преступления и опасности (капитан — П&О)",
+    "po": []
+  },
+  "hero": {
+    "name": "Пало «Умный»",
+    "patronage": "Херец",
+    "skills": [
+      {
+        "name": "Пара тонф (I)",
+        "techniques": [],
+        "bank": 0,
+        "ups": 0,
+        "next_threshold": 10
+      },
+      {
+        "name": "Адепт Хереца (I)",
+        "techniques": [],
+        "bank": 0,
+        "ups": 0,
+        "next_threshold": 10
+      },
+      {
+        "name": "Языки (I)",
+        "techniques": [
+          {
+            "name": "БарБрань",
+            "kind": "приём"
+          }
+        ],
+        "bank": 0,
+        "ups": 0,
+        "next_threshold": 10
+      },
+      {
+        "name": "Столяр (I)",
+        "techniques": [],
+        "bank": 0,
+        "ups": 0,
+        "next_threshold": 10
+      },
+      {
+        "name": "Риторика (0)",
+        "techniques": [],
+        "bank": 7,
+        "ups": 0,
+        "next_threshold": 10
+      }
+    ],
+    "features": [
+      "Звериная сила — наследственная богатырская стать от отца. Врождённое преимущество в сценах грубой силы (толкнуть, поднять, удержать, сломать). Материальный атрибут особенности слит с тонфами каменного дерева (Пример 4 phase0.md — прямое соединение), но врождённый эффект работает всегда."
+    ],
+    "status": {
+      "HP": "100%"
+    },
+    "retinue": [],
+    "retinue_slots": {
+      "total": 0.5,
+      "used": 0.0
+    },
+    "items": [
+      "Столярная лавка в Былицах — атрибут производственной черты (личное). Даёт три эффекта: источник дохода в области + место крафта в фазе очага + место тренировки Столяра (быстрое действие очага «упражнение в лавке» — +1 в банк Столяра раз за сезон бесплатно).",
+      "Таблички Хереца — уникальный предмет, записанные в детстве обрывки языков от Херца. Служат бесконечным источником для приёма Чтец: раз за сезон в фазе очага быстрое действие — мастер бросает случайный навык из общего перечня возможных навыков мира (включая закрытые/несуществующие у героя), +1 в его банк + 1 в банк Языков."
+    ]
+  },
+  "staff": [
+    {
+      "category": "Стража (бойцы)",
+      "fact": "0",
+      "norm": "10",
+      "status": "⚠️ нет стражи (+1d2 П&О)",
+      "np": "Былицы"
+    },
+    {
+      "category": "Клерки",
+      "fact": "0",
+      "norm": "3",
+      "status": "⚠️ нет клерков (+1d2 происш.)",
+      "np": "Былицы"
+    },
+    {
+      "category": "Рабочие руки",
+      "fact": "0",
+      "norm": "14",
+      "status": "✅",
+      "np": "Былицы"
+    },
+    {
+      "category": "Стража (бойцы)",
+      "fact": "0",
+      "norm": "0",
+      "status": "—",
+      "np": "Кочевье"
+    },
+    {
+      "category": "Клерки",
+      "fact": "0",
+      "norm": "0",
+      "status": "—",
+      "np": "Кочевье"
+    },
+    {
+      "category": "Рабочие руки",
+      "fact": "0",
+      "norm": "0",
+      "status": "—",
+      "np": "Кочевье"
+    },
+    {
+      "category": "Стража (бойцы)",
+      "fact": "0",
+      "norm": "0",
+      "status": "—",
+      "np": "Каменка"
+    },
+    {
+      "category": "Клерки",
+      "fact": "0",
+      "norm": "0",
+      "status": "—",
+      "np": "Каменка"
+    },
+    {
+      "category": "Рабочие руки",
+      "fact": "0",
+      "norm": "0",
+      "status": "—",
+      "np": "Каменка"
+    }
+  ],
+  "religion": null,
+  "hearth": {
+    "remaining": null,
+    "total": null
+  },
+  "settlements": [
+    {
+      "name": "Былицы",
+      "area": "Былицы",
+      "population": "~700",
+      "growth": null,
+      "houses": "70",
+      "staff": [
+        {
+          "category": "Стража (бойцы)",
+          "fact": "0",
+          "norm": "10",
+          "status": "⚠️ нет стражи (+1d2 П&О)",
+          "np": "Былицы"
+        },
+        {
+          "category": "Клерки",
+          "fact": "0",
+          "norm": "3",
+          "status": "⚠️ нет клерков (+1d2 происш.)",
+          "np": "Былицы"
+        },
+        {
+          "category": "Рабочие руки",
+          "fact": "0",
+          "norm": "14",
+          "status": "✅",
+          "np": "Былицы"
+        }
+      ],
+      "buildings": [],
+      "promysly": [],
+      "income": [],
+      "expenses_np": [],
+      "stash": [],
+      "loyalty": {
+        "Л": 0,
+        "Н": 0,
+        "НЛ": 0,
+        "Тип": "стартовая",
+        "mod": -1,
+        "reasons": [
+          "+1 стартовая",
+          "−1 нехватка стражи (0/10)",
+          "−1 нехватка клерков (0/3)"
+        ]
+      },
+      "faith": null,
+      "might": {
+        "total": 0,
+        "fighters": 0,
+        "base": 0,
+        "loyalty": -1,
+        "defense": 1,
+        "tags": 0,
+        "tag_list": [],
+        "fighters_src": "стража 0",
+        "neutral": false
+      },
+      "eff_breakdown": {
+        "base": 100,
+        "loyalty_penalty": 0,
+        "loyalty_bonus": 0,
+        "total": 100
+      }
+    },
+    {
+      "name": "Кочевье",
+      "area": "Кочевье",
+      "population": "~250",
+      "growth": null,
+      "houses": "25",
+      "staff": [
+        {
+          "category": "Стража (бойцы)",
+          "fact": "0",
+          "norm": "0",
+          "status": "—",
+          "np": "Кочевье"
+        },
+        {
+          "category": "Клерки",
+          "fact": "0",
+          "norm": "0",
+          "status": "—",
+          "np": "Кочевье"
+        },
+        {
+          "category": "Рабочие руки",
+          "fact": "0",
+          "norm": "0",
+          "status": "—",
+          "np": "Кочевье"
+        }
+      ],
+      "buildings": [],
+      "promysly": [],
+      "income": [],
+      "expenses_np": [],
+      "stash": [],
+      "loyalty": {
+        "Л": 0,
+        "Н": 0,
+        "НЛ": 0,
+        "Тип": "стартовая",
+        "mod": 1,
+        "reasons": [
+          "+1 стартовая"
+        ]
+      },
+      "faith": null,
+      "might": {
+        "total": 2,
+        "fighters": 0,
+        "base": 0,
+        "loyalty": 1,
+        "defense": 1,
+        "tags": 0,
+        "tag_list": [],
+        "fighters_src": "стража 0",
+        "neutral": false
+      },
+      "eff_breakdown": {
+        "base": 100,
+        "loyalty_penalty": 0,
+        "loyalty_bonus": 0,
+        "total": 100
+      }
+    },
+    {
+      "name": "Каменка",
+      "area": "Каменка",
+      "population": "~150",
+      "growth": null,
+      "houses": "15",
+      "staff": [
+        {
+          "category": "Стража (бойцы)",
+          "fact": "0",
+          "norm": "0",
+          "status": "—",
+          "np": "Каменка"
+        },
+        {
+          "category": "Клерки",
+          "fact": "0",
+          "norm": "0",
+          "status": "—",
+          "np": "Каменка"
+        },
+        {
+          "category": "Рабочие руки",
+          "fact": "0",
+          "norm": "0",
+          "status": "—",
+          "np": "Каменка"
+        }
+      ],
+      "buildings": [],
+      "promysly": [],
+      "income": [],
+      "expenses_np": [],
+      "stash": [],
+      "loyalty": {
+        "Л": 0,
+        "Н": 0,
+        "НЛ": 0,
+        "Тип": "стартовая",
+        "mod": 1,
+        "reasons": [
+          "+1 стартовая"
+        ]
+      },
+      "faith": null,
+      "might": {
+        "total": 2,
+        "fighters": 0,
+        "base": 0,
+        "loyalty": 1,
+        "defense": 1,
+        "tags": 0,
+        "tag_list": [],
+        "fighters_src": "стража 0",
+        "neutral": false
+      },
+      "eff_breakdown": {
+        "base": 100,
+        "loyalty_penalty": 0,
+        "loyalty_bonus": 0,
+        "total": 100
+      }
+    }
+  ]
+}
