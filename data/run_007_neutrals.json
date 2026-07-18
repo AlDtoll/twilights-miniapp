@@ -23,36 +23,37 @@
             "Л": 10,
             "Н": 35,
             "НЛ": 5,
-            "mod": -1,
-            "reasons": [
-              "-1 вера (религия)"
-            ]
+            "mod": 0,
+            "reasons": []
           },
           "faith": {
             "cults": [
               {
-                "name": "Бурий",
-                "count": 26,
-                "pct": 52
+                "name": "Лето",
+                "count": 17,
+                "pct": 34
               },
               {
-                "name": "Лето",
-                "count": 13,
-                "pct": 26
+                "name": "Тёмный культ",
+                "count": 10,
+                "pct": 20
+              },
+              {
+                "name": "Культ разума",
+                "count": 8,
+                "pct": 16
               }
             ],
-            "neutral": 11,
-            "neutral_pct": 22,
-            "mod": -1,
-            "reasons": [
-              "−1 религиозный раскол (2 культа ≥25%)"
-            ]
+            "neutral": 15,
+            "neutral_pct": 30,
+            "mod": 0,
+            "reasons": []
           },
           "might": {
-            "total": 3,
+            "total": 4,
             "fighters": 7,
             "base": 1,
-            "loyalty": 1,
+            "loyalty": 2,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
@@ -90,18 +91,23 @@
           "faith": {
             "cults": [
               {
-                "name": "Кипона",
-                "count": 8,
-                "pct": 20
+                "name": "Культ разума",
+                "count": 19,
+                "pct": 48
               },
               {
-                "name": "Бурий",
-                "count": 4,
-                "pct": 10
+                "name": "Кипона",
+                "count": 7,
+                "pct": 18
+              },
+              {
+                "name": "Светлый культ",
+                "count": 2,
+                "pct": 5
               }
             ],
-            "neutral": 28,
-            "neutral_pct": 70,
+            "neutral": 12,
+            "neutral_pct": 30,
             "mod": 0,
             "reasons": []
           },
@@ -141,18 +147,23 @@
           "faith": {
             "cults": [
               {
+                "name": "Культ разума",
+                "count": 7,
+                "pct": 47
+              },
+              {
                 "name": "Кипона",
                 "count": 3,
                 "pct": 20
               },
               {
-                "name": "Бурий",
-                "count": 2,
-                "pct": 13
+                "name": "Светлый культ",
+                "count": 1,
+                "pct": 7
               }
             ],
-            "neutral": 10,
-            "neutral_pct": 67,
+            "neutral": 4,
+            "neutral_pct": 27,
             "mod": 0,
             "reasons": []
           },
@@ -192,18 +203,23 @@
           "faith": {
             "cults": [
               {
-                "name": "Кипона",
-                "count": 5,
-                "pct": 20
+                "name": "Культ разума",
+                "count": 12,
+                "pct": 48
               },
               {
-                "name": "Бурий",
-                "count": 2,
-                "pct": 8
+                "name": "Кипона",
+                "count": 4,
+                "pct": 16
+              },
+              {
+                "name": "Светлый культ",
+                "count": 1,
+                "pct": 4
               }
             ],
-            "neutral": 18,
-            "neutral_pct": 72,
+            "neutral": 8,
+            "neutral_pct": 32,
             "mod": 0,
             "reasons": []
           },
@@ -453,32 +469,41 @@
             "Л": 36,
             "Н": 12,
             "НЛ": 12,
-            "mod": 0,
-            "reasons": []
+            "mod": -1,
+            "reasons": [
+              "-1 вера (религия)"
+            ]
           },
           "faith": {
             "cults": [
               {
-                "name": "Айдан «Кот»",
-                "count": 15,
-                "pct": 25
+                "name": "Природный культ (друидизм)",
+                "count": 21,
+                "pct": 35
               },
               {
-                "name": "Лето",
+                "name": "Тенета",
+                "count": 17,
+                "pct": 28
+              },
+              {
+                "name": "Тёмный культ",
                 "count": 4,
                 "pct": 7
               }
             ],
-            "neutral": 41,
-            "neutral_pct": 68,
-            "mod": 0,
-            "reasons": []
+            "neutral": 18,
+            "neutral_pct": 30,
+            "mod": -1,
+            "reasons": [
+              "−1 религиозный раскол (2 культа ≥25%)"
+            ]
           },
           "might": {
-            "total": 5,
+            "total": 4,
             "fighters": 8,
             "base": 2,
-            "loyalty": 2,
+            "loyalty": 1,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
@@ -504,32 +529,41 @@
             "Л": 12,
             "Н": 4,
             "НЛ": 4,
-            "mod": 0,
-            "reasons": []
+            "mod": -1,
+            "reasons": [
+              "-1 вера (религия)"
+            ]
           },
           "faith": {
             "cults": [
               {
-                "name": "Айдан «Кот»",
-                "count": 5,
-                "pct": 25
+                "name": "Природный культ (друидизм)",
+                "count": 7,
+                "pct": 35
               },
               {
-                "name": "Лето",
+                "name": "Тенета",
+                "count": 6,
+                "pct": 30
+              },
+              {
+                "name": "Тёмный культ",
                 "count": 1,
                 "pct": 5
               }
             ],
-            "neutral": 14,
-            "neutral_pct": 70,
-            "mod": 0,
-            "reasons": []
+            "neutral": 6,
+            "neutral_pct": 30,
+            "mod": -1,
+            "reasons": [
+              "−1 религиозный раскол (2 культа ≥25%)"
+            ]
           },
           "might": {
-            "total": 4,
+            "total": 3,
             "fighters": 3,
             "base": 1,
-            "loyalty": 2,
+            "loyalty": 1,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
@@ -561,8 +595,10 @@
             "Л": 8,
             "Н": 28,
             "НЛ": 4,
-            "mod": 0,
-            "reasons": []
+            "mod": -1,
+            "reasons": [
+              "-1 вера (религия)"
+            ]
           },
           "faith": {
             "cults": [
@@ -570,18 +606,30 @@
                 "name": "Бурий",
                 "count": 10,
                 "pct": 25
+              },
+              {
+                "name": "Светлый культ",
+                "count": 10,
+                "pct": 25
+              },
+              {
+                "name": "Лето",
+                "count": 9,
+                "pct": 22
               }
             ],
-            "neutral": 30,
-            "neutral_pct": 75,
-            "mod": 0,
-            "reasons": []
+            "neutral": 11,
+            "neutral_pct": 28,
+            "mod": -1,
+            "reasons": [
+              "−1 религиозный раскол (2 культа ≥25%)"
+            ]
           },
           "might": {
-            "total": 4,
+            "total": 3,
             "fighters": 6,
             "base": 1,
-            "loyalty": 2,
+            "loyalty": 1,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
@@ -619,18 +667,23 @@
           "faith": {
             "cults": [
               {
-                "name": "Херец",
-                "count": 5,
-                "pct": 25
+                "name": "Мизеракль",
+                "count": 6,
+                "pct": 30
               },
               {
-                "name": "Тенета",
-                "count": 3,
-                "pct": 15
+                "name": "Бурий",
+                "count": 4,
+                "pct": 20
+              },
+              {
+                "name": "Местный культ",
+                "count": 4,
+                "pct": 20
               }
             ],
-            "neutral": 12,
-            "neutral_pct": 60,
+            "neutral": 6,
+            "neutral_pct": 30,
             "mod": 0,
             "reasons": []
           },
@@ -670,18 +723,23 @@
           "faith": {
             "cults": [
               {
-                "name": "Херец",
-                "count": 21,
-                "pct": 26
+                "name": "Мизеракль",
+                "count": 22,
+                "pct": 28
               },
               {
-                "name": "Тенета",
-                "count": 10,
-                "pct": 12
+                "name": "Бурий",
+                "count": 17,
+                "pct": 21
+              },
+              {
+                "name": "Местный культ",
+                "count": 17,
+                "pct": 21
               }
             ],
-            "neutral": 49,
-            "neutral_pct": 61,
+            "neutral": 24,
+            "neutral_pct": 30,
             "mod": 0,
             "reasons": []
           },
@@ -721,27 +779,41 @@
             "Л": 30,
             "Н": 10,
             "НЛ": 10,
-            "mod": 0,
-            "reasons": []
+            "mod": -1,
+            "reasons": [
+              "-1 вера (религия)"
+            ]
           },
           "faith": {
             "cults": [
               {
-                "name": "Кипона",
-                "count": 10,
-                "pct": 20
+                "name": "Тёмный культ",
+                "count": 15,
+                "pct": 30
+              },
+              {
+                "name": "Тенета",
+                "count": 13,
+                "pct": 26
+              },
+              {
+                "name": "Местный культ",
+                "count": 7,
+                "pct": 14
               }
             ],
-            "neutral": 40,
-            "neutral_pct": 80,
-            "mod": 0,
-            "reasons": []
+            "neutral": 15,
+            "neutral_pct": 30,
+            "mod": -1,
+            "reasons": [
+              "−1 религиозный раскол (2 культа ≥25%)"
+            ]
           },
           "might": {
-            "total": 4,
+            "total": 3,
             "fighters": 7,
             "base": 1,
-            "loyalty": 2,
+            "loyalty": 1,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
@@ -779,18 +851,23 @@
           "faith": {
             "cults": [
               {
-                "name": "Айдан «Кот»",
-                "count": 9,
-                "pct": 18
+                "name": "Культ разума",
+                "count": 14,
+                "pct": 28
               },
               {
-                "name": "Бурий",
-                "count": 3,
-                "pct": 6
+                "name": "Омнус",
+                "count": 11,
+                "pct": 22
+              },
+              {
+                "name": "Местный культ",
+                "count": 10,
+                "pct": 20
               }
             ],
-            "neutral": 38,
-            "neutral_pct": 76,
+            "neutral": 15,
+            "neutral_pct": 30,
             "mod": 0,
             "reasons": []
           },
@@ -830,18 +907,23 @@
           "faith": {
             "cults": [
               {
-                "name": "Айдан «Кот»",
-                "count": 6,
-                "pct": 20
+                "name": "Культ разума",
+                "count": 9,
+                "pct": 30
               },
               {
-                "name": "Бурий",
-                "count": 2,
-                "pct": 7
+                "name": "Омнус",
+                "count": 7,
+                "pct": 23
+              },
+              {
+                "name": "Местный культ",
+                "count": 6,
+                "pct": 20
               }
             ],
-            "neutral": 22,
-            "neutral_pct": 73,
+            "neutral": 8,
+            "neutral_pct": 27,
             "mod": 0,
             "reasons": []
           },
@@ -881,32 +963,41 @@
             "Л": 2,
             "Н": 7,
             "НЛ": 1,
-            "mod": 0,
-            "reasons": []
+            "mod": -1,
+            "reasons": [
+              "-1 вера (религия)"
+            ]
           },
           "faith": {
             "cults": [
               {
-                "name": "Айдан «Кот»",
-                "count": 5,
-                "pct": 50
+                "name": "Мизеракль",
+                "count": 3,
+                "pct": 30
               },
               {
-                "name": "Бурий",
-                "count": 2,
-                "pct": 20
+                "name": "Авиценна",
+                "count": 3,
+                "pct": 30
+              },
+              {
+                "name": "Тенета",
+                "count": 1,
+                "pct": 10
               }
             ],
             "neutral": 3,
             "neutral_pct": 30,
-            "mod": 0,
-            "reasons": []
+            "mod": -1,
+            "reasons": [
+              "−1 религиозный раскол (2 культа ≥25%)"
+            ]
           },
           "might": {
-            "total": 3,
+            "total": 2,
             "fighters": 1,
             "base": 0,
-            "loyalty": 2,
+            "loyalty": 1,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
@@ -932,32 +1023,41 @@
             "Л": 2,
             "Н": 7,
             "НЛ": 1,
-            "mod": 0,
-            "reasons": []
+            "mod": -1,
+            "reasons": [
+              "-1 вера (религия)"
+            ]
           },
           "faith": {
             "cults": [
               {
-                "name": "Айдан «Кот»",
-                "count": 5,
-                "pct": 50
+                "name": "Мизеракль",
+                "count": 3,
+                "pct": 30
               },
               {
-                "name": "Бурий",
-                "count": 2,
-                "pct": 20
+                "name": "Авиценна",
+                "count": 3,
+                "pct": 30
+              },
+              {
+                "name": "Тенета",
+                "count": 1,
+                "pct": 10
               }
             ],
             "neutral": 3,
             "neutral_pct": 30,
-            "mod": 0,
-            "reasons": []
+            "mod": -1,
+            "reasons": [
+              "−1 религиозный раскол (2 культа ≥25%)"
+            ]
           },
           "might": {
-            "total": 3,
+            "total": 2,
             "fighters": 1,
             "base": 0,
-            "loyalty": 2,
+            "loyalty": 1,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
@@ -995,18 +1095,23 @@
           "faith": {
             "cults": [
               {
-                "name": "Айдан «Кот»",
-                "count": 26,
-                "pct": 32
+                "name": "Местный культ",
+                "count": 32,
+                "pct": 40
               },
               {
-                "name": "Бурий",
-                "count": 13,
-                "pct": 16
+                "name": "Светлый культ",
+                "count": 18,
+                "pct": 22
+              },
+              {
+                "name": "Природный культ (друидизм)",
+                "count": 7,
+                "pct": 9
               }
             ],
-            "neutral": 41,
-            "neutral_pct": 51,
+            "neutral": 23,
+            "neutral_pct": 29,
             "mod": 0,
             "reasons": []
           },
@@ -1046,27 +1151,41 @@
             "Л": 1,
             "Н": 4,
             "НЛ": 0,
-            "mod": 0,
-            "reasons": []
+            "mod": -1,
+            "reasons": [
+              "-1 вера (религия)"
+            ]
           },
           "faith": {
             "cults": [
               {
-                "name": "Бурий",
+                "name": "Омнус",
                 "count": 2,
                 "pct": 40
+              },
+              {
+                "name": "Светлый культ",
+                "count": 2,
+                "pct": 40
+              },
+              {
+                "name": "Местный культ",
+                "count": 1,
+                "pct": 20
               }
             ],
-            "neutral": 3,
-            "neutral_pct": 60,
-            "mod": 0,
-            "reasons": []
+            "neutral": 0,
+            "neutral_pct": 0,
+            "mod": -1,
+            "reasons": [
+              "−1 религиозный раскол (2 культа ≥25%)"
+            ]
           },
           "might": {
-            "total": 3,
+            "total": 2,
             "fighters": 1,
             "base": 0,
-            "loyalty": 2,
+            "loyalty": 1,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
@@ -1092,27 +1211,41 @@
             "Л": 3,
             "Н": 10,
             "НЛ": 2,
-            "mod": 0,
-            "reasons": []
+            "mod": -1,
+            "reasons": [
+              "-1 вера (религия)"
+            ]
           },
           "faith": {
             "cults": [
               {
-                "name": "Бурий",
+                "name": "Светлый культ",
+                "count": 5,
+                "pct": 33
+              },
+              {
+                "name": "Омнус",
                 "count": 4,
                 "pct": 27
+              },
+              {
+                "name": "Местный культ",
+                "count": 1,
+                "pct": 7
               }
             ],
-            "neutral": 11,
-            "neutral_pct": 73,
-            "mod": 0,
-            "reasons": []
+            "neutral": 5,
+            "neutral_pct": 33,
+            "mod": -1,
+            "reasons": [
+              "−1 религиозный раскол (2 культа ≥25%)"
+            ]
           },
           "might": {
-            "total": 3,
+            "total": 2,
             "fighters": 2,
             "base": 0,
-            "loyalty": 2,
+            "loyalty": 1,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
@@ -1150,18 +1283,23 @@
           "faith": {
             "cults": [
               {
-                "name": "Кипона",
-                "count": 6,
-                "pct": 30
+                "name": "Авиценна",
+                "count": 7,
+                "pct": 35
               },
               {
-                "name": "Авиценна",
+                "name": "Бурий",
+                "count": 3,
+                "pct": 15
+              },
+              {
+                "name": "Лето",
                 "count": 3,
                 "pct": 15
               }
             ],
-            "neutral": 11,
-            "neutral_pct": 55,
+            "neutral": 7,
+            "neutral_pct": 35,
             "mod": 0,
             "reasons": []
           },
@@ -1201,18 +1339,23 @@
           "faith": {
             "cults": [
               {
-                "name": "Кипона",
-                "count": 10,
-                "pct": 33
+                "name": "Авиценна",
+                "count": 11,
+                "pct": 37
               },
               {
-                "name": "Авиценна",
+                "name": "Бурий",
+                "count": 5,
+                "pct": 17
+              },
+              {
+                "name": "Лето",
                 "count": 5,
                 "pct": 17
               }
             ],
-            "neutral": 15,
-            "neutral_pct": 50,
+            "neutral": 9,
+            "neutral_pct": 30,
             "mod": 0,
             "reasons": []
           },
@@ -1252,32 +1395,41 @@
             "Л": 48,
             "Н": 16,
             "НЛ": 16,
-            "mod": 0,
-            "reasons": []
+            "mod": -1,
+            "reasons": [
+              "-1 вера (религия)"
+            ]
           },
           "faith": {
             "cults": [
               {
                 "name": "Айдан «Кот»",
-                "count": 16,
-                "pct": 20
+                "count": 30,
+                "pct": 38
               },
               {
-                "name": "Бурий",
-                "count": 8,
-                "pct": 10
+                "name": "Омнус",
+                "count": 22,
+                "pct": 28
+              },
+              {
+                "name": "Природный культ (друидизм)",
+                "count": 4,
+                "pct": 5
               }
             ],
-            "neutral": 56,
-            "neutral_pct": 70,
-            "mod": 0,
-            "reasons": []
+            "neutral": 24,
+            "neutral_pct": 30,
+            "mod": -1,
+            "reasons": [
+              "−1 религиозный раскол (2 культа ≥25%)"
+            ]
           },
           "might": {
-            "total": 5,
+            "total": 4,
             "fighters": 11,
             "base": 2,
-            "loyalty": 2,
+            "loyalty": 1,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
@@ -1309,32 +1461,41 @@
             "Л": 18,
             "Н": 18,
             "НЛ": 9,
-            "mod": 0,
-            "reasons": []
+            "mod": -1,
+            "reasons": [
+              "-1 вера (религия)"
+            ]
           },
           "faith": {
             "cults": [
               {
-                "name": "Кипона",
-                "count": 9,
-                "pct": 20
+                "name": "Тёмный культ",
+                "count": 18,
+                "pct": 40
               },
               {
-                "name": "Херец",
-                "count": 4,
-                "pct": 9
+                "name": "Культ войны",
+                "count": 12,
+                "pct": 27
+              },
+              {
+                "name": "Лето",
+                "count": 2,
+                "pct": 4
               }
             ],
-            "neutral": 32,
-            "neutral_pct": 71,
-            "mod": 0,
-            "reasons": []
+            "neutral": 13,
+            "neutral_pct": 29,
+            "mod": -1,
+            "reasons": [
+              "−1 религиозный раскол (2 культа ≥25%)"
+            ]
           },
           "might": {
-            "total": 4,
+            "total": 3,
             "fighters": 6,
             "base": 1,
-            "loyalty": 2,
+            "loyalty": 1,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
@@ -1360,32 +1521,41 @@
             "Л": 12,
             "Н": 12,
             "НЛ": 6,
-            "mod": 0,
-            "reasons": []
+            "mod": -1,
+            "reasons": [
+              "-1 вера (религия)"
+            ]
           },
           "faith": {
             "cults": [
               {
-                "name": "Кипона",
-                "count": 6,
-                "pct": 20
+                "name": "Тёмный культ",
+                "count": 12,
+                "pct": 40
               },
               {
-                "name": "Херец",
-                "count": 3,
-                "pct": 10
+                "name": "Культ войны",
+                "count": 8,
+                "pct": 27
+              },
+              {
+                "name": "Лето",
+                "count": 1,
+                "pct": 3
               }
             ],
-            "neutral": 21,
-            "neutral_pct": 70,
-            "mod": 0,
-            "reasons": []
+            "neutral": 9,
+            "neutral_pct": 30,
+            "mod": -1,
+            "reasons": [
+              "−1 религиозный раскол (2 культа ≥25%)"
+            ]
           },
           "might": {
-            "total": 4,
+            "total": 3,
             "fighters": 4,
             "base": 1,
-            "loyalty": 2,
+            "loyalty": 1,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
@@ -1417,18 +1587,23 @@
           "faith": {
             "cults": [
               {
-                "name": "Кипона",
+                "name": "Тёмный культ",
+                "count": 2,
+                "pct": 40
+              },
+              {
+                "name": "Культ войны",
                 "count": 1,
                 "pct": 20
               },
               {
-                "name": "Херец",
+                "name": "Лето",
                 "count": 1,
                 "pct": 20
               }
             ],
-            "neutral": 3,
-            "neutral_pct": 60,
+            "neutral": 1,
+            "neutral_pct": 20,
             "mod": 0,
             "reasons": []
           },
@@ -1468,27 +1643,41 @@
             "Л": 3,
             "Н": 10,
             "НЛ": 2,
-            "mod": 0,
-            "reasons": []
+            "mod": -1,
+            "reasons": [
+              "-1 вера (религия)"
+            ]
           },
           "faith": {
             "cults": [
               {
-                "name": "Бурий",
-                "count": 5,
-                "pct": 33
+                "name": "Культ войны",
+                "count": 6,
+                "pct": 40
+              },
+              {
+                "name": "Омнус",
+                "count": 4,
+                "pct": 27
+              },
+              {
+                "name": "Местный культ",
+                "count": 1,
+                "pct": 7
               }
             ],
-            "neutral": 10,
-            "neutral_pct": 67,
-            "mod": 0,
-            "reasons": []
+            "neutral": 4,
+            "neutral_pct": 27,
+            "mod": -1,
+            "reasons": [
+              "−1 религиозный раскол (2 культа ≥25%)"
+            ]
           },
           "might": {
-            "total": 3,
+            "total": 2,
             "fighters": 2,
             "base": 0,
-            "loyalty": 2,
+            "loyalty": 1,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
@@ -1645,27 +1834,41 @@
             "Л": 3,
             "Н": 10,
             "НЛ": 2,
-            "mod": 0,
-            "reasons": []
+            "mod": -1,
+            "reasons": [
+              "-1 вера (религия)"
+            ]
           },
           "faith": {
             "cults": [
               {
-                "name": "Бурий",
+                "name": "Природный культ (друидизм)",
                 "count": 4,
                 "pct": 27
+              },
+              {
+                "name": "Кипона",
+                "count": 4,
+                "pct": 27
+              },
+              {
+                "name": "Тёмный культ",
+                "count": 2,
+                "pct": 13
               }
             ],
-            "neutral": 11,
-            "neutral_pct": 73,
-            "mod": 0,
-            "reasons": []
+            "neutral": 5,
+            "neutral_pct": 33,
+            "mod": -1,
+            "reasons": [
+              "−1 религиозный раскол (2 культа ≥25%)"
+            ]
           },
           "might": {
-            "total": 3,
+            "total": 2,
             "fighters": 2,
             "base": 0,
-            "loyalty": 2,
+            "loyalty": 1,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
@@ -1697,13 +1900,23 @@
           "faith": {
             "cults": [
               {
-                "name": "Бурий",
+                "name": "Природный культ (друидизм)",
+                "count": 1,
+                "pct": 20
+              },
+              {
+                "name": "Кипона",
+                "count": 1,
+                "pct": 20
+              },
+              {
+                "name": "Тёмный культ",
                 "count": 1,
                 "pct": 20
               }
             ],
-            "neutral": 4,
-            "neutral_pct": 80,
+            "neutral": 2,
+            "neutral_pct": 40,
             "mod": 0,
             "reasons": []
           },
@@ -1737,27 +1950,41 @@
             "Л": 2,
             "Н": 7,
             "НЛ": 1,
-            "mod": 0,
-            "reasons": []
+            "mod": -1,
+            "reasons": [
+              "-1 вера (религия)"
+            ]
           },
           "faith": {
             "cults": [
               {
-                "name": "Бурий",
-                "count": 2,
-                "pct": 20
+                "name": "Природный культ (друидизм)",
+                "count": 3,
+                "pct": 30
+              },
+              {
+                "name": "Кипона",
+                "count": 3,
+                "pct": 30
+              },
+              {
+                "name": "Тёмный культ",
+                "count": 1,
+                "pct": 10
               }
             ],
-            "neutral": 8,
-            "neutral_pct": 80,
-            "mod": 0,
-            "reasons": []
+            "neutral": 3,
+            "neutral_pct": 30,
+            "mod": -1,
+            "reasons": [
+              "−1 религиозный раскол (2 культа ≥25%)"
+            ]
           },
           "might": {
-            "total": 3,
+            "total": 2,
             "fighters": 1,
             "base": 0,
-            "loyalty": 2,
+            "loyalty": 1,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
@@ -1789,27 +2016,41 @@
             "Л": 2,
             "Н": 7,
             "НЛ": 1,
-            "mod": 0,
-            "reasons": []
+            "mod": -1,
+            "reasons": [
+              "-1 вера (религия)"
+            ]
           },
           "faith": {
             "cults": [
               {
-                "name": "Бурий",
-                "count": 2,
-                "pct": 20
+                "name": "Местный культ",
+                "count": 3,
+                "pct": 30
+              },
+              {
+                "name": "Тенета",
+                "count": 3,
+                "pct": 30
+              },
+              {
+                "name": "Омнус",
+                "count": 1,
+                "pct": 10
               }
             ],
-            "neutral": 8,
-            "neutral_pct": 80,
-            "mod": 0,
-            "reasons": []
+            "neutral": 3,
+            "neutral_pct": 30,
+            "mod": -1,
+            "reasons": [
+              "−1 религиозный раскол (2 культа ≥25%)"
+            ]
           },
           "might": {
-            "total": 3,
+            "total": 2,
             "fighters": 1,
             "base": 0,
-            "loyalty": 2,
+            "loyalty": 1,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
@@ -1835,27 +2076,41 @@
             "Л": 6,
             "Н": 21,
             "НЛ": 3,
-            "mod": 0,
-            "reasons": []
+            "mod": -1,
+            "reasons": [
+              "-1 вера (религия)"
+            ]
           },
           "faith": {
             "cults": [
               {
-                "name": "Бурий",
-                "count": 8,
-                "pct": 27
+                "name": "Местный культ",
+                "count": 10,
+                "pct": 33
+              },
+              {
+                "name": "Тенета",
+                "count": 10,
+                "pct": 33
+              },
+              {
+                "name": "Омнус",
+                "count": 2,
+                "pct": 7
               }
             ],
-            "neutral": 22,
-            "neutral_pct": 73,
-            "mod": 0,
-            "reasons": []
+            "neutral": 8,
+            "neutral_pct": 27,
+            "mod": -1,
+            "reasons": [
+              "−1 религиозный раскол (2 культа ≥25%)"
+            ]
           },
           "might": {
-            "total": 4,
+            "total": 3,
             "fighters": 4,
             "base": 1,
-            "loyalty": 2,
+            "loyalty": 1,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
@@ -1887,27 +2142,41 @@
             "Л": 6,
             "Н": 21,
             "НЛ": 3,
-            "mod": 0,
-            "reasons": []
+            "mod": -1,
+            "reasons": [
+              "-1 вера (религия)"
+            ]
           },
           "faith": {
             "cults": [
               {
-                "name": "Бурий",
-                "count": 8,
-                "pct": 27
+                "name": "Культ разума",
+                "count": 9,
+                "pct": 30
+              },
+              {
+                "name": "Тёмный культ",
+                "count": 9,
+                "pct": 30
+              },
+              {
+                "name": "Местный культ",
+                "count": 3,
+                "pct": 10
               }
             ],
-            "neutral": 22,
-            "neutral_pct": 73,
-            "mod": 0,
-            "reasons": []
+            "neutral": 9,
+            "neutral_pct": 30,
+            "mod": -1,
+            "reasons": [
+              "−1 религиозный раскол (2 культа ≥25%)"
+            ]
           },
           "might": {
-            "total": 4,
+            "total": 3,
             "fighters": 4,
             "base": 1,
-            "loyalty": 2,
+            "loyalty": 1,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
