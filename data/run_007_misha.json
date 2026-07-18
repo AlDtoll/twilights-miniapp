@@ -39,6 +39,10 @@
       {
         "label": "Содержание Эльф Лекс (спутник-человек, 15 × 90)",
         "amount": 1350
+      },
+      {
+        "label": "Стража (10 × 20 × 90)",
+        "amount": 18000
       }
     ],
     "receipts": [],
@@ -79,11 +83,17 @@
           "label": "Содержание Эльф Лекс (спутник-человек, 15 × 90)",
           "amount": 1350
         }
+      ],
+      "Чистозерье": [
+        {
+          "label": "Стража (10 × 20 × 90)",
+          "amount": 18000
+        }
       ]
     },
     "total_income": 42170,
-    "total_expenses": 1350,
-    "balance": 48820
+    "total_expenses": 19350,
+    "balance": 30820
   },
   "buildings": {
     "slots": {
@@ -215,9 +225,9 @@
   "staff": [
     {
       "category": "Стража (бойцы)",
-      "fact": "0",
+      "fact": "10",
       "norm": "10",
-      "status": "⚠️ нет стражи (+1d2 П&О)",
+      "status": "✅",
       "np": "Чистозерье"
     },
     {
@@ -296,9 +306,9 @@
       "staff": [
         {
           "category": "Стража (бойцы)",
-          "fact": "0",
+          "fact": "10",
           "norm": "10",
-          "status": "⚠️ нет стражи (+1d2 П&О)",
+          "status": "✅",
           "np": "Чистозерье"
         },
         {
@@ -348,17 +358,21 @@
           "amount": 3062
         }
       ],
-      "expenses_np": [],
+      "expenses_np": [
+        {
+          "label": "Стража (10 × 20 × 90)",
+          "amount": 18000
+        }
+      ],
       "stash": [],
       "loyalty": {
         "Л": 47,
         "Н": 19,
         "НЛ": 4,
         "Тип": "стартовая",
-        "mod": -1,
+        "mod": 0,
         "reasons": [
           "+1 стартовая",
-          "−1 нехватка стражи (0/10)",
           "−1 нехватка клерков (0/3)"
         ],
         "delta": {
@@ -398,14 +412,14 @@
         "delta": {}
       },
       "might": {
-        "total": 0,
-        "fighters": 0,
-        "base": 0,
-        "loyalty": -1,
+        "total": 3,
+        "fighters": 10,
+        "base": 2,
+        "loyalty": 0,
         "defense": 1,
         "tags": 0,
         "tag_list": [],
-        "fighters_src": "стража 0",
+        "fighters_src": "стража 10",
         "neutral": false
       },
       "eff_breakdown": {
