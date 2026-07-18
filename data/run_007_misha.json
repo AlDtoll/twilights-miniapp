@@ -235,7 +235,20 @@
       "np": "Чистолесье"
     }
   ],
-  "religion": null,
+  "religion": {
+    "total_houses": 100,
+    "cults": [
+      {
+        "name": "Айдан «Кот»",
+        "count": 20,
+        "pct": 20,
+        "events": true
+      }
+    ],
+    "neutral": 80,
+    "neutral_pct": 80,
+    "threshold_pct": 15
+  },
   "hearth": {
     "remaining": null,
     "total": null
@@ -316,7 +329,21 @@
           "−1 нехватка клерков (0/3)"
         ]
       },
-      "faith": null,
+      "faith": {
+        "cults": [
+          {
+            "name": "Айдан «Кот»",
+            "count": 20,
+            "pct": 29,
+            "rel_mod": 0,
+            "rel_reasons": []
+          }
+        ],
+        "neutral": 50,
+        "neutral_pct": 71,
+        "mod": 0,
+        "reasons": []
+      },
       "might": {
         "total": 0,
         "fighters": 0,
