@@ -286,10 +286,16 @@
         "count": 10,
         "pct": 10,
         "events": false
+      },
+      {
+        "name": "Лето",
+        "count": 5,
+        "pct": 5,
+        "events": false
       }
     ],
-    "neutral": 75,
-    "neutral_pct": 75,
+    "neutral": 70,
+    "neutral_pct": 70,
     "threshold_pct": 15
   },
   "hearth": {
@@ -388,10 +394,17 @@
             "pct": 20,
             "rel_mod": 0,
             "rel_reasons": []
+          },
+          {
+            "name": "Лето",
+            "count": 5,
+            "pct": 10,
+            "rel_mod": 0,
+            "rel_reasons": []
           }
         ],
-        "neutral": 25,
-        "neutral_pct": 50,
+        "neutral": 20,
+        "neutral_pct": 40,
         "mod": 0,
         "reasons": []
       },
