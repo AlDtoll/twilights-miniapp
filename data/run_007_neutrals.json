@@ -68,8 +68,8 @@
       "settlements": [
         {
           "name": "Гончие Пороги",
-          "population": "~800",
-          "houses": "80",
+          "population": "~400",
+          "houses": "40",
           "promysly": [
             {
               "name": "—",
@@ -81,9 +81,9 @@
           "loyalty": {
             "уклад": "смута",
             "Тип": "нейтральная",
-            "Л": 32,
-            "Н": 32,
-            "НЛ": 16,
+            "Л": 16,
+            "Н": 16,
+            "НЛ": 8,
             "mod": 0,
             "reasons": []
           },
@@ -91,29 +91,131 @@
             "cults": [
               {
                 "name": "Кипона",
-                "count": 16,
+                "count": 8,
                 "pct": 20
               },
               {
                 "name": "Бурий",
-                "count": 8,
+                "count": 4,
                 "pct": 10
               }
             ],
-            "neutral": 56,
+            "neutral": 28,
             "neutral_pct": 70,
             "mod": 0,
             "reasons": []
           },
           "might": {
-            "total": 5,
-            "fighters": 11,
-            "base": 2,
+            "total": 4,
+            "fighters": 6,
+            "base": 1,
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
-            "fighters_src": "ополчение ~1.4% от 800",
+            "fighters_src": "ополчение ~1.4% от 400",
+            "neutral": true
+          }
+        },
+        {
+          "name": "Гончие Пороги-Верхние",
+          "population": "~150",
+          "houses": "15",
+          "promysly": [
+            {
+              "name": "—",
+              "tier": "1",
+              "chain": "—",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "смута",
+            "Тип": "нейтральная",
+            "Л": 6,
+            "Н": 6,
+            "НЛ": 3,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Кипона",
+                "count": 3,
+                "pct": 20
+              },
+              {
+                "name": "Бурий",
+                "count": 2,
+                "pct": 13
+              }
+            ],
+            "neutral": 10,
+            "neutral_pct": 67,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 3,
+            "fighters": 2,
+            "base": 0,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "tag_list": [],
+            "fighters_src": "ополчение ~1.4% от 150",
+            "neutral": true
+          }
+        },
+        {
+          "name": "Гончие Пороги-Нижние",
+          "population": "~250",
+          "houses": "25",
+          "promysly": [
+            {
+              "name": "—",
+              "tier": "1",
+              "chain": "—",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "смута",
+            "Тип": "нейтральная",
+            "Л": 10,
+            "Н": 10,
+            "НЛ": 5,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Кипона",
+                "count": 5,
+                "pct": 20
+              },
+              {
+                "name": "Бурий",
+                "count": 2,
+                "pct": 8
+              }
+            ],
+            "neutral": 18,
+            "neutral_pct": 72,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 4,
+            "fighters": 4,
+            "base": 1,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "tag_list": [],
+            "fighters_src": "ополчение ~1.4% от 250",
             "neutral": true
           }
         }
@@ -125,8 +227,8 @@
       "settlements": [
         {
           "name": "Гостиный Порт",
-          "population": "~2000",
-          "houses": "200",
+          "population": "~850",
+          "houses": "85",
           "promysly": [
             {
               "name": "Рыбная ловля",
@@ -150,9 +252,9 @@
           "loyalty": {
             "уклад": "смута",
             "Тип": "нейтральная",
-            "Л": 80,
-            "Н": 80,
-            "НЛ": 40,
+            "Л": 34,
+            "Н": 34,
+            "НЛ": 17,
             "mod": 0,
             "reasons": []
           },
@@ -160,34 +262,170 @@
             "cults": [
               {
                 "name": "Кипона",
-                "count": 60,
-                "pct": 30
+                "count": 26,
+                "pct": 31
               },
               {
                 "name": "Айдан «Кот»",
-                "count": 40,
+                "count": 17,
                 "pct": 20
               },
               {
                 "name": "Мизеракль",
-                "count": 15,
-                "pct": 8
+                "count": 6,
+                "pct": 7
               }
             ],
-            "neutral": 85,
+            "neutral": 36,
             "neutral_pct": 42,
             "mod": 0,
             "reasons": []
           },
           "might": {
-            "total": 9,
-            "fighters": 28,
-            "base": 6,
+            "total": 5,
+            "fighters": 12,
+            "base": 2,
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
-            "fighters_src": "ополчение ~1.4% от 2000",
+            "fighters_src": "ополчение ~1.4% от 850",
+            "neutral": true
+          }
+        },
+        {
+          "name": "Гостиный Порт-Купеческий Двор",
+          "population": "~500",
+          "houses": "50",
+          "promysly": [
+            {
+              "name": "Рыбная ловля",
+              "tier": "1",
+              "chain": "рыба→засол→припасы",
+              "owner": "местные"
+            },
+            {
+              "name": "Кузня",
+              "tier": "1",
+              "chain": "руда→железо→изделие",
+              "owner": "местные"
+            },
+            {
+              "name": "Кожевня",
+              "tier": "2",
+              "chain": "кожа→обувь/упряжь",
+              "owner": "купеческая гильдия"
+            }
+          ],
+          "loyalty": {
+            "уклад": "смута",
+            "Тип": "нейтральная",
+            "Л": 20,
+            "Н": 20,
+            "НЛ": 10,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Кипона",
+                "count": 15,
+                "pct": 30
+              },
+              {
+                "name": "Айдан «Кот»",
+                "count": 10,
+                "pct": 20
+              },
+              {
+                "name": "Мизеракль",
+                "count": 4,
+                "pct": 8
+              }
+            ],
+            "neutral": 21,
+            "neutral_pct": 42,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 4,
+            "fighters": 7,
+            "base": 1,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "tag_list": [],
+            "fighters_src": "ополчение ~1.4% от 500",
+            "neutral": true
+          }
+        },
+        {
+          "name": "Гостиный Порт-Пристань",
+          "population": "~650",
+          "houses": "65",
+          "promysly": [
+            {
+              "name": "Рыбная ловля",
+              "tier": "1",
+              "chain": "рыба→засол→припасы",
+              "owner": "местные"
+            },
+            {
+              "name": "Кузня",
+              "tier": "1",
+              "chain": "руда→железо→изделие",
+              "owner": "местные"
+            },
+            {
+              "name": "Кожевня",
+              "tier": "2",
+              "chain": "кожа→обувь/упряжь",
+              "owner": "купеческая гильдия"
+            }
+          ],
+          "loyalty": {
+            "уклад": "смута",
+            "Тип": "нейтральная",
+            "Л": 26,
+            "Н": 26,
+            "НЛ": 13,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Кипона",
+                "count": 20,
+                "pct": 31
+              },
+              {
+                "name": "Айдан «Кот»",
+                "count": 13,
+                "pct": 20
+              },
+              {
+                "name": "Мизеракль",
+                "count": 5,
+                "pct": 8
+              }
+            ],
+            "neutral": 27,
+            "neutral_pct": 42,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 5,
+            "fighters": 9,
+            "base": 2,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "tag_list": [],
+            "fighters_src": "ополчение ~1.4% от 650",
             "neutral": true
           }
         }
@@ -199,8 +437,8 @@
       "settlements": [
         {
           "name": "Кабанья Тропа",
-          "population": "~800",
-          "houses": "80",
+          "population": "~600",
+          "houses": "60",
           "promysly": [
             {
               "name": "Охота",
@@ -212,9 +450,9 @@
           "loyalty": {
             "уклад": "крепкий",
             "Тип": "нейтральная",
-            "Л": 48,
-            "Н": 16,
-            "НЛ": 16,
+            "Л": 36,
+            "Н": 12,
+            "НЛ": 12,
             "mod": 0,
             "reasons": []
           },
@@ -222,29 +460,80 @@
             "cults": [
               {
                 "name": "Айдан «Кот»",
-                "count": 20,
+                "count": 15,
                 "pct": 25
               },
               {
                 "name": "Лето",
-                "count": 5,
-                "pct": 6
+                "count": 4,
+                "pct": 7
               }
             ],
-            "neutral": 55,
-            "neutral_pct": 69,
+            "neutral": 41,
+            "neutral_pct": 68,
             "mod": 0,
             "reasons": []
           },
           "might": {
             "total": 5,
-            "fighters": 11,
+            "fighters": 8,
             "base": 2,
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
-            "fighters_src": "ополчение ~1.4% от 800",
+            "fighters_src": "ополчение ~1.4% от 600",
+            "neutral": true
+          }
+        },
+        {
+          "name": "Кабанья Тропа-Ключи",
+          "population": "~200",
+          "houses": "20",
+          "promysly": [
+            {
+              "name": "Охота",
+              "tier": "1",
+              "chain": "охота→кожа→обувь",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "крепкий",
+            "Тип": "нейтральная",
+            "Л": 12,
+            "Н": 4,
+            "НЛ": 4,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Айдан «Кот»",
+                "count": 5,
+                "pct": 25
+              },
+              {
+                "name": "Лето",
+                "count": 1,
+                "pct": 5
+              }
+            ],
+            "neutral": 14,
+            "neutral_pct": 70,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 4,
+            "fighters": 3,
+            "base": 1,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "tag_list": [],
+            "fighters_src": "ополчение ~1.4% от 200",
             "neutral": true
           }
         }
@@ -308,8 +597,8 @@
       "settlements": [
         {
           "name": "Ковыльные Стойбища",
-          "population": "~1000",
-          "houses": "100",
+          "population": "~200",
+          "houses": "20",
           "promysly": [
             {
               "name": "—",
@@ -321,9 +610,9 @@
           "loyalty": {
             "уклад": "крепкий",
             "Тип": "нейтральная",
-            "Л": 60,
-            "Н": 20,
-            "НЛ": 20,
+            "Л": 12,
+            "Н": 4,
+            "НЛ": 4,
             "mod": 0,
             "reasons": []
           },
@@ -331,29 +620,80 @@
             "cults": [
               {
                 "name": "Херец",
-                "count": 26,
+                "count": 5,
+                "pct": 25
+              },
+              {
+                "name": "Тенета",
+                "count": 3,
+                "pct": 15
+              }
+            ],
+            "neutral": 12,
+            "neutral_pct": 60,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 4,
+            "fighters": 3,
+            "base": 1,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "tag_list": [],
+            "fighters_src": "ополчение ~1.4% от 200",
+            "neutral": true
+          }
+        },
+        {
+          "name": "Ковыльные Стойбища-Ближнее",
+          "population": "~800",
+          "houses": "80",
+          "promysly": [
+            {
+              "name": "—",
+              "tier": "1",
+              "chain": "—",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "крепкий",
+            "Тип": "нейтральная",
+            "Л": 48,
+            "Н": 16,
+            "НЛ": 16,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Херец",
+                "count": 21,
                 "pct": 26
               },
               {
                 "name": "Тенета",
-                "count": 13,
-                "pct": 13
+                "count": 10,
+                "pct": 12
               }
             ],
-            "neutral": 61,
+            "neutral": 49,
             "neutral_pct": 61,
             "mod": 0,
             "reasons": []
           },
           "might": {
-            "total": 6,
-            "fighters": 14,
-            "base": 3,
+            "total": 5,
+            "fighters": 11,
+            "base": 2,
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
-            "fighters_src": "ополчение ~1.4% от 1000",
+            "fighters_src": "ополчение ~1.4% от 800",
             "neutral": true
           }
         }
@@ -417,8 +757,8 @@
       "settlements": [
         {
           "name": "Междолесье",
-          "population": "~800",
-          "houses": "80",
+          "population": "~500",
+          "houses": "50",
           "promysly": [
             {
               "name": "Вырубка",
@@ -430,9 +770,9 @@
           "loyalty": {
             "уклад": "крепкий",
             "Тип": "нейтральная",
-            "Л": 48,
-            "Н": 16,
-            "НЛ": 16,
+            "Л": 30,
+            "Н": 10,
+            "НЛ": 10,
             "mod": 0,
             "reasons": []
           },
@@ -440,29 +780,80 @@
             "cults": [
               {
                 "name": "Айдан «Кот»",
-                "count": 15,
-                "pct": 19
+                "count": 9,
+                "pct": 18
               },
               {
                 "name": "Бурий",
-                "count": 5,
+                "count": 3,
                 "pct": 6
               }
             ],
-            "neutral": 60,
-            "neutral_pct": 75,
+            "neutral": 38,
+            "neutral_pct": 76,
             "mod": 0,
             "reasons": []
           },
           "might": {
-            "total": 5,
-            "fighters": 11,
-            "base": 2,
+            "total": 4,
+            "fighters": 7,
+            "base": 1,
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
-            "fighters_src": "ополчение ~1.4% от 800",
+            "fighters_src": "ополчение ~1.4% от 500",
+            "neutral": true
+          }
+        },
+        {
+          "name": "Междолесье-Ясенево",
+          "population": "~300",
+          "houses": "30",
+          "promysly": [
+            {
+              "name": "Вырубка",
+              "tier": "1",
+              "chain": "лес→доски→мебель",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "крепкий",
+            "Тип": "нейтральная",
+            "Л": 18,
+            "Н": 6,
+            "НЛ": 6,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Айдан «Кот»",
+                "count": 6,
+                "pct": 20
+              },
+              {
+                "name": "Бурий",
+                "count": 2,
+                "pct": 7
+              }
+            ],
+            "neutral": 22,
+            "neutral_pct": 73,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 4,
+            "fighters": 4,
+            "base": 1,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "tag_list": [],
+            "fighters_src": "ополчение ~1.4% от 300",
             "neutral": true
           }
         }
@@ -474,8 +865,8 @@
       "settlements": [
         {
           "name": "Мшары",
-          "population": "~200",
-          "houses": "20",
+          "population": "~100",
+          "houses": "10",
           "promysly": [
             {
               "name": "Охота",
@@ -487,43 +878,90 @@
           "loyalty": {
             "уклад": "глушь",
             "Тип": "нейтральная",
-            "Л": 4,
-            "Н": 14,
-            "НЛ": 2,
-            "mod": -1,
-            "reasons": [
-              "-1 вера (религия)"
-            ]
+            "Л": 2,
+            "Н": 7,
+            "НЛ": 1,
+            "mod": 0,
+            "reasons": []
           },
           "faith": {
             "cults": [
               {
                 "name": "Айдан «Кот»",
-                "count": 10,
+                "count": 5,
                 "pct": 50
               },
               {
                 "name": "Бурий",
-                "count": 5,
-                "pct": 25
+                "count": 2,
+                "pct": 20
               }
             ],
-            "neutral": 5,
-            "neutral_pct": 25,
-            "mod": -1,
-            "reasons": [
-              "−1 религиозный раскол (2 культа ≥25%)"
-            ]
+            "neutral": 3,
+            "neutral_pct": 30,
+            "mod": 0,
+            "reasons": []
           },
           "might": {
             "total": 3,
-            "fighters": 3,
-            "base": 1,
-            "loyalty": 1,
+            "fighters": 1,
+            "base": 0,
+            "loyalty": 2,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
-            "fighters_src": "ополчение ~1.4% от 200",
+            "fighters_src": "ополчение ~1.4% от 100",
+            "neutral": true
+          }
+        },
+        {
+          "name": "Мшары-Мшистое",
+          "population": "~100",
+          "houses": "10",
+          "promysly": [
+            {
+              "name": "Охота",
+              "tier": "1",
+              "chain": "охота→кожа→обувь",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "глушь",
+            "Тип": "нейтральная",
+            "Л": 2,
+            "Н": 7,
+            "НЛ": 1,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Айдан «Кот»",
+                "count": 5,
+                "pct": 50
+              },
+              {
+                "name": "Бурий",
+                "count": 2,
+                "pct": 20
+              }
+            ],
+            "neutral": 3,
+            "neutral_pct": 30,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 3,
+            "fighters": 1,
+            "base": 0,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "tag_list": [],
+            "fighters_src": "ополчение ~1.4% от 100",
             "neutral": true
           }
         }
@@ -592,8 +1030,8 @@
       "settlements": [
         {
           "name": "Северный Перевал",
-          "population": "~200",
-          "houses": "20",
+          "population": "~50",
+          "houses": "5",
           "promysly": [
             {
               "name": "—",
@@ -605,8 +1043,54 @@
           "loyalty": {
             "уклад": "глушь",
             "Тип": "нейтральная",
-            "Л": 4,
-            "Н": 14,
+            "Л": 1,
+            "Н": 4,
+            "НЛ": 0,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Бурий",
+                "count": 2,
+                "pct": 40
+              }
+            ],
+            "neutral": 3,
+            "neutral_pct": 60,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 3,
+            "fighters": 1,
+            "base": 0,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "tag_list": [],
+            "fighters_src": "ополчение ~1.4% от 50",
+            "neutral": true
+          }
+        },
+        {
+          "name": "Северный Перевал-Восточные Ворота",
+          "population": "~150",
+          "houses": "15",
+          "promysly": [
+            {
+              "name": "—",
+              "tier": "1",
+              "chain": "—",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "глушь",
+            "Тип": "нейтральная",
+            "Л": 3,
+            "Н": 10,
             "НЛ": 2,
             "mod": 0,
             "reasons": []
@@ -615,12 +1099,69 @@
             "cults": [
               {
                 "name": "Бурий",
-                "count": 6,
-                "pct": 30
+                "count": 4,
+                "pct": 27
               }
             ],
-            "neutral": 14,
-            "neutral_pct": 70,
+            "neutral": 11,
+            "neutral_pct": 73,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 3,
+            "fighters": 2,
+            "base": 0,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "tag_list": [],
+            "fighters_src": "ополчение ~1.4% от 150",
+            "neutral": true
+          }
+        }
+      ]
+    },
+    {
+      "area": "Соляной Тракт — нейтральная клетка (1, -1) #предгорье",
+      "file": "solyanoy_trakt",
+      "settlements": [
+        {
+          "name": "Соляной Тракт",
+          "population": "~200",
+          "houses": "20",
+          "promysly": [
+            {
+              "name": "—",
+              "tier": "1",
+              "chain": "—",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "смута",
+            "Тип": "нейтральная",
+            "Л": 8,
+            "Н": 8,
+            "НЛ": 4,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Кипона",
+                "count": 6,
+                "pct": 30
+              },
+              {
+                "name": "Авиценна",
+                "count": 3,
+                "pct": 15
+              }
+            ],
+            "neutral": 11,
+            "neutral_pct": 55,
             "mod": 0,
             "reasons": []
           },
@@ -635,17 +1176,11 @@
             "fighters_src": "ополчение ~1.4% от 200",
             "neutral": true
           }
-        }
-      ]
-    },
-    {
-      "area": "Соляной Тракт — нейтральная клетка (1, -1) #предгорье",
-      "file": "solyanoy_trakt",
-      "settlements": [
+        },
         {
-          "name": "Соляной Тракт",
-          "population": "~500",
-          "houses": "50",
+          "name": "Соляной Тракт-Постой",
+          "population": "~300",
+          "houses": "30",
           "promysly": [
             {
               "name": "—",
@@ -657,9 +1192,9 @@
           "loyalty": {
             "уклад": "смута",
             "Тип": "нейтральная",
-            "Л": 20,
-            "Н": 20,
-            "НЛ": 10,
+            "Л": 12,
+            "Н": 12,
+            "НЛ": 6,
             "mod": 0,
             "reasons": []
           },
@@ -667,29 +1202,29 @@
             "cults": [
               {
                 "name": "Кипона",
-                "count": 16,
-                "pct": 32
+                "count": 10,
+                "pct": 33
               },
               {
                 "name": "Авиценна",
-                "count": 8,
-                "pct": 16
+                "count": 5,
+                "pct": 17
               }
             ],
-            "neutral": 26,
-            "neutral_pct": 52,
+            "neutral": 15,
+            "neutral_pct": 50,
             "mod": 0,
             "reasons": []
           },
           "might": {
             "total": 4,
-            "fighters": 7,
+            "fighters": 4,
             "base": 1,
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
-            "fighters_src": "ополчение ~1.4% от 500",
+            "fighters_src": "ополчение ~1.4% от 300",
             "neutral": true
           }
         }
@@ -758,8 +1293,8 @@
       "settlements": [
         {
           "name": "Верёвочный Волок",
-          "population": "~800",
-          "houses": "80",
+          "population": "~450",
+          "houses": "45",
           "promysly": [
             {
               "name": "—",
@@ -771,9 +1306,9 @@
           "loyalty": {
             "уклад": "смута",
             "Тип": "нейтральная",
-            "Л": 32,
-            "Н": 32,
-            "НЛ": 16,
+            "Л": 18,
+            "Н": 18,
+            "НЛ": 9,
             "mod": 0,
             "reasons": []
           },
@@ -781,29 +1316,131 @@
             "cults": [
               {
                 "name": "Кипона",
-                "count": 16,
+                "count": 9,
                 "pct": 20
               },
               {
                 "name": "Херец",
-                "count": 8,
+                "count": 4,
+                "pct": 9
+              }
+            ],
+            "neutral": 32,
+            "neutral_pct": 71,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 4,
+            "fighters": 6,
+            "base": 1,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "tag_list": [],
+            "fighters_src": "ополчение ~1.4% от 450",
+            "neutral": true
+          }
+        },
+        {
+          "name": "Верёвочный Волок-Пристань",
+          "population": "~300",
+          "houses": "30",
+          "promysly": [
+            {
+              "name": "—",
+              "tier": "1",
+              "chain": "—",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "смута",
+            "Тип": "нейтральная",
+            "Л": 12,
+            "Н": 12,
+            "НЛ": 6,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Кипона",
+                "count": 6,
+                "pct": 20
+              },
+              {
+                "name": "Херец",
+                "count": 3,
                 "pct": 10
               }
             ],
-            "neutral": 56,
+            "neutral": 21,
             "neutral_pct": 70,
             "mod": 0,
             "reasons": []
           },
           "might": {
-            "total": 5,
-            "fighters": 11,
-            "base": 2,
+            "total": 4,
+            "fighters": 4,
+            "base": 1,
             "loyalty": 2,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
-            "fighters_src": "ополчение ~1.4% от 800",
+            "fighters_src": "ополчение ~1.4% от 300",
+            "neutral": true
+          }
+        },
+        {
+          "name": "Верёвочный Волок-Волок",
+          "population": "~50",
+          "houses": "5",
+          "promysly": [
+            {
+              "name": "—",
+              "tier": "1",
+              "chain": "—",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "смута",
+            "Тип": "нейтральная",
+            "Л": 2,
+            "Н": 2,
+            "НЛ": 1,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Кипона",
+                "count": 1,
+                "pct": 20
+              },
+              {
+                "name": "Херец",
+                "count": 1,
+                "pct": 20
+              }
+            ],
+            "neutral": 3,
+            "neutral_pct": 60,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 3,
+            "fighters": 1,
+            "base": 0,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "tag_list": [],
+            "fighters_src": "ополчение ~1.4% от 50",
             "neutral": true
           }
         }
@@ -992,6 +1629,196 @@
       "settlements": [
         {
           "name": "Юго-Западные Предгорья",
+          "population": "~150",
+          "houses": "15",
+          "promysly": [
+            {
+              "name": "Охота",
+              "tier": "1",
+              "chain": "охота→кожа→обувь",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "глушь",
+            "Тип": "нейтральная",
+            "Л": 3,
+            "Н": 10,
+            "НЛ": 2,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Бурий",
+                "count": 4,
+                "pct": 27
+              }
+            ],
+            "neutral": 11,
+            "neutral_pct": 73,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 3,
+            "fighters": 2,
+            "base": 0,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "tag_list": [],
+            "fighters_src": "ополчение ~1.4% от 150",
+            "neutral": true
+          }
+        },
+        {
+          "name": "Юго-Западные Предгорья-Северное",
+          "population": "~50",
+          "houses": "5",
+          "promysly": [
+            {
+              "name": "Охота",
+              "tier": "1",
+              "chain": "охота→кожа→обувь",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "глушь",
+            "Тип": "нейтральная",
+            "Л": 1,
+            "Н": 4,
+            "НЛ": 0,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Бурий",
+                "count": 1,
+                "pct": 20
+              }
+            ],
+            "neutral": 4,
+            "neutral_pct": 80,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 3,
+            "fighters": 1,
+            "base": 0,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "tag_list": [],
+            "fighters_src": "ополчение ~1.4% от 50",
+            "neutral": true
+          }
+        },
+        {
+          "name": "Юго-Западные Предгорья-Южное",
+          "population": "~100",
+          "houses": "10",
+          "promysly": [
+            {
+              "name": "Охота",
+              "tier": "1",
+              "chain": "охота→кожа→обувь",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "глушь",
+            "Тип": "нейтральная",
+            "Л": 2,
+            "Н": 7,
+            "НЛ": 1,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Бурий",
+                "count": 2,
+                "pct": 20
+              }
+            ],
+            "neutral": 8,
+            "neutral_pct": 80,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 3,
+            "fighters": 1,
+            "base": 0,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "tag_list": [],
+            "fighters_src": "ополчение ~1.4% от 100",
+            "neutral": true
+          }
+        }
+      ]
+    },
+    {
+      "area": "Южные Предгорья — нейтральная клетка (3, 0) #предгорье",
+      "file": "yuzhnyye_predgorya",
+      "settlements": [
+        {
+          "name": "Южные Предгорья",
+          "population": "~100",
+          "houses": "10",
+          "promysly": [
+            {
+              "name": "Охота",
+              "tier": "1",
+              "chain": "охота→кожа→обувь",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "глушь",
+            "Тип": "нейтральная",
+            "Л": 2,
+            "Н": 7,
+            "НЛ": 1,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Бурий",
+                "count": 2,
+                "pct": 20
+              }
+            ],
+            "neutral": 8,
+            "neutral_pct": 80,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 3,
+            "fighters": 1,
+            "base": 0,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "tag_list": [],
+            "fighters_src": "ополчение ~1.4% от 100",
+            "neutral": true
+          }
+        },
+        {
+          "name": "Южные Предгорья-Северное",
           "population": "~300",
           "houses": "30",
           "promysly": [
@@ -1015,12 +1842,12 @@
             "cults": [
               {
                 "name": "Бурий",
-                "count": 7,
-                "pct": 23
+                "count": 8,
+                "pct": 27
               }
             ],
-            "neutral": 23,
-            "neutral_pct": 77,
+            "neutral": 22,
+            "neutral_pct": 73,
             "mod": 0,
             "reasons": []
           },
@@ -1033,58 +1860,6 @@
             "tags": 0,
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 300",
-            "neutral": true
-          }
-        }
-      ]
-    },
-    {
-      "area": "Южные Предгорья — нейтральная клетка (3, 0) #предгорье",
-      "file": "yuzhnyye_predgorya",
-      "settlements": [
-        {
-          "name": "Южные Предгорья",
-          "population": "~400",
-          "houses": "40",
-          "promysly": [
-            {
-              "name": "Охота",
-              "tier": "1",
-              "chain": "охота→кожа→обувь",
-              "owner": "местные"
-            }
-          ],
-          "loyalty": {
-            "уклад": "глушь",
-            "Тип": "нейтральная",
-            "Л": 8,
-            "Н": 28,
-            "НЛ": 4,
-            "mod": 0,
-            "reasons": []
-          },
-          "faith": {
-            "cults": [
-              {
-                "name": "Бурий",
-                "count": 10,
-                "pct": 25
-              }
-            ],
-            "neutral": 30,
-            "neutral_pct": 75,
-            "mod": 0,
-            "reasons": []
-          },
-          "might": {
-            "total": 4,
-            "fighters": 6,
-            "base": 1,
-            "loyalty": 2,
-            "defense": 1,
-            "tags": 0,
-            "tag_list": [],
-            "fighters_src": "ополчение ~1.4% от 400",
             "neutral": true
           }
         }
