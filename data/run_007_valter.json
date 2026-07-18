@@ -277,9 +277,9 @@
     "cults": [
       {
         "name": "Кипона",
-        "count": 15,
-        "pct": 15,
-        "events": false
+        "count": 20,
+        "pct": 20,
+        "events": true
       },
       {
         "name": "Айдан «Кот»",
@@ -300,8 +300,8 @@
         "events": false
       }
     ],
-    "neutral": 60,
-    "neutral_pct": 60,
+    "neutral": 55,
+    "neutral_pct": 55,
     "threshold_pct": 15
   },
   "hearth": {
@@ -506,10 +506,17 @@
             "pct": 33,
             "rel_mod": 0,
             "rel_reasons": []
+          },
+          {
+            "name": "Кипона",
+            "count": 5,
+            "pct": 17,
+            "rel_mod": 0,
+            "rel_reasons": []
           }
         ],
-        "neutral": 20,
-        "neutral_pct": 67,
+        "neutral": 15,
+        "neutral_pct": 50,
         "mod": 0,
         "reasons": []
       },
