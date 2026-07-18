@@ -249,10 +249,16 @@
         "count": 10,
         "pct": 10,
         "events": false
+      },
+      {
+        "name": "Бурий",
+        "count": 8,
+        "pct": 8,
+        "events": false
       }
     ],
-    "neutral": 70,
-    "neutral_pct": 70,
+    "neutral": 62,
+    "neutral_pct": 62,
     "threshold_pct": 15
   },
   "hearth": {
@@ -350,10 +356,17 @@
             "pct": 14,
             "rel_mod": 0,
             "rel_reasons": []
+          },
+          {
+            "name": "Бурий",
+            "count": 8,
+            "pct": 11,
+            "rel_mod": 0,
+            "rel_reasons": []
           }
         ],
-        "neutral": 40,
-        "neutral_pct": 57,
+        "neutral": 32,
+        "neutral_pct": 46,
         "mod": 0,
         "reasons": []
       },
