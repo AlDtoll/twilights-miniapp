@@ -113,21 +113,45 @@
   },
   "buildings": {
     "slots": {
-      "base": 0,
+      "base": 2,
       "extra": 0,
-      "used": 0,
-      "max_extra": 0,
-      "free": 0
+      "used": 1,
+      "max_extra": 2,
+      "free": 1
     },
-    "buildings": []
+    "buildings": [
+      {
+        "name": "Управа",
+        "cost": 5000,
+        "status": "🔨 С1 (1 сезон)",
+        "maint": 50,
+        "rate": 5,
+        "hands": 0
+      }
+    ]
   },
   "events": {
-    "points": {},
+    "points": {
+      "player": {
+        "total": 0,
+        "left": 0
+      },
+      "chancellor": {
+        "name": "—",
+        "total": 0,
+        "left": 0
+      },
+      "captain": {
+        "name": "—",
+        "total": 0,
+        "left": 0
+      }
+    },
     "incidents": [],
     "visitors": [],
     "assignments": [],
     "custom": [],
-    "po_title": "Преступления и опасности (капитан — П&О)",
+    "po_title": "Преступления и опасности (— — П&О)",
     "po": []
   },
   "hero": {
@@ -283,8 +307,24 @@
           "np": "Утёсная гавань"
         }
       ],
-      "buildings": [],
-      "promysly": [],
+      "buildings": [
+        {
+          "name": "Управа",
+          "cost": 5000,
+          "status": "🔨 С1 (1 сезон)",
+          "maint": 50,
+          "rate": 5,
+          "hands": 0
+        }
+      ],
+      "promysly": [
+        {
+          "name": "Рыбная ловля",
+          "tier": "1",
+          "chain": "рыба→засол→припасы",
+          "owner": "NPC"
+        }
+      ],
       "income": [
         {
           "label": "Налог (45 × 5 × 90 × 100%)",
@@ -302,23 +342,24 @@
       "expenses_np": [],
       "stash": [],
       "loyalty": {
-        "Л": 0,
-        "Н": 0,
-        "НЛ": 0,
+        "Л": 30,
+        "Н": 15,
+        "НЛ": 5,
         "Тип": "стартовая",
-        "mod": -1,
+        "mod": 0,
         "reasons": [
           "+1 стартовая",
+          "+1 Управа",
           "−1 нехватка стражи (0/7)",
           "−1 нехватка клерков (0/2)"
         ]
       },
       "faith": null,
       "might": {
-        "total": 0,
+        "total": 1,
         "fighters": 0,
         "base": 0,
-        "loyalty": -1,
+        "loyalty": 0,
         "defense": 1,
         "tags": 0,
         "tag_list": [],
@@ -362,7 +403,14 @@
         }
       ],
       "buildings": [],
-      "promysly": [],
+      "promysly": [
+        {
+          "name": "Прийск",
+          "tier": "1",
+          "chain": "руда→железо→изделие",
+          "owner": "NPC"
+        }
+      ],
       "income": [
         {
           "label": "Налог (27 × 5 × 90 × 100%)",
@@ -380,9 +428,9 @@
       "expenses_np": [],
       "stash": [],
       "loyalty": {
-        "Л": 0,
-        "Н": 0,
-        "НЛ": 0,
+        "Л": 20,
+        "Н": 8,
+        "НЛ": 2,
         "Тип": "стартовая",
         "mod": -1,
         "reasons": [
@@ -440,7 +488,14 @@
         }
       ],
       "buildings": [],
-      "promysly": [],
+      "promysly": [
+        {
+          "name": "Рыбная ловля",
+          "tier": "1",
+          "chain": "рыба→засол→припасы",
+          "owner": "NPC"
+        }
+      ],
       "income": [
         {
           "label": "Налог (18 × 5 × 90 × 100%)",
@@ -458,8 +513,8 @@
       "expenses_np": [],
       "stash": [],
       "loyalty": {
-        "Л": 0,
-        "Н": 0,
+        "Л": 15,
+        "Н": 5,
         "НЛ": 0,
         "Тип": "стартовая",
         "mod": -1,
