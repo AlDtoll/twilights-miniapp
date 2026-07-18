@@ -31,8 +31,8 @@
         "amount": 918
       },
       {
-        "label": "Торговцы (0 × 6 × 90 × 85%)",
-        "amount": 0
+        "label": "Торговцы (2 × 6 × 90 × 85%)",
+        "amount": 918
       }
     ],
     "expenses": [
@@ -68,8 +68,8 @@
           "amount": 918
         },
         {
-          "label": "Торговцы (0 × 6 × 90 × 85%)",
-          "amount": 0
+          "label": "Торговцы (2 × 6 × 90 × 85%)",
+          "amount": 918
         }
       ]
     },
@@ -81,9 +81,9 @@
         }
       ]
     },
-    "total_income": 40334,
+    "total_income": 41252,
     "total_expenses": 1350,
-    "balance": 46984
+    "balance": 47902
   },
   "buildings": {
     "slots": {
@@ -463,8 +463,8 @@
           "amount": 918
         },
         {
-          "label": "Торговцы (0 × 6 × 90 × 85%)",
-          "amount": 0
+          "label": "Торговцы (2 × 6 × 90 × 85%)",
+          "amount": 918
         }
       ],
       "expenses_np": [],
