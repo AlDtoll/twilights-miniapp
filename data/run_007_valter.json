@@ -8,7 +8,7 @@
   "season": "1",
   "active_phase": null,
   "finance": {
-    "start": 0,
+    "start": 8000,
     "income": [
       {
         "label": "Налог (45 × 5 × 90 × 75%)",
@@ -109,7 +109,7 @@
     },
     "total_income": 33008,
     "total_expenses": 1350,
-    "balance": 31658
+    "balance": 39658
   },
   "buildings": {
     "slots": {
