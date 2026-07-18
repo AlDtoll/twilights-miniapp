@@ -311,7 +311,7 @@
   "settlements": [
     {
       "name": "Утёсная гавань",
-      "area": "Утёсная гавань",
+      "area": "Утёсный край",
       "population": "~500",
       "growth": null,
       "houses": "50",
@@ -434,7 +434,7 @@
     },
     {
       "name": "Рудный двор",
-      "area": "Рудный двор",
+      "area": "Утёсный край",
       "population": "~300",
       "growth": null,
       "houses": "30",
@@ -540,7 +540,7 @@
     },
     {
       "name": "Мыс Стража",
-      "area": "Мыс Стража",
+      "area": "Утёсный край",
       "population": "~200",
       "growth": null,
       "houses": "20",

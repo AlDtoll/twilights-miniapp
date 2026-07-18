@@ -291,7 +291,7 @@
   "settlements": [
     {
       "name": "Былицы",
-      "area": "Былицы",
+      "area": "Полынье",
       "population": "~700",
       "growth": null,
       "houses": "70",
@@ -406,7 +406,7 @@
     },
     {
       "name": "Кочевье",
-      "area": "Кочевье",
+      "area": "Полынье",
       "population": "~250",
       "growth": null,
       "houses": "25",
@@ -515,7 +515,7 @@
     },
     {
       "name": "Каменка",
-      "area": "Каменка",
+      "area": "Полынье",
       "population": "~150",
       "growth": null,
       "houses": "15",

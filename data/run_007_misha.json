@@ -268,7 +268,7 @@
   "settlements": [
     {
       "name": "Чистозерье",
-      "area": "Чистозерье",
+      "area": "Озёрный Край",
       "population": "~700",
       "growth": null,
       "houses": "70",
@@ -390,7 +390,7 @@
     },
     {
       "name": "Чистолесье",
-      "area": "Чистолесье",
+      "area": "Озёрный Край",
       "population": "~300",
       "growth": null,
       "houses": "30",
