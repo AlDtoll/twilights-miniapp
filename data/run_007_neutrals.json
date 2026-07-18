@@ -466,6 +466,130 @@
       ]
     },
     {
+      "area": "Хвалибов Двор — нейтральная клетка (1, 1)",
+      "file": "khvalibov_dvor",
+      "settlements": [
+        {
+          "name": "Хвалибов Двор",
+          "population": "~1000",
+          "houses": "100",
+          "promysly": [
+            {
+              "name": "Кузня",
+              "tier": "1",
+              "chain": "руда→железо→изделие",
+              "owner": "барон"
+            },
+            {
+              "name": "Пашня и обжига",
+              "tier": "1",
+              "chain": "зерно→хлеб/пиво",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "под властителем",
+            "Тип": "нейтральная",
+            "Л": 70,
+            "Н": 20,
+            "НЛ": 10,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Айдан «Кот»",
+                "count": 40,
+                "pct": 40
+              },
+              {
+                "name": "Светлый культ",
+                "count": 20,
+                "pct": 20
+              },
+              {
+                "name": "Местный культ",
+                "count": 10,
+                "pct": 10
+              }
+            ],
+            "neutral": 30,
+            "neutral_pct": 30,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 6,
+            "fighters": 14,
+            "base": 3,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "tag_list": [],
+            "fighters_src": "ополчение ~1.4% от 1000",
+            "neutral": true
+          }
+        },
+        {
+          "name": "Придорожные Хутора",
+          "population": "~500",
+          "houses": "50",
+          "promysly": [
+            {
+              "name": "Скотоводство",
+              "tier": "1",
+              "chain": "молоко→масло/сыр",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "под властителем",
+            "Тип": "нейтральная",
+            "Л": 35,
+            "Н": 10,
+            "НЛ": 5,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Айдан «Кот»",
+                "count": 20,
+                "pct": 40
+              },
+              {
+                "name": "Светлый культ",
+                "count": 10,
+                "pct": 20
+              },
+              {
+                "name": "Местный культ",
+                "count": 5,
+                "pct": 10
+              }
+            ],
+            "neutral": 15,
+            "neutral_pct": 30,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 4,
+            "fighters": 7,
+            "base": 1,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "tag_list": [],
+            "fighters_src": "ополчение ~1.4% от 500",
+            "neutral": true
+          }
+        }
+      ]
+    },
+    {
       "area": "Ковыльные Стойбища — нейтральная клетка (0, -1)",
       "file": "kovylnye_stoibishcha",
       "settlements": [
@@ -1434,130 +1558,6 @@
             "tags": 0,
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 800",
-            "neutral": true
-          }
-        }
-      ]
-    },
-    {
-      "area": "Верёвочный Волок — нейтральная клетка (1, 1)",
-      "file": "verevochny_volok",
-      "settlements": [
-        {
-          "name": "Верёвочный Волок",
-          "population": "~1000",
-          "houses": "100",
-          "promysly": [
-            {
-              "name": "Купеческие пристани",
-              "tier": "2",
-              "chain": "приём/погрузка обозов",
-              "owner": "барон + гильдия"
-            },
-            {
-              "name": "Волочная артель",
-              "tier": "1",
-              "chain": "грузы на волоке",
-              "owner": "местные"
-            }
-          ],
-          "loyalty": {
-            "уклад": "под властителем",
-            "Тип": "нейтральная",
-            "Л": 70,
-            "Н": 20,
-            "НЛ": 10,
-            "mod": 0,
-            "reasons": []
-          },
-          "faith": {
-            "cults": [
-              {
-                "name": "Айдан «Кот»",
-                "count": 40,
-                "pct": 40
-              },
-              {
-                "name": "Кипона",
-                "count": 20,
-                "pct": 20
-              },
-              {
-                "name": "Светлый культ",
-                "count": 10,
-                "pct": 10
-              }
-            ],
-            "neutral": 30,
-            "neutral_pct": 30,
-            "mod": 0,
-            "reasons": []
-          },
-          "might": {
-            "total": 6,
-            "fighters": 14,
-            "base": 3,
-            "loyalty": 2,
-            "defense": 1,
-            "tags": 0,
-            "tag_list": [],
-            "fighters_src": "ополчение ~1.4% от 1000",
-            "neutral": true
-          }
-        },
-        {
-          "name": "Малые Пристани",
-          "population": "~500",
-          "houses": "50",
-          "promysly": [
-            {
-              "name": "Рыбная ловля",
-              "tier": "1",
-              "chain": "рыба→засол→припасы",
-              "owner": "местные"
-            }
-          ],
-          "loyalty": {
-            "уклад": "под властителем",
-            "Тип": "нейтральная",
-            "Л": 35,
-            "Н": 10,
-            "НЛ": 5,
-            "mod": 0,
-            "reasons": []
-          },
-          "faith": {
-            "cults": [
-              {
-                "name": "Айдан «Кот»",
-                "count": 20,
-                "pct": 40
-              },
-              {
-                "name": "Кипона",
-                "count": 10,
-                "pct": 20
-              },
-              {
-                "name": "Светлый культ",
-                "count": 5,
-                "pct": 10
-              }
-            ],
-            "neutral": 15,
-            "neutral_pct": 30,
-            "mod": 0,
-            "reasons": []
-          },
-          "might": {
-            "total": 4,
-            "fighters": 7,
-            "base": 1,
-            "loyalty": 2,
-            "defense": 1,
-            "tags": 0,
-            "tag_list": [],
-            "fighters_src": "ополчение ~1.4% от 500",
             "neutral": true
           }
         }
