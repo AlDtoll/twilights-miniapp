@@ -373,7 +373,8 @@
         "neutral": 32,
         "neutral_pct": 46,
         "mod": 0,
-        "reasons": []
+        "reasons": [],
+        "delta": {}
       },
       "might": {
         "total": 0,
@@ -486,7 +487,8 @@
         "mod": -1,
         "reasons": [
           "−1 религиозный раскол (2 культа ≥25%)"
-        ]
+        ],
+        "delta": {}
       },
       "might": {
         "total": -1,
