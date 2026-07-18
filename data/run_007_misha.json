@@ -9,7 +9,20 @@
   "active_phase": null,
   "finance": {
     "start": 8000,
-    "income": [],
+    "income": [
+      {
+        "label": "Налог (63 × 5 × 90 × 100%)",
+        "amount": 28350
+      },
+      {
+        "label": "Лавки (0 × 3 × 90 × 100%)",
+        "amount": 0
+      },
+      {
+        "label": "Торговцы (0 × 6 × 90 × 100%)",
+        "amount": 0
+      }
+    ],
     "expenses": [
       {
         "label": "Содержание Эльф Лекс (спутник-человек, 15 × 90)",
@@ -18,7 +31,22 @@
     ],
     "receipts": [],
     "spendings": [],
-    "income_by": {},
+    "income_by": {
+      "Чистозерье": [
+        {
+          "label": "Налог (63 × 5 × 90 × 100%)",
+          "amount": 28350
+        },
+        {
+          "label": "Лавки (0 × 3 × 90 × 100%)",
+          "amount": 0
+        },
+        {
+          "label": "Торговцы (0 × 6 × 90 × 100%)",
+          "amount": 0
+        }
+      ]
+    },
     "expenses_by": {
       "Общие": [
         {
@@ -27,9 +55,9 @@
         }
       ]
     },
-    "total_income": 0,
+    "total_income": 28350,
     "total_expenses": 1350,
-    "balance": 6650
+    "balance": 35000
   },
   "buildings": {
     "slots": {
@@ -194,7 +222,20 @@
       ],
       "buildings": [],
       "promysly": [],
-      "income": [],
+      "income": [
+        {
+          "label": "Налог (63 × 5 × 90 × 100%)",
+          "amount": 28350
+        },
+        {
+          "label": "Лавки (0 × 3 × 90 × 100%)",
+          "amount": 0
+        },
+        {
+          "label": "Торговцы (0 × 6 × 90 × 100%)",
+          "amount": 0
+        }
+      ],
       "expenses_np": [],
       "stash": [],
       "loyalty": {
