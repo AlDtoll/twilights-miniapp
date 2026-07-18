@@ -173,6 +173,63 @@
       ]
     },
     {
+      "area": "Кабанья Тропа — нейтральная клетка (1, 2)",
+      "file": "kabanya_tropa",
+      "settlements": [
+        {
+          "name": "Кабанья Тропа",
+          "population": "~500",
+          "houses": "50",
+          "promysly": [
+            {
+              "name": "Охота",
+              "tier": "1",
+              "chain": "охота→кожа→обувь",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "крепкий",
+            "Тип": "нейтральная",
+            "Л": 30,
+            "Н": 10,
+            "НЛ": 10,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Айдан «Кот»",
+                "count": 20,
+                "pct": 40
+              },
+              {
+                "name": "Лето",
+                "count": 5,
+                "pct": 10
+              }
+            ],
+            "neutral": 25,
+            "neutral_pct": 50,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 4,
+            "fighters": 7,
+            "base": 1,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "tag_list": [],
+            "fighters_src": "ополчение ~1.4% от 500",
+            "neutral": true
+          }
+        }
+      ]
+    },
+    {
       "area": "Каменный Хребет — нейтральная клетка (-1, 0) #предгорье",
       "file": "kamennyy_khrebet",
       "settlements": [
@@ -442,6 +499,63 @@
             "tags": 0,
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 200",
+            "neutral": true
+          }
+        }
+      ]
+    },
+    {
+      "area": "Мшары — нейтральная клетка (-1, 2)",
+      "file": "mshary",
+      "settlements": [
+        {
+          "name": "Мшары",
+          "population": "~300",
+          "houses": "30",
+          "promysly": [
+            {
+              "name": "Охота",
+              "tier": "1",
+              "chain": "охота→кожа→обувь",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "глушь",
+            "Тип": "нейтральная",
+            "Л": 6,
+            "Н": 21,
+            "НЛ": 3,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Айдан «Кот»",
+                "count": 10,
+                "pct": 33
+              },
+              {
+                "name": "Бурий",
+                "count": 5,
+                "pct": 17
+              }
+            ],
+            "neutral": 15,
+            "neutral_pct": 50,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 4,
+            "fighters": 4,
+            "base": 1,
+            "loyalty": 2,
+            "defense": 1,
+            "tags": 0,
+            "tag_list": [],
+            "fighters_src": "ополчение ~1.4% от 300",
             "neutral": true
           }
         }
