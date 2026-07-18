@@ -919,52 +919,72 @@
       "settlements": [
         {
           "name": "Волчий Стан",
-          "population": "~1200",
-          "houses": "120",
+          "population": "~800",
+          "houses": "80",
           "promysly": [
             {
-              "name": "—",
+              "name": "Охота и скотоводство",
               "tier": "1",
               "chain": "—",
-              "owner": "местные"
+              "owner": "племя"
+            },
+            {
+              "name": "Родовая кузня",
+              "tier": "1",
+              "chain": "оружие/утварь",
+              "owner": "племенной кузнец"
             }
           ],
           "loyalty": {
             "уклад": "крепкий",
             "Тип": "нейтральная",
-            "Л": 72,
-            "Н": 24,
-            "НЛ": 24,
-            "mod": 0,
-            "reasons": []
+            "Л": 48,
+            "Н": 16,
+            "НЛ": 16,
+            "mod": -1,
+            "reasons": [
+              "-1 вера (религия)"
+            ]
           },
           "faith": {
             "cults": [
               {
+                "name": "Культ войны",
+                "count": 40,
+                "pct": 50
+              },
+              {
                 "name": "Херец",
-                "count": 26,
-                "pct": 22
+                "count": 20,
+                "pct": 25
               },
               {
                 "name": "Тенета",
-                "count": 13,
-                "pct": 11
+                "count": 10,
+                "pct": 12
               }
             ],
-            "neutral": 81,
-            "neutral_pct": 68,
-            "mod": 0,
-            "reasons": []
+            "neutral": 10,
+            "neutral_pct": 12,
+            "mod": -1,
+            "reasons": [
+              "−1 религиозный раскол (2 культа ≥25%)"
+            ]
           },
           "might": {
-            "total": 6,
-            "fighters": 17,
-            "base": 3,
-            "loyalty": 2,
+            "total": 5,
+            "fighters": 11,
+            "base": 2,
+            "loyalty": 1,
             "defense": 1,
-            "tags": 0,
-            "tag_list": [],
-            "fighters_src": "ополчение ~1.4% от 1200",
+            "tags": 1,
+            "tag_list": [
+              {
+                "value": 1,
+                "reason": "культ войны (топ ≥50%)"
+              }
+            ],
+            "fighters_src": "ополчение ~1.4% от 800",
             "neutral": true
           }
         }
