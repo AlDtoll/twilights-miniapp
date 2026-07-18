@@ -55,6 +55,10 @@
       {
         "label": "Клерки (3 × 20 × 90)",
         "amount": 5400
+      },
+      {
+        "label": "Стража (4 × 20 × 90)",
+        "amount": 7200
       }
     ],
     "receipts": [],
@@ -114,11 +118,17 @@
           "label": "Клерки (3 × 20 × 90)",
           "amount": 5400
         }
+      ],
+      "Кочевье": [
+        {
+          "label": "Стража (4 × 20 × 90)",
+          "amount": 7200
+        }
       ]
     },
     "total_income": 33314,
-    "total_expenses": 23400,
-    "balance": 17914
+    "total_expenses": 30600,
+    "balance": 10714
   },
   "buildings": {
     "slots": {
@@ -258,9 +268,9 @@
     },
     {
       "category": "Стража (бойцы)",
-      "fact": "0",
+      "fact": "4",
       "norm": "4",
-      "status": "⚠️ нет стражи (+1d2 П&О)",
+      "status": "✅",
       "np": "Кочевье"
     },
     {
@@ -457,9 +467,9 @@
       "staff": [
         {
           "category": "Стража (бойцы)",
-          "fact": "0",
+          "fact": "4",
           "norm": "4",
-          "status": "⚠️ нет стражи (+1d2 П&О)",
+          "status": "✅",
           "np": "Кочевье"
         },
         {
@@ -500,17 +510,21 @@
           "amount": 0
         }
       ],
-      "expenses_np": [],
+      "expenses_np": [
+        {
+          "label": "Стража (4 × 20 × 90)",
+          "amount": 7200
+        }
+      ],
       "stash": [],
       "loyalty": {
         "Л": 21,
         "Н": 4,
         "НЛ": 0,
         "Тип": "стартовая",
-        "mod": 0,
+        "mod": 1,
         "reasons": [
           "+1 стартовая",
-          "−1 нехватка стражи (0/4)",
           "−1 нехватка клерков (0/1)",
           "+1 вера (религия)"
         ],
@@ -542,10 +556,10 @@
         }
       },
       "might": {
-        "total": 2,
-        "fighters": 0,
-        "base": 0,
-        "loyalty": 0,
+        "total": 4,
+        "fighters": 4,
+        "base": 1,
+        "loyalty": 1,
         "defense": 1,
         "tags": 1,
         "tag_list": [
@@ -554,7 +568,7 @@
             "reason": "культ войны (топ ≥50%)"
           }
         ],
-        "fighters_src": "стража 0",
+        "fighters_src": "стража 4",
         "neutral": false
       },
       "eff_breakdown": {
