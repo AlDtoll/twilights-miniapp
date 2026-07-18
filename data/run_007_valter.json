@@ -295,13 +295,13 @@
       },
       {
         "name": "Лето",
-        "count": 5,
-        "pct": 5,
+        "count": 8,
+        "pct": 8,
         "events": false
       }
     ],
-    "neutral": 45,
-    "neutral_pct": 45,
+    "neutral": 42,
+    "neutral_pct": 42,
     "threshold_pct": 15
   },
   "hearth": {
@@ -613,10 +613,17 @@
             "pct": 50,
             "rel_mod": 0,
             "rel_reasons": []
+          },
+          {
+            "name": "Лето",
+            "count": 3,
+            "pct": 15,
+            "rel_mod": 0,
+            "rel_reasons": []
           }
         ],
-        "neutral": 10,
-        "neutral_pct": 50,
+        "neutral": 7,
+        "neutral_pct": 35,
         "mod": -1,
         "reasons": [
           "−1 Кипона преобладает (50%), герой без бога"
