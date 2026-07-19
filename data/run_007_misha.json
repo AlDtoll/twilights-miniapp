@@ -72,7 +72,7 @@
     "receipts": [
       {
         "label": "Добыча из схрона варваров-беглецов (Хазар)",
-        "amount": 500
+        "amount": 548
       }
     ],
     "spendings": [],
@@ -148,7 +148,7 @@
     },
     "total_income": 42170,
     "total_expenses": 39510,
-    "balance": 11160
+    "balance": 11208
   },
   "buildings": {
     "slots": {
