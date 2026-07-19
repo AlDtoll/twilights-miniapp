@@ -502,7 +502,7 @@
       {
         "name": "Тактика (0)",
         "techniques": [],
-        "bank": 8,
+        "bank": 12,
         "ups": 0,
         "next_threshold": 10
       }
