@@ -6,7 +6,7 @@
   "user_id": 1700257736,
   "telegram": "@Мишачья",
   "season": "1",
-  "active_phase": "hearth",
+  "active_phase": "idle",
   "finance": {
     "start": 8000,
     "income": [
@@ -500,11 +500,11 @@
         "next_threshold": 10
       },
       {
-        "name": "Тактика (0)",
+        "name": "Тактика (I)",
         "techniques": [],
-        "bank": 12,
-        "ups": 0,
-        "next_threshold": 10
+        "bank": 2,
+        "ups": 1,
+        "next_threshold": 12
       }
     ],
     "features": [
