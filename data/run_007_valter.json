@@ -431,7 +431,7 @@
       {
         "name": "Стрелок (пороховое) (I)",
         "techniques": [],
-        "bank": 0,
+        "bank": 2,
         "ups": 0,
         "next_threshold": 10
       },
