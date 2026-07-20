@@ -1668,13 +1668,22 @@
             "reasons": []
           },
           "might": {
-            "total": 3,
+            "total": 1,
             "fighters": 2,
             "base": 0,
             "loyalty": 2,
             "defense": 1,
-            "tags": 0,
-            "tag_list": [],
+            "tags": -2,
+            "tag_list": [
+              {
+                "value": -1,
+                "reason": "разведка пало С1"
+              },
+              {
+                "value": -1,
+                "reason": "ватага бек батыра пало С1"
+              }
+            ],
             "fighters_src": "ополчение ~1.4% от 150",
             "neutral": true
           }
