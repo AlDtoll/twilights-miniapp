@@ -9,6 +9,10 @@
           "name": "Ельник",
           "population": "~500",
           "houses": "50",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "—",
@@ -71,6 +75,10 @@
           "name": "Гостиный Порт",
           "population": "~850",
           "houses": "85",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "Рыбная ловля",
@@ -139,6 +147,10 @@
           "name": "Гостиный Порт-Купеческий Двор",
           "population": "~500",
           "houses": "50",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "Рыбная ловля",
@@ -207,6 +219,10 @@
           "name": "Гостиный Порт-Пристань",
           "population": "~650",
           "houses": "65",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "Рыбная ловля",
@@ -281,6 +297,10 @@
           "name": "Кабанья Тропа",
           "population": "~600",
           "houses": "60",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "Охота",
@@ -341,6 +361,10 @@
           "name": "Кабанья Тропа-Ключи",
           "population": "~200",
           "houses": "20",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "Охота",
@@ -407,6 +431,10 @@
           "name": "Каменный Хребет",
           "population": "~400",
           "houses": "40",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "—",
@@ -473,6 +501,10 @@
           "name": "Хвалибов Двор",
           "population": "~1000",
           "houses": "100",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "Кузня",
@@ -535,6 +567,10 @@
           "name": "Придорожные Хутора",
           "population": "~500",
           "houses": "50",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "Скотоводство",
@@ -597,6 +633,10 @@
           "name": "Ковыльные Стойбища",
           "population": "~200",
           "houses": "20",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "—",
@@ -653,6 +693,10 @@
           "name": "Ковыльные Стойбища-Ближнее",
           "population": "~800",
           "houses": "80",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "—",
@@ -715,6 +759,10 @@
           "name": "Крайнее Озеро",
           "population": "~500",
           "houses": "50",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "—",
@@ -781,6 +829,10 @@
           "name": "Кремневая Гряда",
           "population": "~400",
           "houses": "40",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "Каменотёсное",
@@ -837,6 +889,10 @@
           "name": "Кремневая Гряда-Верхняя",
           "population": "~150",
           "houses": "15",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "Скотоводство",
@@ -893,6 +949,10 @@
           "name": "Кремневая Гряда-Нижняя",
           "population": "~250",
           "houses": "25",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "Охота",
@@ -955,6 +1015,10 @@
           "name": "Междолесье",
           "population": "~500",
           "houses": "50",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "Вырубка",
@@ -1011,6 +1075,10 @@
           "name": "Междолесье-Ясенево",
           "population": "~300",
           "houses": "30",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "Вырубка",
@@ -1073,6 +1141,10 @@
           "name": "Мшары",
           "population": "~100",
           "houses": "10",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "Охота",
@@ -1133,6 +1205,10 @@
           "name": "Мшары-Мшистое",
           "population": "~100",
           "houses": "10",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "Охота",
@@ -1199,6 +1275,10 @@
           "name": "Ольшаник",
           "population": "~800",
           "houses": "80",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "—",
@@ -1261,6 +1341,10 @@
           "name": "Северный Перевал",
           "population": "~50",
           "houses": "5",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "—",
@@ -1321,6 +1405,10 @@
           "name": "Северный Перевал-Восточные Ворота",
           "population": "~150",
           "houses": "15",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "—",
@@ -1387,6 +1475,10 @@
           "name": "Соляной Тракт",
           "population": "~200",
           "houses": "20",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "—",
@@ -1443,6 +1535,10 @@
           "name": "Соляной Тракт-Постой",
           "population": "~300",
           "houses": "30",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "—",
@@ -1505,6 +1601,10 @@
           "name": "Талый Лог",
           "population": "~800",
           "houses": "80",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "—",
@@ -1571,6 +1671,10 @@
           "name": "Ветровой Перевал",
           "population": "~150",
           "houses": "15",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "—",
@@ -1637,6 +1741,10 @@
           "name": "Волчьи Пустоши",
           "population": "~150",
           "houses": "15",
+          "treasury": {
+            "pct": 0,
+            "razoreno": true
+          },
           "promysly": [
             {
               "name": "—",
@@ -1698,6 +1806,10 @@
           "name": "Волчий Стан",
           "population": "~800",
           "houses": "80",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "Охота и скотоводство",
@@ -1771,6 +1883,10 @@
           "name": "Юго-Западные Предгорья",
           "population": "~150",
           "houses": "15",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "Охота",
@@ -1831,6 +1947,10 @@
           "name": "Юго-Западные Предгорья-Северное",
           "population": "~50",
           "houses": "5",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "Охота",
@@ -1887,6 +2007,10 @@
           "name": "Юго-Западные Предгорья-Южное",
           "population": "~100",
           "houses": "10",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "Охота",
@@ -1953,6 +2077,10 @@
           "name": "Южные Предгорья",
           "population": "~100",
           "houses": "10",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "Охота",
@@ -2013,6 +2141,10 @@
           "name": "Южные Предгорья-Северное",
           "population": "~300",
           "houses": "30",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "Охота",
@@ -2079,6 +2211,10 @@
           "name": "Западные Предгорья",
           "population": "~300",
           "houses": "30",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
           "promysly": [
             {
               "name": "Охота",
