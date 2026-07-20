@@ -106,6 +106,10 @@
       {
         "label": "Компенсация Броху за второе ограбление",
         "amount": 365
+      },
+      {
+        "label": "Замена подгнивших балок в основной штольне Рудного двора",
+        "amount": 150
       }
     ],
     "income_by": {
@@ -204,15 +208,15 @@
     },
     "total_income": 42162,
     "total_expenses": 39510,
-    "balance": 9449
+    "balance": 9299
   },
   "buildings": {
     "slots": {
       "base": 2,
       "extra": 0,
-      "used": 0,
+      "used": 2,
       "max_extra": 2,
-      "free": 2
+      "free": 0
     },
     "buildings": [
       {
@@ -220,6 +224,22 @@
         "cost": 5000,
         "status": "✅ готова (С1)",
         "maint": 50,
+        "rate": 5,
+        "hands": 0
+      },
+      {
+        "name": "Рыбацкая артель",
+        "cost": 5000,
+        "status": "🔨 С1 (1 сезон)",
+        "maint": 250,
+        "rate": 5,
+        "hands": 0
+      },
+      {
+        "name": "Коптильня",
+        "cost": 2500,
+        "status": "🔨 С1 (1 сезон)",
+        "maint": 125,
         "rate": 5,
         "hands": 0
       }
@@ -437,7 +457,7 @@
       {
         "name": "Инженер (I)",
         "techniques": [],
-        "bank": 2,
+        "bank": 4,
         "ups": 0,
         "next_threshold": 10
       }
@@ -594,6 +614,22 @@
           "cost": 5000,
           "status": "✅ готова (С1)",
           "maint": 50,
+          "rate": 5,
+          "hands": 0
+        },
+        {
+          "name": "Рыбацкая артель",
+          "cost": 5000,
+          "status": "🔨 С1 (1 сезон)",
+          "maint": 250,
+          "rate": 5,
+          "hands": 0
+        },
+        {
+          "name": "Коптильня",
+          "cost": 2500,
+          "status": "🔨 С1 (1 сезон)",
+          "maint": 125,
           "rate": 5,
           "hands": 0
         }
