@@ -210,9 +210,9 @@
     "slots": {
       "base": 2,
       "extra": 0,
-      "used": 1,
+      "used": 0,
       "max_extra": 2,
-      "free": 1
+      "free": 2
     },
     "buildings": [
       {
@@ -228,13 +228,18 @@
   "events": {
     "points": {
       "player": {
-        "total": 4,
-        "left": 0
+        "total": 5,
+        "left": 1
       },
       "chancellor": {
         "name": "Тром «Соляной»",
-        "total": 3,
-        "left": 0
+        "total": 4,
+        "left": 1
+      },
+      "captain": {
+        "name": "Хагно «Стрелок»",
+        "total": 4,
+        "left": 1
       }
     },
     "incidents": [
