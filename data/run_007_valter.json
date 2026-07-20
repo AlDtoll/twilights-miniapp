@@ -90,7 +90,12 @@
       }
     ],
     "receipts": [],
-    "spendings": [],
+    "spendings": [
+      {
+        "label": "Компенсация купцу Броху Полуглазу за ограбление на пристани",
+        "amount": 130
+      }
+    ],
     "income_by": {
       "Утёсная гавань": [
         {
@@ -187,7 +192,7 @@
     },
     "total_income": 42162,
     "total_expenses": 39510,
-    "balance": 10652
+    "balance": 10522
   },
   "buildings": {
     "slots": {
