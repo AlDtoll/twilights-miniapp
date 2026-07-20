@@ -6,7 +6,7 @@
   "user_id": 579387502,
   "telegram": "@aldtoll",
   "season": "1",
-  "active_phase": "adventure",
+  "active_phase": "adventure_done",
   "finance": {
     "start": 8000,
     "income": [
@@ -476,7 +476,7 @@
       {
         "name": "Риторика (0)",
         "techniques": [],
-        "bank": 8,
+        "bank": 10,
         "ups": 0,
         "next_threshold": 10
       },
