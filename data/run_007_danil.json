@@ -443,7 +443,7 @@
       {
         "name": "Пара тонф (I)",
         "techniques": [],
-        "bank": 2,
+        "bank": 4,
         "ups": 0,
         "next_threshold": 10
       },
@@ -482,6 +482,13 @@
       },
       {
         "name": "Наблюдательность (0)",
+        "techniques": [],
+        "bank": 2,
+        "ups": 0,
+        "next_threshold": 10
+      },
+      {
+        "name": "Скрытность (0)",
         "techniques": [],
         "bank": 2,
         "ups": 0,
