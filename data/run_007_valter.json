@@ -555,8 +555,8 @@
     "cults": [
       {
         "name": "Кипона",
-        "count": 31,
-        "pct": 31,
+        "count": 32,
+        "pct": 32,
         "events": true
       },
       {
@@ -573,13 +573,13 @@
       },
       {
         "name": "Лето",
-        "count": 8,
-        "pct": 8,
+        "count": 9,
+        "pct": 9,
         "events": false
       }
     ],
-    "neutral": 40,
-    "neutral_pct": 40,
+    "neutral": 38,
+    "neutral_pct": 38,
     "threshold_pct": 15
   },
   "hearth": {
@@ -717,7 +717,8 @@
         "neutral": 18,
         "neutral_pct": 36,
         "mod": 0,
-        "reasons": []
+        "reasons": [],
+        "delta": {}
       },
       "might": {
         "total": 4,
@@ -834,7 +835,8 @@
         "neutral": 15,
         "neutral_pct": 50,
         "mod": 0,
-        "reasons": []
+        "reasons": [],
+        "delta": {}
       },
       "might": {
         "total": 3,
@@ -936,25 +938,29 @@
         "cults": [
           {
             "name": "Кипона",
-            "count": 10,
-            "pct": 50,
+            "count": 11,
+            "pct": 55,
             "rel_mod": 0,
             "rel_reasons": []
           },
           {
             "name": "Лето",
-            "count": 3,
-            "pct": 15,
+            "count": 4,
+            "pct": 20,
             "rel_mod": 0,
             "rel_reasons": []
           }
         ],
-        "neutral": 7,
-        "neutral_pct": 35,
+        "neutral": 5,
+        "neutral_pct": 25,
         "mod": -1,
         "reasons": [
-          "−1 Кипона преобладает (50%), герой без бога"
-        ]
+          "−1 Кипона преобладает (55%), герой без бога"
+        ],
+        "delta": {
+          "Лето": 1,
+          "Кипона": 1
+        }
       },
       "might": {
         "total": 2,
