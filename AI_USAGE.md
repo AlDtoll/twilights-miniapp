@@ -242,7 +242,7 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" card \
 
 **Hex-шкала (ориентиры чисел).** HP человека — базовые **100** (атрибуты персонажа могут сдвигать). Атака врага **~40** (2–3 незаблокированных удара выносят из строя). Карты: лёгкая атака ~25, обычная сигнатурная ~40, ультимейт (`_6`, cost 2) ~44. Блок ~14–49, хил ~15–25. Статусы (уязвимость/слабость), draw, energy (3/ход) — без изменений. Миньон по умолчанию HP 50.
 
-Словарь эффектов карты: `damage`, `block`, `heal` (числа); `vulnerable`, `weak`, `exhaust`, `all_enemies`, `lifesteal` (флаги true/false); `draw`, `energy` (числа). Схема карты: `id`, `name`, `skill`, `type ∈ {attack,defense,skill}`, `cost` (int≥0), `effect{}`, `rarity ∈ {common,rare}`, `description`, `flavor`.
+Словарь эффектов карты: `damage`, `block`, `heal` (числа); `vulnerable`, `weak`, `exhaust`, `all_enemies`, `lifesteal` (флаги true/false); `draw`, `energy` (числа); `strength` (+урон к каждой атаке), `dexterity` (+щит к каждому block), `armor` (постоянное снижение входящего урона после блока), `turns` (срок strength/dexterity в ходах; без него — весь бой; для armor игнорируется — броня постоянна). Карта может давать атаку+защиту+бафф разом. Щит игрока обнуляется в начале его хода, броня — нет. Схема карты: `id`, `name`, `skill`, `type ∈ {attack,defense,skill}`, `cost` (int≥0), `effect{}`, `rarity ∈ {common,rare}`, `description`, `flavor`.
 
 Результат: `{"game":"card","win":true,"outcome":"Победа","level":4,"turns":3,"player_hp_remaining":62,"enemies_defeated":2,"damage_taken":38}`
 

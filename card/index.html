@@ -330,6 +330,9 @@
   .cg-vuln { background:rgba(231,76,60,0.25); color:#e74c3c; }
   .cg-weak { background:rgba(243,156,18,0.25); color:#f39c12; }
   .cg-block-tag { background:rgba(52,152,219,0.25); color:#3498db; }
+  .cg-str-tag { background:rgba(231,76,60,0.25); color:#e74c3c; }
+  .cg-dex-tag { background:rgba(46,204,113,0.25); color:#2ecc71; }
+  .cg-armor-tag { background:rgba(149,165,166,0.3); color:#95a5a6; }
   .cg-enemy-intent { font-size:0.7rem; font-weight:600; margin-top:3px; padding:2px 4px; border-radius:4px; background:rgba(0,0,0,0.2); }
   .cg-enemy-intent.attack { color:#e74c3c; }
   .cg-enemy-intent.block { color:#3498db; }
@@ -589,6 +592,19 @@ function cgShuffle(a) {
   const r=[...a]; for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]];} return r;
 }
 
+// Эффективное значение бафа = постоянная часть + временные (ещё не истёкшие).
+function cgEff(stat){
+  let v=cgs[stat]||0;
+  (cgs.buffTimers||[]).forEach(b=>{ if(b.stat===stat) v+=b.amount; });
+  return v;
+}
+// Начислить баф: с turns → временный (истекает в начале хода игрока), без — постоянный на бой.
+function cgGrantBuff(stat,amount,turns){
+  if(!amount) return;
+  if(turns&&turns>0) cgs.buffTimers.push({stat,amount,turns});
+  else cgs[stat]=(cgs[stat]||0)+amount;
+}
+
 function initCard() {
   document.getElementById('card-game').style.display='';
   const ph = gameData.player_hp||100;
@@ -611,6 +627,7 @@ function initCard() {
   cgs={deck,hand:[],discard:[],exhaust:[],lastDrawn:0,
     enemies:enemiesState,minions:minionState,
     playerHp:ph,playerMaxHp:ph,playerBlock:0,
+    strength:0,dexterity:0,armor:0,buffTimers:[],
     energy:3,maxEnergy:3,sel:null,targeting:false,
     turn:1,played:0,lowestHp:ph,damageTaken:0};
   document.getElementById('cg-ready-title').textContent=gameData.prompt||'Карточный бой';
@@ -763,12 +780,13 @@ function cgApplyEnemyAttack(atk,sourceName){
     return;
   }
   if((cgs.playerVulnerable||0)>0) atk=Math.floor(atk*1.5);
-  const bl=Math.min(atk,cgs.playerBlock); const tk=atk-bl;
+  const bl=Math.min(atk,cgs.playerBlock); let tk=atk-bl;
   cgs.playerBlock=Math.max(0,cgs.playerBlock-bl);
+  const arm=Math.min(tk,cgEff('armor')); tk-=arm;
   cgs.playerHp=Math.max(0,cgs.playerHp-tk);
   cgs.damageTaken+=tk; cgs.lowestHp=Math.min(cgs.lowestHp,cgs.playerHp);
   let msg='👹'+sourceName+' атакует '+atk+((cgs.playerVulnerable||0)>0?' (×1.5)':'');
-  if(bl>0) msg+=' (блок −'+bl+')'; msg+=' → −'+tk+' HP';
+  if(bl>0) msg+=' (блок −'+bl+')'; if(arm>0) msg+=' (броня −'+arm+')'; msg+=' → −'+tk+' HP';
   cgLog(msg);
 }
 
@@ -780,7 +798,7 @@ function cgPlayCard(cardIdx,targetEnemy){
   const e=card.effect; const parts=['▶ '+card.name+':'];
   const _weakMul=(cgs.playerWeak||0)>0?0.7:1.0;
   if(e.damage){
-    const _rawDmg=Math.floor(e.damage*_weakMul);
+    const _rawDmg=Math.max(0,Math.floor((e.damage+cgEff('strength'))*_weakMul));
     if(e.all_enemies){
       let tot=0; cgs.enemies.forEach(en=>{if(en.hp<=0)return; const {dmg}=cgApplyDamageToEnemy(en,_rawDmg); tot+=dmg;});
       parts.push('💥'+_rawDmg+' всем ('+tot+' итого)'+(cgs.playerWeak>0?' 😵−30%':''));
@@ -791,7 +809,10 @@ function cgPlayCard(cardIdx,targetEnemy){
       cgCheckFlavor(targetEnemy);
     }
   }
-  if(e.block){cgs.playerBlock+=e.block;parts.push('🛡+'+e.block);}
+  if(e.block){const _bl=e.block+cgEff('dexterity');cgs.playerBlock+=_bl;parts.push('🛡+'+_bl);}
+  if(e.strength){cgGrantBuff('strength',e.strength,e.turns);parts.push('💪+'+e.strength+(e.turns?' ('+e.turns+'х)':''));}
+  if(e.dexterity){cgGrantBuff('dexterity',e.dexterity,e.turns);parts.push('🤸+'+e.dexterity+(e.turns?' ('+e.turns+'х)':''));}
+  if(e.armor){cgGrantBuff('armor',e.armor,e.turns);parts.push('🛡🔩+'+e.armor);}
   if(e.draw){cgDraw(e.draw);parts.push('🃏+'+e.draw);}
   if(e.energy){cgs.energy+=e.energy;parts.push('⚡+'+e.energy);}
   if(e.vulnerable){const ts=e.all_enemies?cgs.enemies.filter(en=>en.hp>0):(targetEnemy?[targetEnemy]:[]);ts.forEach(en=>en.vulnerable=2);if(ts.length)parts.push('🔴Уязв.');}
@@ -836,6 +857,7 @@ function cgEndTurn(){
   cgs.minions.forEach(m=>{m.block=0;});
   if(cgs.playerHp<=0){cgEnd(false);return;}
   cgs.turn++; cgs.energy=cgs.maxEnergy; cgs.playerBlock=0;
+  if(cgs.buffTimers&&cgs.buffTimers.length){cgs.buffTimers.forEach(b=>b.turns--);const exp=cgs.buffTimers.filter(b=>b.turns<=0);cgs.buffTimers=cgs.buffTimers.filter(b=>b.turns>0);if(exp.length){const names={strength:'Сила',dexterity:'Ловкость',armor:'Броня'};cgLog('⌛ Развеялось: '+exp.map(b=>names[b.stat]+' '+b.amount).join(', '));}}
   if((cgs.playerWeak||0)>0){cgs.playerWeak--;if(cgs.playerWeak===0)cgLog('😵 Слабость развеялась.');}
   if((cgs.playerVulnerable||0)>0){cgs.playerVulnerable--;if(cgs.playerVulnerable===0)cgLog('🩸 Уязвимость развеялась.');}
   cgDraw(5); cgUpdateUI();
@@ -858,7 +880,11 @@ function cgGetEnemyIntent(enemy){
 function cgUpdateUI(){
   cgRenderEnemies(); cgRenderMinions();
   const s=cgs;
-  const pLabel='Герой HP '+s.playerHp+'/'+s.playerMaxHp+(s.playerBlock>0?' <span class="cg-status-tag cg-block-tag">🛡'+s.playerBlock+'</span>':'');
+  let pLabel='Герой HP '+s.playerHp+'/'+s.playerMaxHp+(s.playerBlock>0?' <span class="cg-status-tag cg-block-tag">🛡'+s.playerBlock+'</span>':'');
+  const _str=cgEff('strength'),_dex=cgEff('dexterity'),_arm=cgEff('armor');
+  if(_str>0) pLabel+=' <span class="cg-status-tag cg-str-tag">💪'+_str+'</span>';
+  if(_dex>0) pLabel+=' <span class="cg-status-tag cg-dex-tag">🤸'+_dex+'</span>';
+  if(_arm>0) pLabel+=' <span class="cg-status-tag cg-armor-tag">🔩'+_arm+'</span>';
   document.getElementById('cg-player-label').innerHTML=pLabel;
   const _pPct=s.playerHp/s.playerMaxHp;
   const _pFill=document.getElementById('cg-player-hp-fill');
