@@ -279,6 +279,9 @@
   .cg-target-hint { text-align:center; padding:3px; font-size:0.82rem; color:#e74c3c; font-weight:700; animation:cgPulse 1s ease-in-out infinite; visibility:hidden; }
   @keyframes cgPulse { 0%,100%{opacity:1} 50%{opacity:0.45} }
   .cg-energy-counter { font-size:0.95rem; font-weight:700; padding:4px 10px; background:rgba(243,156,18,0.15); border-radius:8px; color:#f39c12; white-space:nowrap; }
+  .cg-limits { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; font-size:0.72rem; font-weight:700; margin-bottom:4px; }
+  .cg-limits span { padding:2px 8px; border-radius:6px; background:var(--tg-theme-secondary-bg-color,rgba(255,255,255,0.08)); color:var(--tg-theme-text-color,#fff); }
+  .cg-limits span.cg-limit-low { background:rgba(231,76,60,0.25); color:#e74c3c; }
   .cg-detail-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:101; display:flex; align-items:flex-end; }
   .cg-detail-box { width:100%; background:#1a1a2e; border-radius:18px 18px 0 0; padding:20px 18px 32px; }
   .cg-detail-name { font-size:1.1rem; font-weight:700; margin-bottom:4px; }
@@ -466,6 +469,7 @@
     <button class="confirm-btn" onclick="cgStart()">В бой!</button>
   </div>
   <div id="cg-battle" style="display:none">
+    <div id="cg-limits" class="cg-limits" style="display:none"></div>
     <div id="cg-enemies" class="cg-enemies-row"></div>
     <div class="cg-status-row">
       <div class="cg-player-panel">
@@ -629,7 +633,12 @@ function initCard() {
     playerHp:ph,playerMaxHp:ph,playerBlock:0,
     strength:0,dexterity:0,armor:0,buffTimers:[],
     energy:3,maxEnergy:3,sel:null,targeting:false,
-    turn:1,played:0,lowestHp:ph,damageTaken:0};
+    turn:1,played:0,lowestHp:ph,damageTaken:0,
+    maxRounds:parseInt(gameData.card_max_rounds)||0,
+    totalTime:parseInt(gameData.card_total_time)||0,
+    roundTime:parseInt(gameData.card_round_time)||0,
+    totalLeft:parseInt(gameData.card_total_time)||0,
+    roundLeft:parseInt(gameData.card_round_time)||0};
   document.getElementById('cg-ready-title').textContent=gameData.prompt||'Карточный бой';
   const eSummary=enemiesState.map(e=>e.name+' HP '+e.maxHp).join(', ');
   const mSummary=minionState.length?' · Спутники: '+minionState.map(m=>m.name).join(', '):'';
@@ -638,9 +647,26 @@ function initCard() {
   deck.forEach(c=>{const ch=document.createElement('div');ch.className='cg-deck-chip '+c.type+(c.rarity==='rare'?' rare':'');ch.textContent=c.name;prev.appendChild(ch);});
 }
 
+let cgTimer=null;
+function cgFmtTime(s){ s=Math.max(0,s|0); const m=(s/60)|0; const r=s%60; return m+':'+(r<10?'0':'')+r; }
+function cgClearTimers(){ if(cgTimer){clearInterval(cgTimer);cgTimer=null;} }
+function cgTick(){
+  if(!cgs||cgs.ended) { cgClearTimers(); return; }
+  if(cgs.totalTime){
+    cgs.totalLeft--;
+    if(cgs.totalLeft<=0){ cgs.totalLeft=0; cgUpdateUI(); cgEndScene('время боя вышло'); return; }
+  }
+  if(cgs.roundTime){
+    cgs.roundLeft--;
+    if(cgs.roundLeft<=0){ cgLog('⏳ Время хода вышло — ход завершается.'); cgs.roundLeft=cgs.roundTime; cgEndTurn(); return; }
+  }
+  cgUpdateUI();
+}
 function cgStart(){
   document.getElementById('cg-ready').style.display='none';
   document.getElementById('cg-battle').style.display='';
+  cgs.roundLeft=cgs.roundTime;
+  if(cgs.totalTime||cgs.roundTime){ cgClearTimers(); cgTimer=setInterval(cgTick,1000); }
   cgUpdateUI(); cgDraw(5);
 }
 
@@ -825,7 +851,7 @@ function cgPlayCard(cardIdx,targetEnemy){
 }
 
 function cgEndTurn(){
-  if(cgs.enemies.every(e=>e.hp<=0)||cgs.playerHp<=0) return;
+  if(cgs.ended||cgs.enemies.every(e=>e.hp<=0)||cgs.playerHp<=0) return;
   cgs.discard.push(...cgs.hand); cgs.hand=[]; cgs.sel=null; cgs.targeting=false;
   const _pb=document.getElementById('cg-play-btn'); if(_pb){_pb.disabled=true;_pb.textContent='Сыграть';}
   document.getElementById('cg-target-hint').style.visibility='hidden';
@@ -856,7 +882,8 @@ function cgEndTurn(){
   });
   cgs.minions.forEach(m=>{m.block=0;});
   if(cgs.playerHp<=0){cgEnd(false);return;}
-  cgs.turn++; cgs.energy=cgs.maxEnergy; cgs.playerBlock=0;
+  cgs.turn++; cgs.energy=cgs.maxEnergy; cgs.playerBlock=0; cgs.roundLeft=cgs.roundTime;
+  if(cgs.maxRounds&&cgs.turn>cgs.maxRounds){ cgEndScene('лимит раундов ('+cgs.maxRounds+')'); return; }
   if(cgs.buffTimers&&cgs.buffTimers.length){cgs.buffTimers.forEach(b=>b.turns--);const exp=cgs.buffTimers.filter(b=>b.turns<=0);cgs.buffTimers=cgs.buffTimers.filter(b=>b.turns>0);if(exp.length){const names={strength:'Сила',dexterity:'Ловкость',armor:'Броня'};cgLog('⌛ Развеялось: '+exp.map(b=>names[b.stat]+' '+b.amount).join(', '));}}
   if((cgs.playerWeak||0)>0){cgs.playerWeak--;if(cgs.playerWeak===0)cgLog('😵 Слабость развеялась.');}
   if((cgs.playerVulnerable||0)>0){cgs.playerVulnerable--;if(cgs.playerVulnerable===0)cgLog('🩸 Уязвимость развеялась.');}
@@ -880,6 +907,16 @@ function cgGetEnemyIntent(enemy){
 function cgUpdateUI(){
   cgRenderEnemies(); cgRenderMinions();
   const s=cgs;
+  const _lim=document.getElementById('cg-limits');
+  if(_lim){
+    if(s.maxRounds||s.totalTime||s.roundTime){
+      let h='';
+      if(s.maxRounds) h+='<span'+(s.turn>=s.maxRounds?' class="cg-limit-low"':'')+'>🔁 Раунд '+Math.min(s.turn,s.maxRounds)+'/'+s.maxRounds+'</span>';
+      if(s.totalTime) h+='<span'+(s.totalLeft<=10?' class="cg-limit-low"':'')+'>⏱ '+cgFmtTime(s.totalLeft)+'</span>';
+      if(s.roundTime) h+='<span'+(s.roundLeft<=5?' class="cg-limit-low"':'')+'>⏳ ход '+cgFmtTime(s.roundLeft)+'</span>';
+      _lim.innerHTML=h; _lim.style.display='';
+    } else _lim.style.display='none';
+  }
   let pLabel='Герой HP '+s.playerHp+'/'+s.playerMaxHp+(s.playerBlock>0?' <span class="cg-status-tag cg-block-tag">🛡'+s.playerBlock+'</span>':'');
   const _str=cgEff('strength'),_dex=cgEff('dexterity'),_arm=cgEff('armor');
   if(_str>0) pLabel+=' <span class="cg-status-tag cg-str-tag">💪'+_str+'</span>';
@@ -933,6 +970,7 @@ function cgCheckFlavor(enemy){
 }
 
 function cgEnd(won){
+  if(cgs.ended) return; cgs.ended=true; cgClearTimers();
   document.getElementById('cg-battle').style.display='none';
   document.getElementById('cg-result').style.display='';
   document.getElementById('cg-result-title').textContent=won?'⚔️ Победа!':'💀 Поражение';
@@ -946,6 +984,29 @@ function cgEnd(won){
     turns:cgs.turn,cards_played:cgs.played,
     player_hp_remaining:cgs.playerHp,player_max_hp:cgs.playerMaxHp,
     enemies_total:cgs.enemies.length,enemies_defeated:defeated,
+    enemies_hp_remaining:cgs.enemies.reduce((a,e)=>a+Math.max(0,e.hp),0),
+    lowest_hp:cgs.lowestHp,damage_taken:cgs.damageTaken}),800);
+}
+// Лимит раундов/времени исчерпан, а бой не решён — НЕ поражение, а конец сцены.
+// Итоги уходят мастеру: он решает (напр. увести игрока на новый раунд).
+function cgEndScene(reason){
+  if(cgs.ended) return; cgs.ended=true; cgClearTimers();
+  document.getElementById('cg-battle').style.display='none';
+  document.getElementById('cg-result').style.display='';
+  document.getElementById('cg-result-title').textContent='⏳ Конец сцены';
+  const defeated=cgs.enemies.filter(e=>e.hp<=0).length;
+  const enemyHp=cgs.enemies.reduce((a,e)=>a+Math.max(0,e.hp),0);
+  const enemyMax=cgs.enemies.reduce((a,e)=>a+e.maxHp,0);
+  document.getElementById('cg-result-sub').textContent=
+    (reason?reason.charAt(0).toUpperCase()+reason.slice(1)+'. ':'')+
+    'Ходов: '+cgs.turn+' · Герой HP: '+cgs.playerHp+'/'+cgs.playerMaxHp+
+    ' · Враги HP: '+enemyHp+'/'+enemyMax+' ('+defeated+'/'+cgs.enemies.length+' повержено)';
+  setTimeout(()=>sendResultToBot({game:'card',win:false,scene_end:true,outcome:'Конец сцены',
+    reason:reason||'лимит',level:0,
+    turns:cgs.turn,cards_played:cgs.played,
+    player_hp_remaining:cgs.playerHp,player_max_hp:cgs.playerMaxHp,
+    enemies_total:cgs.enemies.length,enemies_defeated:defeated,
+    enemies_hp_remaining:enemyHp,enemies_max_hp:enemyMax,
     lowest_hp:cgs.lowestHp,damage_taken:cgs.damageTaken}),800);
 }
 
