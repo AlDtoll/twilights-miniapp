@@ -222,22 +222,28 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" combat \
 
 Колода из карт оружия и магии; игрок разыгрывает карты против врага(ов) по ходам. Миньоны принимают удары вместо игрока, пока живы.
 
+**Карты живут в пресете сеттинга, не в движке.** Движок card/index.html держит только словарь эффектов + схему карты и тянет карты по `fetch presets/<card_preset>.json`. Библиотека twilights (96 карт по 16 навыкам + стартовая колода) — в `twilights/minigames/presets/card/` (YAML-исходники), собирается в `card_preset.json` билд-скриптом. Как мастеру собрать новый кит — `twilights/minigames/presets/card/card_authoring.md`.
+
 ```bash
 python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" card \
   --weapon-card sword_3 \
   --magic-card wizard_2 \
-  --card-enemies '[{"name":"Страж","hp":30,"attack":8}]' \
-  --player-minions '[{"name":"Тень","hp":15}]'
+  --card-enemies '[{"name":"Страж","hp":100,"attack":40}]' \
+  --player-minions '[{"name":"Тень","hp":50}]'
 ```
 
-- `--weapon-card <id>` — карта оружия из CG_LIB: `sword`/`axe`/`chain`/`dual`/`heavy`/`polearm`/`ranged` + `_1`…`_6` (напр. `sword_3`, `axe_6`). `_6` — ультимейт (стоит 2 энергии).
+- `--weapon-card <id>` — карта оружия: `sword`/`axe`/`chain`/`dual`/`heavy`/`polearm`/`ranged` + `_1`…`_6` (напр. `sword_3`, `axe_6`). `_6` — ультимейт (стоит 2 энергии).
 - `--magic-card <id>` — карта магии (`wizard_6`, `druid_2` и т.п.).
 - `--cards "id|id|…"` — дополнительные карты в колоду.
+- `--card-preset <name>` — какой пресет тянуть (движок → `presets/<name>.json`). Дефолт `twilights`; для card-игры проставляется автоматически.
 - `--card-enemies '<json>'` — массив врагов `{name,hp,attack}` (новый формат); `--card-enemy` — один враг (устаревший).
 - `--player-minions '<json>'` — союзники-миньоны.
-Полный справочник карт оружия/магии и врагов — `twilights/minigames/README.md`.
 
-Результат: `{"game":"card","win":true,"outcome":"Победа","level":4,"turns":3,"player_hp_remaining":22,"enemies_defeated":2,"damage_taken":8}`
+**Hex-шкала (ориентиры чисел).** HP человека — базовые **100** (атрибуты персонажа могут сдвигать). Атака врага **~40** (2–3 незаблокированных удара выносят из строя). Карты: лёгкая атака ~25, обычная сигнатурная ~40, ультимейт (`_6`, cost 2) ~44. Блок ~14–49, хил ~15–25. Статусы (уязвимость/слабость), draw, energy (3/ход) — без изменений. Миньон по умолчанию HP 50.
+
+Словарь эффектов карты: `damage`, `block`, `heal` (числа); `vulnerable`, `weak`, `exhaust`, `all_enemies`, `lifesteal` (флаги true/false); `draw`, `energy` (числа). Схема карты: `id`, `name`, `skill`, `type ∈ {attack,defense,skill}`, `cost` (int≥0), `effect{}`, `rarity ∈ {common,rare}`, `description`, `flavor`.
+
+Результат: `{"game":"card","win":true,"outcome":"Победа","level":4,"turns":3,"player_hp_remaining":62,"enemies_defeated":2,"damage_taken":38}`
 
 ---
 
