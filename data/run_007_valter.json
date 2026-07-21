@@ -90,7 +90,12 @@
       }
     ],
     "receipts": [],
-    "spendings": [],
+    "spendings": [
+      {
+        "label": "Крепления новой галереи Рудного двора (по чертежу князя, идеал)",
+        "amount": 314
+      }
+    ],
     "income_by": {
       "Утёсная гавань": [
         {
@@ -187,7 +192,7 @@
     },
     "total_income": 43724,
     "total_expenses": 39510,
-    "balance": 13513
+    "balance": 13199
   },
   "buildings": {
     "slots": {
@@ -467,7 +472,7 @@
       {
         "name": "Инженер (I)",
         "techniques": [],
-        "bank": 8,
+        "bank": 10,
         "ups": 0,
         "next_threshold": 10
       },
