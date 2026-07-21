@@ -336,6 +336,7 @@
   .cg-str-tag { background:rgba(231,76,60,0.25); color:#e74c3c; }
   .cg-dex-tag { background:rgba(46,204,113,0.25); color:#2ecc71; }
   .cg-armor-tag { background:rgba(149,165,166,0.3); color:#95a5a6; }
+  .cg-debuff-tag { background:rgba(142,68,173,0.3); color:#9b59b6; }
   .cg-enemy-intent { font-size:0.7rem; font-weight:600; margin-top:3px; padding:2px 4px; border-radius:4px; background:rgba(0,0,0,0.2); }
   .cg-enemy-intent.attack { color:#e74c3c; }
   .cg-enemy-intent.block { color:#3498db; }
@@ -818,7 +819,7 @@ function cgApplyEnemyAttack(atk,sourceName){
   if((cgs.playerVulnerable||0)>0) atk=Math.floor(atk*1.5);
   const bl=Math.min(atk,cgs.playerBlock); let tk=atk-bl;
   cgs.playerBlock=Math.max(0,cgs.playerBlock-bl);
-  const arm=Math.min(tk,cgEff('armor')); tk-=arm;
+  const arm=Math.min(tk,Math.max(0,cgEff('armor'))); tk-=arm;
   cgs.playerHp=Math.max(0,cgs.playerHp-tk);
   cgs.damageTaken+=tk; cgs.lowestHp=Math.min(cgs.lowestHp,cgs.playerHp);
   let msg='👹'+sourceName+' атакует '+atk+((cgs.playerVulnerable||0)>0?' (×1.5)':'');
@@ -845,7 +846,7 @@ function cgPlayCard(cardIdx,targetEnemy){
       cgCheckFlavor(targetEnemy);
     }
   }
-  if(e.block){const _bl=e.block+cgEff('dexterity');cgs.playerBlock+=_bl;parts.push('🛡+'+_bl);}
+  if(e.block){const _bl=Math.max(0,e.block+cgEff('dexterity'));cgs.playerBlock+=_bl;parts.push('🛡+'+_bl);}
   if(e.strength){cgGrantBuff('strength',e.strength,e.turns);parts.push('💪+'+e.strength+(e.turns?' ('+e.turns+'х)':''));}
   if(e.dexterity){cgGrantBuff('dexterity',e.dexterity,e.turns);parts.push('🤸+'+e.dexterity+(e.turns?' ('+e.turns+'х)':''));}
   if(e.armor){cgGrantBuff('armor',e.armor,e.turns);parts.push('🛡🔩+'+e.armor);}
@@ -929,8 +930,8 @@ function cgUpdateUI(){
   }
   let pLabel='Герой HP '+s.playerHp+'/'+s.playerMaxHp+(s.playerBlock>0?' <span class="cg-status-tag cg-block-tag">🛡'+s.playerBlock+'</span>':'');
   const _str=cgEff('strength'),_dex=cgEff('dexterity'),_arm=cgEff('armor');
-  if(_str>0) pLabel+=' <span class="cg-status-tag cg-str-tag">💪'+_str+'</span>';
-  if(_dex>0) pLabel+=' <span class="cg-status-tag cg-dex-tag">🤸'+_dex+'</span>';
+  if(_str!==0) pLabel+=' <span class="cg-status-tag '+(_str<0?'cg-debuff-tag':'cg-str-tag')+'">💪'+(_str>0?'+':'')+_str+'</span>';
+  if(_dex!==0) pLabel+=' <span class="cg-status-tag '+(_dex<0?'cg-debuff-tag':'cg-dex-tag')+'">🤸'+(_dex>0?'+':'')+_dex+'</span>';
   if(_arm>0) pLabel+=' <span class="cg-status-tag cg-armor-tag">🔩'+_arm+'</span>';
   document.getElementById('cg-player-label').innerHTML=pLabel;
   const _pPct=s.playerHp/s.playerMaxHp;
