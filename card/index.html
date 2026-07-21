@@ -312,8 +312,8 @@
   .cg-actions { display:flex; gap:8px; }
   .cg-btn { flex:1; padding:10px; border-radius:10px; border:none; cursor:pointer; font-size:0.88rem; font-weight:600; }
   .cg-play-btn { background:#f39c12; color:#000; }
-  .cg-play-btn:disabled { background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.3); cursor:default; }
-  .cg-end-btn { background:rgba(255,255,255,0.08); color:#fff; }
+  .cg-play-btn:disabled { background:var(--tg-theme-secondary-bg-color,rgba(255,255,255,0.08)); color:var(--tg-theme-hint-color,#888); opacity:0.7; cursor:default; }
+  .cg-end-btn { background:var(--tg-theme-secondary-bg-color,rgba(255,255,255,0.08)); color:var(--tg-theme-text-color,#fff); border:1px solid var(--tg-theme-hint-color,#888); }
   .cg-ready { text-align:center; }
   .cg-ready h2 { font-size:1.1rem; margin-bottom:6px; }
   .cg-ready-sub { font-size:0.85rem; color:var(--tg-theme-hint-color,#aaa); margin-bottom:12px; line-height:1.4; }
@@ -805,7 +805,7 @@ function cgPlayCard(cardIdx,targetEnemy){
 
 function cgEndTurn(){
   if(cgs.enemies.every(e=>e.hp<=0)||cgs.playerHp<=0) return;
-  cgs.discard.push(...cgs.hand); cgs.hand=[]; cgs.sel=null; cgs.targeting=false; cgs.playerBlock=0;
+  cgs.discard.push(...cgs.hand); cgs.hand=[]; cgs.sel=null; cgs.targeting=false;
   const _pb=document.getElementById('cg-play-btn'); if(_pb){_pb.disabled=true;_pb.textContent='Сыграть';}
   document.getElementById('cg-target-hint').style.visibility='hidden';
   cgLog('— Конец хода '+cgs.turn+' —');
@@ -835,7 +835,7 @@ function cgEndTurn(){
   });
   cgs.minions.forEach(m=>{m.block=0;});
   if(cgs.playerHp<=0){cgEnd(false);return;}
-  cgs.turn++; cgs.energy=cgs.maxEnergy;
+  cgs.turn++; cgs.energy=cgs.maxEnergy; cgs.playerBlock=0;
   if((cgs.playerWeak||0)>0){cgs.playerWeak--;if(cgs.playerWeak===0)cgLog('😵 Слабость развеялась.');}
   if((cgs.playerVulnerable||0)>0){cgs.playerVulnerable--;if(cgs.playerVulnerable===0)cgLog('🩸 Уязвимость развеялась.');}
   cgDraw(5); cgUpdateUI();
