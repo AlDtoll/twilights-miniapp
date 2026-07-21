@@ -548,8 +548,8 @@
     "cults": [
       {
         "name": "Культ войны",
-        "count": 64,
-        "pct": 58,
+        "count": 65,
+        "pct": 59,
         "events": true
       },
       {
@@ -577,8 +577,8 @@
         "events": false
       }
     ],
-    "neutral": 23,
-    "neutral_pct": 21,
+    "neutral": 22,
+    "neutral_pct": 20,
     "threshold_pct": 15
   },
   "hearth": {
@@ -1015,11 +1015,12 @@
           }
         ],
         "Тип": "стартовая",
-        "mod": 2,
+        "mod": 1,
         "reasons": [
           "+1 стартовая",
           "-1 Война (×1)",
-          "+2 Победоносная война (×1)"
+          "+2 Победоносная война (×1)",
+          "-1 вера (религия)"
         ],
         "delta": {
           "Л": 1,
@@ -1037,8 +1038,8 @@
           },
           {
             "name": "Культ войны",
-            "count": 3,
-            "pct": 20,
+            "count": 4,
+            "pct": 27,
             "rel_mod": 1,
             "rel_reasons": [
               "+1 герой культа Культ войны"
@@ -1052,19 +1053,21 @@
             "rel_reasons": []
           }
         ],
-        "neutral": 4,
-        "neutral_pct": 27,
-        "mod": 0,
-        "reasons": [],
+        "neutral": 3,
+        "neutral_pct": 20,
+        "mod": -1,
+        "reasons": [
+          "−1 религиозный раскол (2 культа ≥25%)"
+        ],
         "delta": {
           "Бурий": 1
         }
       },
       "might": {
-        "total": 3,
+        "total": 2,
         "fighters": 2,
         "base": 0,
-        "loyalty": 2,
+        "loyalty": 1,
         "defense": 1,
         "tags": 0,
         "tag_list": [],
