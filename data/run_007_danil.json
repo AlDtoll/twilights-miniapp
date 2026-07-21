@@ -202,9 +202,9 @@
     "slots": {
       "base": 2,
       "extra": 0,
-      "used": 1,
+      "used": 0,
       "max_extra": 2,
-      "free": 1
+      "free": 2
     },
     "buildings": [
       {
