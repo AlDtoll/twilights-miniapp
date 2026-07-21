@@ -624,7 +624,10 @@ function initCard() {
   const minionState = (gameData.player_minions||[]).map((m,i)=>({
     id:i, name:m.name||'Спутник', hp:m.hp||50, maxHp:m.hp||50, block:0
   }));
-  let deck=[...CG_BASE.map((c,i)=>({...c,uid:'b'+i}))];
+  let _base=CG_BASE.map((c,i)=>({...c,uid:'b'+i}));
+  const _bc=gameData.card_base_count;
+  if(_bc!==undefined&&_bc!==null&&_bc!==''){ let _n=parseInt(_bc); if(isNaN(_n)||_n<0)_n=_base.length; if(_n<_base.length) _base=cgShuffle(_base).slice(0,_n); }
+  let deck=[..._base];
   if(gameData.weapon_card&&CG_BY_ID[gameData.weapon_card]) deck.push({...CG_BY_ID[gameData.weapon_card],uid:'w0'});
   if(gameData.magic_card&&CG_BY_ID[gameData.magic_card]) deck.push({...CG_BY_ID[gameData.magic_card],uid:'m0'});
   if(gameData.cards) gameData.cards.forEach((id,i)=>{ if(CG_BY_ID[id]) deck.push({...CG_BY_ID[id],uid:'x'+i}); });
