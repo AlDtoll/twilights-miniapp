@@ -6,7 +6,7 @@
   "user_id": 445288231,
   "telegram": "@ValterTasadar",
   "season": "1",
-  "active_phase": "adventure",
+  "active_phase": "adventure_done",
   "finance": {
     "start": 8000,
     "income": [
@@ -438,7 +438,7 @@
       {
         "name": "Адепт нейтрального круга (I)",
         "techniques": [],
-        "bank": 0,
+        "bank": 2,
         "ups": 0,
         "next_threshold": 10
       },
@@ -450,14 +450,14 @@
             "kind": "приём"
           }
         ],
-        "bank": 4,
+        "bank": 6,
         "ups": 0,
         "next_threshold": 10
       },
       {
         "name": "Инженер (I)",
         "techniques": [],
-        "bank": 4,
+        "bank": 8,
         "ups": 0,
         "next_threshold": 10
       },
