@@ -487,8 +487,8 @@
     "cults": [
       {
         "name": "Айдан «Кот»",
-        "count": 28,
-        "pct": 28,
+        "count": 30,
+        "pct": 30,
         "events": true
       },
       {
@@ -504,8 +504,8 @@
         "events": false
       }
     ],
-    "neutral": 42,
-    "neutral_pct": 42,
+    "neutral": 40,
+    "neutral_pct": 40,
     "threshold_pct": 15
   },
   "hearth": {
@@ -611,8 +611,8 @@
         "cults": [
           {
             "name": "Айдан «Кот»",
-            "count": 20,
-            "pct": 29,
+            "count": 21,
+            "pct": 30,
             "rel_mod": 0,
             "rel_reasons": []
           },
@@ -631,10 +631,13 @@
             "rel_reasons": []
           }
         ],
-        "neutral": 32,
-        "neutral_pct": 46,
+        "neutral": 31,
+        "neutral_pct": 44,
         "mod": 0,
-        "reasons": []
+        "reasons": [],
+        "delta": {
+          "Айдан «Кот»": 1
+        }
       },
       "might": {
         "total": 4,
@@ -756,18 +759,21 @@
           },
           {
             "name": "Айдан «Кот»",
-            "count": 8,
-            "pct": 27,
+            "count": 9,
+            "pct": 30,
             "rel_mod": 0,
             "rel_reasons": []
           }
         ],
-        "neutral": 10,
-        "neutral_pct": 33,
+        "neutral": 9,
+        "neutral_pct": 30,
         "mod": -1,
         "reasons": [
           "−1 религиозный раскол (2 культа ≥25%)"
-        ]
+        ],
+        "delta": {
+          "Айдан «Кот»": 1
+        }
       },
       "might": {
         "total": 2,
