@@ -553,28 +553,33 @@ let CG_BASE = [];
 
 // Карты грузятся из пресета сеттинга (движок — общий, карты — сеттинг-side).
 // Порядок: gameData.card_lib/base_deck (инлайн) → fetch presets/<card_preset>.json → фолбэк.
+// Поверх библиотеки накладываются приватные карты персонажа (gameData.card_custom).
 async function cgLoadCards(){
+  let lib = null, base = null;
   if(gameData.card_lib && typeof gameData.card_lib === 'object'){
-    CG_LIB = gameData.card_lib;
-    CG_BASE = Array.isArray(gameData.base_deck) && gameData.base_deck.length ? gameData.base_deck : CG_FALLBACK_BASE;
-    cgRebuildIndex();
-    return;
-  }
-  const preset = gameData.card_preset;
-  if(preset){
+    lib = gameData.card_lib;
+    base = gameData.base_deck;
+  } else if(gameData.card_preset){
     try{
-      const resp = await fetch('presets/' + encodeURIComponent(preset) + '.json', {cache:'no-store'});
+      const resp = await fetch('presets/' + encodeURIComponent(gameData.card_preset) + '.json', {cache:'no-store'});
       if(resp.ok){
         const data = await resp.json();
-        CG_LIB = data.card_lib || {};
-        CG_BASE = Array.isArray(data.base_deck) && data.base_deck.length ? data.base_deck : CG_FALLBACK_BASE;
-        cgRebuildIndex();
-        return;
+        lib = data.card_lib || {};
+        base = data.base_deck;
       }
     }catch(e){ /* фолбэк ниже */ }
   }
-  CG_LIB = {};
-  CG_BASE = CG_FALLBACK_BASE;
+  CG_LIB = lib || {};
+  CG_BASE = Array.isArray(base) && base.length ? base : CG_FALLBACK_BASE;
+  // Приватные карты персонажа поверх общей библиотеки (сочинённые под него уникальные карты).
+  if(Array.isArray(gameData.card_custom)){
+    gameData.card_custom.forEach(c=>{
+      if(c && c.id){
+        const sk = c.skill || 'custom';
+        (CG_LIB[sk] = CG_LIB[sk] || []).push(c);
+      }
+    });
+  }
   cgRebuildIndex();
 }
 

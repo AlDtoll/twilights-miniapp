@@ -236,6 +236,7 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" card \
 - `--magic-card <id>` — карта магии (`wizard_6`, `druid_2` и т.п.).
 - `--cards "id|id|…"` — дополнительные карты в колоду.
 - `--card-preset <name>` — какой пресет тянуть (движок → `presets/<name>.json`). Дефолт `twilights`; для card-игры проставляется автоматически.
+- `--player-preset <run>/<player>` — частный пресет персонажа: читает `runs/<run>/<player>/presets/card.yaml` (loadout: weapon/magic/cards + опц. `custom[]` уникальные карты) и ставит их сам. Явные `--weapon-card`/`--magic-card`/`--cards`/`--card-preset` перекрывают пресет. Custom-карты вмешиваются в библиотеку на лету (без билда/деплоя пресета сеттинга), валидируются словарём эффектов. Схема/пример — `twilights/minigames/presets/card/card_authoring.md` § «Частный пресет персонажа».
 - `--card-enemies '<json>'` — массив врагов `{name,hp,attack}` (новый формат); `--card-enemy` — один враг (устаревший).
 - `--player-minions '<json>'` — союзники-миньоны.
 
