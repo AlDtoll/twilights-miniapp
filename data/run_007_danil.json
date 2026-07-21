@@ -531,14 +531,14 @@
     "cults": [
       {
         "name": "Культ войны",
-        "count": 60,
-        "pct": 55,
+        "count": 62,
+        "pct": 56,
         "events": true
       },
       {
         "name": "Бурий",
-        "count": 8,
-        "pct": 7,
+        "count": 9,
+        "pct": 8,
         "events": false
       },
       {
@@ -560,8 +560,8 @@
         "events": false
       }
     ],
-    "neutral": 28,
-    "neutral_pct": 25,
+    "neutral": 25,
+    "neutral_pct": 23,
     "threshold_pct": 15
   },
   "hearth": {
@@ -694,8 +694,8 @@
         "cults": [
           {
             "name": "Культ войны",
-            "count": 41,
-            "pct": 59,
+            "count": 42,
+            "pct": 60,
             "rel_mod": 1,
             "rel_reasons": [
               "+1 герой культа Культ войны"
@@ -716,12 +716,15 @@
             "rel_reasons": []
           }
         ],
-        "neutral": 22,
-        "neutral_pct": 31,
+        "neutral": 21,
+        "neutral_pct": 30,
         "mod": 1,
         "reasons": [
-          "+1 Культ войны преобладает (59%), герой-единоверец"
-        ]
+          "+1 Культ войны преобладает (60%), герой-единоверец"
+        ],
+        "delta": {
+          "Культ войны": 1
+        }
       },
       "might": {
         "total": 7,
@@ -843,8 +846,8 @@
         "cults": [
           {
             "name": "Культ войны",
-            "count": 16,
-            "pct": 64,
+            "count": 17,
+            "pct": 68,
             "rel_mod": 1,
             "rel_reasons": [
               "+1 герой культа Культ войны"
@@ -865,12 +868,15 @@
             "rel_reasons": []
           }
         ],
-        "neutral": 1,
-        "neutral_pct": 4,
+        "neutral": 0,
+        "neutral_pct": 0,
         "mod": 1,
         "reasons": [
-          "+1 Культ войны преобладает (64%), герой-единоверец"
-        ]
+          "+1 Культ войны преобладает (68%), герой-единоверец"
+        ],
+        "delta": {
+          "Культ войны": 1
+        }
       },
       "might": {
         "total": 6,
@@ -1002,8 +1008,8 @@
         "cults": [
           {
             "name": "Бурий",
-            "count": 5,
-            "pct": 33,
+            "count": 6,
+            "pct": 40,
             "rel_mod": 0,
             "rel_reasons": []
           },
@@ -1024,10 +1030,13 @@
             "rel_reasons": []
           }
         ],
-        "neutral": 5,
-        "neutral_pct": 33,
+        "neutral": 4,
+        "neutral_pct": 27,
         "mod": 0,
-        "reasons": []
+        "reasons": [],
+        "delta": {
+          "Бурий": 1
+        }
       },
       "might": {
         "total": 3,
