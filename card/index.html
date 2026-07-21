@@ -628,10 +628,12 @@ function initCard() {
   if(gameData.magic_card&&CG_BY_ID[gameData.magic_card]) deck.push({...CG_BY_ID[gameData.magic_card],uid:'m0'});
   if(gameData.cards) gameData.cards.forEach((id,i)=>{ if(CG_BY_ID[id]) deck.push({...CG_BY_ID[id],uid:'x'+i}); });
   deck=cgShuffle(deck);
+  const _ps=gameData.player_status||{};
   cgs={deck,hand:[],discard:[],exhaust:[],lastDrawn:0,
     enemies:enemiesState,minions:minionState,
-    playerHp:ph,playerMaxHp:ph,playerBlock:0,
-    strength:0,dexterity:0,armor:0,buffTimers:[],
+    playerHp:ph,playerMaxHp:ph,playerBlock:_ps.block||0,
+    strength:_ps.strength||0,dexterity:_ps.dexterity||0,armor:_ps.armor||0,buffTimers:[],
+    playerVulnerable:_ps.vulnerable||0,playerWeak:_ps.weak||0,
     energy:3,maxEnergy:3,sel:null,targeting:false,
     turn:1,played:0,lowestHp:ph,damageTaken:0,
     maxRounds:parseInt(gameData.card_max_rounds)||0,
@@ -667,6 +669,14 @@ function cgStart(){
   document.getElementById('cg-battle').style.display='';
   cgs.roundLeft=cgs.roundTime;
   if(cgs.totalTime||cgs.roundTime){ cgClearTimers(); cgTimer=setInterval(cgTick,1000); }
+  const _sp=[];
+  if(cgs.strength) _sp.push('💪 Сила '+cgs.strength);
+  if(cgs.dexterity) _sp.push('🤸 Ловкость '+cgs.dexterity);
+  if(cgs.armor) _sp.push('🔩 Броня '+cgs.armor);
+  if(cgs.playerBlock) _sp.push('🛡 Блок '+cgs.playerBlock);
+  if(cgs.playerVulnerable) _sp.push('🩸 Уязвимость '+cgs.playerVulnerable);
+  if(cgs.playerWeak) _sp.push('😵 Слабость '+cgs.playerWeak);
+  if(_sp.length) cgLog('Стартовые статусы: '+_sp.join(', '));
   cgUpdateUI(); cgDraw(5);
 }
 
