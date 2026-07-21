@@ -61,6 +61,10 @@
         "amount": 5400
       },
       {
+        "label": "Дом содержание",
+        "amount": 250
+      },
+      {
         "label": "Стража (4 × 20 × 90)",
         "amount": 7200
       },
@@ -162,6 +166,10 @@
         {
           "label": "Клерки (3 × 20 × 90)",
           "amount": 5400
+        },
+        {
+          "label": "Дом содержание",
+          "amount": 250
         }
       ],
       "Чистолесье": [
@@ -176,8 +184,8 @@
       ]
     },
     "total_income": 44015,
-    "total_expenses": 39510,
-    "balance": 24905
+    "total_expenses": 39760,
+    "balance": 24655
   },
   "buildings": {
     "slots": {
@@ -192,7 +200,7 @@
         "name": "Дом",
         "cost": 5000,
         "status": "✅ готова (С1)",
-        "maint": 50,
+        "maint": 250,
         "rate": 5,
         "hands": 0
       },
@@ -623,7 +631,7 @@
           "name": "Дом",
           "cost": 5000,
           "status": "✅ готова (С1)",
-          "maint": 50,
+          "maint": 250,
           "rate": 5,
           "hands": 0
         },
