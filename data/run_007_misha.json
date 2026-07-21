@@ -69,7 +69,12 @@
         "amount": 1800
       }
     ],
-    "receipts": [],
+    "receipts": [
+      {
+        "label": "Выкуп за Мала «Чёрного» от братчины Гостиного Порта",
+        "amount": 20000
+      }
+    ],
     "spendings": [],
     "income_by": {
       "Чистозерье": [
@@ -143,7 +148,7 @@
     },
     "total_income": 44015,
     "total_expenses": 39510,
-    "balance": 13409
+    "balance": 33409
   },
   "buildings": {
     "slots": {
