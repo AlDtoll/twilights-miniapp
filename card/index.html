@@ -827,6 +827,28 @@ function cgApplyEnemyAttack(atk,sourceName){
   cgLog(msg);
 }
 
+// Эффект «создать карты»: добавляет копии карт (по id из библиотеки, вкл. custom)
+// в колоду (по умолч. — вмешиваются в draw-pile), руку или сброс. spec — объект или массив.
+function cgAddCards(spec){
+  if(!spec) return null;
+  const list=Array.isArray(spec)?spec:[spec];
+  const summary=[];
+  list.forEach(sp=>{
+    const src=CG_BY_ID[sp.id]; if(!src) return;
+    const n=Math.max(1,parseInt(sp.count)||1);
+    const to=sp.to||'deck';
+    for(let i=0;i<n;i++){
+      cgs.genSeq=(cgs.genSeq||0)+1;
+      const nc={...src,uid:'g'+cgs.genSeq};
+      if(to==='hand') cgs.hand.push(nc);
+      else if(to==='discard') cgs.discard.push(nc);
+      else { const pos=Math.floor(Math.random()*(cgs.deck.length+1)); cgs.deck.splice(pos,0,nc); }
+    }
+    const toName=to==='hand'?'руку':to==='discard'?'сброс':'колоду';
+    summary.push('➕'+n+'× '+src.name+'→'+toName);
+  });
+  return summary.length?summary.join(' '):null;
+}
 function cgPlayCard(cardIdx,targetEnemy){
   const card=cgs.hand[cardIdx];
   if(card.cost>cgs.energy) return;
@@ -855,6 +877,7 @@ function cgPlayCard(cardIdx,targetEnemy){
   if(e.vulnerable){const ts=e.all_enemies?cgs.enemies.filter(en=>en.hp>0):(targetEnemy?[targetEnemy]:[]);ts.forEach(en=>en.vulnerable=2);if(ts.length)parts.push('🔴Уязв.');}
   if(e.weak){const ts=e.all_enemies?cgs.enemies.filter(en=>en.hp>0):(targetEnemy?[targetEnemy]:[]);ts.forEach(en=>en.weak=2);if(ts.length)parts.push('🟡Слаб.');}
   if(e.heal){const hl=Math.min(e.heal,cgs.playerMaxHp-cgs.playerHp);cgs.playerHp+=hl;parts.push('❤️+'+hl);}
+  if(e.add_cards){const s=cgAddCards(e.add_cards);if(s)parts.push(s);}
   cgLog(parts.join(' '));
   if(e.exhaust) cgs.exhaust.push(card); else cgs.discard.push(card);
   if(cgs.enemies.every(en=>en.hp<=0)){cgEnd(true);return;}
