@@ -6,7 +6,7 @@
   "user_id": 445288231,
   "telegram": "@ValterTasadar",
   "season": "2",
-  "active_phase": "adventure",
+  "active_phase": "adventure_done",
   "finance": {
     "start": 9299,
     "income": [
@@ -501,7 +501,7 @@
       {
         "name": "Адепт Фортуны (I)",
         "techniques": [],
-        "bank": 5,
+        "bank": 7,
         "ups": 0,
         "next_threshold": 10
       },
