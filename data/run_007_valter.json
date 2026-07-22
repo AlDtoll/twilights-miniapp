@@ -6,7 +6,7 @@
   "user_id": 445288231,
   "telegram": "@ValterTasadar",
   "season": "2",
-  "active_phase": "hearth",
+  "active_phase": "idle",
   "finance": {
     "start": 9299,
     "income": [
@@ -521,11 +521,11 @@
         "next_threshold": 10
       },
       {
-        "name": "Наблюдательность (0)",
+        "name": "Наблюдательность (I)",
         "techniques": [],
-        "bank": 10,
-        "ups": 0,
-        "next_threshold": 10
+        "bank": 0,
+        "ups": 1,
+        "next_threshold": 12
       }
     ],
     "features": [
