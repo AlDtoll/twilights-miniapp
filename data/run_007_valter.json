@@ -494,7 +494,7 @@
       {
         "name": "Стрелок (пороховое) (I)",
         "techniques": [],
-        "bank": 2,
+        "bank": 3,
         "ups": 0,
         "next_threshold": 10
       },
@@ -527,7 +527,7 @@
       {
         "name": "Наблюдательность (I)",
         "techniques": [],
-        "bank": 0,
+        "bank": 4,
         "ups": 1,
         "next_threshold": 12
       }

@@ -6,7 +6,7 @@
   "user_id": 1700257736,
   "telegram": "@Мишачья",
   "season": "2",
-  "active_phase": "adventure",
+  "active_phase": "adventure_done",
   "finance": {
     "start": 8904,
     "income": [
@@ -474,7 +474,7 @@
       {
         "name": "Короткий меч (I)",
         "techniques": [],
-        "bank": 4,
+        "bank": 6,
         "ups": 0,
         "next_threshold": 10
       },
@@ -507,7 +507,7 @@
       {
         "name": "Тактика (I)",
         "techniques": [],
-        "bank": 4,
+        "bank": 5,
         "ups": 1,
         "next_threshold": 12
       },
