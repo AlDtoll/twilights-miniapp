@@ -642,8 +642,8 @@
     "cults": [
       {
         "name": "Культ войны",
-        "count": 66,
-        "pct": 51,
+        "count": 72,
+        "pct": 55,
         "events": true
       },
       {
@@ -653,15 +653,15 @@
         "events": false
       },
       {
-        "name": "Мизеракль",
-        "count": 11,
-        "pct": 8,
-        "events": false
-      },
-      {
         "name": "Айдан «Кот»",
         "count": 6,
         "pct": 5,
+        "events": false
+      },
+      {
+        "name": "Мизеракль",
+        "count": 5,
+        "pct": 4,
         "events": false
       },
       {
@@ -1265,11 +1265,13 @@
       "faith": {
         "cults": [
           {
-            "name": "Мизеракль",
-            "count": 6,
-            "pct": 30,
-            "rel_mod": 0,
-            "rel_reasons": []
+            "name": "Культ войны",
+            "count": 7,
+            "pct": 35,
+            "rel_mod": 1,
+            "rel_reasons": [
+              "+1 герой культа Культ войны"
+            ]
           },
           {
             "name": "Бурий",
@@ -1284,15 +1286,6 @@
             "pct": 20,
             "rel_mod": 0,
             "rel_reasons": []
-          },
-          {
-            "name": "Культ войны",
-            "count": 1,
-            "pct": 5,
-            "rel_mod": 1,
-            "rel_reasons": [
-              "+1 герой культа Культ войны"
-            ]
           }
         ],
         "neutral": 5,
