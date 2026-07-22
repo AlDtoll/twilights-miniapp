@@ -288,6 +288,10 @@
         "name": "Хагно «Стрелок»",
         "total": 2,
         "left": 2
+      },
+      "willpower": {
+        "total": 2,
+        "left": 2
       }
     },
     "incidents": [
