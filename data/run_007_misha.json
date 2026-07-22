@@ -729,8 +729,10 @@
             "name": "Айдан «Кот»",
             "count": 21,
             "pct": 30,
-            "rel_mod": 0,
-            "rel_reasons": []
+            "rel_mod": 1,
+            "rel_reasons": [
+              "+1 герой культа Айдан «Кот»"
+            ]
           },
           {
             "name": "Кипона",
@@ -902,8 +904,10 @@
             "name": "Айдан «Кот»",
             "count": 9,
             "pct": 30,
-            "rel_mod": 0,
-            "rel_reasons": []
+            "rel_mod": 1,
+            "rel_reasons": [
+              "+1 герой культа Айдан «Кот»"
+            ]
           }
         ],
         "neutral": 9,
