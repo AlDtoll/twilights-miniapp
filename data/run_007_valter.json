@@ -543,7 +543,15 @@
     ],
     "retinue_slots": {
       "total": 1.0,
-      "used": 1.0
+      "used": 1.0,
+      "breakdown": {
+        "base": 0.5,
+        "housing": 0.0,
+        "housing_tier": null,
+        "leadership": 0.5,
+        "leadership_level": "I",
+        "artifacts": 0.0
+      }
     },
     "items": []
   },
