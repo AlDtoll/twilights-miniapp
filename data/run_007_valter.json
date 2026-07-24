@@ -634,20 +634,20 @@
     "cults": [
       {
         "name": "Кипона",
-        "count": 32,
-        "pct": 32,
+        "count": 33,
+        "pct": 33,
         "events": true
       },
       {
         "name": "Айдан «Кот»",
-        "count": 11,
-        "pct": 11,
+        "count": 12,
+        "pct": 12,
         "events": false
       },
       {
         "name": "Бурий",
-        "count": 10,
-        "pct": 10,
+        "count": 11,
+        "pct": 11,
         "events": false
       },
       {
@@ -657,8 +657,8 @@
         "events": false
       }
     ],
-    "neutral": 38,
-    "neutral_pct": 38,
+    "neutral": 35,
+    "neutral_pct": 35,
     "threshold_pct": 15
   },
   "hearth": {
@@ -778,8 +778,8 @@
           },
           {
             "name": "Айдан «Кот»",
-            "count": 11,
-            "pct": 22,
+            "count": 12,
+            "pct": 24,
             "rel_mod": 0,
             "rel_reasons": []
           },
@@ -791,10 +791,13 @@
             "rel_reasons": []
           }
         ],
-        "neutral": 18,
-        "neutral_pct": 36,
+        "neutral": 17,
+        "neutral_pct": 34,
         "mod": 0,
-        "reasons": []
+        "reasons": [],
+        "delta": {
+          "Айдан «Кот»": 1
+        }
       },
       "might": {
         "total": 4,
@@ -892,23 +895,27 @@
         "cults": [
           {
             "name": "Бурий",
-            "count": 10,
-            "pct": 33,
+            "count": 11,
+            "pct": 37,
             "rel_mod": 0,
             "rel_reasons": []
           },
           {
             "name": "Кипона",
-            "count": 5,
-            "pct": 17,
+            "count": 6,
+            "pct": 20,
             "rel_mod": 0,
             "rel_reasons": []
           }
         ],
-        "neutral": 15,
-        "neutral_pct": 50,
+        "neutral": 13,
+        "neutral_pct": 43,
         "mod": 0,
-        "reasons": []
+        "reasons": [],
+        "delta": {
+          "Кипона": 1,
+          "Бурий": 1
+        }
       },
       "might": {
         "total": 3,
@@ -1037,7 +1044,8 @@
         "mod": -1,
         "reasons": [
           "−1 Кипона преобладает (55%), герой Фортуна"
-        ]
+        ],
+        "delta": {}
       },
       "might": {
         "total": 2,
