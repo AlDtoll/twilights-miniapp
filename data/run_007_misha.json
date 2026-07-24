@@ -624,8 +624,8 @@
     "cults": [
       {
         "name": "Айдан «Кот»",
-        "count": 30,
-        "pct": 30,
+        "count": 31,
+        "pct": 31,
         "events": true
       },
       {
@@ -641,8 +641,8 @@
         "events": false
       }
     ],
-    "neutral": 40,
-    "neutral_pct": 40,
+    "neutral": 39,
+    "neutral_pct": 39,
     "threshold_pct": 15
   },
   "hearth": {
@@ -766,8 +766,8 @@
         "cults": [
           {
             "name": "Айдан «Кот»",
-            "count": 21,
-            "pct": 30,
+            "count": 22,
+            "pct": 31,
             "rel_mod": 1,
             "rel_reasons": [
               "+1 герой культа Айдан «Кот»"
@@ -788,10 +788,13 @@
             "rel_reasons": []
           }
         ],
-        "neutral": 31,
-        "neutral_pct": 44,
+        "neutral": 30,
+        "neutral_pct": 43,
         "mod": 0,
-        "reasons": []
+        "reasons": [],
+        "delta": {
+          "Айдан «Кот»": 1
+        }
       },
       "might": {
         "total": 6,
@@ -956,7 +959,8 @@
         "mod": -1,
         "reasons": [
           "−1 религиозный раскол (2 культа ≥25%)"
-        ]
+        ],
+        "delta": {}
       },
       "might": {
         "total": 4,
