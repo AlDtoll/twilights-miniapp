@@ -678,8 +678,8 @@
     "cults": [
       {
         "name": "Культ войны",
-        "count": 72,
-        "pct": 55,
+        "count": 74,
+        "pct": 57,
         "events": true
       },
       {
@@ -690,7 +690,7 @@
       },
       {
         "name": "Айдан «Кот»",
-        "count": 6,
+        "count": 7,
         "pct": 5,
         "events": false
       },
@@ -702,8 +702,8 @@
       },
       {
         "name": "Местный культ",
-        "count": 4,
-        "pct": 3,
+        "count": 5,
+        "pct": 4,
         "events": false
       },
       {
@@ -713,8 +713,8 @@
         "events": false
       }
     ],
-    "neutral": 27,
-    "neutral_pct": 21,
+    "neutral": 23,
+    "neutral_pct": 18,
     "threshold_pct": 15
   },
   "hearth": {
@@ -845,8 +845,8 @@
         "cults": [
           {
             "name": "Культ войны",
-            "count": 43,
-            "pct": 61,
+            "count": 44,
+            "pct": 63,
             "rel_mod": 1,
             "rel_reasons": [
               "+1 герой культа Культ войны"
@@ -854,8 +854,8 @@
           },
           {
             "name": "Айдан «Кот»",
-            "count": 4,
-            "pct": 6,
+            "count": 5,
+            "pct": 7,
             "rel_mod": 0,
             "rel_reasons": []
           },
@@ -867,12 +867,16 @@
             "rel_reasons": []
           }
         ],
-        "neutral": 20,
-        "neutral_pct": 29,
+        "neutral": 18,
+        "neutral_pct": 26,
         "mod": 1,
         "reasons": [
-          "+1 Культ войны преобладает (61%), герой-единоверец"
-        ]
+          "+1 Культ войны преобладает (63%), герой-единоверец"
+        ],
+        "delta": {
+          "Айдан «Кот»": 1,
+          "Культ войны": 1
+        }
       },
       "might": {
         "total": 7,
@@ -979,8 +983,8 @@
         "cults": [
           {
             "name": "Культ войны",
-            "count": 18,
-            "pct": 72,
+            "count": 19,
+            "pct": 76,
             "rel_mod": 1,
             "rel_reasons": [
               "+1 герой культа Культ войны"
@@ -995,8 +999,8 @@
           },
           {
             "name": "Бурий",
-            "count": 3,
-            "pct": 12,
+            "count": 2,
+            "pct": 8,
             "rel_mod": 0,
             "rel_reasons": []
           }
@@ -1005,8 +1009,12 @@
         "neutral_pct": 0,
         "mod": 1,
         "reasons": [
-          "+1 Культ войны преобладает (72%), герой-единоверец"
-        ]
+          "+1 Культ войны преобладает (76%), герой-единоверец"
+        ],
+        "delta": {
+          "Бурий": -1,
+          "Культ войны": 1
+        }
       },
       "might": {
         "total": 5,
@@ -1124,8 +1132,8 @@
         "cults": [
           {
             "name": "Бурий",
-            "count": 6,
-            "pct": 40,
+            "count": 7,
+            "pct": 47,
             "rel_mod": 0,
             "rel_reasons": []
           },
@@ -1146,12 +1154,15 @@
             "rel_reasons": []
           }
         ],
-        "neutral": 3,
-        "neutral_pct": 20,
+        "neutral": 2,
+        "neutral_pct": 13,
         "mod": -1,
         "reasons": [
           "−1 религиозный раскол (2 культа ≥25%)"
-        ]
+        ],
+        "delta": {
+          "Бурий": 1
+        }
       },
       "might": {
         "total": 1,
@@ -1239,9 +1250,10 @@
         "Н": 6,
         "НЛ": 5,
         "Тип": "присоединённая (вечина, С2 мета)",
-        "mod": -1,
+        "mod": -2,
         "reasons": [
-          "−1 нехватка стражи (2/3)"
+          "−1 нехватка стражи (2/3)",
+          "-1 вера (религия)"
         ],
         "delta": {
           "Л": -1,
@@ -1260,30 +1272,35 @@
             ]
           },
           {
-            "name": "Бурий",
-            "count": 4,
-            "pct": 20,
+            "name": "Местный культ",
+            "count": 5,
+            "pct": 25,
             "rel_mod": 0,
             "rel_reasons": []
           },
           {
-            "name": "Местный культ",
+            "name": "Бурий",
             "count": 4,
             "pct": 20,
             "rel_mod": 0,
             "rel_reasons": []
           }
         ],
-        "neutral": 5,
-        "neutral_pct": 25,
-        "mod": 0,
-        "reasons": []
+        "neutral": 4,
+        "neutral_pct": 20,
+        "mod": -1,
+        "reasons": [
+          "−1 религиозный раскол (2 культа ≥25%)"
+        ],
+        "delta": {
+          "Местный культ": 1
+        }
       },
       "might": {
-        "total": 0,
+        "total": -1,
         "fighters": 2,
         "base": 0,
-        "loyalty": -1,
+        "loyalty": -2,
         "defense": 1,
         "tags": 0,
         "tag_list": [],
