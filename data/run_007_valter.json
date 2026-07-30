@@ -6,7 +6,7 @@
   "user_id": 445288231,
   "telegram": "@ValterTasadar",
   "season": "3",
-  "active_phase": "adventure_done",
+  "active_phase": "leader",
   "finance": {
     "start": 7649,
     "income": [
@@ -260,7 +260,7 @@
     "points": {
       "player": {
         "total": 3,
-        "left": 3
+        "left": 2
       },
       "chancellor": {
         "name": "Тром «Соляной»",
@@ -340,7 +340,7 @@
       },
       {
         "text": "Штейгер Рудного двора Волча настаивает на дополнительной крепи под нижнюю галерею до первых морозов — рудокопы говорят «пахнет газом», сам он молчит и хмурится",
-        "done": false,
+        "done": true,
         "tags": [
           "#вред",
           "#нп:Рудный_двор",
@@ -559,7 +559,7 @@
       {
         "name": "Инженер (I)",
         "techniques": [],
-        "bank": 10,
+        "bank": 12,
         "ups": 0,
         "next_threshold": 10
       },

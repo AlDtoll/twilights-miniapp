@@ -470,14 +470,14 @@
                 "pct": 300
               },
               {
-                "name": "Херец",
-                "count": 10,
-                "pct": 200
-              },
-              {
                 "name": "Мизеракль",
                 "count": 5,
                 "pct": 100
+              },
+              {
+                "name": "Херец",
+                "count": 2,
+                "pct": 40
               }
             ],
             "neutral": 0,
@@ -1652,18 +1652,11 @@
             "supporters": {
               "Пало": 0
             },
-            "mod": -1,
-            "reasons": [
-              "-1 вера (религия)"
-            ]
+            "mod": 0,
+            "reasons": []
           },
           "faith": {
             "cults": [
-              {
-                "name": "Херец",
-                "count": 15,
-                "pct": 30
-              },
               {
                 "name": "Мизеракль",
                 "count": 15,
@@ -1678,20 +1671,23 @@
                 "name": "Местный культ (Тенгри)",
                 "count": 10,
                 "pct": 20
+              },
+              {
+                "name": "Херец",
+                "count": 2,
+                "pct": 4
               }
             ],
-            "neutral": 0,
-            "neutral_pct": 0,
-            "mod": -1,
-            "reasons": [
-              "−1 религиозный раскол (2 культа ≥25%)"
-            ]
+            "neutral": 13,
+            "neutral_pct": 26,
+            "mod": 0,
+            "reasons": []
           },
           "might": {
-            "total": 3,
+            "total": 4,
             "fighters": 7,
             "base": 1,
-            "loyalty": 1,
+            "loyalty": 2,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
@@ -1730,18 +1726,11 @@
             "supporters": {
               "Пало": 0
             },
-            "mod": -1,
-            "reasons": [
-              "-1 вера (религия)"
-            ]
+            "mod": 0,
+            "reasons": []
           },
           "faith": {
             "cults": [
-              {
-                "name": "Херец",
-                "count": 21,
-                "pct": 30
-              },
               {
                 "name": "Мизеракль",
                 "count": 21,
@@ -1756,20 +1745,23 @@
                 "name": "Местный культ (Тенгри)",
                 "count": 14,
                 "pct": 20
+              },
+              {
+                "name": "Херец",
+                "count": 2,
+                "pct": 3
               }
             ],
-            "neutral": 0,
-            "neutral_pct": 0,
-            "mod": -1,
-            "reasons": [
-              "−1 религиозный раскол (2 культа ≥25%)"
-            ]
+            "neutral": 19,
+            "neutral_pct": 27,
+            "mod": 0,
+            "reasons": []
           },
           "might": {
-            "total": 4,
+            "total": 5,
             "fighters": 10,
             "base": 2,
-            "loyalty": 1,
+            "loyalty": 2,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
@@ -1802,18 +1794,11 @@
             "supporters": {
               "Пало": 0
             },
-            "mod": -1,
-            "reasons": [
-              "-1 вера (религия)"
-            ]
+            "mod": 0,
+            "reasons": []
           },
           "faith": {
             "cults": [
-              {
-                "name": "Херец",
-                "count": 24,
-                "pct": 30
-              },
               {
                 "name": "Мизеракль",
                 "count": 24,
@@ -1828,20 +1813,23 @@
                 "name": "Местный культ (Тенгри)",
                 "count": 16,
                 "pct": 20
+              },
+              {
+                "name": "Херец",
+                "count": 2,
+                "pct": 2
               }
             ],
-            "neutral": 0,
-            "neutral_pct": 0,
-            "mod": -1,
-            "reasons": [
-              "−1 религиозный раскол (2 культа ≥25%)"
-            ]
+            "neutral": 22,
+            "neutral_pct": 28,
+            "mod": 0,
+            "reasons": []
           },
           "might": {
-            "total": 4,
+            "total": 5,
             "fighters": 11,
             "base": 2,
-            "loyalty": 1,
+            "loyalty": 2,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
@@ -2028,18 +2016,11 @@
             "supporters": {
               "Пало": 2
             },
-            "mod": -1,
-            "reasons": [
-              "-1 вера (религия)"
-            ]
+            "mod": 0,
+            "reasons": []
           },
           "faith": {
             "cults": [
-              {
-                "name": "Херец",
-                "count": 20,
-                "pct": 40
-              },
               {
                 "name": "Культ войны",
                 "count": 15,
@@ -2054,20 +2035,23 @@
                 "name": "Местный культ (Тенгри)",
                 "count": 5,
                 "pct": 10
+              },
+              {
+                "name": "Херец",
+                "count": 2,
+                "pct": 4
               }
             ],
-            "neutral": 0,
-            "neutral_pct": 0,
-            "mod": -1,
-            "reasons": [
-              "−1 религиозный раскол (2 культа ≥25%)"
-            ]
+            "neutral": 18,
+            "neutral_pct": 36,
+            "mod": 0,
+            "reasons": []
           },
           "might": {
-            "total": 3,
+            "total": 4,
             "fighters": 7,
             "base": 1,
-            "loyalty": 1,
+            "loyalty": 2,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
@@ -2106,18 +2090,11 @@
             "supporters": {
               "Пало": 1
             },
-            "mod": -1,
-            "reasons": [
-              "-1 вера (религия)"
-            ]
+            "mod": 0,
+            "reasons": []
           },
           "faith": {
             "cults": [
-              {
-                "name": "Херец",
-                "count": 40,
-                "pct": 40
-              },
               {
                 "name": "Культ войны",
                 "count": 25,
@@ -2132,20 +2109,23 @@
                 "name": "Местный культ (Тенгри)",
                 "count": 15,
                 "pct": 15
+              },
+              {
+                "name": "Херец",
+                "count": 2,
+                "pct": 2
               }
             ],
-            "neutral": 0,
-            "neutral_pct": 0,
-            "mod": -1,
-            "reasons": [
-              "−1 религиозный раскол (2 культа ≥25%)"
-            ]
+            "neutral": 38,
+            "neutral_pct": 38,
+            "mod": 0,
+            "reasons": []
           },
           "might": {
-            "total": 5,
+            "total": 6,
             "fighters": 14,
             "base": 3,
-            "loyalty": 1,
+            "loyalty": 2,
             "defense": 1,
             "tags": 0,
             "tag_list": [],
@@ -2184,10 +2164,8 @@
             "supporters": {
               "Пало": 1
             },
-            "mod": -1,
-            "reasons": [
-              "-1 вера (религия)"
-            ]
+            "mod": 0,
+            "reasons": []
           },
           "faith": {
             "cults": [
@@ -2197,14 +2175,14 @@
                 "pct": 50
               },
               {
-                "name": "Херец",
-                "count": 12,
-                "pct": 30
-              },
-              {
                 "name": "Мизеракль",
                 "count": 6,
                 "pct": 15
+              },
+              {
+                "name": "Херец",
+                "count": 2,
+                "pct": 5
               },
               {
                 "name": "Местный культ (Тенгри)",
@@ -2212,18 +2190,16 @@
                 "pct": 5
               }
             ],
-            "neutral": 0,
-            "neutral_pct": 0,
-            "mod": -1,
-            "reasons": [
-              "−1 религиозный раскол (2 культа ≥25%)"
-            ]
+            "neutral": 10,
+            "neutral_pct": 25,
+            "mod": 0,
+            "reasons": []
           },
           "might": {
-            "total": 4,
+            "total": 5,
             "fighters": 6,
             "base": 1,
-            "loyalty": 1,
+            "loyalty": 2,
             "defense": 1,
             "tags": 1,
             "tag_list": [
@@ -2267,10 +2243,8 @@
             "supporters": {
               "Пало": 1
             },
-            "mod": -1,
-            "reasons": [
-              "-1 вера (религия)"
-            ]
+            "mod": 0,
+            "reasons": []
           },
           "faith": {
             "cults": [
@@ -2278,11 +2252,6 @@
                 "name": "Культ войны",
                 "count": 40,
                 "pct": 50
-              },
-              {
-                "name": "Херец",
-                "count": 24,
-                "pct": 30
               },
               {
                 "name": "Мизеракль",
@@ -2293,20 +2262,23 @@
                 "name": "Местный культ (Тенгри)",
                 "count": 4,
                 "pct": 5
+              },
+              {
+                "name": "Херец",
+                "count": 2,
+                "pct": 2
               }
             ],
-            "neutral": 0,
-            "neutral_pct": 0,
-            "mod": -1,
-            "reasons": [
-              "−1 религиозный раскол (2 культа ≥25%)"
-            ]
+            "neutral": 22,
+            "neutral_pct": 28,
+            "mod": 0,
+            "reasons": []
           },
           "might": {
-            "total": 5,
+            "total": 6,
             "fighters": 11,
             "base": 2,
-            "loyalty": 1,
+            "loyalty": 2,
             "defense": 1,
             "tags": 1,
             "tag_list": [
@@ -2583,12 +2555,12 @@
               },
               {
                 "name": "Херец",
-                "count": 5,
-                "pct": 6
+                "count": 2,
+                "pct": 2
               }
             ],
-            "neutral": 25,
-            "neutral_pct": 31,
+            "neutral": 28,
+            "neutral_pct": 35,
             "mod": 0,
             "reasons": []
           },
