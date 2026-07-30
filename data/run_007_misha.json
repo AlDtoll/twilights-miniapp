@@ -6,7 +6,7 @@
   "user_id": 1700257736,
   "telegram": "@Мишачья",
   "season": "3",
-  "active_phase": "adventure",
+  "active_phase": "adventure_done",
   "finance": {
     "start": 35709,
     "income": [
@@ -641,7 +641,7 @@
       {
         "name": "Короткий меч (I)",
         "techniques": [],
-        "bank": 6,
+        "bank": 7,
         "ups": 0,
         "next_threshold": 10
       },
@@ -688,7 +688,7 @@
       {
         "name": "Стрелок (пороховое) (0)",
         "techniques": [],
-        "bank": 2,
+        "bank": 4,
         "ups": 0,
         "next_threshold": 10
       }
