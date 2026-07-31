@@ -54,11 +54,6 @@ function tierBy(pct){
   if(pct>=0.35)return {outcome:'Неплохо',level:1};
   return {outcome:'Слабо',level:0};
 }
-function combatOutcome(win, revisit, heroHp, enemyHp){
-  if(win) return {outcome:'Победа',level:heroHp>=70?4:heroHp>=40?3:2,win:true,scene_revisit:false};
-  if(revisit) return {outcome:'Пересмотр сцены',level:2,win:false,scene_revisit:true};
-  return {outcome:'Поражение',level:enemyHp<=30?1:0,win:false,scene_revisit:false};
-}
 function showReady(defTitle, defInfo){
   document.getElementById('g-title').textContent=gameData.prompt||defTitle;
   document.getElementById('g-info').textContent=defInfo;
