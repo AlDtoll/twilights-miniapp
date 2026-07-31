@@ -658,11 +658,16 @@
         "next_threshold": 10
       },
       {
-        "name": "Лидерство (I)",
-        "techniques": [],
-        "bank": 11,
-        "ups": 0,
-        "next_threshold": 10
+        "name": "Лидерство (II)",
+        "techniques": [
+          {
+            "name": "«Аппаратный запас»",
+            "kind": "техника"
+          }
+        ],
+        "bank": 1,
+        "ups": 1,
+        "next_threshold": 12
       },
       {
         "name": "Алхимия (I)",
@@ -711,7 +716,7 @@
         "housing": 0.5,
         "housing_tier": "дом",
         "leadership": 0.5,
-        "leadership_level": "I",
+        "leadership_level": "II",
         "artifacts": 0.0
       }
     },
