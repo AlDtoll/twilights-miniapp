@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Twilights — Ритм</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="../shared/styles.css">
+<style>
+
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--tg-theme-bg-color,#1a1a2e);color:var(--tg-theme-text-color,#eee);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;user-select:none;-webkit-user-select:none;}
+.wrap{width:100%;max-width:380px;text-align:center;}
+.ready-title{font-size:1.45rem;font-weight:700;margin-bottom:8px;}
+.ready-info{font-size:0.92rem;color:var(--tg-theme-hint-color,#aaa);margin-bottom:16px;line-height:1.45;}
+.hud{display:flex;justify-content:space-around;margin-bottom:12px;padding:8px;background:rgba(255,255,255,0.05);border-radius:12px;}
+.hud-item{text-align:center;}
+.hud-l{font-size:0.65rem;color:var(--tg-theme-hint-color,#aaa);text-transform:uppercase;}
+.hud-v{font-size:1.15rem;font-weight:700;}
+.hint{font-size:0.8rem;color:var(--tg-theme-hint-color,#aaa);margin-top:10px;min-height:1.2em;}
+.result{display:none;margin-top:14px;}
+.result-t{font-size:1.35rem;font-weight:700;margin-bottom:6px;}
+.result-s{font-size:0.95rem;color:var(--tg-theme-hint-color,#aaa);}
+.play{display:none;}
+.btn-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center;}
+.chip-btn{padding:12px 18px;border-radius:12px;border:2px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:inherit;font-size:1rem;font-weight:700;cursor:pointer;min-width:64px;}
+.chip-btn:active{transform:scale(0.96);}
+.chip-btn.active{border-color:#00b894;background:rgba(0,184,148,0.2);}
+.chip-btn.bad{border-color:#e74c3c;background:rgba(231,76,60,0.2);}
+.bar-track{width:100%;height:28px;border-radius:14px;background:rgba(255,255,255,0.08);position:relative;overflow:hidden;margin:12px 0;}
+.bar-fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#6c5ce7,#a29bfe);border-radius:14px;width:0%;}
+.sweet{position:absolute;top:0;bottom:0;background:rgba(0,184,148,0.35);border-left:2px solid #00b894;border-right:2px solid #00b894;}
+.field{width:100%;aspect-ratio:1;max-height:360px;border-radius:16px;background:rgba(255,255,255,0.04);border:2px solid rgba(255,255,255,0.08);position:relative;touch-action:none;overflow:hidden;margin:0 auto;}
+.grid{display:grid;gap:6px;width:100%;}
+.beat{width:70px;height:70px;border-radius:50%;border:3px solid #a29bfe;margin:20px auto;display:flex;align-items:center;justify-content:center;font-size:1.6rem;transition:transform 0.08s,background 0.08s;}.beat.flash{transform:scale(1.2);background:rgba(162,155,254,0.4);}.lane{height:8px;background:rgba(255,255,255,0.08);border-radius:4px;margin:16px 0;position:relative;overflow:hidden;}.note{position:absolute;top:0;bottom:0;width:12px;background:#00b894;border-radius:4px;}
+</style>
+</head>
+<body>
+<div class="wrap" id="g-wrap">
+  <div id="g-ready">
+    <div class="ready-title" id="g-title">🥁 Ритм</div>
+    <div class="ready-info" id="g-info">Тапай в такт вспышкам.</div>
+    
+    <button class="confirm-btn" onclick="gStart()">Начать</button>
+  </div>
+  <div class="play" id="g-play">
+    <div class="hud" id="g-hud"></div>
+    <div class="beat" id="beat">♪</div><div class="lane" id="lane"></div><button class="confirm-btn" ontouchstart="tap(event)" onmousedown="tap(event)">ТАП</button>
+    <div class="hint" id="g-hint"></div>
+    <div class="result" id="g-result">
+      <div class="result-t" id="g-rt"></div>
+      <div class="result-s" id="g-rs"></div>
+    </div>
+  </div>
+</div>
+<script src="../shared/core.js"></script>
+<script>
+
+function tierBy(pct){
+  if(pct>=0.9)return {outcome:'Идеально',level:4};
+  if(pct>=0.75)return {outcome:'Отлично',level:3};
+  if(pct>=0.55)return {outcome:'Хорошо',level:2};
+  if(pct>=0.35)return {outcome:'Неплохо',level:1};
+  return {outcome:'Слабо',level:0};
+}
+function showReady(defTitle, defInfo){
+  document.getElementById('g-title').textContent=gameData.prompt||defTitle;
+  document.getElementById('g-info').textContent=defInfo;
+}
+function goPlay(){
+  document.getElementById('g-ready').style.display='none';
+  document.getElementById('g-play').style.display='block';
+}
+function finish(game, payload, title, sub){
+  const el=document.getElementById('g-result');
+  document.getElementById('g-rt').textContent=title;
+  document.getElementById('g-rs').textContent=sub;
+  el.style.display='block';
+  setTimeout(()=>sendResultToBot(Object.assign({game},payload)),800);
+}
+
+let S={};
+function gStart(){
+  goPlay();
+  const n=Math.max(6,Math.min(16,gameData.beats||10));
+  const bpm=gameData.bpm||100;
+  const iv=60000/bpm;
+  S={n,iv,i:0,hits:0,times:[],start:Date.now(),armed:false,done:false};
+  for(let i=0;i<n;i++)S.times.push(800+i*iv+(rng()-0.5)*40);
+  hud(); schedule();
+}
+function hud(){document.getElementById('g-hud').innerHTML=`<div class="hud-item"><div class="hud-l">Удар</div><div class="hud-v">${Math.min(S.i+1,S.n)}/${S.n}</div></div><div class="hud-item"><div class="hud-l">В цель</div><div class="hud-v">${S.hits}</div></div>`;}
+function schedule(){
+  if(S.i>=S.n){end();return;}
+  const wait=S.times[S.i]-(Date.now()-S.start);
+  setTimeout(()=>{
+    if(S.done)return;
+    S.armed=true; S.armAt=Date.now();
+    const b=document.getElementById('beat'); b.classList.add('flash');
+    setTimeout(()=>b.classList.remove('flash'),120);
+    setTimeout(()=>{ if(S.armed){S.armed=false;S.i++;hud();schedule();} },220);
+  },Math.max(0,wait));
+}
+function tap(e){e.preventDefault(); if(S.done)return;
+  if(S.armed){ const d=Math.abs(Date.now()-S.armAt); if(d<180)S.hits++; S.armed=false; S.i++; hud(); schedule(); }
+}
+function end(){ if(S.done)return; S.done=true; const pct=S.hits/S.n; const t=tierBy(pct);
+  finish('rhythm',{hits:S.hits,total:S.n,outcome:t.outcome,level:t.level,timeSpent:Math.round((Date.now()-S.start)/1000)},t.outcome,S.hits+'/'+S.n);}
+showReady('🥁 Ритм','Тапай, когда круг вспыхивает');
+
+</script>
+</body>
+</html>

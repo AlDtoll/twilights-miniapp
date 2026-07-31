@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Twilights — Столкновение</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="../shared/styles.css">
+<style>
+
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--tg-theme-bg-color,#1a1a2e);color:var(--tg-theme-text-color,#eee);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;user-select:none;-webkit-user-select:none;}
+.wrap{width:100%;max-width:380px;text-align:center;}
+.ready-title{font-size:1.45rem;font-weight:700;margin-bottom:8px;}
+.ready-info{font-size:0.92rem;color:var(--tg-theme-hint-color,#aaa);margin-bottom:16px;line-height:1.45;}
+.hud{display:flex;justify-content:space-around;margin-bottom:12px;padding:8px;background:rgba(255,255,255,0.05);border-radius:12px;}
+.hud-item{text-align:center;}
+.hud-l{font-size:0.65rem;color:var(--tg-theme-hint-color,#aaa);text-transform:uppercase;}
+.hud-v{font-size:1.15rem;font-weight:700;}
+.hint{font-size:0.8rem;color:var(--tg-theme-hint-color,#aaa);margin-top:10px;min-height:1.2em;}
+.result{display:none;margin-top:14px;}
+.result-t{font-size:1.35rem;font-weight:700;margin-bottom:6px;}
+.result-s{font-size:0.95rem;color:var(--tg-theme-hint-color,#aaa);}
+.play{display:none;}
+.chip-btn{padding:14px 16px;border-radius:12px;border:2px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:inherit;font-size:1.4rem;font-weight:700;cursor:pointer;min-width:64px;margin:4px;}
+.dirs{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:12px;}
+.flash{font-size:3.5rem;min-height:1.4em;margin:16px 0;transition:transform 0.1s;}
+.hpbar{height:14px;background:rgba(255,255,255,0.08);border-radius:8px;overflow:hidden;margin:6px 0;}
+.hpfill{height:100%;background:#e74c3c;width:100%;transition:width 0.2s;}
+.hpfill.hero{background:#00b894;}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="g-ready">
+    <div class="ready-title" id="g-title">💥 Столкновение</div>
+    <div class="ready-info" id="g-info">Серия направлений + окно блока.</div>
+    <button class="confirm-btn" onclick="gStart()">Начать</button>
+  </div>
+  <div class="play" id="g-play">
+    <div class="hud" id="g-hud"></div>
+    <div class="flash" id="flash">·</div><div class="dirs" id="dirs"></div>
+    <div class="hint" id="g-hint"></div>
+    <div class="result" id="g-result"><div class="result-t" id="g-rt"></div><div class="result-s" id="g-rs"></div></div>
+  </div>
+</div>
+<script src="../shared/core.js"></script>
+<script>
+
+function tierBy(pct){
+  if(pct>=0.9)return {outcome:'Идеально',level:4};
+  if(pct>=0.75)return {outcome:'Отлично',level:3};
+  if(pct>=0.55)return {outcome:'Хорошо',level:2};
+  if(pct>=0.35)return {outcome:'Неплохо',level:1};
+  return {outcome:'Слабо',level:0};
+}
+function combatOutcome(win, revisit, heroHp, enemyHp){
+  if(win) return {outcome:'Победа',level:heroHp>=70?4:heroHp>=40?3:2,win:true,scene_revisit:false};
+  if(revisit) return {outcome:'Пересмотр сцены',level:2,win:false,scene_revisit:true};
+  return {outcome:'Поражение',level:enemyHp<=30?1:0,win:false,scene_revisit:false};
+}
+function showReady(defTitle, defInfo){
+  document.getElementById('g-title').textContent=gameData.prompt||defTitle;
+  document.getElementById('g-info').textContent=defInfo;
+}
+function goPlay(){
+  document.getElementById('g-ready').style.display='none';
+  document.getElementById('g-play').style.display='block';
+}
+function finish(game, payload, title, sub){
+  document.getElementById('g-rt').textContent=title;
+  document.getElementById('g-rs').textContent=sub;
+  document.getElementById('g-result').style.display='block';
+  setTimeout(()=>sendResultToBot(Object.assign({game},payload)),800);
+}
+
+let S={};
+const DIRS=['←','↑','→','↓','🛡'];
+function gStart(){
+  goPlay();
+  S={wave:0,max:Math.max(5,Math.min(10,gameData.waves||7)),ok:0,score:0,seq:[],idx:0,start:Date.now(),done:false};
+  const box=document.getElementById('dirs'); box.innerHTML='';
+  DIRS.forEach(d=>{const b=document.createElement('button'); b.className='chip-btn'; b.textContent=d; b.onclick=()=>tap(d); box.appendChild(b);});
+  hud(); nextWave();
+}
+function hud(){document.getElementById('g-hud').innerHTML=`<div class="hud-item"><div class="hud-l">Волна</div><div class="hud-v">${Math.min(S.wave+1,S.max)}/${S.max}</div></div><div class="hud-item"><div class="hud-l">Очки</div><div class="hud-v">${S.score}</div></div><div class="hud-item"><div class="hud-l">Чистые</div><div class="hud-v">${S.ok}</div></div>`;}
+function nextWave(){
+  if(S.done)return;
+  if(S.wave>=S.max){end();return;}
+  S.wave++; S.seq=[]; const len=3+((rng()*3)|0);
+  for(let i=0;i<len;i++) S.seq.push(DIRS[rng()*(i===len-1?5:4)|0]);
+  S.idx=0; S.accept=false; hud();
+  document.getElementById('g-hint').textContent='Запомни…';
+  document.getElementById('flash').textContent=S.seq.join(' ');
+  setTimeout(()=>{ document.getElementById('flash').textContent='?'; document.getElementById('g-hint').textContent='Повтори'; S.accept=true; },900+S.seq.length*200);
+}
+function tap(d){ if(!S.accept||S.done)return;
+  if(d===S.seq[S.idx]){ S.idx++; document.getElementById('flash').textContent='✔'.repeat(S.idx);
+    if(S.idx>=S.seq.length){ S.accept=false; S.ok++; S.score+=10+S.seq.length*2; setTimeout(nextWave,300); }
+  } else { S.accept=false; document.getElementById('flash').textContent='✖'; setTimeout(nextWave,300); }
+}
+function end(){ if(S.done)return; S.done=true;
+  const pct=S.ok/S.max; const t=tierBy(pct);
+  finish('clash',{score:S.score,ok:S.ok,total:S.max,outcome:t.outcome,level:t.level,timeSpent:Math.round((Date.now()-S.start)/1000)},t.outcome,S.score+' очков · '+S.ok+'/'+S.max);
+}
+showReady('💥 Столкновение','Повтори серию · очки за чистую волну');
+
+</script>
+</body>
+</html>

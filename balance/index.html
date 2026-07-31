@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Twilights — Баланс</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="../shared/styles.css">
+<style>
+
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--tg-theme-bg-color,#1a1a2e);color:var(--tg-theme-text-color,#eee);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;user-select:none;-webkit-user-select:none;}
+.wrap{width:100%;max-width:380px;text-align:center;}
+.ready-title{font-size:1.45rem;font-weight:700;margin-bottom:8px;}
+.ready-info{font-size:0.92rem;color:var(--tg-theme-hint-color,#aaa);margin-bottom:16px;line-height:1.45;}
+.hud{display:flex;justify-content:space-around;margin-bottom:12px;padding:8px;background:rgba(255,255,255,0.05);border-radius:12px;}
+.hud-item{text-align:center;}
+.hud-l{font-size:0.65rem;color:var(--tg-theme-hint-color,#aaa);text-transform:uppercase;}
+.hud-v{font-size:1.15rem;font-weight:700;}
+.hint{font-size:0.8rem;color:var(--tg-theme-hint-color,#aaa);margin-top:10px;min-height:1.2em;}
+.result{display:none;margin-top:14px;}
+.result-t{font-size:1.35rem;font-weight:700;margin-bottom:6px;}
+.result-s{font-size:0.95rem;color:var(--tg-theme-hint-color,#aaa);}
+.play{display:none;}
+.btn-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center;}
+.chip-btn{padding:12px 18px;border-radius:12px;border:2px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:inherit;font-size:1rem;font-weight:700;cursor:pointer;min-width:64px;}
+.chip-btn:active{transform:scale(0.96);}
+.chip-btn.active{border-color:#00b894;background:rgba(0,184,148,0.2);}
+.chip-btn.bad{border-color:#e74c3c;background:rgba(231,76,60,0.2);}
+.bar-track{width:100%;height:28px;border-radius:14px;background:rgba(255,255,255,0.08);position:relative;overflow:hidden;margin:12px 0;}
+.bar-fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#6c5ce7,#a29bfe);border-radius:14px;width:0%;}
+.sweet{position:absolute;top:0;bottom:0;background:rgba(0,184,148,0.35);border-left:2px solid #00b894;border-right:2px solid #00b894;}
+.field{width:100%;aspect-ratio:1;max-height:360px;border-radius:16px;background:rgba(255,255,255,0.04);border:2px solid rgba(255,255,255,0.08);position:relative;touch-action:none;overflow:hidden;margin:0 auto;}
+.grid{display:grid;gap:6px;width:100%;}
+#bal{width:100%;height:220px;border-radius:16px;background:rgba(255,255,255,0.04);border:2px solid rgba(255,255,255,0.08);position:relative;overflow:hidden;touch-action:none;}.beam{position:absolute;left:10%;right:10%;height:10px;background:#6c5ce7;border-radius:5px;top:50%;transform-origin:center center;}.dot{position:absolute;width:22px;height:22px;border-radius:50%;background:#fff;left:50%;top:50%;margin:-11px;box-shadow:0 0 12px #fff;}
+</style>
+</head>
+<body>
+<div class="wrap" id="g-wrap">
+  <div id="g-ready">
+    <div class="ready-title" id="g-title">⚖️ Баланс</div>
+    <div class="ready-info" id="g-info">Удержи точку на балке до конца таймера. Тапай слева/справа.</div>
+    
+    <button class="confirm-btn" onclick="gStart()">Начать</button>
+  </div>
+  <div class="play" id="g-play">
+    <div class="hud" id="g-hud"></div>
+    <div id="bal"><div class="beam" id="beam"></div><div class="dot" id="dot"></div></div>
+    <div class="hint" id="g-hint"></div>
+    <div class="result" id="g-result">
+      <div class="result-t" id="g-rt"></div>
+      <div class="result-s" id="g-rs"></div>
+    </div>
+  </div>
+</div>
+<script src="../shared/core.js"></script>
+<script>
+
+function tierBy(pct){
+  if(pct>=0.9)return {outcome:'Идеально',level:4};
+  if(pct>=0.75)return {outcome:'Отлично',level:3};
+  if(pct>=0.55)return {outcome:'Хорошо',level:2};
+  if(pct>=0.35)return {outcome:'Неплохо',level:1};
+  return {outcome:'Слабо',level:0};
+}
+function showReady(defTitle, defInfo){
+  document.getElementById('g-title').textContent=gameData.prompt||defTitle;
+  document.getElementById('g-info').textContent=defInfo;
+}
+function goPlay(){
+  document.getElementById('g-ready').style.display='none';
+  document.getElementById('g-play').style.display='block';
+}
+function finish(game, payload, title, sub){
+  const el=document.getElementById('g-result');
+  document.getElementById('g-rt').textContent=title;
+  document.getElementById('g-rs').textContent=sub;
+  el.style.display='block';
+  setTimeout(()=>sendResultToBot(Object.assign({game},payload)),800);
+}
+
+let S={},RAF;
+function gStart(){
+  goPlay();
+  const time=gameData.timeLimit||12;
+  S={ang:0,vel:(rng()-0.5)*0.4,x:0,alive:true,t0:Date.now(),limit:time*1000,okMs:0,last:performance.now()};
+  hud();
+  const el=document.getElementById('bal');
+  el.ontouchstart=el.onmousedown=e=>{
+    e.preventDefault();
+    const r=el.getBoundingClientRect();
+    const cx=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
+    S.vel += (cx<r.width/2?-1:1)*0.55;
+  };
+  RAF=requestAnimationFrame(loop);
+}
+function hud(){const left=Math.max(0,Math.ceil((S.limit-(Date.now()-S.t0))/1000));
+  document.getElementById('g-hud').innerHTML=`<div class="hud-item"><div class="hud-l">Время</div><div class="hud-v">${left}</div></div><div class="hud-item"><div class="hud-l">Устойчиво</div><div class="hud-v">${Math.round(S.okMs/1000)}с</div></div>`;}
+function loop(now){
+  if(!S.alive)return;
+  const dt=Math.min(40,now-S.last)/1000; S.last=now;
+  S.vel += S.ang*1.8*dt + (rng()-0.5)*0.15;
+  S.ang += S.vel*dt;
+  S.x += Math.sin(S.ang)*40*dt;
+  document.getElementById('beam').style.transform=`rotate(${S.ang*40}deg)`;
+  document.getElementById('dot').style.transform=`translateX(${S.x*8}px) translateY(${Math.abs(S.ang)*30}px)`;
+  if(Math.abs(S.ang)<0.25 && Math.abs(S.x)<4) S.okMs += dt*1000;
+  hud();
+  if(Math.abs(S.ang)>0.9 || Math.abs(S.x)>12 || Date.now()-S.t0>=S.limit){
+    S.alive=false;
+    const pct=Math.min(1,S.okMs/S.limit); const t=tierBy(pct);
+    const fell=Math.abs(S.ang)>0.9||Math.abs(S.x)>12;
+    finish('balance',{okMs:Math.round(S.okMs),limit:S.limit,fell,outcome:t.outcome,level:fell&&pct<0.35?0:t.level,timeSpent:Math.round((Date.now()-S.t0)/1000)},t.outcome,Math.round(S.okMs/1000)+'с устойчиво');
+    return;
+  }
+  RAF=requestAnimationFrame(loop);
+}
+showReady('⚖️ Баланс','Удержи равновесие · тап слева/справа корректирует');
+
+</script>
+</body>
+</html>

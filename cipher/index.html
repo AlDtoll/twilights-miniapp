@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Twilights — Шифр</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="../shared/styles.css">
+<style>
+
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--tg-theme-bg-color,#1a1a2e);color:var(--tg-theme-text-color,#eee);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;user-select:none;-webkit-user-select:none;}
+.wrap{width:100%;max-width:380px;text-align:center;}
+.ready-title{font-size:1.45rem;font-weight:700;margin-bottom:8px;}
+.ready-info{font-size:0.92rem;color:var(--tg-theme-hint-color,#aaa);margin-bottom:16px;line-height:1.45;}
+.hud{display:flex;justify-content:space-around;margin-bottom:12px;padding:8px;background:rgba(255,255,255,0.05);border-radius:12px;}
+.hud-item{text-align:center;}
+.hud-l{font-size:0.65rem;color:var(--tg-theme-hint-color,#aaa);text-transform:uppercase;}
+.hud-v{font-size:1.15rem;font-weight:700;}
+.hint{font-size:0.8rem;color:var(--tg-theme-hint-color,#aaa);margin-top:10px;min-height:1.2em;}
+.result{display:none;margin-top:14px;}
+.result-t{font-size:1.35rem;font-weight:700;margin-bottom:6px;}
+.result-s{font-size:0.95rem;color:var(--tg-theme-hint-color,#aaa);}
+.play{display:none;}
+.chip-btn{padding:12px 18px;border-radius:12px;border:2px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:inherit;font-size:1rem;font-weight:700;cursor:pointer;min-width:56px;margin:4px;}
+.chip-btn:active{transform:scale(0.96);}
+.chip-btn.active{border-color:#00b894;background:rgba(0,184,148,0.2);}
+.key{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:12px;}.k{padding:6px 10px;background:rgba(162,155,254,0.15);border-radius:8px;font-size:0.85rem;}.board{font-size:1.6rem;letter-spacing:0.2em;margin:12px 0;min-height:2em;}.letters{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="g-ready">
+    <div class="ready-title" id="g-title">🔐 Шифр</div>
+    <div class="ready-info" id="g-info">Ключ на экране. Расшифруй слово.</div>
+    <button class="confirm-btn" onclick="gStart()">Начать</button>
+  </div>
+  <div class="play" id="g-play">
+    <div class="hud" id="g-hud"></div>
+    <div class="key" id="key"></div><div class="board" id="board"></div><div class="letters" id="letters"></div>
+    <div class="hint" id="g-hint"></div>
+    <div class="result" id="g-result"><div class="result-t" id="g-rt"></div><div class="result-s" id="g-rs"></div></div>
+  </div>
+</div>
+<script src="../shared/core.js"></script>
+<script>
+
+function tierBy(pct){
+  if(pct>=0.9)return {outcome:'Идеально',level:4};
+  if(pct>=0.75)return {outcome:'Отлично',level:3};
+  if(pct>=0.55)return {outcome:'Хорошо',level:2};
+  if(pct>=0.35)return {outcome:'Неплохо',level:1};
+  return {outcome:'Слабо',level:0};
+}
+function showReady(defTitle, defInfo){
+  document.getElementById('g-title').textContent=gameData.prompt||defTitle;
+  document.getElementById('g-info').textContent=defInfo;
+}
+function goPlay(){
+  document.getElementById('g-ready').style.display='none';
+  document.getElementById('g-play').style.display='block';
+}
+function finish(game, payload, title, sub){
+  document.getElementById('g-rt').textContent=title;
+  document.getElementById('g-rs').textContent=sub;
+  document.getElementById('g-result').style.display='block';
+  setTimeout(()=>sendResultToBot(Object.assign({game},payload)),800);
+}
+
+let S={};
+const WORDS=['МЕЧ','ЩИТ','ТЕНЬ','РУНА','СЛЕД','ОГОНЬ','КАМЕНЬ','ЗВЕЗДА','ВОРОТА','ПЕСОК'];
+function gStart(){
+  goPlay();
+  const word=(gameData.word||WORDS[rng()*WORDS.length|0]).toUpperCase();
+  const alpha='АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ';
+  // simple shift key shown
+  const shift=1+((rng()*5)|0);
+  const enc=word.split('').map(ch=>{
+    const i=alpha.indexOf(ch); if(i<0)return ch; return alpha[(i+shift)%alpha.length];
+  }).join('');
+  const map={}; for(let i=0;i<alpha.length;i++) map[alpha[(i+shift)%alpha.length]]=alpha[i];
+  S={word,enc,map,guess:'',start:Date.now(),done:false,wrong:0};
+  document.getElementById('key').innerHTML=Object.keys(map).slice(0,12).map(k=>`<div class="k">${k}→${map[k]}</div>`).join('')+'<div class="k">…</div>';
+  // show full key as compact
+  document.getElementById('key').innerHTML=`<div class="k">Сдвиг −${shift} (ключ дан)</div>`+alpha.split('').map((ch,i)=>`<div class="k">${alpha[(i+shift)%alpha.length]}→${ch}</div>`).join('');
+  document.getElementById('board').textContent=enc+' → ?';
+  const box=document.getElementById('letters'); box.innerHTML='';
+  alpha.split('').forEach(ch=>{
+    const b=document.createElement('button'); b.className='chip-btn'; b.textContent=ch;
+    b.onclick=()=>add(ch); box.appendChild(b);
+  });
+  const del=document.createElement('button'); del.className='chip-btn'; del.textContent='⌫'; del.onclick=()=>{S.guess=S.guess.slice(0,-1);upd();}; box.appendChild(del);
+  const ok=document.createElement('button'); ok.className='confirm-btn'; ok.textContent='Готово'; ok.style.marginTop='10px'; ok.onclick=submit; box.appendChild(ok);
+  hud();
+}
+function add(ch){ if(S.done)return; if(S.guess.length>=S.word.length)return; S.guess+=ch; upd(); }
+function upd(){ document.getElementById('board').textContent=S.enc+' → '+S.guess; hud(); }
+function hud(){document.getElementById('g-hud').innerHTML=`<div class="hud-item"><div class="hud-l">Длина</div><div class="hud-v">${S.guess.length}/${S.word.length}</div></div>`;}
+function submit(){ if(S.done)return; S.done=true;
+  const ok=S.guess===S.word; const pct=ok?1:([...S.guess].filter((c,i)=>c===S.word[i]).length/S.word.length);
+  const t=tierBy(pct);
+  finish('cipher',{word:S.word,guess:S.guess,correct:ok,outcome:t.outcome,level:t.level,timeSpent:Math.round((Date.now()-S.start)/1000)},t.outcome,ok?'верно':'было: '+S.word);
+}
+showReady('🔐 Шифр','Расшифруй по ключу на экране');
+
+</script>
+</body>
+</html>

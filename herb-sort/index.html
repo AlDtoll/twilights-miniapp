@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Twilights — Травы</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="../shared/styles.css">
+<style>
+
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--tg-theme-bg-color,#1a1a2e);color:var(--tg-theme-text-color,#eee);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;user-select:none;-webkit-user-select:none;}
+.wrap{width:100%;max-width:380px;text-align:center;}
+.ready-title{font-size:1.45rem;font-weight:700;margin-bottom:8px;}
+.ready-info{font-size:0.92rem;color:var(--tg-theme-hint-color,#aaa);margin-bottom:16px;line-height:1.45;}
+.hud{display:flex;justify-content:space-around;margin-bottom:12px;padding:8px;background:rgba(255,255,255,0.05);border-radius:12px;}
+.hud-item{text-align:center;}
+.hud-l{font-size:0.65rem;color:var(--tg-theme-hint-color,#aaa);text-transform:uppercase;}
+.hud-v{font-size:1.15rem;font-weight:700;}
+.hint{font-size:0.8rem;color:var(--tg-theme-hint-color,#aaa);margin-top:10px;min-height:1.2em;}
+.result{display:none;margin-top:14px;}
+.result-t{font-size:1.35rem;font-weight:700;margin-bottom:6px;}
+.result-s{font-size:0.95rem;color:var(--tg-theme-hint-color,#aaa);}
+.play{display:none;}
+.chip-btn{padding:12px 18px;border-radius:12px;border:2px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:inherit;font-size:1rem;font-weight:700;cursor:pointer;min-width:56px;margin:4px;}
+.chip-btn:active{transform:scale(0.96);}
+.chip-btn.active{border-color:#00b894;background:rgba(0,184,148,0.2);}
+.bins{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}.bin{min-height:80px;padding:8px;border-radius:12px;border:2px dashed rgba(255,255,255,0.2);}.bin h4{margin:0 0 6px;font-size:0.8rem;color:#aaa;}.item{display:inline-block;margin:3px;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,0.08);cursor:grab;font-size:0.85rem;}.pool{min-height:60px;margin:8px 0;padding:8px;background:rgba(255,255,255,0.04);border-radius:12px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="g-ready">
+    <div class="ready-title" id="g-title">🌿 Травы</div>
+    <div class="ready-info" id="g-info">Разложи по двум признакам: цвет и форма.</div>
+    <button class="confirm-btn" onclick="gStart()">Начать</button>
+  </div>
+  <div class="play" id="g-play">
+    <div class="hud" id="g-hud"></div>
+    <div class="pool" id="pool"></div><div class="bins" id="bins"></div><button class="confirm-btn" onclick="submit()">Готово</button>
+    <div class="hint" id="g-hint"></div>
+    <div class="result" id="g-result"><div class="result-t" id="g-rt"></div><div class="result-s" id="g-rs"></div></div>
+  </div>
+</div>
+<script src="../shared/core.js"></script>
+<script>
+
+function tierBy(pct){
+  if(pct>=0.9)return {outcome:'Идеально',level:4};
+  if(pct>=0.75)return {outcome:'Отлично',level:3};
+  if(pct>=0.55)return {outcome:'Хорошо',level:2};
+  if(pct>=0.35)return {outcome:'Неплохо',level:1};
+  return {outcome:'Слабо',level:0};
+}
+function showReady(defTitle, defInfo){
+  document.getElementById('g-title').textContent=gameData.prompt||defTitle;
+  document.getElementById('g-info').textContent=defInfo;
+}
+function goPlay(){
+  document.getElementById('g-ready').style.display='none';
+  document.getElementById('g-play').style.display='block';
+}
+function finish(game, payload, title, sub){
+  document.getElementById('g-rt').textContent=title;
+  document.getElementById('g-rs').textContent=sub;
+  document.getElementById('g-result').style.display='block';
+  setTimeout(()=>sendResultToBot(Object.assign({game},payload)),800);
+}
+
+let S={};
+function gStart(){
+  goPlay();
+  const colors=['🟥','🟩','🟦'], shapes=['●','■','▲'];
+  const items=[];
+  colors.forEach(c=>shapes.forEach(s=>items.push({id:c+s,color:c,shape:s,label:c+s})));
+  shuffle(items);
+  // 4 bins: color×shape pairs for 2x2 of first two
+  const bins=[
+    {key:'🟥●',c:'🟥',s:'●',title:'🟥 ●'},
+    {key:'🟥■',c:'🟥',s:'■',title:'🟥 ■'},
+    {key:'🟩●',c:'🟩',s:'●',title:'🟩 ●'},
+    {key:'🟩■',c:'🟩',s:'■',title:'🟩 ■'},
+  ];
+  // only items matching these bins
+  const filtered=items.filter(it=>bins.some(b=>b.c===it.color&&b.s===it.shape));
+  S={items:filtered,bins,place:{},sel:null,start:Date.now(),done:false};
+  render(); hud();
+  document.getElementById('g-hint').textContent='Тапни предмет, затем корзину';
+}
+function render(){
+  const pool=document.getElementById('pool'); pool.innerHTML='';
+  S.items.filter(it=>!S.place[it.id]).forEach(it=>{
+    const d=document.createElement('span'); d.className='item'; d.textContent=it.label;
+    d.onclick=()=>{S.sel=it.id; render();}; if(S.sel===it.id)d.style.outline='2px solid #fff';
+    pool.appendChild(d);
+  });
+  const box=document.getElementById('bins'); box.innerHTML='';
+  S.bins.forEach(b=>{
+    const d=document.createElement('div'); d.className='bin';
+    d.innerHTML='<h4>'+b.title+'</h4>';
+    Object.entries(S.place).filter(([,k])=>k===b.key).forEach(([id])=>{
+      const s=document.createElement('span'); s.className='item'; s.textContent=id; d.appendChild(s);
+    });
+    d.onclick=()=>{ if(!S.sel)return; S.place[S.sel]=b.key; S.sel=null; render(); hud(); };
+    box.appendChild(d);
+  });
+}
+function hud(){document.getElementById('g-hud').innerHTML=`<div class="hud-item"><div class="hud-l">Разложено</div><div class="hud-v">${Object.keys(S.place).length}/${S.items.length}</div></div>`;}
+function submit(){ if(S.done)return; S.done=true;
+  let ok=0; S.items.forEach(it=>{ const k=S.place[it.id]; if(k===it.color+it.shape)ok++; });
+  const pct=ok/S.items.length; const t=tierBy(pct);
+  finish('herb-sort',{correct:ok,total:S.items.length,outcome:t.outcome,level:t.level,timeSpent:Math.round((Date.now()-S.start)/1000)},t.outcome,ok+'/'+S.items.length);
+}
+showReady('🌿 Травы','Разложи по цвету и форме в корзины');
+
+</script>
+</body>
+</html>

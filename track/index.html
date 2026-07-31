@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Twilights — След</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="../shared/styles.css">
+<style>
+
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--tg-theme-bg-color,#1a1a2e);color:var(--tg-theme-text-color,#eee);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;user-select:none;-webkit-user-select:none;}
+.wrap{width:100%;max-width:380px;text-align:center;}
+.ready-title{font-size:1.45rem;font-weight:700;margin-bottom:8px;}
+.ready-info{font-size:0.92rem;color:var(--tg-theme-hint-color,#aaa);margin-bottom:16px;line-height:1.45;}
+.hud{display:flex;justify-content:space-around;margin-bottom:12px;padding:8px;background:rgba(255,255,255,0.05);border-radius:12px;}
+.hud-item{text-align:center;}
+.hud-l{font-size:0.65rem;color:var(--tg-theme-hint-color,#aaa);text-transform:uppercase;}
+.hud-v{font-size:1.15rem;font-weight:700;}
+.hint{font-size:0.8rem;color:var(--tg-theme-hint-color,#aaa);margin-top:10px;min-height:1.2em;}
+.result{display:none;margin-top:14px;}
+.result-t{font-size:1.35rem;font-weight:700;margin-bottom:6px;}
+.result-s{font-size:0.95rem;color:var(--tg-theme-hint-color,#aaa);}
+.play{display:none;}
+.chip-btn{padding:12px 18px;border-radius:12px;border:2px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:inherit;font-size:1rem;font-weight:700;cursor:pointer;min-width:56px;margin:4px;}
+.chip-btn:active{transform:scale(0.96);}
+.chip-btn.active{border-color:#00b894;background:rgba(0,184,148,0.2);}
+.sample{font-size:3rem;margin:10px;padding:16px;background:rgba(255,255,255,0.05);border-radius:16px;}.opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;}.opt{padding:18px;font-size:2rem;border-radius:14px;background:rgba(255,255,255,0.06);border:2px solid rgba(255,255,255,0.12);cursor:pointer;}.opt.ok{border-color:#00b894;}.opt.bad{border-color:#e74c3c;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="g-ready">
+    <div class="ready-title" id="g-title">🐾 След</div>
+    <div class="ready-info" id="g-info">Выбери отпечаток, совпадающий с образцом.</div>
+    <button class="confirm-btn" onclick="gStart()">Начать</button>
+  </div>
+  <div class="play" id="g-play">
+    <div class="hud" id="g-hud"></div>
+    <div class="sample" id="sample"></div><div class="opts" id="opts"></div>
+    <div class="hint" id="g-hint"></div>
+    <div class="result" id="g-result"><div class="result-t" id="g-rt"></div><div class="result-s" id="g-rs"></div></div>
+  </div>
+</div>
+<script src="../shared/core.js"></script>
+<script>
+
+function tierBy(pct){
+  if(pct>=0.9)return {outcome:'Идеально',level:4};
+  if(pct>=0.75)return {outcome:'Отлично',level:3};
+  if(pct>=0.55)return {outcome:'Хорошо',level:2};
+  if(pct>=0.35)return {outcome:'Неплохо',level:1};
+  return {outcome:'Слабо',level:0};
+}
+function showReady(defTitle, defInfo){
+  document.getElementById('g-title').textContent=gameData.prompt||defTitle;
+  document.getElementById('g-info').textContent=defInfo;
+}
+function goPlay(){
+  document.getElementById('g-ready').style.display='none';
+  document.getElementById('g-play').style.display='block';
+}
+function finish(game, payload, title, sub){
+  document.getElementById('g-rt').textContent=title;
+  document.getElementById('g-rs').textContent=sub;
+  document.getElementById('g-result').style.display='block';
+  setTimeout(()=>sendResultToBot(Object.assign({game},payload)),800);
+}
+
+let S={};
+const SETS=[
+  ['🦶','🐾','👣','🥾'],
+  ['🐺','🦊','🐕','🐈'],
+  ['🐎','🦌','🐐','🐄'],
+  ['🐦','🦅','🦆','🦉']
+];
+function gStart(){
+  goPlay();
+  const rounds=Math.max(3,Math.min(8,gameData.rounds||5));
+  S={rounds,i:0,ok:0,start:Date.now(),done:false};
+  next();
+}
+function next(){
+  if(S.i>=S.rounds){end();return;}
+  const set=SETS[rng()*SETS.length|0].slice();
+  const target=set[rng()*set.length|0];
+  // distractors: mutate by picking from set + noise
+  let opts=shuffle(set.slice());
+  // ensure target present
+  if(!opts.includes(target))opts[0]=target;
+  // sometimes look-alikes: duplicate with slight - just shuffle
+  shuffle(opts);
+  S.target=target;
+  document.getElementById('sample').textContent='Образец: '+target;
+  const box=document.getElementById('opts'); box.innerHTML='';
+  opts.forEach(o=>{
+    const b=document.createElement('div'); b.className='opt'; b.textContent=o;
+    b.onclick=()=>pick(o,b); box.appendChild(b);
+  });
+  hud();
+}
+function pick(o,el){ if(S.done)return;
+  const good=o===S.target; if(good){S.ok++;el.classList.add('ok');} else el.classList.add('bad');
+  S.i++; setTimeout(next,350); hud();
+}
+function hud(){document.getElementById('g-hud').innerHTML=`<div class="hud-item"><div class="hud-l">Раунд</div><div class="hud-v">${Math.min(S.i+1,S.rounds)}/${S.rounds}</div></div><div class="hud-item"><div class="hud-l">Верно</div><div class="hud-v">${S.ok}</div></div>`;}
+function end(){ if(S.done)return; S.done=true; const pct=S.ok/S.rounds; const t=tierBy(pct);
+  finish('track',{correct:S.ok,total:S.rounds,outcome:t.outcome,level:t.level,timeSpent:Math.round((Date.now()-S.start)/1000)},t.outcome,S.ok+'/'+S.rounds);}
+showReady('🐾 След','Сопоставь отпечаток с образцом');
+
+</script>
+</body>
+</html>

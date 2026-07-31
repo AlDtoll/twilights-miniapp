@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Twilights — Весы</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="../shared/styles.css">
+<style>
+
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--tg-theme-bg-color,#1a1a2e);color:var(--tg-theme-text-color,#eee);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;user-select:none;-webkit-user-select:none;}
+.wrap{width:100%;max-width:380px;text-align:center;}
+.ready-title{font-size:1.45rem;font-weight:700;margin-bottom:8px;}
+.ready-info{font-size:0.92rem;color:var(--tg-theme-hint-color,#aaa);margin-bottom:16px;line-height:1.45;}
+.hud{display:flex;justify-content:space-around;margin-bottom:12px;padding:8px;background:rgba(255,255,255,0.05);border-radius:12px;}
+.hud-item{text-align:center;}
+.hud-l{font-size:0.65rem;color:var(--tg-theme-hint-color,#aaa);text-transform:uppercase;}
+.hud-v{font-size:1.15rem;font-weight:700;}
+.hint{font-size:0.8rem;color:var(--tg-theme-hint-color,#aaa);margin-top:10px;min-height:1.2em;}
+.result{display:none;margin-top:14px;}
+.result-t{font-size:1.35rem;font-weight:700;margin-bottom:6px;}
+.result-s{font-size:0.95rem;color:var(--tg-theme-hint-color,#aaa);}
+.play{display:none;}
+.chip-btn{padding:12px 18px;border-radius:12px;border:2px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:inherit;font-size:1rem;font-weight:700;cursor:pointer;min-width:56px;margin:4px;}
+.chip-btn:active{transform:scale(0.96);}
+.chip-btn.active{border-color:#00b894;background:rgba(0,184,148,0.2);}
+.scale{display:flex;justify-content:space-around;align-items:flex-end;height:140px;margin:12px 0;}.pan{width:40%;min-height:40px;background:rgba(255,255,255,0.06);border-radius:12px;padding:8px;border:2px solid rgba(255,255,255,0.12);}.beam{height:8px;background:#a29bfe;border-radius:4px;margin-bottom:8px;transform-origin:center;transition:transform 0.2s;}.w{display:inline-block;margin:3px;padding:8px 12px;border-radius:10px;background:#6c5ce7;cursor:pointer;font-weight:700;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="g-ready">
+    <div class="ready-title" id="g-title">⚖️ Весы</div>
+    <div class="ready-info" id="g-info">Найди фальшивую гирю (она легче). Клади на чаши.</div>
+    <button class="confirm-btn" onclick="gStart()">Начать</button>
+  </div>
+  <div class="play" id="g-play">
+    <div class="hud" id="g-hud"></div>
+    <div class="beam" id="beam"></div><div class="scale"><div class="pan" id="L"></div><div class="pan" id="R"></div></div><div id="pool"></div><button class="confirm-btn" onclick="weigh()">Взвесить</button><button class="confirm-btn" onclick="accuse()" style="margin-top:8px;background:#e74c3c;">Это фальшивка</button>
+    <div class="hint" id="g-hint"></div>
+    <div class="result" id="g-result"><div class="result-t" id="g-rt"></div><div class="result-s" id="g-rs"></div></div>
+  </div>
+</div>
+<script src="../shared/core.js"></script>
+<script>
+
+function tierBy(pct){
+  if(pct>=0.9)return {outcome:'Идеально',level:4};
+  if(pct>=0.75)return {outcome:'Отлично',level:3};
+  if(pct>=0.55)return {outcome:'Хорошо',level:2};
+  if(pct>=0.35)return {outcome:'Неплохо',level:1};
+  return {outcome:'Слабо',level:0};
+}
+function showReady(defTitle, defInfo){
+  document.getElementById('g-title').textContent=gameData.prompt||defTitle;
+  document.getElementById('g-info').textContent=defInfo;
+}
+function goPlay(){
+  document.getElementById('g-ready').style.display='none';
+  document.getElementById('g-play').style.display='block';
+}
+function finish(game, payload, title, sub){
+  document.getElementById('g-rt').textContent=title;
+  document.getElementById('g-rs').textContent=sub;
+  document.getElementById('g-result').style.display='block';
+  setTimeout(()=>sendResultToBot(Object.assign({game},payload)),800);
+}
+
+let S={};
+function gStart(){
+  goPlay();
+  const n=Math.max(4,Math.min(9,gameData.count||6));
+  const fake=rng()*n|0;
+  S={n,fake,left:[],right:[],sel:null,weighs:0,start:Date.now(),done:false,lastDiff:0};
+  const pool=document.getElementById('pool'); pool.innerHTML='';
+  for(let i=0;i<n;i++){
+    const b=document.createElement('div'); b.className='w'; b.textContent='⬤'+(i+1); b.dataset.i=i;
+    b.onclick=()=>pick(i,b); pool.appendChild(b);
+  }
+  document.getElementById('g-hint').textContent='Тапни гирю, потом чашу (Л/П). Фальшивка легче.';
+  document.getElementById('L').onclick=()=>to('L');
+  document.getElementById('R').onclick=()=>to('R');
+  hud();
+}
+function pick(i,el){ S.sel=i; [...document.querySelectorAll('.w')].forEach(x=>x.style.outline=''); el.style.outline='2px solid #fff'; }
+function to(side){ if(S.sel==null)return; S.left=S.left.filter(x=>x!==S.sel); S.right=S.right.filter(x=>x!==S.sel);
+  (side==='L'?S.left:S.right).push(S.sel); S.sel=null; renderPans(); }
+function renderPans(){
+  document.getElementById('L').innerHTML=S.left.map(i=>'⬤'+(i+1)).join(' ');
+  document.getElementById('R').innerHTML=S.right.map(i=>'⬤'+(i+1)).join(' ');
+}
+function mass(i){return i===S.fake?9:10;}
+function weigh(){ if(S.done)return; S.weighs++;
+  const L=S.left.reduce((s,i)=>s+mass(i),0), R=S.right.reduce((s,i)=>s+mass(i),0);
+  S.lastDiff=L-R;
+  document.getElementById('beam').style.transform=`rotate(${Math.max(-15,Math.min(15,(R-L)*3))}deg)`;
+  document.getElementById('g-hint').textContent=L===R?'Равно':(L<R?'Левая легче':'Правая легче');
+  hud();
+}
+function accuse(){ if(S.done||S.sel==null){document.getElementById('g-hint').textContent='Сначала выбери гирю';return;}
+  S.done=true; const ok=S.sel===S.fake; const pct=ok?Math.max(0.55,1-S.weighs/8):0.2; const t=tierBy(pct);
+  finish('weights',{fake:S.fake,guess:S.sel,correct:ok,weighs:S.weighs,outcome:t.outcome,level:ok?t.level:0,timeSpent:Math.round((Date.now()-S.start)/1000)},t.outcome,ok?'верно · взвешиваний '+S.weighs:'нет, это была №'+(S.fake+1));
+}
+function hud(){document.getElementById('g-hud').innerHTML=`<div class="hud-item"><div class="hud-l">Взвешивания</div><div class="hud-v">${S.weighs}</div></div>`;}
+showReady('⚖️ Весы','Одна гиря легче · найди её за минимум взвешиваний');
+
+</script>
+</body>
+</html>

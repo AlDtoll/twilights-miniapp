@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Twilights — Щитовая</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="../shared/styles.css">
+<style>
+
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--tg-theme-bg-color,#1a1a2e);color:var(--tg-theme-text-color,#eee);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;user-select:none;-webkit-user-select:none;}
+.wrap{width:100%;max-width:380px;text-align:center;}
+.ready-title{font-size:1.45rem;font-weight:700;margin-bottom:8px;}
+.ready-info{font-size:0.92rem;color:var(--tg-theme-hint-color,#aaa);margin-bottom:16px;line-height:1.45;}
+.hud{display:flex;justify-content:space-around;margin-bottom:12px;padding:8px;background:rgba(255,255,255,0.05);border-radius:12px;}
+.hud-item{text-align:center;}
+.hud-l{font-size:0.65rem;color:var(--tg-theme-hint-color,#aaa);text-transform:uppercase;}
+.hud-v{font-size:1.15rem;font-weight:700;}
+.hint{font-size:0.8rem;color:var(--tg-theme-hint-color,#aaa);margin-top:10px;min-height:1.2em;}
+.result{display:none;margin-top:14px;}
+.result-t{font-size:1.35rem;font-weight:700;margin-bottom:6px;}
+.result-s{font-size:0.95rem;color:var(--tg-theme-hint-color,#aaa);}
+.play{display:none;}
+.chip-btn{padding:14px 16px;border-radius:12px;border:2px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:inherit;font-size:1.4rem;font-weight:700;cursor:pointer;min-width:64px;margin:4px;}
+.dirs{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:12px;}
+.flash{font-size:3.5rem;min-height:1.4em;margin:16px 0;transition:transform 0.1s;}
+.hpbar{height:14px;background:rgba(255,255,255,0.08);border-radius:8px;overflow:hidden;margin:6px 0;}
+.hpfill{height:100%;background:#e74c3c;width:100%;transition:width 0.2s;}
+.hpfill.hero{background:#00b894;}
+.lanes{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;height:200px;}.lane{background:rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden;}.shield{position:absolute;bottom:8px;left:10%;right:10%;height:28px;border-radius:8px;background:#6c5ce7;opacity:0.35;}.shield.on{opacity:1;background:#00b894;}.atk{position:absolute;left:15%;right:15%;height:24px;border-radius:8px;background:#e74c3c;top:0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="g-ready">
+    <div class="ready-title" id="g-title">🛡️ Щитовая стена</div>
+    <div class="ready-info" id="g-info">Расставь щиты до удара по колонкам.</div>
+    <button class="confirm-btn" onclick="gStart()">Начать</button>
+  </div>
+  <div class="play" id="g-play">
+    <div class="hud" id="g-hud"></div>
+    <div class="lanes" id="lanes"></div><button class="confirm-btn" onclick="lock()">Готово</button>
+    <div class="hint" id="g-hint"></div>
+    <div class="result" id="g-result"><div class="result-t" id="g-rt"></div><div class="result-s" id="g-rs"></div></div>
+  </div>
+</div>
+<script src="../shared/core.js"></script>
+<script>
+
+function tierBy(pct){
+  if(pct>=0.9)return {outcome:'Идеально',level:4};
+  if(pct>=0.75)return {outcome:'Отлично',level:3};
+  if(pct>=0.55)return {outcome:'Хорошо',level:2};
+  if(pct>=0.35)return {outcome:'Неплохо',level:1};
+  return {outcome:'Слабо',level:0};
+}
+function combatOutcome(win, revisit, heroHp, enemyHp){
+  if(win) return {outcome:'Победа',level:heroHp>=70?4:heroHp>=40?3:2,win:true,scene_revisit:false};
+  if(revisit) return {outcome:'Пересмотр сцены',level:2,win:false,scene_revisit:true};
+  return {outcome:'Поражение',level:enemyHp<=30?1:0,win:false,scene_revisit:false};
+}
+function showReady(defTitle, defInfo){
+  document.getElementById('g-title').textContent=gameData.prompt||defTitle;
+  document.getElementById('g-info').textContent=defInfo;
+}
+function goPlay(){
+  document.getElementById('g-ready').style.display='none';
+  document.getElementById('g-play').style.display='block';
+}
+function finish(game, payload, title, sub){
+  document.getElementById('g-rt').textContent=title;
+  document.getElementById('g-rs').textContent=sub;
+  document.getElementById('g-result').style.display='block';
+  setTimeout(()=>sendResultToBot(Object.assign({game},payload)),800);
+}
+
+let S={};
+function gStart(){
+  goPlay();
+  S={n:4,shields:new Set(),round:0,max:Math.max(5,Math.min(10,gameData.rounds||6)),ok:0,score:0,blocked:0,threatsTotal:0,start:Date.now(),done:false,phase:'place'};
+  build(); nextThreat(); hud();
+}
+function build(){
+  const box=document.getElementById('lanes'); box.innerHTML='';
+  for(let i=0;i<S.n;i++){
+    const d=document.createElement('div'); d.className='lane'; d.dataset.i=i;
+    const sh=document.createElement('div'); sh.className='shield'+(S.shields.has(i)?' on':''); sh.id='sh'+i;
+    d.appendChild(sh); d.onclick=()=>toggle(i); box.appendChild(d);
+  }
+}
+function toggle(i){ if(S.phase!=='place'||S.done)return;
+  if(S.shields.has(i)) S.shields.delete(i); else {
+    if(S.shields.size>=2){ const first=[...S.shields][0]; S.shields.delete(first); }
+    S.shields.add(i);
+  }
+  build(); showThreat();
+}
+function nextThreat(){
+  S.threats=[]; const c=1+(rng()*2|0);
+  while(S.threats.length<c){ const x=rng()*S.n|0; if(!S.threats.includes(x))S.threats.push(x); }
+  S.phase='place'; S.shields=new Set(); build(); showThreat();
+  document.getElementById('g-hint').textContent='Удары сверху · поставь до 2 щитов';
+}
+function showThreat(){
+  document.querySelectorAll('.atk').forEach(e=>e.remove());
+  S.threats.forEach(i=>{
+    const lane=document.querySelector(`.lane[data-i="${i}"]`);
+    if(!lane)return; const a=document.createElement('div'); a.className='atk'; lane.appendChild(a);
+  });
+  [...S.shields].forEach(i=>{ const sh=document.getElementById('sh'+i); if(sh)sh.classList.add('on'); });
+}
+function lock(){ if(S.phase!=='place'||S.done)return; S.phase='resolve';
+  let blocked=0;
+  S.threats.forEach(i=>{ S.threatsTotal++; if(S.shields.has(i)){ blocked++; S.blocked++; S.score+=10; }});
+  if(blocked===S.threats.length){ S.ok++; S.score+=5; }
+  S.round++; hud();
+  if(S.round>=S.max){ end(); return; }
+  setTimeout(nextThreat,500);
+}
+function hud(){document.getElementById('g-hud').innerHTML=`<div class="hud-item"><div class="hud-l">Очки</div><div class="hud-v">${S.score}</div></div><div class="hud-item"><div class="hud-l">Раунд</div><div class="hud-v">${S.round}/${S.max}</div></div><div class="hud-item"><div class="hud-l">Чистые</div><div class="hud-v">${S.ok}</div></div>`;}
+function end(){ if(S.done)return; S.done=true;
+  const pct=S.threatsTotal?S.blocked/S.threatsTotal:0; const t=tierBy(pct);
+  finish('shield-wall',{score:S.score,blocked:S.blocked,threats:S.threatsTotal,perfect:S.ok,rounds:S.round,outcome:t.outcome,level:t.level,timeSpent:Math.round((Date.now()-S.start)/1000)},t.outcome,S.score+' очков · блок '+S.blocked+'/'+S.threatsTotal);
+}
+showReady('🛡️ Щитовая стена','До 2 щитов за раунд · закрой красные удары');
+
+</script>
+</body>
+</html>

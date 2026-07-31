@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Twilights — Варево</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="../shared/styles.css">
+<style>
+
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--tg-theme-bg-color,#1a1a2e);color:var(--tg-theme-text-color,#eee);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;user-select:none;-webkit-user-select:none;}
+.wrap{width:100%;max-width:380px;text-align:center;}
+.ready-title{font-size:1.45rem;font-weight:700;margin-bottom:8px;}
+.ready-info{font-size:0.92rem;color:var(--tg-theme-hint-color,#aaa);margin-bottom:16px;line-height:1.45;}
+.hud{display:flex;justify-content:space-around;margin-bottom:12px;padding:8px;background:rgba(255,255,255,0.05);border-radius:12px;}
+.hud-item{text-align:center;}
+.hud-l{font-size:0.65rem;color:var(--tg-theme-hint-color,#aaa);text-transform:uppercase;}
+.hud-v{font-size:1.15rem;font-weight:700;}
+.hint{font-size:0.8rem;color:var(--tg-theme-hint-color,#aaa);margin-top:10px;min-height:1.2em;}
+.result{display:none;margin-top:14px;}
+.result-t{font-size:1.35rem;font-weight:700;margin-bottom:6px;}
+.result-s{font-size:0.95rem;color:var(--tg-theme-hint-color,#aaa);}
+.play{display:none;}
+.chip-btn{padding:14px 16px;border-radius:12px;border:2px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:inherit;font-size:1.4rem;font-weight:700;cursor:pointer;min-width:64px;margin:4px;}
+.dirs{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:12px;}
+.flash{font-size:3.5rem;min-height:1.4em;margin:16px 0;transition:transform 0.1s;}
+.hpbar{height:14px;background:rgba(255,255,255,0.08);border-radius:8px;overflow:hidden;margin:6px 0;}
+.hpfill{height:100%;background:#e74c3c;width:100%;transition:width 0.2s;}
+.hpfill.hero{background:#00b894;}
+.meters{display:flex;flex-direction:column;gap:10px;}.mrow{display:flex;align-items:center;gap:8px;}.mrow label{width:70px;font-size:0.8rem;text-align:left;}.track{flex:1;height:22px;background:rgba(255,255,255,0.08);border-radius:11px;position:relative;overflow:hidden;}.fill{position:absolute;left:0;top:0;bottom:0;border-radius:11px;}.zone{position:absolute;top:0;bottom:0;background:rgba(0,184,148,0.3);border-left:2px solid #00b894;border-right:2px solid #00b894;}.btns{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:12px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="g-ready">
+    <div class="ready-title" id="g-title">⚗️ Варево</div>
+    <div class="ready-info" id="g-info">Держи три шкалы в зелёных зонах до конца.</div>
+    <button class="confirm-btn" onclick="gStart()">Начать</button>
+  </div>
+  <div class="play" id="g-play">
+    <div class="hud" id="g-hud"></div>
+    <div class="meters" id="meters"></div><div class="btns" id="btns"></div>
+    <div class="hint" id="g-hint"></div>
+    <div class="result" id="g-result"><div class="result-t" id="g-rt"></div><div class="result-s" id="g-rs"></div></div>
+  </div>
+</div>
+<script src="../shared/core.js"></script>
+<script>
+
+function tierBy(pct){
+  if(pct>=0.9)return {outcome:'Идеально',level:4};
+  if(pct>=0.75)return {outcome:'Отлично',level:3};
+  if(pct>=0.55)return {outcome:'Хорошо',level:2};
+  if(pct>=0.35)return {outcome:'Неплохо',level:1};
+  return {outcome:'Слабо',level:0};
+}
+function combatOutcome(win, revisit, heroHp, enemyHp){
+  if(win) return {outcome:'Победа',level:heroHp>=70?4:heroHp>=40?3:2,win:true,scene_revisit:false};
+  if(revisit) return {outcome:'Пересмотр сцены',level:2,win:false,scene_revisit:true};
+  return {outcome:'Поражение',level:enemyHp<=30?1:0,win:false,scene_revisit:false};
+}
+function showReady(defTitle, defInfo){
+  document.getElementById('g-title').textContent=gameData.prompt||defTitle;
+  document.getElementById('g-info').textContent=defInfo;
+}
+function goPlay(){
+  document.getElementById('g-ready').style.display='none';
+  document.getElementById('g-play').style.display='block';
+}
+function finish(game, payload, title, sub){
+  document.getElementById('g-rt').textContent=title;
+  document.getElementById('g-rs').textContent=sub;
+  document.getElementById('g-result').style.display='block';
+  setTimeout(()=>sendResultToBot(Object.assign({game},payload)),800);
+}
+
+let S={},RAF;
+function gStart(){
+  goPlay();
+  const time=(gameData.timeLimit||12)*1000;
+  S={vals:[30,50,70],vel:[10,-8,6],zones:[[35,55],[40,60],[45,65]],t0:Date.now(),limit:time,ok:0,done:false,last:performance.now()};
+  const names=['Жар','Мешай','Сними'];
+  const colors=['#e17055','#74b9ff','#a29bfe'];
+  const meters=document.getElementById('meters'); meters.innerHTML='';
+  names.forEach((n,i)=>{
+    const row=document.createElement('div'); row.className='mrow';
+    row.innerHTML=`<label>${n}</label><div class="track"><div class="zone" id="z${i}"></div><div class="fill" id="f${i}" style="background:${colors[i]}"></div></div>`;
+    meters.appendChild(row);
+    const z=document.getElementById('z'+i); z.style.left=S.zones[i][0]+'%'; z.style.width=(S.zones[i][1]-S.zones[i][0])+'%';
+  });
+  const btns=document.getElementById('btns'); btns.innerHTML='';
+  [['Жар+',0,1],['Жар−',0,-1],['Мешай+',1,1],['Мешай−',1,-1],['Сними+',2,1],['Сними−',2,-1]].forEach(([lab,i,d])=>{
+    const b=document.createElement('button'); b.className='chip-btn'; b.style.fontSize='0.85rem'; b.textContent=lab;
+    b.onclick=()=>{S.vel[i]+=d*12;}; btns.appendChild(b);
+  });
+  RAF=requestAnimationFrame(loop);
+}
+function loop(now){ if(S.done)return; const dt=Math.min(40,now-S.last)/1000; S.last=now;
+  let all=true;
+  for(let i=0;i<3;i++){
+    S.vals[i]+=S.vel[i]*dt; S.vel[i]*=0.985;
+    // drift
+    S.vel[i]+=(rng()-0.5)*20*dt;
+    S.vals[i]=Math.max(0,Math.min(100,S.vals[i]));
+    document.getElementById('f'+i).style.width=S.vals[i]+'%';
+    const [a,b]=S.zones[i]; if(!(S.vals[i]>=a&&S.vals[i]<=b)) all=false;
+  }
+  if(all) S.ok+=dt;
+  const left=Math.max(0,(S.limit-(Date.now()-S.t0))/1000);
+  document.getElementById('g-hud').innerHTML=`<div class="hud-item"><div class="hud-l">Время</div><div class="hud-v">${left.toFixed(1)}</div></div><div class="hud-item"><div class="hud-l">Стабильно</div><div class="hud-v">${S.ok.toFixed(1)}с</div></div>`;
+  if(Date.now()-S.t0>=S.limit){ end(); return; }
+  RAF=requestAnimationFrame(loop);
+}
+function end(){ if(S.done)return; S.done=true; cancelAnimationFrame(RAF);
+  const pct=S.ok/(S.limit/1000); const t=tierBy(pct);
+  finish('alchemy-boil',{stable:Math.round(S.ok*10)/10,limit:S.limit/1000,outcome:t.outcome,level:t.level,timeSpent:Math.round(S.limit/1000)},t.outcome,S.ok.toFixed(1)+'с стабильно');
+}
+showReady('⚗️ Варево','Три шкалы сразу · кнопки ±');
+
+</script>
+</body>
+</html>

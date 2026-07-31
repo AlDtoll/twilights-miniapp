@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Twilights — Тропа</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="../shared/styles.css">
+<style>
+
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--tg-theme-bg-color,#1a1a2e);color:var(--tg-theme-text-color,#eee);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;user-select:none;-webkit-user-select:none;}
+.wrap{width:100%;max-width:380px;text-align:center;}
+.ready-title{font-size:1.45rem;font-weight:700;margin-bottom:8px;}
+.ready-info{font-size:0.92rem;color:var(--tg-theme-hint-color,#aaa);margin-bottom:16px;line-height:1.45;}
+.hud{display:flex;justify-content:space-around;margin-bottom:12px;padding:8px;background:rgba(255,255,255,0.05);border-radius:12px;}
+.hud-item{text-align:center;}
+.hud-l{font-size:0.65rem;color:var(--tg-theme-hint-color,#aaa);text-transform:uppercase;}
+.hud-v{font-size:1.15rem;font-weight:700;}
+.hint{font-size:0.8rem;color:var(--tg-theme-hint-color,#aaa);margin-top:10px;min-height:1.2em;}
+.result{display:none;margin-top:14px;}
+.result-t{font-size:1.35rem;font-weight:700;margin-bottom:6px;}
+.result-s{font-size:0.95rem;color:var(--tg-theme-hint-color,#aaa);}
+.play{display:none;}
+.btn-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center;}
+.chip-btn{padding:12px 18px;border-radius:12px;border:2px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:inherit;font-size:1rem;font-weight:700;cursor:pointer;min-width:64px;}
+.chip-btn:active{transform:scale(0.96);}
+.chip-btn.active{border-color:#00b894;background:rgba(0,184,148,0.2);}
+.chip-btn.bad{border-color:#e74c3c;background:rgba(231,76,60,0.2);}
+.bar-track{width:100%;height:28px;border-radius:14px;background:rgba(255,255,255,0.08);position:relative;overflow:hidden;margin:12px 0;}
+.bar-fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#6c5ce7,#a29bfe);border-radius:14px;width:0%;}
+.sweet{position:absolute;top:0;bottom:0;background:rgba(0,184,148,0.35);border-left:2px solid #00b894;border-right:2px solid #00b894;}
+.field{width:100%;aspect-ratio:1;max-height:360px;border-radius:16px;background:rgba(255,255,255,0.04);border:2px solid rgba(255,255,255,0.08);position:relative;touch-action:none;overflow:hidden;margin:0 auto;}
+.grid{display:grid;gap:6px;width:100%;}
+canvas{width:100%;border-radius:16px;background:#12121f;border:2px solid rgba(255,255,255,0.08);touch-action:none;display:block;}
+</style>
+</head>
+<body>
+<div class="wrap" id="g-wrap">
+  <div id="g-ready">
+    <div class="ready-title" id="g-title">🛤️ Тропа</div>
+    <div class="ready-info" id="g-info">Проведи пальцем по тропе, не касаясь стен.</div>
+    
+    <button class="confirm-btn" onclick="gStart()">Начать</button>
+  </div>
+  <div class="play" id="g-play">
+    <div class="hud" id="g-hud"></div>
+    <canvas id="cv" width="320" height="320"></canvas>
+    <div class="hint" id="g-hint"></div>
+    <div class="result" id="g-result">
+      <div class="result-t" id="g-rt"></div>
+      <div class="result-s" id="g-rs"></div>
+    </div>
+  </div>
+</div>
+<script src="../shared/core.js"></script>
+<script>
+
+function tierBy(pct){
+  if(pct>=0.9)return {outcome:'Идеально',level:4};
+  if(pct>=0.75)return {outcome:'Отлично',level:3};
+  if(pct>=0.55)return {outcome:'Хорошо',level:2};
+  if(pct>=0.35)return {outcome:'Неплохо',level:1};
+  return {outcome:'Слабо',level:0};
+}
+function showReady(defTitle, defInfo){
+  document.getElementById('g-title').textContent=gameData.prompt||defTitle;
+  document.getElementById('g-info').textContent=defInfo;
+}
+function goPlay(){
+  document.getElementById('g-ready').style.display='none';
+  document.getElementById('g-play').style.display='block';
+}
+function finish(game, payload, title, sub){
+  const el=document.getElementById('g-result');
+  document.getElementById('g-rt').textContent=title;
+  document.getElementById('g-rs').textContent=sub;
+  el.style.display='block';
+  setTimeout(()=>sendResultToBot(Object.assign({game},payload)),800);
+}
+
+let S={},cv,ctx;
+function gStart(){
+  goPlay();
+  cv=document.getElementById('cv'); ctx=cv.getContext('2d');
+  const w=8+Math.floor(rng()*4);
+  S={path:[],drawn:[],ok:true,done:false,start:Date.now(),hits:0};
+  // zigzag path centerline
+  let x=40,y=20;
+  S.path.push({x,y});
+  while(y<300){ y+=28; x=40+rng()*240; S.path.push({x,y}); }
+  draw();
+  const pos=e=>{const r=cv.getBoundingClientRect();const t=e.touches?e.touches[0]:e;return {x:(t.clientX-r.left)/r.width*320,y:(t.clientY-r.top)/r.height*320};};
+  cv.ontouchstart=cv.onmousedown=e=>{e.preventDefault();S.drawing=true;S.drawn=[pos(e)];};
+  cv.ontouchmove=cv.onmousemove=e=>{if(!S.drawing||S.done)return;e.preventDefault();const p=pos(e);S.drawn.push(p);check(p);draw();};
+  cv.ontouchend=cv.onmouseup=()=>{if(S.done)return;S.drawing=false;end();};
+}
+function distToPath(p){
+  let best=1e9;
+  for(let i=0;i<S.path.length-1;i++){
+    const a=S.path[i],b=S.path[i+1];
+    const dx=b.x-a.x,dy=b.y-a.y,l2=dx*dx+dy*dy||1;
+    let t=((p.x-a.x)*dx+(p.y-a.y)*dy)/l2; t=Math.max(0,Math.min(1,t));
+    const qx=a.x+t*dx,qy=a.y+t*dy;
+    best=Math.min(best,Math.hypot(p.x-qx,p.y-qy));
+  }
+  return best;
+}
+function check(p){const d=distToPath(p); if(d>22){S.hits++;S.ok=false;}}
+function draw(){
+  ctx.clearRect(0,0,320,320);
+  ctx.lineWidth=28; ctx.strokeStyle='rgba(108,92,231,0.25)'; ctx.lineCap='round'; ctx.beginPath();
+  S.path.forEach((p,i)=>{i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);}); ctx.stroke();
+  ctx.lineWidth=4; ctx.strokeStyle='#a29bfe'; ctx.beginPath();
+  S.path.forEach((p,i)=>{i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);}); ctx.stroke();
+  if(S.drawn.length){ctx.strokeStyle=S.ok?'#00b894':'#e74c3c'; ctx.lineWidth=3; ctx.beginPath();
+    S.drawn.forEach((p,i)=>{i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);}); ctx.stroke();}
+  ctx.fillStyle='#2ecc71'; ctx.beginPath();ctx.arc(S.path[0].x,S.path[0].y,8,0,7);ctx.fill();
+  ctx.fillStyle='#e74c3c'; const last=S.path[S.path.length-1]; ctx.beginPath();ctx.arc(last.x,last.y,8,0,7);ctx.fill();
+}
+function end(){
+  if(S.done)return; S.done=true;
+  const nearEnd=S.drawn.length && Math.hypot(S.drawn[S.drawn.length-1].x-S.path[S.path.length-1].x,S.drawn[S.drawn.length-1].y-S.path[S.path.length-1].y)<30;
+  const pct=nearEnd?Math.max(0,1-S.hits/12):0;
+  const t=tierBy(pct);
+  finish('trace-path',{hits:S.hits,finished:nearEnd,outcome:t.outcome,level:t.level,timeSpent:Math.round((Date.now()-S.start)/1000)},t.outcome,'касаний стены: '+S.hits);
+}
+showReady('🛤️ Тропа','Проведи по фиолетовой тропе от зелёного к красному');
+
+</script>
+</body>
+</html>

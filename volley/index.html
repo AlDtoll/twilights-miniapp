@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Twilights — Залп</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="../shared/styles.css">
+<style>
+
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--tg-theme-bg-color,#1a1a2e);color:var(--tg-theme-text-color,#eee);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;user-select:none;-webkit-user-select:none;}
+.wrap{width:100%;max-width:380px;text-align:center;}
+.ready-title{font-size:1.45rem;font-weight:700;margin-bottom:8px;}
+.ready-info{font-size:0.92rem;color:var(--tg-theme-hint-color,#aaa);margin-bottom:16px;line-height:1.45;}
+.hud{display:flex;justify-content:space-around;margin-bottom:12px;padding:8px;background:rgba(255,255,255,0.05);border-radius:12px;}
+.hud-item{text-align:center;}
+.hud-l{font-size:0.65rem;color:var(--tg-theme-hint-color,#aaa);text-transform:uppercase;}
+.hud-v{font-size:1.15rem;font-weight:700;}
+.hint{font-size:0.8rem;color:var(--tg-theme-hint-color,#aaa);margin-top:10px;min-height:1.2em;}
+.result{display:none;margin-top:14px;}
+.result-t{font-size:1.35rem;font-weight:700;margin-bottom:6px;}
+.result-s{font-size:0.95rem;color:var(--tg-theme-hint-color,#aaa);}
+.play{display:none;}
+.chip-btn{padding:14px 16px;border-radius:12px;border:2px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:inherit;font-size:1.4rem;font-weight:700;cursor:pointer;min-width:64px;margin:4px;}
+.dirs{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:12px;}
+.flash{font-size:3.5rem;min-height:1.4em;margin:16px 0;transition:transform 0.1s;}
+.hpbar{height:14px;background:rgba(255,255,255,0.08);border-radius:8px;overflow:hidden;margin:6px 0;}
+.hpfill{height:100%;background:#e74c3c;width:100%;transition:width 0.2s;}
+.hpfill.hero{background:#00b894;}
+#cv{width:100%;border-radius:16px;background:#12121f;border:2px solid rgba(255,255,255,0.08);touch-action:none;display:block;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="g-ready">
+    <div class="ready-title" id="g-title">🏹 Залп</div>
+    <div class="ready-info" id="g-info">Зажми для прицела, отпусти для выстрела на выдохе.</div>
+    <button class="confirm-btn" onclick="gStart()">Начать</button>
+  </div>
+  <div class="play" id="g-play">
+    <div class="hud" id="g-hud"></div>
+    <canvas id="cv" width="320" height="360"></canvas>
+    <div class="hint" id="g-hint"></div>
+    <div class="result" id="g-result"><div class="result-t" id="g-rt"></div><div class="result-s" id="g-rs"></div></div>
+  </div>
+</div>
+<script src="../shared/core.js"></script>
+<script>
+
+function tierBy(pct){
+  if(pct>=0.9)return {outcome:'Идеально',level:4};
+  if(pct>=0.75)return {outcome:'Отлично',level:3};
+  if(pct>=0.55)return {outcome:'Хорошо',level:2};
+  if(pct>=0.35)return {outcome:'Неплохо',level:1};
+  return {outcome:'Слабо',level:0};
+}
+function combatOutcome(win, revisit, heroHp, enemyHp){
+  if(win) return {outcome:'Победа',level:heroHp>=70?4:heroHp>=40?3:2,win:true,scene_revisit:false};
+  if(revisit) return {outcome:'Пересмотр сцены',level:2,win:false,scene_revisit:true};
+  return {outcome:'Поражение',level:enemyHp<=30?1:0,win:false,scene_revisit:false};
+}
+function showReady(defTitle, defInfo){
+  document.getElementById('g-title').textContent=gameData.prompt||defTitle;
+  document.getElementById('g-info').textContent=defInfo;
+}
+function goPlay(){
+  document.getElementById('g-ready').style.display='none';
+  document.getElementById('g-play').style.display='block';
+}
+function finish(game, payload, title, sub){
+  document.getElementById('g-rt').textContent=title;
+  document.getElementById('g-rs').textContent=sub;
+  document.getElementById('g-result').style.display='block';
+  setTimeout(()=>sendResultToBot(Object.assign({game},payload)),800);
+}
+
+let S={},cv,ctx,RAF;
+function gStart(){
+  goPlay(); cv=document.getElementById('cv'); ctx=cv.getContext('2d');
+  S={shots:0,hits:0,score:0,max:Math.max(4,Math.min(10,gameData.shots||6)),holding:false,breath:0,up:true,start:Date.now(),done:false,tx:160,ty:80};
+  placeTarget(); bind(); RAF=requestAnimationFrame(loop); hud();
+}
+function placeTarget(){ S.tx=60+rng()*200; S.ty=50+rng()*80; }
+function bind(){
+  const pos=e=>{const r=cv.getBoundingClientRect();const t=e.touches?e.touches[0]:e;return{x:(t.clientX-r.left)/r.width*320,y:(t.clientY-r.top)/r.height*360};};
+  cv.ontouchstart=cv.onmousedown=e=>{e.preventDefault(); if(S.done)return; S.holding=true; S.aim=pos(e);};
+  cv.ontouchmove=cv.onmousemove=e=>{if(!S.holding)return;e.preventDefault();S.aim=pos(e);};
+  cv.ontouchend=cv.onmouseup=()=>{if(!S.holding||S.done)return; S.holding=false; shoot();};
+}
+function loop(){ if(S.done)return;
+  if(S.holding){ S.breath+=S.up?0.035:-0.035; if(S.breath>1)S.up=false; if(S.breath<0)S.up=true; }
+  draw(); RAF=requestAnimationFrame(loop);
+}
+function draw(){
+  ctx.clearRect(0,0,320,360);
+  // target
+  ctx.beginPath(); ctx.fillStyle='#e74c3c'; ctx.arc(S.tx,S.ty,18,0,7); ctx.fill();
+  ctx.beginPath(); ctx.fillStyle='#fff'; ctx.arc(S.tx,S.ty,6,0,7); ctx.fill();
+  // breath meter
+  ctx.fillStyle='rgba(255,255,255,0.08)'; ctx.fillRect(20,320,280,16);
+  ctx.fillStyle='#00b894'; ctx.fillRect(20+120,320,40,16);
+  ctx.fillStyle='#a29bfe'; ctx.fillRect(20+S.breath*280-4,318,8,20);
+  if(S.holding&&S.aim){ ctx.strokeStyle='rgba(255,255,255,0.5)'; ctx.beginPath(); ctx.moveTo(160,340); ctx.lineTo(S.aim.x,S.aim.y); ctx.stroke(); }
+}
+function shoot(){
+  const sweet=S.breath>0.38&&S.breath<0.55;
+  const aim=S.aim||{x:160,y:100};
+  const spread=sweet?0:25*(0.5+Math.abs(S.breath-0.45));
+  const hx=aim.x+(rng()-0.5)*spread*2, hy=aim.y+(rng()-0.5)*spread*2;
+  const hit=Math.hypot(hx-S.tx,hy-S.ty)<22;
+  S.shots++; if(hit){ S.hits++; S.score+= sweet?15:10; }
+  hud();
+  if(S.shots>=S.max){ end(); return; }
+  placeTarget();
+}
+function hud(){document.getElementById('g-hud').innerHTML=`<div class="hud-item"><div class="hud-l">Выстрел</div><div class="hud-v">${S.shots}/${S.max}</div></div><div class="hud-item"><div class="hud-l">Очки</div><div class="hud-v">${S.score}</div></div><div class="hud-item"><div class="hud-l">Попадания</div><div class="hud-v">${S.hits}</div></div>`;}
+function end(){ S.done=true; cancelAnimationFrame(RAF); const pct=S.hits/S.max; const t=tierBy(pct);
+  finish('volley',{score:S.score,hits:S.hits,total:S.max,outcome:t.outcome,level:t.level,timeSpent:Math.round((Date.now()-S.start)/1000)},t.outcome,S.score+' очков · '+S.hits+'/'+S.max);
+}
+showReady('🏹 Залп','Зажми прицел · отпусти когда маркер в зелёной зоне');
+
+</script>
+</body>
+</html>

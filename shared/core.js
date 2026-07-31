@@ -46,7 +46,7 @@ if (_gameKey) { try { localStorage.setItem(_gameKey, '1'); } catch (e) {} }
 
 /* ---- current game key + subtitle map ---- */
 const game = gameData.game || 'blackjack';
-const _subtitles = { blackjack: 'Игра в 21', timing: 'Тайминг', compare: 'Сравнение', findall: 'Найди все', memory: 'Пары', oddone: 'Лишний', reaction: 'Реакция', sorting: 'Порядок', estimate: 'Оцени число', card: 'Карточный бой', hex: 'Тактический бой', arkanoid: 'Арканоид', match3fight: 'Бой 3-в-ряд' };
+const _subtitles = { blackjack: 'Игра в 21', timing: 'Тайминг', compare: 'Сравнение', findall: 'Найди все', memory: 'Пары', oddone: 'Лишний', reaction: 'Реакция', sorting: 'Порядок', estimate: 'Оцени число', card: 'Карточный бой', hex: 'Тактический бой', arkanoid: 'Арканоид', match3fight: 'Бой 3-в-ряд', lockpick: 'Отмычка', balance: 'Баланс', 'trace-path': 'Тропа', rhythm: 'Ритм', whisper: 'Шёпот', 'spot-diff': 'Отличия', stack: 'Башня', pour: 'Налей', knot: 'Узел', cipher: 'Шифр', weights: 'Весы', route: 'Маршрут', bargain: 'Торг', track: 'След', 'herb-sort': 'Травы', 'duel-parry': 'Парирование', volley: 'Залп', clash: 'Столкновение', 'summon-hold': 'Круг', 'shield-wall': 'Щитовая', 'sigil-draw': 'Сигил', 'focus-orb': 'Сфера', 'mirror-cast': 'Зеркало', 'alchemy-boil': 'Варево' };
 (function () {
   const el = document.getElementById('subtitle');
   if (el) el.textContent = _subtitles[game] || 'Выбор';

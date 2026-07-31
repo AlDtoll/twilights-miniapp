@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Twilights — Круг</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="../shared/styles.css">
+<style>
+
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--tg-theme-bg-color,#1a1a2e);color:var(--tg-theme-text-color,#eee);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;user-select:none;-webkit-user-select:none;}
+.wrap{width:100%;max-width:380px;text-align:center;}
+.ready-title{font-size:1.45rem;font-weight:700;margin-bottom:8px;}
+.ready-info{font-size:0.92rem;color:var(--tg-theme-hint-color,#aaa);margin-bottom:16px;line-height:1.45;}
+.hud{display:flex;justify-content:space-around;margin-bottom:12px;padding:8px;background:rgba(255,255,255,0.05);border-radius:12px;}
+.hud-item{text-align:center;}
+.hud-l{font-size:0.65rem;color:var(--tg-theme-hint-color,#aaa);text-transform:uppercase;}
+.hud-v{font-size:1.15rem;font-weight:700;}
+.hint{font-size:0.8rem;color:var(--tg-theme-hint-color,#aaa);margin-top:10px;min-height:1.2em;}
+.result{display:none;margin-top:14px;}
+.result-t{font-size:1.35rem;font-weight:700;margin-bottom:6px;}
+.result-s{font-size:0.95rem;color:var(--tg-theme-hint-color,#aaa);}
+.play{display:none;}
+.chip-btn{padding:14px 16px;border-radius:12px;border:2px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:inherit;font-size:1.4rem;font-weight:700;cursor:pointer;min-width:64px;margin:4px;}
+.dirs{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:12px;}
+.flash{font-size:3.5rem;min-height:1.4em;margin:16px 0;transition:transform 0.1s;}
+.hpbar{height:14px;background:rgba(255,255,255,0.08);border-radius:8px;overflow:hidden;margin:6px 0;}
+.hpfill{height:100%;background:#e74c3c;width:100%;transition:width 0.2s;}
+.hpfill.hero{background:#00b894;}
+#cv{width:100%;border-radius:16px;background:#12121f;border:2px solid rgba(255,255,255,0.08);touch-action:none;display:block;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="g-ready">
+    <div class="ready-title" id="g-title">🔮 Удержание круга</div>
+    <div class="ready-info" id="g-info">Удерживай палец в круге. Тапай вспышки на периметре.</div>
+    <button class="confirm-btn" onclick="gStart()">Начать</button>
+  </div>
+  <div class="play" id="g-play">
+    <div class="hud" id="g-hud"></div>
+    <canvas id="cv" width="320" height="320"></canvas>
+    <div class="hint" id="g-hint"></div>
+    <div class="result" id="g-result"><div class="result-t" id="g-rt"></div><div class="result-s" id="g-rs"></div></div>
+  </div>
+</div>
+<script src="../shared/core.js"></script>
+<script>
+
+function tierBy(pct){
+  if(pct>=0.9)return {outcome:'Идеально',level:4};
+  if(pct>=0.75)return {outcome:'Отлично',level:3};
+  if(pct>=0.55)return {outcome:'Хорошо',level:2};
+  if(pct>=0.35)return {outcome:'Неплохо',level:1};
+  return {outcome:'Слабо',level:0};
+}
+function combatOutcome(win, revisit, heroHp, enemyHp){
+  if(win) return {outcome:'Победа',level:heroHp>=70?4:heroHp>=40?3:2,win:true,scene_revisit:false};
+  if(revisit) return {outcome:'Пересмотр сцены',level:2,win:false,scene_revisit:true};
+  return {outcome:'Поражение',level:enemyHp<=30?1:0,win:false,scene_revisit:false};
+}
+function showReady(defTitle, defInfo){
+  document.getElementById('g-title').textContent=gameData.prompt||defTitle;
+  document.getElementById('g-info').textContent=defInfo;
+}
+function goPlay(){
+  document.getElementById('g-ready').style.display='none';
+  document.getElementById('g-play').style.display='block';
+}
+function finish(game, payload, title, sub){
+  document.getElementById('g-rt').textContent=title;
+  document.getElementById('g-rs').textContent=sub;
+  document.getElementById('g-result').style.display='block';
+  setTimeout(()=>sendResultToBot(Object.assign({game},payload)),800);
+}
+
+let S={},cv,ctx,RAF;
+function gStart(){
+  goPlay(); cv=document.getElementById('cv'); ctx=cv.getContext('2d');
+  const time=(gameData.timeLimit||12)*1000;
+  S={hold:false,t0:Date.now(),limit:time,sparks:[],hits:0,miss:0,holdSec:0,score:0,done:false,last:performance.now()};
+  bind(); spawn(); RAF=requestAnimationFrame(loop); hud();
+}
+function bind(){
+  const inside=e=>{const r=cv.getBoundingClientRect();const t=e.touches?e.touches[0]:e;const x=(t.clientX-r.left)/r.width*320-160,y=(t.clientY-r.top)/r.height*320-160;return Math.hypot(x,y)<50;};
+  cv.ontouchstart=cv.onmousedown=e=>{e.preventDefault(); const r=cv.getBoundingClientRect(); const t=e.touches?e.touches[0]:e;
+    const x=(t.clientX-r.left)/r.width*320, y=(t.clientY-r.top)/r.height*320;
+    // spark tap?
+    let hit=false;
+    S.sparks.forEach(s=>{ if(Math.hypot(s.x-x,s.y-y)<28){ s.dead=true; S.hits++; S.score+=8; hit=true; }});
+    if(!hit) S.hold=inside(e);
+  };
+  cv.ontouchmove=cv.onmousemove=e=>{ if(S.hold) S.hold=inside(e); };
+  cv.ontouchend=cv.onmouseup=()=>{S.hold=false;};
+}
+function spawn(){ if(S.done)return; const a=rng()*Math.PI*2; S.sparks.push({x:160+Math.cos(a)*120,y:160+Math.sin(a)*120,born:Date.now(),dead:false}); setTimeout(spawn,700+rng()*600); }
+function loop(now){ if(S.done)return; const dt=Math.min(40,now-S.last)/1000; S.last=now;
+  if(S.hold){ S.holdSec+=dt; S.score+=5*dt; }
+  S.sparks.forEach(s=>{ if(!s.dead && Date.now()-s.born>1200){ s.dead=true; S.miss++; S.score=Math.max(0,S.score-5); }});
+  S.sparks=S.sparks.filter(s=>!s.dead);
+  draw(); hud();
+  if(Date.now()-S.t0>=S.limit){ end(); return; }
+  RAF=requestAnimationFrame(loop);
+}
+function draw(){
+  ctx.clearRect(0,0,320,320);
+  ctx.beginPath(); ctx.strokeStyle=S.hold?'#00b894':'#a29bfe'; ctx.lineWidth=4; ctx.arc(160,160,50,0,7); ctx.stroke();
+  ctx.fillStyle='rgba(108,92,231,0.2)'; ctx.beginPath(); ctx.arc(160,160,50,0,7); ctx.fill();
+  S.sparks.forEach(s=>{ ctx.beginPath(); ctx.fillStyle='#e74c3c'; ctx.arc(s.x,s.y,14,0,7); ctx.fill(); });
+}
+function hud(){document.getElementById('g-hud').innerHTML=`<div class="hud-item"><div class="hud-l">Очки</div><div class="hud-v">${Math.round(S.score)}</div></div><div class="hud-item"><div class="hud-l">В круге</div><div class="hud-v">${S.holdSec.toFixed(1)}с</div></div><div class="hud-item"><div class="hud-l">Гашения</div><div class="hud-v">${S.hits}</div></div>`;}
+function end(){ if(S.done)return; S.done=true; cancelAnimationFrame(RAF);
+  const maxScore=(S.limit/1000)*5+80; const t=tierBy(Math.min(1,S.score/Math.max(40,maxScore*0.55)));
+  finish('summon-hold',{score:Math.round(S.score),holdSec:Math.round(S.holdSec*10)/10,hits:S.hits,miss:S.miss,outcome:t.outcome,level:t.level,timeSpent:Math.round(S.limit/1000)},t.outcome,Math.round(S.score)+' очков');
+}
+showReady('🔮 Удержание круга','Палец в центре · тапай красные вспышки');
+
+</script>
+</body>
+</html>

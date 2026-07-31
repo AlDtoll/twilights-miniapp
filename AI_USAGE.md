@@ -812,3 +812,82 @@ python3 twilights/minigames/send_miniapp.py <chat_id> \
 ## 2026-06-22 — Hex: снят устаревший changelog BB
 
 Ниже был черновик модели Battle Brothers (HP 5–9, blockMax, armorMax) — **в коде не реализован**. Актуально: секция **hex** выше, `hex/index.html`, `hxDealDamage()`.
+
+
+---
+
+## Новые игры (2026-07-31)
+
+Общие: `--prompt`, `--time-limit`, `--config '{"…":…}'`. Non-combat, без привязки к навыкам.
+
+### lockpick — отмычка
+`--config '{"pins":3,"speed":1}'` → ok/total/level
+
+### balance — баланс
+`--time-limit 12` → okMs/fell/level
+
+### trace-path — тропа
+→ hits/finished/level
+
+### rhythm — ритм
+`--config '{"beats":10,"bpm":100}'` → hits/total/level
+
+### whisper — шёпот
+`--time-limit 10` → inZone/level
+
+### spot-diff — отличия
+`--config '{"diffs":4}'` → found/total/wrong/level
+
+### stack — башня
+`--config '{"goal":8}'` → floors/goal/win/level
+
+### pour — налей
+`--speed 1` → value/target/error/level
+
+### knot — узел
+`--config '{"pairs":4}'` → crossings/moves/level
+
+### cipher — шифр
+`--config '{"word":"МЕЧ"}'` → word/guess/correct/level
+
+### weights — весы
+`--config '{"count":6}'` → fake/guess/correct/weighs/level
+
+### route — маршрут
+`--config '{"size":6}'` → steps/ideal/level
+
+### bargain — торг
+→ offer/ceiling/accepted/error/level
+
+### track — след
+`--config '{"rounds":5}'` → correct/total/level
+
+### herb-sort — травы
+→ correct/total/level
+
+### duel-parry — парирование (очки)
+`--config '{"rounds":12}'` → score/ok/total/level
+
+### volley — залп (очки)
+`--config '{"shots":6}'` → score/hits/total/level
+
+### clash — столкновение (очки)
+`--config '{"waves":7}'` → score/ok/total/level
+
+### summon-hold — круг (очки)
+`--time-limit 12` → score/holdSec/hits/miss/level
+
+### shield-wall — щитовая (очки)
+`--config '{"rounds":6}'` → score/blocked/threats/perfect/level
+
+### sigil-draw — сигил
+`--config '{"points":5}'` → hit/total/level
+
+### focus-orb — сфера
+`--time-limit 10` → inCenter/level
+
+### mirror-cast — зеркало
+`--config '{"rounds":8}'` → correct/total/level
+
+### alchemy-boil — варево
+`--time-limit 12` → stable/level
