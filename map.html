@@ -790,12 +790,14 @@ async function openCell(cellData, playerType) {
   const inArea = all.filter(s => (s.area || s.name) === cellData.name);
   const settlements = (inArea.length ? inArea : all).slice().sort((a, b) =>
     (a.name === cellData.name ? 0 : 1) - (b.name === cellData.name ? 0 : 1));
+  // Карта владений (drill-down, сшитые блоки 4×4) — первым, как у нейтралов.
+  const amHtml = areaCache[cacheKey].area_map ? renderAreaMap(areaCache[cacheKey].area_map) : '';
   // Короткая сводка по религии области — та же логика, что у нейтралов.
   const agg = settlements.length > 1 ? faithAggregate(settlements) : '';
   const npHtml = settlements.length
     ? settlements.map(renderNPCard).join('')
     : '<div class="area-loading">НП не найдены в данных</div>';
-  areaNps.innerHTML = descHtml + agg + npHtml;
+  areaNps.innerHTML = descHtml + amHtml + agg + npHtml;
 }
 
 function closeArea() {
