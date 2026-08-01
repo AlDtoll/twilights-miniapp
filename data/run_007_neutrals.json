@@ -24,7 +24,9 @@
             "name": "Ельник",
             "col": 2,
             "row": 2,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 500
           }
         ],
         "roads": [
@@ -117,7 +119,10 @@
             ],
             "col0": 1,
             "row0": 1,
-            "owned": true
+            "owned": true,
+            "water": [
+              "e"
+            ]
           }
         ],
         "nodes": [
@@ -125,19 +130,25 @@
             "name": "Гостиный Порт",
             "col": 1,
             "row": 1,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 850
           },
           {
             "name": "Гостиный Порт-Купеческий Двор",
             "col": 4,
             "row": 2,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 500
           },
           {
             "name": "Гостиный Порт-Пристань",
             "col": 2,
             "row": 4,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 650
           }
         ],
         "roads": [
@@ -394,13 +405,17 @@
             "name": "Кабанья Тропа",
             "col": 1,
             "row": 2,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 600
           },
           {
             "name": "Кабанья Тропа-Ключи",
             "col": 4,
             "row": 3,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 200
           }
         ],
         "roads": [
@@ -569,7 +584,9 @@
             "name": "Каменные Пальцы",
             "col": 2,
             "row": 2,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 50
           }
         ],
         "roads": [
@@ -696,7 +713,9 @@
             "name": "Каменный Хребет",
             "col": 2,
             "row": 2,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 400
           }
         ],
         "roads": [
@@ -836,13 +855,17 @@
             "name": "Хвалибов Двор",
             "col": 1,
             "row": 2,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 1000
           },
           {
             "name": "Придорожные Хутора",
             "col": 4,
             "row": 3,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 500
           }
         ],
         "roads": [
@@ -1034,13 +1057,17 @@
             "name": "Ковыльные Стойбища",
             "col": 1,
             "row": 2,
-            "terrain": ""
+            "terrain": "",
+            "owner": "danil",
+            "pop": 200
           },
           {
             "name": "Ковыльные Стойбища-Ближнее",
             "col": 4,
             "row": 3,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 800
           }
         ],
         "roads": [
@@ -1214,7 +1241,9 @@
             "name": "Крайнее Озеро",
             "col": 2,
             "row": 2,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 500
           }
         ],
         "roads": [
@@ -1319,19 +1348,25 @@
             "name": "Кремневая Гряда",
             "col": 1,
             "row": 1,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 400
           },
           {
             "name": "Кремневая Гряда-Верхняя",
             "col": 4,
             "row": 2,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 150
           },
           {
             "name": "Кремневая Гряда-Нижняя",
             "col": 2,
             "row": 4,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 250
           }
         ],
         "roads": [
@@ -1585,13 +1620,17 @@
             "name": "Междолесье",
             "col": 1,
             "row": 2,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 500
           },
           {
             "name": "Междолесье-Ясенево",
             "col": 4,
             "row": 3,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 300
           }
         ],
         "roads": [
@@ -1761,13 +1800,17 @@
             "name": "Мшары",
             "col": 1,
             "row": 2,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 100
           },
           {
             "name": "Мшары-Мшистое",
             "col": 4,
             "row": 3,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 100
           }
         ],
         "roads": [
@@ -1954,7 +1997,9 @@
             "name": "Ольшаник",
             "col": 2,
             "row": 2,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 800
           }
         ],
         "roads": [
@@ -2072,13 +2117,17 @@
             "name": "Северный Перевал",
             "col": 1,
             "row": 2,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 50
           },
           {
             "name": "Северный Перевал-Восточные Ворота",
             "col": 4,
             "row": 3,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 150
           }
         ],
         "roads": [
@@ -2281,19 +2330,25 @@
             "name": "Собрание Юксек-иле",
             "col": 1,
             "row": 1,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 500
           },
           {
             "name": "Западная полоса (роды малых родов)",
             "col": 4,
             "row": 2,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 700
           },
           {
             "name": "Восточная полоса (роды малых родов)",
             "col": 2,
             "row": 4,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 800
           }
         ],
         "roads": [
@@ -2550,13 +2605,17 @@
             "name": "Соляной Тракт",
             "col": 1,
             "row": 2,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 200
           },
           {
             "name": "Соляной Тракт-Постой",
             "col": 4,
             "row": 3,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 300
           }
         ],
         "roads": [
@@ -2742,13 +2801,17 @@
             "name": "Ставка Ахьяр-иле",
             "col": 1,
             "row": 2,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 500
           },
           {
             "name": "Кочевая полоса Ахьяр-иле",
             "col": 4,
             "row": 3,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 1000
           }
         ],
         "roads": [
@@ -2973,13 +3036,17 @@
             "name": "Ставка Аргамак-иле",
             "col": 1,
             "row": 2,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 400
           },
           {
             "name": "Кочевая полоса Аргамак-иле",
             "col": 4,
             "row": 3,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 800
           }
         ],
         "roads": [
@@ -3172,7 +3239,9 @@
             "name": "Талый Лог",
             "col": 2,
             "row": 2,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 800
           }
         ],
         "roads": [
@@ -3295,7 +3364,9 @@
             "name": "Ветровой Перевал",
             "col": 2,
             "row": 2,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 150
           }
         ],
         "roads": [
@@ -3400,7 +3471,9 @@
             "name": "Волчьи Пустоши",
             "col": 2,
             "row": 2,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 150
           }
         ],
         "roads": [
@@ -3526,7 +3599,9 @@
             "name": "Волчий Стан",
             "col": 2,
             "row": 2,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 800
           }
         ],
         "roads": [
@@ -3638,19 +3713,25 @@
             "name": "Юго-Западные Предгорья",
             "col": 1,
             "row": 1,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 150
           },
           {
             "name": "Юго-Западные Предгорья-Северное",
             "col": 4,
             "row": 2,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 50
           },
           {
             "name": "Юго-Западные Предгорья-Южное",
             "col": 2,
             "row": 4,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 100
           }
         ],
         "roads": [
@@ -3889,7 +3970,10 @@
             ],
             "col0": 1,
             "row0": 1,
-            "owned": true
+            "owned": true,
+            "water": [
+              "e"
+            ]
           }
         ],
         "nodes": [
@@ -3897,13 +3981,17 @@
             "name": "Южные Предгорья",
             "col": 1,
             "row": 2,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 100
           },
           {
             "name": "Южные Предгорья-Северное",
             "col": 4,
             "row": 3,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 300
           }
         ],
         "roads": [
@@ -4072,7 +4160,9 @@
             "name": "Западные Предгорья",
             "col": 2,
             "row": 2,
-            "terrain": ""
+            "terrain": "",
+            "owner": "",
+            "pop": 300
           }
         ],
         "roads": [

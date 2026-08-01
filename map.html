@@ -53,7 +53,7 @@
 
   /* Дороги между клетками — SVG-оверлей поверх грида, клики проходят сквозь. */
   .world-roads { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 1; overflow: visible; }
-  .wr-line { stroke: #b89a52; stroke-width: 2.2; stroke-linecap: round; opacity: 0.72; }
+  .wr-line { stroke: #9a8548; stroke-width: 1.4; stroke-linecap: round; opacity: 0.4; }
 
   .axis-label {
     display: flex;
@@ -1028,6 +1028,21 @@ function amHi(ev, idx) {
   });
 }
 
+// SVG-градиенты водных краёв: синий у самой границы блока → прозрачный внутрь.
+// Ставятся один раз на карту (id общие); рисуются как полосы WBAND у нужной стороны.
+function amWaterDefs() {
+  const C = '#3f74ac';
+  const stops = '<stop offset="0" stop-color="' + C + '" stop-opacity="0.85"/>'
+    + '<stop offset="0.55" stop-color="' + C + '" stop-opacity="0.32"/>'
+    + '<stop offset="1" stop-color="' + C + '" stop-opacity="0"/>';
+  return '<defs>'
+    + `<linearGradient id="wg-n" x1="0" y1="0" x2="0" y2="1">${stops}</linearGradient>`
+    + `<linearGradient id="wg-s" x1="0" y1="1" x2="0" y2="0">${stops}</linearGradient>`
+    + `<linearGradient id="wg-w" x1="0" y1="0" x2="1" y2="0">${stops}</linearGradient>`
+    + `<linearGradient id="wg-e" x1="1" y1="0" x2="0" y2="0">${stops}</linearGradient>`
+    + '</defs>';
+}
+
 function renderAreaMap(am) {
   if (!am || !am.nodes || !am.nodes.length) return '';
   const cols = am.cols || 4, rows = am.rows || 4;
@@ -1039,10 +1054,26 @@ function renderAreaMap(am) {
   am.nodes.forEach(n => { pos[n.name] = [cx(n.col), cy(n.row)]; });
   const idxOf = {}; am.nodes.forEach((n, i) => { idxOf[n.name] = i; });
   let g = "";
+  // Водные края: полоса-градиент вдоль стороны блока, у которой сосед-клетка — море.
+  // Не заливаем квадраты целиком — только «плещет» у края (bl.water: n/e/s/w).
+  const WBAND = S * 0.42;
+  const hasWater = (am.blocks || []).some(b => (b.water || []).length);
+  if (hasWater) g += amWaterDefs();
   (am.blocks || []).forEach(bl => {
     const bx = P + (bl.col0 - 1) * S, by = P + (bl.row0 - 1) * S;
     const cls = bl.owned ? "am-block" : "am-block am-block-hole";
     g += `<rect x="${bx}" y="${by}" width="${4 * S}" height="${4 * S}" class="${cls}"/>`;
+  });
+  (am.blocks || []).forEach(bl => {
+    (bl.water || []).forEach(side => {
+      const bx = P + (bl.col0 - 1) * S, by = P + (bl.row0 - 1) * S, sz = 4 * S;
+      let x = bx, y = by, w = sz, h = sz;
+      if (side === 'n') { h = WBAND; }
+      else if (side === 's') { y = by + sz - WBAND; h = WBAND; }
+      else if (side === 'w') { w = WBAND; }
+      else if (side === 'e') { x = bx + sz - WBAND; w = WBAND; }
+      g += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#wg-${side})"/>`;
+    });
   });
   for (let i = 0; i <= cols; i++) {
     const o = P + i * S;

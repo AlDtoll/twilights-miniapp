@@ -21,13 +21,17 @@
         "name": "Чистозерье",
         "col": 1,
         "row": 2,
-        "terrain": ""
+        "terrain": "",
+        "owner": "misha",
+        "pop": 700
       },
       {
         "name": "Чистолесье",
         "col": 4,
         "row": 3,
-        "terrain": ""
+        "terrain": "",
+        "owner": "misha",
+        "pop": 300
       }
     ],
     "roads": [

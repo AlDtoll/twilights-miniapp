@@ -13,7 +13,11 @@
         ],
         "col0": 1,
         "row0": 1,
-        "owned": true
+        "owned": true,
+        "water": [
+          "n",
+          "e"
+        ]
       }
     ],
     "nodes": [
@@ -21,19 +25,25 @@
         "name": "Утёсная гавань",
         "col": 1,
         "row": 1,
-        "terrain": ""
+        "terrain": "",
+        "owner": "valter",
+        "pop": 500
       },
       {
         "name": "Рудный двор",
         "col": 4,
         "row": 2,
-        "terrain": ""
+        "terrain": "",
+        "owner": "valter",
+        "pop": 300
       },
       {
         "name": "Мыс Стража",
         "col": 2,
         "row": 4,
-        "terrain": ""
+        "terrain": "",
+        "owner": "valter",
+        "pop": 200
       }
     ],
     "roads": [

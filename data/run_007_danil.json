@@ -30,25 +30,33 @@
         "name": "Былицы",
         "col": 1,
         "row": 1,
-        "terrain": ""
+        "terrain": "",
+        "owner": "danil",
+        "pop": 700
       },
       {
         "name": "Кочевье",
         "col": 4,
         "row": 2,
-        "terrain": ""
+        "terrain": "",
+        "owner": "danil",
+        "pop": 250
       },
       {
         "name": "Каменка",
         "col": 2,
         "row": 4,
-        "terrain": ""
+        "terrain": "",
+        "owner": "danil",
+        "pop": 150
       },
       {
         "name": "Ковыльные Стойбища",
-        "col": 4,
-        "row": 8,
-        "terrain": ""
+        "col": 1,
+        "row": 6,
+        "terrain": "",
+        "owner": "danil",
+        "pop": 200
       }
     ],
     "roads": [
