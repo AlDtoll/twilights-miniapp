@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Twilights — Град</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="../shared/styles.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--tg-theme-bg-color, #12101c);
+    color: var(--tg-theme-text-color, #eee);
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    padding: 6px; overflow: hidden; -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+  }
+  h1 { font-size: 1.1rem; margin: 2px 0; text-align: center; }
+  .subtitle { font-size: 0.78rem; color: var(--tg-theme-hint-color, #aaa); margin-bottom: 4px; text-align: center; }
+  #ba-wrap { width: 100%; max-width: 440px; display: none; flex-direction: column; align-items: center; }
+  #ba-canvas { display: block; width: 100%; height: auto; border-radius: 12px; touch-action: none; background: #12101c; }
+  #ba-hud { width: 100%; max-width: 440px; margin-top: 6px; display: flex; align-items: flex-end; gap: 8px; }
+  #ba-hero-panel { flex: 1; }
+  .ba-hero-name { font-size: 0.8rem; font-weight: 700; margin-bottom: 3px; }
+  .ba-bar-outer { height: 16px; border-radius: 8px; background: rgba(255,255,255,0.1); overflow: hidden; position: relative; }
+  .ba-bar-inner { height: 100%; background: linear-gradient(90deg,#2ecc71,#27ae60); transition: width 0.15s; }
+  .ba-bar-txt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 0.68rem; font-weight: 700; text-shadow: 0 1px 2px #000; }
+  .ba-btn {
+    width: 72px; height: 72px; border-radius: 50%; border: 2px solid var(--tg-theme-hint-color,rgba(255,255,255,0.2));
+    background: var(--tg-theme-secondary-bg-color,rgba(255,255,255,0.06)); color: var(--tg-theme-text-color,#fff); font-size: 0.62rem; font-weight: 700;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    cursor: pointer; position: relative; gap: 1px; transition: transform 0.08s, background 0.1s;
+  }
+  .ba-btn:active { transform: scale(0.92); }
+  .ba-btn .ba-btn-icon { font-size: 1.5rem; line-height: 1; }
+  .ba-btn.atk { border-color: #f0c040; }
+  .ba-btn.mag { border-color: #a29bfe; }
+  .ba-btn.cooling { opacity: 0.4; }
+  .ba-btn.hint { animation: bapulse 0.5s infinite; border-color: #2ecc71 !important; background: rgba(46,204,113,0.28); }
+  @keyframes bapulse { 0%,100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(46,204,113,0.7); } 50% { transform: scale(1.12); box-shadow: 0 0 0 12px rgba(46,204,113,0); } }
+  .ba-cd-ring { position: absolute; inset: -2px; border-radius: 50%; pointer-events: none; }
+  .ba-overlay {
+    position: fixed; inset: 0; z-index: 50; background: rgba(8,6,16,0.94);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 20px; text-align: center; gap: 10px; overflow-y: auto;
+  }
+  .ba-hero-emoji { font-size: 3rem; }
+  .ba-title { font-size: 1.3rem; font-weight: 800; }
+  .ba-sub { font-size: 0.85rem; color: rgba(255,255,255,0.7); }
+  .ba-build { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 8px; margin: 6px 0; }
+  .ba-build-row { background: rgba(255,255,255,0.06); border-radius: 10px; padding: 8px 12px; font-size: 0.82rem; text-align: left; line-height: 1.4; }
+  .ba-build-row b { color: #f0c040; }
+  .ba-go {
+    margin-top: 8px; padding: 14px 40px; border-radius: 26px; border: none;
+    background: var(--tg-theme-button-color, #6c5ce7); color: #fff; font-size: 1.05rem; font-weight: 800; cursor: pointer;
+  }
+  .ba-end-line { font-size: 0.9rem; color: rgba(255,255,255,0.8); margin: 2px 0; }
+</style>
+</head>
+<body>
+<h1>⚔️ Twilights</h1>
+<p class="subtitle" id="subtitle">Град ударов</p>
+
+<div id="ba-wrap">
+  <canvas id="ba-canvas"></canvas>
+  <div id="ba-hud">
+    <div id="ba-hero-panel">
+      <div class="ba-hero-name" id="ba-hero-name">Герой</div>
+      <div class="ba-bar-outer"><div class="ba-bar-inner" id="ba-hp-bar" style="width:100%"></div><div class="ba-bar-txt" id="ba-hp-txt">100/100</div></div>
+    </div>
+    <button class="ba-btn mag" id="ba-mag-btn" style="display:none"><span class="ba-btn-icon" id="ba-mag-icon">✨</span><span id="ba-mag-label">Магия</span></button>
+  </div>
+</div>
+
+<script src="../shared/core.js"></script>
+<script>
+// ================= BARRAGE — «Град ударов» (space-invaders + контратака в окно) =================
+// Герой внизу ходит по колонкам (тап по колонке). Сверху по колонкам падают удары — уйти с колонки.
+// Враг периодически открывает «окно» уязвимости в колонке — встань туда и жми «Удар».
+// Параметризация билдом (тот же словарь героя, что hex) + враг.
+
+// ---------- CONFIG (данные, не код на класс) ----------
+const WEAPONS = {
+  sword:   {name:'Меч',    icon:'⚔️', dmg:34, cd:0.45},
+  axe:     {name:'Топор',  icon:'🪓', dmg:46, cd:0.62},
+  ranged:  {name:'Лук',    icon:'🏹', dmg:30, cd:0.50},
+  heavy:   {name:'Молот',  icon:'🔨', dmg:56, cd:0.82},
+  dual:    {name:'Клинки', icon:'⚔️', dmg:24, cd:0.32},
+  shield:  {name:'Щит',    icon:'🛡️', dmg:26, cd:0.50, guard:true},
+  unarmed: {name:'Кулаки', icon:'👊', dmg:22, cd:0.34},
+  polearm: {name:'Копьё',  icon:'🔱', dmg:32, cd:0.55},
+  chain:   {name:'Цепь',   icon:'⛓️', dmg:30, cd:0.52},
+};
+const MAGIC = {
+  wizard:     {name:'Волшебник', icon:'✨', fx:'nuke',   power:40, cd:9},
+  pyromancer: {name:'Пиромант',  icon:'🔥', fx:'nuke',   power:48, cd:10},
+  aquamancer: {name:'Аквамант',  icon:'💧', fx:'shield', cd:8},
+  aeromancer: {name:'Аэромант',  icon:'🌪️', fx:'slow',   cd:8},
+  geomancer:  {name:'Геомант',   icon:'🪨', fx:'shield', cd:8},
+  druid:      {name:'Друид',     icon:'🌿', fx:'heal',   power:26, cd:11},
+  necro:      {name:'Некромант', icon:'💀', fx:'nuke',   power:38, cd:10},
+  demon:      {name:'Демонолог', icon:'😈', fx:'nuke',   power:44, cd:10},
+  incenser:   {name:'Кадило',    icon:'🕯️', fx:'shield', cd:8},
+  adept:      {name:'Адепт',     icon:'🌀', fx:'slow',   cd:8},
+};
+const UNITS = {
+  shadow:       {name:'Тень',      emoji:'👤', atkEvery:1.5, winEvery:2.4, winDur:1.5, tel:0.60, fall:0.95, dmg:12},
+  warrior:      {name:'Головорез', emoji:'🗡️', atkEvery:1.7, winEvery:2.6, winDur:1.4, tel:0.55, fall:0.88, dmg:15},
+  archer:       {name:'Лучник',    emoji:'🏹', atkEvery:1.2, winEvery:2.6, winDur:1.3, tel:0.50, fall:0.72, dmg:10},
+  cadaver:      {name:'Мертвяк',   emoji:'🧟', atkEvery:1.9, winEvery:2.2, winDur:1.7, tel:0.70, fall:1.05, dmg:14},
+  demonologist: {name:'Демонолог', emoji:'😈', atkEvery:1.4, winEvery:2.8, winDur:1.3, tel:0.50, fall:0.82, dmg:13},
+  beast:        {name:'Зверь',     emoji:'🐺', atkEvery:1.1, winEvery:3.0, winDur:1.2, tel:0.45, fall:0.66, dmg:11},
+};
+const THEMES = {
+  rift:  {name:'Разлом',  bg:'#12101c', lane:'rgba(162,155,254,0.05)', accent:'#a29bfe', enemyGlow:'#8f7bff'},
+  manor: {name:'Особняк', bg:'#1c1614', lane:'rgba(230,190,120,0.05)', accent:'#e0b060', enemyGlow:'#e0b060'},
+  cave:  {name:'Пещера',  bg:'#0e1414', lane:'rgba(120,200,200,0.05)', accent:'#5fd0d0', enemyGlow:'#5fd0d0'},
+  road:  {name:'Тракт',   bg:'#141414', lane:'rgba(200,200,200,0.05)', accent:'#cfcfcf', enemyGlow:'#cfcfcf'},
+};
+
+function nk(v, dict, def) { if (!v) return def; const k = String(v).toLowerCase(); return dict[k] ? k : def; }
+function clampNum(v, a, b) { return v < a ? a : v > b ? b : v; }
+function now() { return performance.now() / 1000; }
+
+// ---------- read build ----------
+const heroDef = gameData.hero || {};
+const wpnKey  = nk(heroDef.weapon, WEAPONS, 'sword');
+const wpn     = WEAPONS[wpnKey];
+const magKey  = heroDef.magic ? nk(heroDef.magic, MAGIC, 'wizard') : null;
+const mag     = magKey ? MAGIC[magKey] : null;
+const enemyDef = (Array.isArray(gameData.enemies) ? gameData.enemies[0] : gameData.enemies) || {};
+const unitKey  = nk(enemyDef.type, UNITS, 'shadow');
+const unit     = UNITS[unitKey];
+const theme    = THEMES[nk(gameData.theme, THEMES, 'rift')];
+const LANES    = clampNum(gameData.lanes | 0 || 4, 3, 5);
+const AGG      = gameData.aggression ? +gameData.aggression : 1.0;
+const TOTAL_T  = clampNum(gameData.time | 0 || 60, 20, 180);
+
+// ---------- canvas ----------
+const CW = 440, CH = 600;
+const cvs = document.getElementById('ba-canvas');
+const ctx = cvs.getContext('2d');
+(function initCanvas() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cvs.width = CW * dpr; cvs.height = CH * dpr;
+  cvs.style.aspectRatio = CW + '/' + CH;
+  ctx.scale(dpr, dpr);
+})();
+const laneW = CW / LANES;
+const ENEMY_Y = 82;
+const HERO_Y  = CH - 74;
+const WIN_Y   = ENEMY_Y + 54;          // где рисуется «окно» под врагом
+const STRIKE_TOP = HERO_Y - 40;        // нижняя полоса = зона удара (тап тут → удар в своей колонке)
+function laneCX(i) { return (i + 0.5) * laneW; }
+
+// ---------- state ----------
+const A = {
+  started: false, ended: false,
+  time: TOTAL_T, total: TOTAL_T, elapsed: 0,
+  hero: { lane: (LANES / 2) | 0, x: laneCX((LANES / 2) | 0), hp: heroDef.hp || 100, maxHp: heroDef.hp || 100,
+          strikeCd: 0, magCd: 0, shield: 0, swing: 0 },
+  enemy: { hp: enemyDef.hp || 120, maxHp: enemyDef.hp || 120, hit: 0 },
+  attacks: [],   // {lane, phase:'tel'|'fall', t, y}
+  windows: [],   // {lane, t, dur, age, hit}
+  slow: 0,
+  atkTimer: 1.2, winTimer: 1.6,
+  fx: [],
+  stats: { hits_taken: 0, dodges: 0, attacks_total: 0, strikes: 0, strikes_hit: 0, strikes_perfect: 0,
+           strikes_whiff: 0, windows_total: 0, windows_missed: 0, magic_casts: 0,
+           damage_dealt: 0, damage_taken: 0 },
+};
+
+// ---------- input ----------
+cvs.addEventListener('pointerdown', (e) => {
+  if (!A.started || A.ended) return;
+  const r = cvs.getBoundingClientRect();
+  const x = (e.clientX - r.left) / r.width * CW;
+  const y = (e.clientY - r.top) / r.height * CH;
+  if (y >= STRIKE_TOP) { doStrike(); return; }   // нижняя полоса — удар в текущей колонке
+  A.hero.lane = clampNum(Math.floor(x / laneW), 0, LANES - 1);  // верх — движение
+}, { passive: true });
+
+const magBtn = document.getElementById('ba-mag-btn');
+magBtn.addEventListener('pointerdown', () => { if (A.started && !A.ended) doMagic(); }, { passive: true });
+
+function spawnFx(x, y, txt, color, vy) { A.fx.push({ x, y, txt, color, t: 0.7, vy: vy || -26 }); }
+
+// ---------- hero strike (контратака в окно) ----------
+function doStrike() {
+  const h = A.hero;
+  if (h.strikeCd > 0) return;
+  h.strikeCd = wpn.cd;
+  h.swing = 0.18;
+  A.stats.strikes++;
+  // окно в текущей колонке?
+  const w = A.windows.find(w => w.lane === h.lane && !w.hit);
+  if (w) {
+    const perfect = w.age <= 0.45;                       // попал сразу, как открылось
+    let dmg = wpn.dmg * (perfect ? 1.5 : 1);
+    w.hit = true;
+    A.enemy.hp = Math.max(0, A.enemy.hp - dmg);
+    A.enemy.hit = 0.25;
+    A.stats.strikes_hit++; A.stats.damage_dealt += dmg;
+    if (perfect) A.stats.strikes_perfect++;
+    spawnFx(laneCX(h.lane), WIN_Y + 8, perfect ? 'ТОЧНО! ' + Math.round(dmg) : '' + Math.round(dmg), perfect ? '#f0c040' : '#2ecc71');
+    A.fx.push({ beam: true, lane: h.lane, t: 0.22, color: perfect ? '#f0c040' : '#2ecc71' });
+  } else {
+    A.stats.strikes_whiff++;
+    spawnFx(h.x, HERO_Y - 44, 'мимо', 'rgba(255,255,255,0.4)');
+  }
+}
+
+// ---------- magic ----------
+function doMagic() {
+  const h = A.hero; if (!mag || h.magCd > 0) return;
+  h.magCd = mag.cd; A.stats.magic_casts++;
+  switch (mag.fx) {
+    case 'nuke':   A.enemy.hp = Math.max(0, A.enemy.hp - mag.power); A.enemy.hit = 0.3; A.stats.damage_dealt += mag.power;
+                   spawnFx(laneCX(h.lane), ENEMY_Y + 20, mag.icon + ' ' + mag.power, mag.accent || '#a29bfe'); break;
+    case 'shield': h.shield = Math.max(h.shield, 2.4); spawnFx(h.x, HERO_Y - 44, '🛡 щит', '#5fd0d0'); break;
+    case 'slow':   A.slow = 2.6; spawnFx(CW / 2, CH / 2, '🌪 замедление', '#a29bfe'); break;
+    case 'heal':   h.hp = Math.min(h.maxHp, h.hp + mag.power); spawnFx(h.x, HERO_Y - 44, '+' + mag.power, '#2ecc71'); break;
+  }
+}
+
+// ---------- update ----------
+function update(dt) {
+  A.elapsed += dt; A.time -= dt;
+  if (A.time <= 0) { A.time = 0; endGame('timeout'); return; }
+
+  const h = A.hero;
+  h.strikeCd = Math.max(0, h.strikeCd - dt);
+  h.magCd = Math.max(0, h.magCd - dt);
+  h.shield = Math.max(0, h.shield - dt);
+  h.swing = Math.max(0, h.swing - dt);
+  A.slow = Math.max(0, A.slow - dt);
+  A.enemy.hit = Math.max(0, A.enemy.hit - dt);
+  // герой плавно скользит к своей колонке
+  const tx = laneCX(h.lane);
+  h.x += clampNum(tx - h.x, -900 * dt, 900 * dt);
+
+  const slowMul = A.slow > 0 ? 0.45 : 1.0;
+
+  // спавн падающих ударов
+  A.atkTimer -= dt;
+  if (A.atkTimer <= 0) {
+    A.atkTimer = (unit.atkEvery / AGG) * (0.85 + Math.random() * 0.3);
+    const lane = Math.floor(Math.random() * LANES);
+    A.attacks.push({ lane, phase: 'tel', t: unit.tel, y: ENEMY_Y + 24 });
+    A.stats.attacks_total++;
+    // при высокой агрессии иногда второй удар в другой колонке
+    if (AGG >= 1.5 && Math.random() < 0.5) {
+      let l2 = Math.floor(Math.random() * LANES); if (l2 === lane) l2 = (l2 + 1) % LANES;
+      A.attacks.push({ lane: l2, phase: 'tel', t: unit.tel, y: ENEMY_Y + 24 });
+      A.stats.attacks_total++;
+    }
+  }
+  // обновление ударов
+  for (const a of A.attacks) {
+    if (a.phase === 'tel') {
+      a.t -= dt;
+      if (a.t <= 0) { a.phase = 'fall'; a.speed = (HERO_Y - a.y) / (unit.fall); }
+    } else {
+      a.y += a.speed * dt * slowMul;
+      if (a.y >= HERO_Y) {
+        a.done = true;
+        if (h.lane === a.lane) {
+          if (h.shield > 0) { spawnFx(h.x, HERO_Y - 44, '🛡', '#5fd0d0'); }
+          else {
+            h.hp = Math.max(0, h.hp - unit.dmg);
+            A.stats.hits_taken++; A.stats.damage_taken += unit.dmg;
+            spawnFx(h.x, HERO_Y - 44, '-' + unit.dmg, '#e74c3c'); A.hurt = 0.25;
+          }
+        } else { A.stats.dodges++; }
+      }
+    }
+  }
+  A.attacks = A.attacks.filter(a => !a.done);
+  A.hurt = Math.max(0, (A.hurt || 0) - dt);
+
+  // спавн окон уязвимости
+  A.winTimer -= dt;
+  if (A.winTimer <= 0) {
+    A.winTimer = (unit.winEvery / AGG) * (0.85 + Math.random() * 0.3);
+    const lane = Math.floor(Math.random() * LANES);
+    A.windows.push({ lane, t: unit.winDur, dur: unit.winDur, age: 0, hit: false });
+    A.stats.windows_total++;
+  }
+  for (const w of A.windows) { w.t -= dt; w.age += dt; if (w.t <= 0 && !w.hit) w.missed = true; }
+  A.windows.forEach(w => { if (w.missed) A.stats.windows_missed++; });
+  A.windows = A.windows.filter(w => w.t > 0 && !w.hit);
+
+  // fx
+  A.fx.forEach(f => { f.t -= dt; if (f.vy) f.y += f.vy * dt; });
+  A.fx = A.fx.filter(f => f.t > 0);
+
+  // конец
+  if (A.enemy.hp <= 0) { endGame('win'); return; }
+  if (h.hp <= 0) { endGame('dead'); return; }
+  updateHUD();
+}
+
+// ---------- render ----------
+function render() {
+  ctx.clearRect(0, 0, CW, CH);
+  ctx.fillStyle = theme.bg; ctx.fillRect(0, 0, CW, CH);
+
+  // колонки
+  for (let i = 0; i < LANES; i++) {
+    ctx.fillStyle = i % 2 ? theme.lane : 'transparent';
+    ctx.fillRect(i * laneW, 0, laneW, CH);
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(i * laneW, 0); ctx.lineTo(i * laneW, CH); ctx.stroke();
+  }
+  // зона удара (нижняя полоса = «кнопка» на канвасе)
+  {
+    const h = A.hero;
+    const ready = A.windows.some(w => w.lane === h.lane && !w.hit) && h.strikeCd <= 0;
+    const pulse = 0.5 + 0.5 * Math.sin(now() * 8);
+    ctx.fillStyle = ready ? 'rgba(46,204,113,' + (0.14 + 0.16 * pulse) + ')'
+                          : h.strikeCd > 0 ? 'rgba(255,255,255,0.03)' : 'rgba(240,192,64,0.07)';
+    ctx.fillRect(0, STRIKE_TOP, CW, CH - STRIKE_TOP);
+    ctx.strokeStyle = ready ? 'rgba(46,204,113,' + (0.4 + 0.4 * pulse) + ')' : 'rgba(255,255,255,0.10)';
+    ctx.lineWidth = ready ? 2 : 1;
+    ctx.beginPath(); ctx.moveTo(0, STRIKE_TOP); ctx.lineTo(CW, STRIKE_TOP); ctx.stroke();
+    ctx.font = '700 11px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillStyle = ready ? '#2ecc71' : 'rgba(255,255,255,0.35)';
+    ctx.fillText(wpn.icon + ' УДАР', CW / 2, CH - 14);
+  }
+
+  // beams (успешный удар вверх)
+  for (const f of A.fx) if (f.beam) {
+    ctx.globalAlpha = clampNum(f.t / 0.22, 0, 1) * 0.6;
+    const g = ctx.createLinearGradient(0, HERO_Y, 0, ENEMY_Y);
+    g.addColorStop(0, 'transparent'); g.addColorStop(1, f.color);
+    ctx.fillStyle = g; ctx.fillRect(f.lane * laneW + laneW * 0.3, ENEMY_Y, laneW * 0.4, HERO_Y - ENEMY_Y);
+    ctx.globalAlpha = 1;
+  }
+
+  // враг сверху
+  ctx.save();
+  if (A.enemy.hit > 0) { ctx.translate((Math.random() - 0.5) * 6, 0); }
+  ctx.textAlign = 'center'; ctx.font = '44px sans-serif';
+  ctx.shadowColor = theme.enemyGlow; ctx.shadowBlur = 18;
+  ctx.fillText(unit.emoji, CW / 2, ENEMY_Y);
+  ctx.shadowBlur = 0; ctx.restore();
+  ctx.font = '700 12px sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#eee';
+  ctx.fillText(enemyDef.name || unit.name, CW / 2, ENEMY_Y + 22);
+  // hp врага
+  drawBar(CW / 2 - 130, 16, 260, 12, A.enemy.hp / A.enemy.maxHp, '#e74c3c', Math.ceil(A.enemy.hp) + '/' + A.enemy.maxHp);
+
+  // окна уязвимости
+  for (const w of A.windows) {
+    const cx = laneCX(w.lane);
+    const pulse = 0.5 + 0.5 * Math.sin(now() * 8);
+    ctx.save();
+    ctx.globalAlpha = 0.35 + 0.4 * pulse;
+    ctx.strokeStyle = '#2ecc71'; ctx.lineWidth = 3;
+    ctx.strokeRect(cx - laneW * 0.34, WIN_Y - 22, laneW * 0.68, 44);
+    ctx.globalAlpha = 1;
+    ctx.font = '26px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('🎯', cx, WIN_Y + 9);
+    // столбик-подсказка вниз по колонке
+    ctx.globalAlpha = 0.12 + 0.12 * pulse; ctx.fillStyle = '#2ecc71';
+    ctx.fillRect(w.lane * laneW + laneW * 0.35, WIN_Y + 24, laneW * 0.3, HERO_Y - WIN_Y - 24);
+    ctx.globalAlpha = 1; ctx.restore();
+  }
+
+  // падающие удары
+  for (const a of A.attacks) {
+    const cx = laneCX(a.lane);
+    if (a.phase === 'tel') {
+      const p = 1 - a.t / unit.tel;
+      ctx.fillStyle = 'rgba(231,76,60,' + (0.12 + 0.25 * p) + ')';
+      ctx.fillRect(a.lane * laneW, ENEMY_Y + 30, laneW, HERO_Y - ENEMY_Y - 10);
+      ctx.font = '22px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillStyle = '#e74c3c'; ctx.fillText('⚠️', cx, ENEMY_Y + 52);
+    } else {
+      ctx.font = '30px sans-serif'; ctx.textAlign = 'center';
+      ctx.shadowColor = '#e74c3c'; ctx.shadowBlur = 12;
+      ctx.fillText('🔴', cx, a.y); ctx.shadowBlur = 0;
+    }
+  }
+
+  // герой
+  const h = A.hero;
+  const inDanger = A.attacks.some(a => a.lane === h.lane && (a.phase === 'fall' || (a.phase === 'tel' && a.t < unit.tel * 0.6)));
+  if (A.hurt > 0) { ctx.save(); ctx.translate((Math.random() - 0.5) * 5, 0); }
+  ctx.font = '38px sans-serif'; ctx.textAlign = 'center';
+  if (h.shield > 0) { ctx.shadowColor = '#5fd0d0'; ctx.shadowBlur = 16; }
+  ctx.fillText(heroDef.emoji || '🦸', h.x, HERO_Y);
+  ctx.shadowBlur = 0;
+  if (h.swing > 0) { ctx.font = '22px sans-serif'; ctx.fillText(wpn.icon, h.x, HERO_Y - 34); }
+  if (A.hurt > 0) ctx.restore();
+
+  // подсказки на канвасе (песочница-онбординг)
+  if (inDanger) {
+    ctx.font = '700 15px sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#e74c3c';
+    ctx.fillText('УЙДИ С КОЛОНКИ!', h.x, HERO_Y - 54);
+  } else {
+    const w = A.windows.find(w => !w.hit);
+    if (w && A.stats.strikes_hit === 0) {
+      ctx.font = '700 14px sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#2ecc71';
+      const cx = laneCX(w.lane);
+      ctx.fillText(w.lane === h.lane ? 'ТАП ПО НИЗУ = УДАР' : 'ВСТАНЬ ПОД 🎯', cx, WIN_Y + 40);
+    }
+  }
+
+  // тексты-fx
+  for (const f of A.fx) if (!f.beam) {
+    ctx.globalAlpha = clampNum(f.t / 0.7, 0, 1);
+    ctx.fillStyle = f.color; ctx.font = '700 15px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(f.txt, f.x, f.y); ctx.globalAlpha = 1;
+  }
+
+  // таймер
+  const tw = (A.time / A.total) * CW;
+  ctx.fillStyle = 'rgba(255,255,255,0.08)'; ctx.fillRect(0, CH - 6, CW, 6);
+  ctx.fillStyle = A.time <= 10 ? (Math.floor(now() * 4) % 2 ? '#e74c3c' : '#c0392b') : theme.accent;
+  ctx.fillRect(0, CH - 6, tw, 6);
+}
+
+function drawBar(x, y, w, hgt, frac, color, txt) {
+  ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(x, y, w, hgt);
+  ctx.fillStyle = color; ctx.fillRect(x, y, w * clampNum(frac, 0, 1), hgt);
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1; ctx.strokeRect(x, y, w, hgt);
+  if (txt) { ctx.fillStyle = '#fff'; ctx.font = '700 9px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(txt, x + w / 2, y + hgt - 2.5); }
+}
+
+function updateHUD() {
+  const h = A.hero;
+  document.getElementById('ba-hp-bar').style.width = (h.hp / h.maxHp * 100) + '%';
+  document.getElementById('ba-hp-txt').textContent = Math.ceil(h.hp) + '/' + h.maxHp;
+  if (mag) {
+    magBtn.classList.toggle('cooling', h.magCd > 0);
+    document.getElementById('ba-mag-label').textContent = h.magCd > 0 ? Math.ceil(h.magCd) + 'с' : 'Магия';
+  }
+}
+
+// ---------- loop ----------
+let lastT = null;
+function loop(t) {
+  const tt = t / 1000; if (lastT === null) lastT = tt;
+  let dt = tt - lastT; lastT = tt; dt = Math.min(dt, 0.05);
+  if (A.started && !A.ended) update(dt);
+  render();
+  if (!A.ended) requestAnimationFrame(loop);
+}
+
+// ---------- end ----------
+function endGame(kind) {
+  if (A.ended) return; A.ended = true;
+  const s = A.stats;
+  const win = kind === 'win';
+  const scene_revisit = kind === 'timeout';
+  let outcome = win ? 'Победа' : kind === 'dead' ? 'Поражение' : 'Пересмотр сцены';
+  // грубый тир 0-4 по остатку hp / прогрессу
+  let level;
+  if (win) level = A.hero.hp / A.hero.maxHp > 0.66 ? 4 : A.hero.hp / A.hero.maxHp > 0.33 ? 3 : 2;
+  else if (scene_revisit) level = 1 - A.enemy.hp / A.enemy.maxHp > 0.5 ? 1 : 0;
+  else level = 0;
+
+  const result = {
+    game: 'barrage', outcome, win, scene_revisit, level,
+    duration: +A.elapsed.toFixed(1), timeLeft: +A.time.toFixed(1),
+    hero_hp_left: Math.round(A.hero.hp), hero_hp_max: A.hero.maxHp,
+    enemy_type: unitKey, enemy_name: enemyDef.name || unit.name,
+    enemy_hp_left: Math.round(A.enemy.hp), enemy_hp_max: A.enemy.maxHp,
+    hits_taken: s.hits_taken, dodges: s.dodges, attacks_total: s.attacks_total,
+    strikes: s.strikes, strikes_hit: s.strikes_hit, strikes_perfect: s.strikes_perfect,
+    strikes_whiff: s.strikes_whiff, windows_total: s.windows_total, windows_missed: s.windows_missed,
+    magic_casts: s.magic_casts, damage_dealt: Math.round(s.damage_dealt), damage_taken: Math.round(s.damage_taken),
+    weapon: wpnKey, magic: magKey, lanes: LANES, theme: nk(gameData.theme, THEMES, 'rift'),
+  };
+  showEndOverlay(result);
+}
+
+function showEndOverlay(result) {
+  const ov = document.createElement('div'); ov.className = 'ba-overlay';
+  const emoji = result.win ? '🏆' : result.outcome === 'Поражение' ? '💀' : '⏳';
+  ov.innerHTML =
+    '<div class="ba-hero-emoji">' + emoji + '</div>' +
+    '<div class="ba-title">' + result.outcome + '</div>' +
+    '<div class="ba-sub">' + (result.win ? 'Враг повержен' : result.scene_revisit ? 'Время вышло — мастер решит развитие сцены' : 'Герой пал') + '</div>' +
+    '<div class="ba-end-line">Урон врагу: <b>' + result.damage_dealt + '</b> · HP врага: ' + result.enemy_hp_left + '/' + result.enemy_hp_max + '</div>' +
+    '<div class="ba-end-line">Точных ударов: ' + result.strikes_hit + ' (идеальных ' + result.strikes_perfect + ') · промахов ' + result.strikes_whiff + '</div>' +
+    '<div class="ba-end-line">Уклонов: ' + result.dodges + '/' + result.attacks_total + ' · пропущено ударов: ' + result.hits_taken + '</div>' +
+    '<div class="ba-end-line">HP героя: ' + result.hero_hp_left + '/' + result.hero_hp_max + ' · время: ' + result.duration + 'с</div>' +
+    '<button class="ba-go" id="ba-send">Отправить мастеру</button>';
+  document.body.appendChild(ov);
+  let sent = false;
+  const send = () => { if (sent) return; sent = true; sendResultToBot(result); };
+  document.getElementById('ba-send').addEventListener('click', send);
+  setTimeout(send, 8000);
+}
+
+// ---------- ready screen ----------
+(function ready() {
+  document.getElementById('subtitle').textContent = 'Град ударов · ' + theme.name;
+  document.getElementById('ba-hero-name').textContent = heroDef.name || 'Герой';
+  document.getElementById('ba-hp-txt').textContent = (heroDef.hp || 100) + '/' + (heroDef.hp || 100);
+  if (mag) { magBtn.style.display = 'flex'; document.getElementById('ba-mag-icon').textContent = mag.icon; }
+
+  const ov = document.createElement('div'); ov.className = 'ba-overlay';
+  ov.innerHTML =
+    '<div class="ba-hero-emoji">' + (heroDef.emoji || '🦸') + '</div>' +
+    '<div class="ba-title">' + (heroDef.name || 'Герой') + '</div>' +
+    '<div class="ba-build">' +
+      '<div class="ba-build-row">Оружие: <b>' + wpn.name + '</b> ' + wpn.icon + ' — урон удара ' + wpn.dmg + (mag ? '<br>Магия: <b>' + mag.name + '</b> ' + mag.icon : '') + '</div>' +
+      '<div class="ba-build-row">Враг: <b>' + (enemyDef.name || unit.name) + '</b> ' + unit.emoji + ' · HP ' + (enemyDef.hp || 120) + '</div>' +
+      '<div class="ba-build-row">🔴 сверху падают удары по колонкам — <b>уйди с колонки</b> (тапни другую вверху).<br>🎯 враг открыл окно — <b>встань под него и тапни нижнюю полосу</b> (удар).</div>' +
+    '</div>' +
+    '<button class="ba-go" id="ba-start">В бой!</button>';
+  document.body.appendChild(ov);
+  document.getElementById('ba-wrap').style.display = 'flex';
+  document.getElementById('ba-start').addEventListener('click', () => {
+    ov.remove(); A.started = true; lastT = null;
+  });
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
