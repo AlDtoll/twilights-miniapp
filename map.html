@@ -293,8 +293,12 @@
   .am-grid { stroke:#241f16; stroke-width:1; }
   .am-road { stroke:#8a7a4a; stroke-width:2.4; stroke-linecap:round; }
   .am-road-edge { stroke-dasharray:5 4; opacity:.8; }
-  .am-node { fill:#c8a84a; stroke:#000; stroke-width:1; }
+  .am-node { fill:#c8a84a; stroke:#000; stroke-width:1; cursor:pointer; }
+  .am-node-sel { stroke:#fff; stroke-width:2; }
+  .am-road-hi { stroke:#f0dc8e !important; stroke-width:3.6 !important; opacity:1 !important; }
+  .am-arrow { fill:#8a7a4a; opacity:.9; }
   .am-label { fill:#c8bfa8; font-size:11px; }
+  .am-pop { fill:#8a7e64; font-size:8.5px; }
   .am-edge-label { fill:#7a6e5a; font-size:10px; }
   .am-note { color:#7a6e5a; font-size:11px; text-align:center; padding:2px 8px 8px; }
 
@@ -911,7 +915,7 @@ function cellAreaMap(am, cx, cy) {
   am.nodes.forEach(n => { nodeCoord[n.name] = blockOf(n); });
   const nodes = am.nodes
     .filter(n => n.col >= c0 && n.col < c0 + G && n.row >= r0 && n.row < r0 + G)
-    .map(n => ({ name: n.name, col: n.col - c0 + 1, row: n.row - r0 + 1, terrain: n.terrain || '' }));
+    .map(n => ({ name: n.name, col: n.col - c0 + 1, row: n.row - r0 + 1, terrain: n.terrain || '', owner: n.owner || '', pop: n.pop || 0 }));
   const names = new Set(nodes.map(n => n.name));
   const roads = [];
   (am.roads || []).forEach(rd => {
@@ -932,6 +936,21 @@ function cellAreaMap(am, cx, cy) {
     blocks: [{ coord: [cx, cy], col0: 1, row0: 1, owned: true }], nodes, roads };
 }
 
+// Тап по домику НП: подсветить дороги, выходящие из него (повторный тап — снять).
+function amHi(ev, idx) {
+  ev.stopPropagation();
+  const svg = ev.target.ownerSVGElement;
+  if (!svg) return;
+  const already = ev.target.classList.contains("am-node-sel");
+  svg.querySelectorAll(".am-node-sel").forEach(el => el.classList.remove("am-node-sel"));
+  svg.querySelectorAll(".am-road-hi").forEach(el => el.classList.remove("am-road-hi"));
+  if (already) return;
+  ev.target.classList.add("am-node-sel");
+  svg.querySelectorAll(".am-road").forEach(r => {
+    if ((r.getAttribute("data-i") || "").split(" ").includes(String(idx))) r.classList.add("am-road-hi");
+  });
+}
+
 function renderAreaMap(am) {
   if (!am || !am.nodes || !am.nodes.length) return '';
   const cols = am.cols || 4, rows = am.rows || 4;
@@ -941,6 +960,7 @@ function renderAreaMap(am) {
   const cy = (r) => P + (r - 0.5) * S;
   const pos = {};
   am.nodes.forEach(n => { pos[n.name] = [cx(n.col), cy(n.row)]; });
+  const idxOf = {}; am.nodes.forEach((n, i) => { idxOf[n.name] = i; });
   let g = "";
   (am.blocks || []).forEach(bl => {
     const bx = P + (bl.col0 - 1) * S, by = P + (bl.row0 - 1) * S;
@@ -959,7 +979,7 @@ function renderAreaMap(am) {
     const a = pos[rd.from]; if (!a) return;
     if (rd.type === "internal") {
       const b = pos[rd.to]; if (!b) return;
-      g += `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" class="am-road"/>`;
+      g += `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" class="am-road" data-i="${idxOf[rd.from]} ${idxOf[rd.to]}"/>`;
     } else {
       const dx = rd.dir?.dx || 0, dy = rd.dir?.dy || 0;
       if (!dx && !dy) return;
@@ -974,17 +994,25 @@ function renderAreaMap(am) {
       else if (vy < 0) t = Math.min(t, (0 - a[1]) / vy);
       if (!isFinite(t) || t <= 0) return;
       const ex = a[0] + vx * t, ey = a[1] + vy * t;
-      g += `<line x1="${a[0]}" y1="${a[1]}" x2="${ex}" y2="${ey}" class="am-road am-road-edge"/>`;
+      g += `<line x1="${a[0]}" y1="${a[1]}" x2="${ex}" y2="${ey}" class="am-road am-road-edge" data-i="${idxOf[rd.from]}"/>`;
+      const al = Math.hypot(vx, vy) || 1, ux = vx / al, uy = vy / al;   // стрелка-наконечник у выхода
+      const tx = ex - ux * 2, ty = ey - uy * 2, bkx = tx - ux * 8, bky = ty - uy * 8;
+      g += `<polygon points="${tx},${ty} ${bkx - uy * 4.2},${bky + ux * 4.2} ${bkx + uy * 4.2},${bky - ux * 4.2}" class="am-arrow"/>`;
       const anchor = vx > 0 ? "end" : vx < 0 ? "start" : "middle";  // подпись внутрь холста
       const lx = Math.max(4, Math.min(W - 4, ex + (vx > 0 ? -4 : vx < 0 ? 4 : 0)));
       const ly = Math.max(12, Math.min(H - 5, ey + (vy > 0 ? -6 : 14)));
       g += `<text x="${lx}" y="${ly}" class="am-edge-label" text-anchor="${anchor}">→ ${esc(rd.to)}</text>`;
     }
   });
-  am.nodes.forEach(n => {
+  const OWN_COLORS = { danil: "#6ba9e6", misha: "#e0894a", valter: "#7bc96f" };
+  am.nodes.forEach((n, i) => {
     const [x, y] = pos[n.name];
-    g += `<circle cx="${x}" cy="${y}" r="6" class="am-node"/>`;
-    g += `<text x="${x}" y="${y - 10}" class="am-label" text-anchor="middle">${esc(n.name)}</text>`;
+    const fill = OWN_COLORS[n.owner] || "#c8a84a";
+    const w = 6.5, bh = 6, rh = 5;   // домик = пятиугольник (крыша+корпус)
+    const house = `M ${x - w} ${y - 1} L ${x} ${y - 1 - rh} L ${x + w} ${y - 1} L ${x + w} ${y + bh} L ${x - w} ${y + bh} Z`;
+    g += `<path d="${house}" class="am-node" fill="${fill}" data-i="${i}" onclick="amHi(event,${i})"/>`;
+    g += `<text x="${x}" y="${y - rh - 5}" class="am-label" text-anchor="middle">${esc(n.name)}</text>`;
+    if (n.pop) g += `<text x="${x}" y="${y + bh + 11}" class="am-pop" text-anchor="middle">~${n.pop}</text>`;
   });
   return `<div class="am-wrap"><svg viewBox="0 0 ${W} ${H}" class="am-svg" preserveAspectRatio="xMidYMid meet">${g}</svg></div>` +
     `<div class="am-note">Иллюстративная карта — клетки лишь ориентир. Пунктир — дорога к соседней области.</div>`;
