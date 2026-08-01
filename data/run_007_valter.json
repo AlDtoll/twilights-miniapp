@@ -1,6 +1,63 @@
 {
   "run": "run_007",
   "player": "valter",
+  "area_map": {
+    "area": "Утёсный край",
+    "cols": 4,
+    "rows": 4,
+    "blocks": [
+      {
+        "coord": [
+          3,
+          1
+        ],
+        "col0": 1,
+        "row0": 1,
+        "owned": true
+      }
+    ],
+    "nodes": [
+      {
+        "name": "Утёсная гавань",
+        "col": 1,
+        "row": 1,
+        "terrain": ""
+      },
+      {
+        "name": "Рудный двор",
+        "col": 4,
+        "row": 2,
+        "terrain": ""
+      },
+      {
+        "name": "Мыс Стража",
+        "col": 2,
+        "row": 4,
+        "terrain": ""
+      }
+    ],
+    "roads": [
+      {
+        "type": "internal",
+        "from": "Утёсная гавань",
+        "to": "Рудный двор"
+      },
+      {
+        "type": "internal",
+        "from": "Утёсная гавань",
+        "to": "Мыс Стража"
+      },
+      {
+        "type": "edge",
+        "from": "Утёсная гавань",
+        "to": "Юго-Западные Предгорья",
+        "dir": {
+          "dx": -1,
+          "dy": -1
+        }
+      }
+    ]
+  },
   "char_name": "Конрад «Оруженосец»",
   "player_name": "Егор",
   "user_id": 445288231,

@@ -1,6 +1,61 @@
 {
   "run": "run_007",
   "player": "misha",
+  "area_map": {
+    "area": "Озёрный Край",
+    "cols": 4,
+    "rows": 4,
+    "blocks": [
+      {
+        "coord": [
+          0,
+          3
+        ],
+        "col0": 1,
+        "row0": 1,
+        "owned": true
+      }
+    ],
+    "nodes": [
+      {
+        "name": "Чистозерье",
+        "col": 1,
+        "row": 2,
+        "terrain": ""
+      },
+      {
+        "name": "Чистолесье",
+        "col": 4,
+        "row": 3,
+        "terrain": ""
+      }
+    ],
+    "roads": [
+      {
+        "type": "internal",
+        "from": "Чистозерье",
+        "to": "Чистолесье"
+      },
+      {
+        "type": "edge",
+        "from": "Чистозерье",
+        "to": "Мшары",
+        "dir": {
+          "dx": -1,
+          "dy": -1
+        }
+      },
+      {
+        "type": "edge",
+        "from": "Чистозерье",
+        "to": "Ветровой Перевал",
+        "dir": {
+          "dx": 1,
+          "dy": 1
+        }
+      }
+    ]
+  },
   "char_name": "Креп «Ёж»",
   "player_name": "Миша",
   "user_id": 1700257736,
