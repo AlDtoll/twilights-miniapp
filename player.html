@@ -464,6 +464,7 @@ body {
 .np-type-badge.joined { border-color: #555; color: var(--muted); background: transparent; }
 .np-type-badge.annex  { border-color: var(--red); color: #cc7a6a; background: transparent; }
 .np-block-pop { font-size: 0.7rem; color: var(--muted); white-space: nowrap; }
+.np-med-growth { font-size: 0.68rem; color: var(--green); margin-top: 2px; }
 .np-block-bal { font-size: 0.72rem; white-space: nowrap; font-weight: bold; margin-right: 4px; }
 .np-chevron { font-size: 0.6rem; color: var(--muted); transition: transform 0.2s; flex-shrink: 0; }
 .np-block-body { padding-bottom: 12px; }
@@ -1844,6 +1845,7 @@ function renderSettlements(setts) {
             <span class="np-block-pop">${esc(s.population || "?")} · ${esc(s.growth || "")}</span>
             ${miniBar}
           </div>
+          ${s.med_growth ? `<div class="np-med-growth">🏥 +${s.med_growth.bonus}% к росту — ${esc((s.med_growth.sources || []).join(", "))}</div>` : ""}
         </div>
         <span class="np-block-bal ${balCls}">${balSign}${fmt(bal)}</span>
         <em class="np-chevron">▼</em>

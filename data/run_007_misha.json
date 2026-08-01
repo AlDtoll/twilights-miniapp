@@ -824,6 +824,7 @@
       "area": "Озёрный Край",
       "population": "~700",
       "growth": null,
+      "med_growth": null,
       "houses": "70",
       "staff": [
         {
@@ -1006,6 +1007,7 @@
       "area": "Озёрный Край",
       "population": "~300",
       "growth": null,
+      "med_growth": null,
       "houses": "30",
       "staff": [
         {

@@ -774,6 +774,7 @@
       "area": "Утёсный край",
       "population": "~500",
       "growth": null,
+      "med_growth": null,
       "houses": "50",
       "staff": [
         {
@@ -924,6 +925,7 @@
       "area": "Утёсный край",
       "population": "~300",
       "growth": null,
+      "med_growth": null,
       "houses": "30",
       "staff": [
         {
@@ -1042,6 +1044,7 @@
       "area": "Утёсный край",
       "population": "~200",
       "growth": null,
+      "med_growth": null,
       "houses": "20",
       "staff": [
         {

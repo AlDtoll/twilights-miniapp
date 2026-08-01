@@ -942,6 +942,7 @@
       "area": "Полынье",
       "population": "~700",
       "growth": null,
+      "med_growth": null,
       "houses": "70",
       "staff": [
         {
@@ -1105,6 +1106,7 @@
       "area": "Полынье",
       "population": "~250",
       "growth": null,
+      "med_growth": null,
       "houses": "25",
       "staff": [
         {
@@ -1243,6 +1245,7 @@
       "area": "Полынье",
       "population": "~150",
       "growth": null,
+      "med_growth": null,
       "houses": "15",
       "staff": [
         {
@@ -1394,6 +1397,7 @@
       "area": "Полынье",
       "population": "~200",
       "growth": null,
+      "med_growth": null,
       "houses": "20",
       "staff": [
         {
