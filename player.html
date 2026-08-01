@@ -874,12 +874,21 @@ function renderAreaMap(am) {
     if (rd.type === "internal") {
       const b = pos[rd.to]; if (!b) return;
       g += `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" class="am-road"/>`;
-    } else {                              // edge → к краю холста в сторону соседней клетки
+    } else {                              // edge → короткий штрих в сторону соседней клетки
       const dx = rd.dir?.dx || 0, dy = rd.dir?.dy || 0;
-      const ex = dx > 0 ? W - 4 : dx < 0 ? 4 : a[0];
-      const ey = dy > 0 ? 4 : dy < 0 ? H - 4 : a[1];   // dy>0 = север = вверх (малый y); край по H
+      if (!dx && !dy) return;
+      // Короткий направленный штрих ОТ ноды, НЕ до угла холста: иначе дороги из
+      // нижних блоков простреливали весь холст, а два одинаковых направления
+      // сходились в один угол и подписи налезали друг на друга.
+      const norm = Math.hypot(dx, dy) || 1;
+      const L = S * 0.85;
+      const ex = Math.max(6, Math.min(W - 6, a[0] + (dx / norm) * L));
+      const ey = Math.max(6, Math.min(H - 6, a[1] - (dy / norm) * L));  // dy>0=север=вверх (экр. -y)
       g += `<line x1="${a[0]}" y1="${a[1]}" x2="${ex}" y2="${ey}" class="am-road am-road-edge"/>`;
-      g += `<text x="${ex + (dx > 0 ? -3 : dx < 0 ? 3 : 0)}" y="${ey + (dy > 0 ? 12 : -5)}" class="am-edge-label" text-anchor="${dx > 0 ? "end" : dx < 0 ? "start" : "middle"}">→ ${esc(rd.to)}</text>`;
+      const anchor = dx > 0 ? "end" : dx < 0 ? "start" : "middle";  // текст внутрь холста, не за край
+      const lx = ex + (dx > 0 ? -3 : dx < 0 ? 3 : 0);
+      const ly = Math.max(10, Math.min(H - 4, ey + (dy > 0 ? -4 : dy < 0 ? 12 : 4)));
+      g += `<text x="${lx}" y="${ly}" class="am-edge-label" text-anchor="${anchor}">→ ${esc(rd.to)}</text>`;
     }
   });
 
