@@ -548,7 +548,7 @@ function rebuildMap() {
         cell.addEventListener('click', e => {
           if (isPinching) return;
           const pm = data.type.match(/^t-player-(\w+)$/);
-          if (pm) { openCell(data, pm[1]); e.stopPropagation(); return; }
+          if (pm) { openCell(data, pm[1], x, y); e.stopPropagation(); return; }
           // Любая не-игрока клетка (нейтрал/горы/море/опасная/шхеры/туман) —
           // единый оверлей: описание + НП, если они заведены. Тип клетки НЕ
           // влияет на клик: значок — визуальная подсказка, а не гейт данных.
@@ -758,7 +758,7 @@ const areaNps     = document.getElementById('area-nps');
 const areaTitle   = document.getElementById('area-title');
 const areaDash    = document.getElementById('area-dash');
 
-async function openCell(cellData, playerType) {
+async function openCell(cellData, playerType, cx, cy) {
   const meta = PLAYER_META[playerType];
   if (!meta) return;
   areaTitle.textContent = cellData.pop ? `${cellData.name} (~${cellData.pop} чел.)` : cellData.name;
@@ -783,15 +783,21 @@ async function openCell(cellData, playerType) {
       return;
     }
   }
-  // Клетка карты = область: показываем НП этой клетки + его подселения (area === имя клетки).
-  // Главный НП клетки — первым. Фолбэк для старых данных без area (legacy run_004): area = name,
-  // и если по имени клетки ничего не совпало — показываем всю область игрока (прежнее поведение).
+  // Тап по клетке = увеличенная карта ТОЛЬКО этой клетки (один блок 4×4), НЕ
+  // сшитые владения игрока. Вырезаем блок клетки (cx,cy) из общей area_map и
+  // показываем НП только этой клетки. Фолбэк (нет коорд/блока) — прежнее
+  // поведение: вся область по имени + сшитая карта.
   const all = areaCache[cacheKey].settlements || [];
-  const inArea = all.filter(s => (s.area || s.name) === cellData.name);
+  const amFull = areaCache[cacheKey].area_map;
+  const cellMap = (amFull && cx != null && cy != null) ? cellAreaMap(amFull, cx, cy) : null;
+  const cellNames = cellMap ? new Set(cellMap.nodes.map(n => n.name)) : null;
+  const inArea = cellNames
+    ? all.filter(s => cellNames.has(s.name))
+    : all.filter(s => (s.area || s.name) === cellData.name);
   const settlements = (inArea.length ? inArea : all).slice().sort((a, b) =>
     (a.name === cellData.name ? 0 : 1) - (b.name === cellData.name ? 0 : 1));
-  // Карта владений (drill-down, сшитые блоки 4×4) — первым, как у нейтралов.
-  const amHtml = areaCache[cacheKey].area_map ? renderAreaMap(areaCache[cacheKey].area_map) : '';
+  const amHtml = cellMap ? renderAreaMap(cellMap)
+    : (amFull ? renderAreaMap(amFull) : '');
   // Короткая сводка по религии области — та же логика, что у нейтралов.
   const agg = settlements.length > 1 ? faithAggregate(settlements) : '';
   const npHtml = settlements.length
@@ -888,6 +894,44 @@ function esc(t) {
 // Внутренняя карта области (drill-down): один блок 4×4 для нейтральной клетки.
 // Возвращает HTML-строку (SVG + подпись) или '' если данных нет. Контракт am —
 // как в player.html (cols/rows/blocks/nodes/roads), синхронно держать оба.
+// Вырезает из сшитой карты владений (несколько блоков клеток) карту ОДНОЙ
+// клетки (cx,cy) как самостоятельный блок 4×4. НП блока → локальные коорд 1..4.
+// Дороги: внутри блока → internal; из блока наружу (в др. клетку/за границу) →
+// edge со стрелкой в сторону соседа. Возвращает am-объект для renderAreaMap или
+// null, если блока клетки нет.
+function cellAreaMap(am, cx, cy) {
+  if (!am || !am.blocks || !am.nodes) return null;
+  const G = 4;
+  const b = am.blocks.find(bl => bl.coord[0] === cx && bl.coord[1] === cy);
+  if (!b) return null;
+  const c0 = b.col0, r0 = b.row0;
+  const blockOf = (n) => (am.blocks.find(bb =>
+    n.col >= bb.col0 && n.col < bb.col0 + G && n.row >= bb.row0 && n.row < bb.row0 + G) || {}).coord;
+  const nodeCoord = {};
+  am.nodes.forEach(n => { nodeCoord[n.name] = blockOf(n); });
+  const nodes = am.nodes
+    .filter(n => n.col >= c0 && n.col < c0 + G && n.row >= r0 && n.row < r0 + G)
+    .map(n => ({ name: n.name, col: n.col - c0 + 1, row: n.row - r0 + 1, terrain: n.terrain || '' }));
+  const names = new Set(nodes.map(n => n.name));
+  const roads = [];
+  (am.roads || []).forEach(rd => {
+    if (rd.type === 'internal') {
+      const fIn = names.has(rd.from), tIn = names.has(rd.to);
+      if (fIn && tIn) { roads.push({ type: 'internal', from: rd.from, to: rd.to }); return; }
+      if (!fIn && !tIn) return;
+      const inN = fIn ? rd.from : rd.to, outN = fIn ? rd.to : rd.from;
+      const oc = nodeCoord[outN];
+      if (!oc) return;
+      const dx = Math.sign(oc[0] - cx), dy = Math.sign(oc[1] - cy);
+      if (dx || dy) roads.push({ type: 'edge', from: inN, to: outN, dir: { dx, dy } });
+    } else if (names.has(rd.from)) {
+      roads.push(rd);
+    }
+  });
+  return { area: am.area, cols: G, rows: G,
+    blocks: [{ coord: [cx, cy], col0: 1, row0: 1, owned: true }], nodes, roads };
+}
+
 function renderAreaMap(am) {
   if (!am || !am.nodes || !am.nodes.length) return '';
   const cols = am.cols || 4, rows = am.rows || 4;
