@@ -48,7 +48,12 @@
     grid-template-rows: 24px repeat(5, 64px);
     gap: 3px;
     user-select: none;
+    position: relative;
   }
+
+  /* Дороги между клетками — SVG-оверлей поверх грида, клики проходят сквозь. */
+  .world-roads { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 1; overflow: visible; }
+  .wr-line { stroke: #b89a52; stroke-width: 2.2; stroke-linecap: round; opacity: 0.72; }
 
   .axis-label {
     display: flex;
@@ -488,6 +493,7 @@ function rebuildMap() {
     mapEl.appendChild(lbl);
   }
 
+  const cellDivs = {};
   for (let y = Y_MAX; y >= Y_MIN; y--) {
     const ylbl = document.createElement('div');
     ylbl.className = 'axis-label';
@@ -562,9 +568,36 @@ function rebuildMap() {
       }
 
       mapEl.appendChild(cell);
+      cellDivs[key] = cell;
     }
   }
+  drawWorldRoads(cellDivs);
   centerMap();
+}
+
+// Дороги мировой карты: линии между центрами клеток (координаты берём из DOM —
+// gap/размеры клеток учитываются сами). Оверлей поверх грида, клики проходят сквозь.
+function drawWorldRoads(cellDivs) {
+  const old = document.getElementById('world-roads');
+  if (old) old.remove();
+  const edges = (RUNS_META[currentRun] || {}).roads || [];
+  if (!edges.length) return;
+  const W = mapEl.offsetWidth, H = mapEl.offsetHeight;
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('id', 'world-roads');
+  svg.setAttribute('class', 'world-roads');
+  svg.setAttribute('width', W);
+  svg.setAttribute('height', H);
+  const cen = d => [d.offsetLeft + d.offsetWidth / 2, d.offsetTop + d.offsetHeight / 2];
+  let lines = '';
+  for (const [a, b] of edges) {
+    const da = cellDivs[a[0] + ',' + a[1]], db = cellDivs[b[0] + ',' + b[1]];
+    if (!da || !db) continue;
+    const [ax, ay] = cen(da), [bx, by] = cen(db);
+    lines += `<line class="wr-line" x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}"/>`;
+  }
+  svg.innerHTML = lines;
+  mapEl.insertBefore(svg, mapEl.firstChild);
 }
 
 // Click outside → deselect
@@ -695,6 +728,19 @@ function parseToon(text) {
   return root;
 }
 
+// Блок roads из toon: { e0: "x1,y1 x2,y2", ... } → [ [[x1,y1],[x2,y2]], ... ].
+function parseRoadEdges(obj) {
+  const out = [];
+  if (!obj || typeof obj !== 'object') return out;
+  for (const v of Object.values(obj)) {
+    if (typeof v !== 'string') continue;
+    const parts = v.trim().split(/\s+/);
+    if (parts.length !== 2) continue;
+    out.push(parts.map(p => p.split(',').map(Number)));
+  }
+  return out;
+}
+
 // Direct Link Mini App: t.me/twilightsHelperBot/map?startapp=<mode>-<...>
 // Апп один (map.html), поэтому режим кодируется в start_param:
 //   map-<run>            → показать карту забега
@@ -728,7 +774,12 @@ async function initMap() {
     const parsed = parseToon(await res.text());
     const runs = Object.keys(parsed).sort().reverse(); // последний забег — первым/по умолчанию
     RUNS_META = {};
-    runs.forEach(r => { RUNS_META[r] = { label: runLabel(r), cells: parsed[r] || {} }; });
+    runs.forEach(r => {
+      const raw = parsed[r] || {};
+      const roads = parseRoadEdges(raw.roads);
+      delete raw.roads;  // «roads» — не клетка: убрать из cells, иначе computeBounds получит NaN
+      RUNS_META[r] = { label: runLabel(r), cells: raw, roads };
+    });
     const sel = document.getElementById("run-sel");
     sel.innerHTML = runs.map(r => `<option value="${r}">${runLabel(r)}</option>`).join("");
     // ?run=run_005 в URL → открыть конкретный забег (для нескольких активных); иначе последний.
