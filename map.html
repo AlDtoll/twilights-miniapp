@@ -287,6 +287,12 @@
     margin-top: 8px;
     line-height: 1.5;
   }
+  .np-roads {
+    font-size: 0.7rem;
+    color: #b89a52;
+    margin-top: 6px;
+    line-height: 1.5;
+  }
   .area-loading { padding: 32px; text-align: center; color: #5a5040; font-size: 0.85rem; }
   .area-desc { font-size: 0.78rem; color: #9a8a6a; line-height: 1.55; padding: 10px 14px 0; }
 
@@ -855,6 +861,7 @@ async function openCell(cellData, playerType, cx, cy) {
     : (amFull ? renderAreaMap(amFull) : '');
   // Короткая сводка по религии области — та же логика, что у нейтралов.
   const agg = settlements.length > 1 ? faithAggregate(settlements) : '';
+  NP_ROADS = buildRoadsByNp(((cellMap || amFull) || {}).roads);
   const npHtml = settlements.length
     ? settlements.map(renderNPCard).join('')
     : '<div class="area-loading">НП не найдены в данных</div>';
@@ -913,8 +920,26 @@ async function openCellDetails(cellData, x, y) {
     // Сводку по религии показываем, только если НП больше одного — для
     // единственного НП аггрегат дублировал бы его же полосу.
     const agg = cell.settlements.length > 1 ? faithAggregate(cell.settlements) : '';
+    NP_ROADS = buildRoadsByNp((cell.area_map || {}).roads);
     areaNps.innerHTML = headHtml + descHtml + mapHtml + agg + cell.settlements.map(renderNeutralNPCard).join('');
   }
+}
+
+// Дороги на НП: из area_map.roads строим name → [соседи]. internal — в обе
+// стороны, edge — только у якоря (from = НП области, to = внешний сосед).
+let NP_ROADS = {};
+function buildRoadsByNp(roads) {
+  const m = {};
+  const add = (a, b) => { (m[a] = m[a] || []); if (!m[a].includes(b)) m[a].push(b); };
+  (roads || []).forEach(rd => {
+    if (rd.type === 'internal') { add(rd.from, rd.to); add(rd.to, rd.from); }
+    else { add(rd.from, rd.to); }
+  });
+  return m;
+}
+function npRoadsLine(name) {
+  const nb = NP_ROADS[name] || [];
+  return nb.length ? `<div class="np-roads">Дороги: ${nb.map(esc).join(', ')}</div>` : '';
 }
 
 function renderNPCard(s) {
@@ -932,6 +957,7 @@ function renderNPCard(s) {
     ${mightBlock(s.might)}
     ${staff}
     ${blds ? `<div class="np-buildings">Постройки: ${blds}</div>` : ''}
+    ${npRoadsLine(s.name)}
     ${loyaltyBlock(s.loyalty, houses, s.might)}
     ${faithBlock(s.faith)}
     ${promyslyBlock(s.promysly)}
@@ -1220,6 +1246,7 @@ function renderNeutralNPCard(s) {
     ${s.houses ? `<div class="np-stat"><span class="np-stat-label">Домов:</span> ${esc(s.houses)}</div>` : ''}
     ${treasuryBlock(s.treasury)}
     ${mightBlock(s.might)}
+    ${npRoadsLine(s.name)}
     ${loyaltyBlock(s.loyalty, houses, s.might)}
     ${faithBlock(s.faith)}
     ${promyslyBlock(s.promysly)}

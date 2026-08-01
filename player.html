@@ -443,6 +443,7 @@ body {
 .staff-status-note { color: var(--muted); font-size: 0.7rem; }
 
 /* ── Per-НП settlement cards ── */
+.np-roads { font-size: 0.72rem; color: var(--gold-dim); line-height: 1.5; padding: 2px 0 4px; }
 .np-block { border-bottom: 1px solid var(--border); }
 .np-block:last-child { border-bottom: none; }
 .np-block-header {
@@ -830,7 +831,21 @@ function render(d, npFilter) {
   renderMight(setts);
   renderLoyalty(setts);
   renderFaith(setts, d.religion);
+  NP_ROADS = buildRoadsByNp((d.area_map || {}).roads);
   renderSettlements(setts);
+}
+
+// Дороги на НП: из area_map.roads строим name → [соседи]. internal — в обе
+// стороны, edge — только у якоря (from = НП владения, to = внешний сосед).
+let NP_ROADS = {};
+function buildRoadsByNp(roads) {
+  const m = {};
+  const add = (a, b) => { (m[a] = m[a] || []); if (!m[a].includes(b)) m[a].push(b); };
+  (roads || []).forEach(rd => {
+    if (rd.type === 'internal') { add(rd.from, rd.to); add(rd.to, rd.from); }
+    else { add(rd.from, rd.to); }
+  });
+  return m;
 }
 
 // ── Внутренняя карта области (иллюстративная) ───────────────────────────────────
@@ -1935,6 +1950,13 @@ function renderSettlements(setts) {
           ${right}
         </div>`;
       });
+    }
+
+    // Roads
+    const nbRoads = NP_ROADS[s.name] || [];
+    if (nbRoads.length) {
+      html += `<div class="np-sec">Дороги (${nbRoads.length})</div>`;
+      html += `<div class="np-roads">${nbRoads.map(esc).join(', ')}</div>`;
     }
 
     // Staff
