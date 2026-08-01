@@ -866,9 +866,9 @@ function amHi(ev, idx) {
 
 // SVG-градиенты водных краёв: синий у границы блока → прозрачный внутрь.
 function amWaterDefs() {
-  const C = '#3f74ac';
-  const stops = '<stop offset="0" stop-color="' + C + '" stop-opacity="0.85"/>'
-    + '<stop offset="0.55" stop-color="' + C + '" stop-opacity="0.32"/>'
+  const C = '#1f56a0';
+  const stops = '<stop offset="0" stop-color="' + C + '" stop-opacity="0.92"/>'
+    + '<stop offset="0.55" stop-color="' + C + '" stop-opacity="0.4"/>'
     + '<stop offset="1" stop-color="' + C + '" stop-opacity="0"/>';
   return '<defs>'
     + `<linearGradient id="wg-n" x1="0" y1="0" x2="0" y2="1">${stops}</linearGradient>`
