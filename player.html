@@ -877,17 +877,21 @@ function renderAreaMap(am) {
     } else {                              // edge → короткий штрих в сторону соседней клетки
       const dx = rd.dir?.dx || 0, dy = rd.dir?.dy || 0;
       if (!dx && !dy) return;
-      // Короткий направленный штрих ОТ ноды, НЕ до угла холста: иначе дороги из
-      // нижних блоков простреливали весь холст, а два одинаковых направления
-      // сходились в один угол и подписи налезали друг на друга.
-      const norm = Math.hypot(dx, dy) || 1;
-      const L = S * 0.85;
-      const ex = Math.max(6, Math.min(W - 6, a[0] + (dx / norm) * L));
-      const ey = Math.max(6, Math.min(H - 6, a[1] - (dy / norm) * L));  // dy>0=север=вверх (экр. -y)
+      // Луч ОТ ноды в сторону соседней клетки ДО края холста — дорога «уходит» за
+      // границу области. На экране x вправо=+dx, y вниз=−dy (dy>0=север=верх). Каждая
+      // дорога выходит в СВОЕЙ точке границы (не в общий угол) → подписи не слипаются.
+      const vx = dx, vy = -dy;
+      let t = Infinity;
+      if (vx > 0) t = Math.min(t, (W - a[0]) / vx);
+      else if (vx < 0) t = Math.min(t, (0 - a[0]) / vx);
+      if (vy > 0) t = Math.min(t, (H - a[1]) / vy);
+      else if (vy < 0) t = Math.min(t, (0 - a[1]) / vy);
+      if (!isFinite(t) || t <= 0) return;
+      const ex = a[0] + vx * t, ey = a[1] + vy * t;
       g += `<line x1="${a[0]}" y1="${a[1]}" x2="${ex}" y2="${ey}" class="am-road am-road-edge"/>`;
-      const anchor = dx > 0 ? "end" : dx < 0 ? "start" : "middle";  // текст внутрь холста, не за край
-      const lx = ex + (dx > 0 ? -3 : dx < 0 ? 3 : 0);
-      const ly = Math.max(10, Math.min(H - 4, ey + (dy > 0 ? -4 : dy < 0 ? 12 : 4)));
+      const anchor = vx > 0 ? "end" : vx < 0 ? "start" : "middle";  // подпись внутрь холста
+      const lx = Math.max(4, Math.min(W - 4, ex + (vx > 0 ? -4 : vx < 0 ? 4 : 0)));
+      const ly = Math.max(12, Math.min(H - 5, ey + (vy > 0 ? -6 : 14)));
       g += `<text x="${lx}" y="${ly}" class="am-edge-label" text-anchor="${anchor}">→ ${esc(rd.to)}</text>`;
     }
   });
