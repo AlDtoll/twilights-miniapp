@@ -285,6 +285,19 @@
   .area-loading { padding: 32px; text-align: center; color: #5a5040; font-size: 0.85rem; }
   .area-desc { font-size: 0.78rem; color: #9a8a6a; line-height: 1.55; padding: 10px 14px 0; }
 
+  /* Внутренняя карта области (drill-down 4×4) — синхр. с player.html .am-* */
+  .am-wrap { display:flex; justify-content:center; padding:6px 4px 2px; max-height:70vh; overflow:auto; }
+  .am-svg { width:100%; max-width:340px; height:auto; max-height:70vh; }
+  .am-block { fill:none; stroke:#8a7a4a; stroke-width:1.5; opacity:.55; }
+  .am-block-hole { fill:#0d0b07; stroke:#241f16; stroke-width:1; opacity:.5; }
+  .am-grid { stroke:#241f16; stroke-width:1; }
+  .am-road { stroke:#8a7a4a; stroke-width:2.4; stroke-linecap:round; }
+  .am-road-edge { stroke-dasharray:5 4; opacity:.8; }
+  .am-node { fill:#c8a84a; stroke:#000; stroke-width:1; }
+  .am-label { fill:#c8bfa8; font-size:11px; }
+  .am-edge-label { fill:#7a6e5a; font-size:10px; }
+  .am-note { color:#7a6e5a; font-size:11px; text-align:center; padding:2px 8px 8px; }
+
   /* neutral NP card blocks */
   .np-might { font-weight: bold; white-space: nowrap; cursor: help; }
   .np-might.pos { color: #c8a84a; }
@@ -297,6 +310,8 @@
   .np-ly-mod.pos { color: #c8a84a; }
   .np-ly-mod.neg { color: #8a3a2a; }
   .np-ly-mod.zero { color: #7a6e5a; }
+  .np-razoreno { display: inline-block; font-size: 0.62rem; font-weight: bold; color: #1a1814;
+    background: #8a3a2a; border-radius: 3px; padding: 1px 5px; margin-left: 6px; vertical-align: middle; }
   .np-ly-reasons { list-style: none; margin: 4px 0 0; padding: 0; font-size: 0.66rem; color: #9a8a6a; }
   .np-ly-reasons li { line-height: 1.5; }
   .np-ly-reasons li.pos { color: #7aa87a; }
@@ -830,10 +845,12 @@ async function openCellDetails(cellData, x, y) {
   const cell = cells.find(c => areaHead(c) === norm(cellData.name)
                             || norm(c.file) === norm(cellData.name));
   if (cell && cell.settlements && cell.settlements.length) {
+    // Карта области (drill-down 4×4) — первым блоком, если данные есть.
+    const mapHtml = cell.area_map ? renderAreaMap(cell.area_map) : '';
     // Сводку по религии показываем, только если НП больше одного — для
     // единственного НП аггрегат дублировал бы его же полосу.
     const agg = cell.settlements.length > 1 ? faithAggregate(cell.settlements) : '';
-    areaNps.innerHTML = headHtml + descHtml + agg + cell.settlements.map(renderNeutralNPCard).join('');
+    areaNps.innerHTML = headHtml + descHtml + mapHtml + agg + cell.settlements.map(renderNeutralNPCard).join('');
   }
 }
 
@@ -864,6 +881,54 @@ const neutralCache = {};
 function esc(t) {
   return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// Внутренняя карта области (drill-down): один блок 4×4 для нейтральной клетки.
+// Возвращает HTML-строку (SVG + подпись) или '' если данных нет. Контракт am —
+// как в player.html (cols/rows/blocks/nodes/roads), синхронно держать оба.
+function renderAreaMap(am) {
+  if (!am || !am.nodes || !am.nodes.length) return '';
+  const cols = am.cols || 4, rows = am.rows || 4;
+  const P = 26, S = 62;
+  const W = P * 2 + S * cols, H = P * 2 + S * rows;
+  const cx = (c) => P + (c - 0.5) * S;
+  const cy = (r) => P + (r - 0.5) * S;
+  const pos = {};
+  am.nodes.forEach(n => { pos[n.name] = [cx(n.col), cy(n.row)]; });
+  let g = "";
+  (am.blocks || []).forEach(bl => {
+    const bx = P + (bl.col0 - 1) * S, by = P + (bl.row0 - 1) * S;
+    const cls = bl.owned ? "am-block" : "am-block am-block-hole";
+    g += `<rect x="${bx}" y="${by}" width="${4 * S}" height="${4 * S}" class="${cls}"/>`;
+  });
+  for (let i = 0; i <= cols; i++) {
+    const o = P + i * S;
+    g += `<line x1="${o}" y1="${P}" x2="${o}" y2="${P + S * rows}" class="am-grid"/>`;
+  }
+  for (let j = 0; j <= rows; j++) {
+    const o = P + j * S;
+    g += `<line x1="${P}" y1="${o}" x2="${P + S * cols}" y2="${o}" class="am-grid"/>`;
+  }
+  (am.roads || []).forEach(rd => {
+    const a = pos[rd.from]; if (!a) return;
+    if (rd.type === "internal") {
+      const b = pos[rd.to]; if (!b) return;
+      g += `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" class="am-road"/>`;
+    } else {
+      const dx = rd.dir?.dx || 0, dy = rd.dir?.dy || 0;
+      const ex = dx > 0 ? W - 4 : dx < 0 ? 4 : a[0];
+      const ey = dy > 0 ? 4 : dy < 0 ? H - 4 : a[1];   // dy>0 = север = вверх; край по H
+      g += `<line x1="${a[0]}" y1="${a[1]}" x2="${ex}" y2="${ey}" class="am-road am-road-edge"/>`;
+      g += `<text x="${ex + (dx > 0 ? -3 : dx < 0 ? 3 : 0)}" y="${ey + (dy > 0 ? 12 : -5)}" class="am-edge-label" text-anchor="${dx > 0 ? "end" : dx < 0 ? "start" : "middle"}">→ ${esc(rd.to)}</text>`;
+    }
+  });
+  am.nodes.forEach(n => {
+    const [x, y] = pos[n.name];
+    g += `<circle cx="${x}" cy="${y}" r="6" class="am-node"/>`;
+    g += `<text x="${x}" y="${y - 10}" class="am-label" text-anchor="middle">${esc(n.name)}</text>`;
+  });
+  return `<div class="am-wrap"><svg viewBox="0 0 ${W} ${H}" class="am-svg" preserveAspectRatio="xMidYMid meet">${g}</svg></div>` +
+    `<div class="am-note">Иллюстративная карта — клетки лишь ориентир. Пунктир — дорога к соседней области.</div>`;
 }
 
 
@@ -908,17 +973,23 @@ function mightBlock(m) {
 function loyaltyBlock(ly, houses, might) {
   if (!ly) return '';
   const supporters = ly.supporters || {};
+  const opponents = ly.opponents || {};
   const rows = [['Л', ly['Л'] || 0], ['Н', ly['Н'] || 0], ['НЛ', ly['НЛ'] || 0]];
   const denom = houses || rows.reduce((a, r) => a + r[1], 0)
-              + Object.values(supporters).reduce((a, v) => a + v, 0);
+              + Object.values(supporters).reduce((a, v) => a + v, 0)
+              + Object.values(opponents).reduce((a, v) => a + v, 0);
   const bar = rows.filter(r => r[1] > 0).map(r =>
     `<span style="width:${pct(r[1], denom)}%;background:${LY_COLORS[r[0]]}"></span>`).join('')
     + Object.entries(supporters).filter(([, v]) => v > 0).map(([, v]) =>
-    `<span style="width:${pct(v, denom)}%;background:#c8a84a"></span>`).join('');
+    `<span style="width:${pct(v, denom)}%;background:#c8a84a"></span>`).join('')
+    + Object.entries(opponents).filter(([, v]) => v > 0).map(([, v]) =>
+    `<span style="width:${pct(v, denom)}%;background:#b5533f"></span>`).join('');
   const legend = rows.map(r =>
     `<span><span class="np-dot" style="background:${LY_COLORS[r[0]]}"></span>${LY_LABELS[r[0]]} <b>${r[1]} · ${pct(r[1], denom)}%</b></span>`).join('')
     + Object.entries(supporters).filter(([, v]) => v > 0).map(([who, v]) =>
-    `<span><span class="np-dot" style="background:#c8a84a"></span>Сторонники ${esc(who)} <b>${v} · ${pct(v, denom)}%</b></span>`).join('');
+    `<span><span class="np-dot" style="background:#c8a84a"></span>Сторонники ${esc(who)} <b>${v} · ${pct(v, denom)}%</b></span>`).join('')
+    + Object.entries(opponents).filter(([, v]) => v > 0).map(([who, v]) =>
+    `<span><span class="np-dot" style="background:#b5533f"></span>Противники ${esc(who)} <b>${v} · ${pct(v, denom)}%</b></span>`).join('');
   const uklad = ly['уклад'] || ly['Тип'];
   // Модификатор лояльности (та же логика, что в дашборде): бейдж «мод ±N» + причины.
   // Данные считаются и для нейтралов (generate_miniapp_data), просто не рисовались.
@@ -991,6 +1062,17 @@ function promyslyBlock(promysly) {
   return `<div class="np-sub">Промыслы</div>${rows}`;
 }
 
+function treasuryBlock(t) {
+  if (!t) return '';
+  const pct = t.pct;
+  const col = pct >= 70 ? '#4a8a5a' : pct >= 40 ? '#b0904a' : '#8a3a2a';
+  const razor = t.razoreno
+    ? ` <span class="np-razoreno">Разорено</span>` : '';
+  return `<div class="np-stat"><span class="np-stat-label">Казна:</span> `
+    + `<b style="color:${col}">${pct}%</b>${razor}</div>`
+    + `<div class="np-bar"><span style="width:${pct}%;background:${col}"></span></div>`;
+}
+
 function renderNeutralNPCard(s) {
   const houses_m = String(s.houses || '').match(/\d+/);
   const houses = houses_m ? parseInt(houses_m[0]) : 0;
@@ -998,6 +1080,7 @@ function renderNeutralNPCard(s) {
     <div class="np-card-name">${esc(s.name)}</div>
     ${s.population ? `<div class="np-stat"><span class="np-stat-label">Население:</span> ${esc(s.population)}</div>` : ''}
     ${s.houses ? `<div class="np-stat"><span class="np-stat-label">Домов:</span> ${esc(s.houses)}</div>` : ''}
+    ${treasuryBlock(s.treasury)}
     ${mightBlock(s.might)}
     ${loyaltyBlock(s.loyalty, houses, s.might)}
     ${faithBlock(s.faith)}

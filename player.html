@@ -69,6 +69,17 @@ body {
   text-transform: uppercase;
   border: 1px solid;
 }
+.am-wrap { display:flex; justify-content:center; padding:6px 4px 2px; max-height:70vh; overflow:auto; }
+.am-svg { width:100%; max-width:340px; height:auto; max-height:70vh; }
+.am-block { fill:none; stroke:var(--gold-dim); stroke-width:1.5; opacity:.55; }
+.am-block-hole { fill:#0d0b07; stroke:#241f16; stroke-width:1; opacity:.5; }
+.am-grid { stroke:#241f16; stroke-width:1; }
+.am-road { stroke:var(--gold-dim); stroke-width:2.4; stroke-linecap:round; }
+.am-road-edge { stroke-dasharray:5 4; opacity:.8; }
+.am-node { fill:var(--gold); stroke:#000; stroke-width:1; }
+.am-label { fill:var(--text); font-family:var(--font); font-size:11px; }
+.am-edge-label { fill:var(--muted); font-family:var(--font); font-size:10px; }
+.am-note { color:var(--muted); font-size:11px; text-align:center; padding:2px 8px 8px; }
 .badge-season { border-color: var(--gold-dim); color: var(--gold); background: #2a2010; }
 .badge-phase  { border-color: var(--blue); color: #6a9acc; background: #0a1a2a; }
 
@@ -276,6 +287,13 @@ body {
 .event-tag.noise  { opacity: 0.6; }
 .event-mon { font-size: 0.7rem; color: #cc7a6a; white-space: nowrap; margin-left: auto; flex-shrink: 0; }
 
+/* ── Rolls (разбор броска сезона) ── */
+.rolls-note { font-size: 0.75rem; opacity: 0.6; margin-bottom: 10px; line-height: 1.4; }
+.rolls-group-title { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.55; margin: 10px 0 4px; }
+.rolls-group-title:first-of-type { margin-top: 0; }
+.rolls-item { font-size: 0.85rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.rolls-item:last-child { border-bottom: none; }
+
 /* ── Hero ── */
 .skill-row {
   padding: 6px 0;
@@ -322,6 +340,10 @@ body {
 .loyalty-nums { display: flex; gap: 6px; font-size: 0.65rem; }
 .ly-supporters { margin-top: 4px; font-size: 0.72rem; color: var(--muted); }
 .ly-supporters .ly-supp { display: inline-block; padding: 1px 6px; margin-right: 4px; background: var(--border); border-radius: 3px; color: var(--text); }
+.ly-supporters .ly-opp { display: inline-block; padding: 1px 6px; margin-right: 4px; background: rgba(181,83,63,0.22); border-radius: 3px; color: var(--text); }
+.ly-supporters .ly-net { display: inline-block; padding: 1px 6px; margin-right: 4px; border-radius: 3px; color: var(--text); }
+.ly-supporters .ly-net.pos { color: var(--green); }
+.ly-supporters .ly-net.neg { color: var(--red); }
 .ly-l  { color: var(--green); }
 .ly-n  { color: var(--muted); }
 .ly-nl { color: var(--red); }
@@ -537,6 +559,15 @@ select:focus { outline: none; border-color: var(--gold-dim); }
 
   <div class="cards">
 
+    <!-- Внутренняя карта области (иллюстративная) -->
+    <div class="card card-wide" id="card-areamap" style="display:none">
+      <div class="card-title" onclick="toggleCard('card-areamap')">
+        <span class="icon">🗺</span> Карта области<span id="areamap-name"></span>
+        <em class="chevron">▼</em>
+      </div>
+      <div class="card-body" id="body-areamap"></div>
+    </div>
+
     <!-- Treasury -->
     <div class="card card-wide" id="card-finance">
       <div class="card-title" onclick="toggleCard('card-finance')">
@@ -544,6 +575,15 @@ select:focus { outline: none; border-color: var(--gold-dim); }
         <em class="chevron">▼</em>
       </div>
       <div class="card-body" id="body-finance"></div>
+    </div>
+
+    <!-- Сбыт трофеев (скрыт, пока не было продаж в сезоне) -->
+    <div class="card card-wide" id="card-loot" style="display:none">
+      <div class="card-title" onclick="toggleCard('card-loot')">
+        <span class="icon">🪙</span> Сбыт добычи
+        <em class="chevron">▼</em>
+      </div>
+      <div class="card-body" id="body-loot"></div>
     </div>
 
     <!-- Buildings -->
@@ -562,6 +602,15 @@ select:focus { outline: none; border-color: var(--gold-dim); }
         <em class="chevron">▼</em>
       </div>
       <div class="card-body" id="body-events"></div>
+    </div>
+
+    <!-- Rolls (разбор броска очереди сезона) -->
+    <div class="card collapsed" id="card-rolls">
+      <div class="card-title" onclick="toggleCard('card-rolls')">
+        <span class="icon">🎲</span> Броски сезона
+        <em class="chevron">▼</em>
+      </div>
+      <div class="card-body" id="body-rolls"></div>
     </div>
 
     <!-- Hearth -->
@@ -763,9 +812,12 @@ function render(d, npFilter) {
     ? (d.settlements || []).filter(s => s.name === npFilter)
     : (d.settlements || []);
 
+  renderAreaMap(d.area_map);
   renderFinance(d.finance, npFilter);
+  renderLoot(d.loot);
   renderBuildings(d.buildings, setts);
   renderEvents(d.events);
+  renderRolls(d.rolls);
   renderHearth(d.hearth);
   renderHero(d.hero);
   renderRetinue(d.hero);
@@ -775,6 +827,72 @@ function render(d, npFilter) {
   renderLoyalty(setts);
   renderFaith(setts, d.religion);
   renderSettlements(setts);
+}
+
+// ── Внутренняя карта области (иллюстративная) ───────────────────────────────────
+function renderAreaMap(am) {
+  const card = document.getElementById("card-areamap");
+  const nameEl = document.getElementById("areamap-name");
+  const body = document.getElementById("body-areamap");
+  if (!am || !am.nodes || !am.nodes.length) { card.style.display = "none"; return; }
+  card.style.display = "";
+  nameEl.textContent = am.area ? " · " + am.area : "";
+
+  // Холст сшит из блоков клеток мира 4×4: cols мини-колонок × rows мини-рядов.
+  const cols = am.cols || 4, rows = am.rows || 4;
+  const P = 26, S = 62;                 // отступ и сторона мини-клетки
+  const W = P * 2 + S * cols;           // ПРЯМОУГОЛЬНЫЙ холст
+  const H = P * 2 + S * rows;
+  const cx = (c) => P + (c - 0.5) * S;   // центр глоб. колонки/ряда
+  const cy = (r) => P + (r - 0.5) * S;
+  const pos = {};
+  am.nodes.forEach(n => { pos[n.name] = [cx(n.col), cy(n.row)]; });
+
+  const esc = (s) => String(s).replace(/[&<>"]/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+  let g = "";
+
+  // блоки клеток мира: рамка 4S×4S; owned — обычная, «дыра» — приглушённая
+  (am.blocks || []).forEach(bl => {
+    const bx = P + (bl.col0 - 1) * S, by = P + (bl.row0 - 1) * S;
+    const cls = bl.owned ? "am-block" : "am-block am-block-hole";
+    g += `<rect x="${bx}" y="${by}" width="${4 * S}" height="${4 * S}" class="${cls}"/>`;
+  });
+
+  // сетка-ориентир (по всему холсту)
+  for (let i = 0; i <= cols; i++) {
+    const o = P + i * S;
+    g += `<line x1="${o}" y1="${P}" x2="${o}" y2="${P + S * rows}" class="am-grid"/>`;
+  }
+  for (let j = 0; j <= rows; j++) {
+    const o = P + j * S;
+    g += `<line x1="${P}" y1="${o}" x2="${P + S * cols}" y2="${o}" class="am-grid"/>`;
+  }
+
+  // дороги (под маркерами)
+  (am.roads || []).forEach(rd => {
+    const a = pos[rd.from]; if (!a) return;
+    if (rd.type === "internal") {
+      const b = pos[rd.to]; if (!b) return;
+      g += `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" class="am-road"/>`;
+    } else {                              // edge → к краю холста в сторону соседней клетки
+      const dx = rd.dir?.dx || 0, dy = rd.dir?.dy || 0;
+      const ex = dx > 0 ? W - 4 : dx < 0 ? 4 : a[0];
+      const ey = dy > 0 ? 4 : dy < 0 ? H - 4 : a[1];   // dy>0 = север = вверх (малый y); край по H
+      g += `<line x1="${a[0]}" y1="${a[1]}" x2="${ex}" y2="${ey}" class="am-road am-road-edge"/>`;
+      g += `<text x="${ex + (dx > 0 ? -3 : dx < 0 ? 3 : 0)}" y="${ey + (dy > 0 ? 12 : -5)}" class="am-edge-label" text-anchor="${dx > 0 ? "end" : dx < 0 ? "start" : "middle"}">→ ${esc(rd.to)}</text>`;
+    }
+  });
+
+  // маркеры НП
+  am.nodes.forEach(n => {
+    const [x, y] = pos[n.name];
+    g += `<circle cx="${x}" cy="${y}" r="6" class="am-node"/>`;
+    g += `<text x="${x}" y="${y - 10}" class="am-label" text-anchor="middle">${esc(n.name)}</text>`;
+  });
+
+  body.innerHTML =
+    `<div class="am-wrap"><svg viewBox="0 0 ${W} ${H}" class="am-svg" preserveAspectRatio="xMidYMid meet">${g}</svg></div>` +
+    `<div class="am-note">Иллюстративная карта — клетки лишь ориентир. Пунктир — дорога к соседней области.</div>`;
 }
 
 // ── Finance ───────────────────────────────────────────────────────────────────
@@ -937,24 +1055,32 @@ function renderBuildings(b, settlements) {
     settBuildings.forEach(s => {
       html += `<div class="sett-section">${esc(s.name)}</div>`;
       s.buildings.forEach(bld => {
+        const building = (bld.status || "").includes("🔨");
         const maint = bld.maint ? `${fmt(bld.maint)}${bld.rate ? " ("+bld.rate+"%)" : ""}` : bld.status === "доходная" ? "дох." : "—";
         const hands = bld.hands ? `<span class="building-hands">${bld.hands}р</span>` : "";
+        const right = building
+          ? `<span class="building-status" style="color:#c8883a">🔨 строится</span>`
+          : `<span class="building-maint">${esc(maint)}</span>`;
         html += `<div class="building-row">
           <span class="building-name">${esc(bld.name)}</span>
           ${hands}
-          <span class="building-maint">${esc(maint)}</span>
+          ${right}
         </div>`;
       });
     });
   } else {
     // Fallback: flat list
     (b.buildings || []).forEach(bld => {
+      const building = (bld.status || "").includes("🔨");
       const maint = bld.maint ? `${fmt(bld.maint)}${bld.rate ? " ("+bld.rate+"%)" : ""}` : bld.status === "доходная" ? "дох." : "—";
       const hands = bld.hands ? `<span class="building-hands">${bld.hands}р</span>` : "";
+      const right = building
+        ? `<span class="building-status" style="color:#c8883a">🔨 строится</span>`
+        : `<span class="building-maint">${esc(maint)}</span>`;
       html += `<div class="building-row">
         <span class="building-name">${esc(bld.name)}</span>
         ${hands}
-        <span class="building-maint">${esc(maint)}</span>
+        ${right}
       </div>`;
     });
   }
@@ -974,6 +1100,7 @@ function renderEvents(ev) {
   if (pts.player)     html += pointBlock("Игрок",    pts.player.left,    pts.player.total);
   if (pts.chancellor) html += pointBlock(pts.chancellor.name || "Канцлер", pts.chancellor.left, pts.chancellor.total);
   if (pts.captain)    html += pointBlock(pts.captain.name    || "Капитан", pts.captain.left,    pts.captain.total);
+  if (pts.willpower)  html += pointBlock("⚡ Воля", pts.willpower.left, pts.willpower.total);
   html += `</div>`;
 
   const sections = [
@@ -1002,6 +1129,24 @@ function pointBlock(who, left, total) {
     <div class="points-num">${left}</div>
     <div class="points-of">из ${total}</div>
   </div>`;
+}
+
+// ── Rolls: разбор броска очереди сезона ────────────────────────────────────────
+function renderRolls(rolls) {
+  const el = document.getElementById("body-rolls");
+  if (!el) return;
+  if (!rolls || !(rolls.groups || []).length) {
+    el.innerHTML = "<div class='placeholder-body'>Броски появятся после старта сезона мастером.</div>";
+    return;
+  }
+  let html = "<div class='rolls-note'>Из чего сложилась твоя очередь событий в этом сезоне — сверься, что ничего с прошлого сезона не потеряно.</div>";
+  rolls.groups.forEach(g => {
+    html += `<div class="rolls-group-title">${esc(g.title)}</div>`;
+    (g.items || []).forEach(it => {
+      html += `<div class="rolls-item">${esc(it)}</div>`;
+    });
+  });
+  el.innerHTML = html;
 }
 
 function tagClass(t) {
@@ -1046,6 +1191,28 @@ function renderHearth(h) {
       <div class="hearth-stat"><div class="hearth-num">${spent}</div><div class="hearth-lbl">потрачено</div></div>
       <div class="hearth-stat"><div class="hearth-num ${remCls}">${remaining}</div><div class="hearth-lbl">осталось</div></div>
     </div>` + hearthHint();
+}
+
+// ── Сбыт трофеев ────────────────────────────────────────────────────────────
+function renderLoot(l) {
+  const card = document.getElementById("card-loot");
+  if (!l) { card.style.display = "none"; return; }
+  card.style.display = "";
+  const eff = l.eff_pct != null ? l.eff_pct + "%" : "—";
+  let note = `Полоса рынка: <b>${fmt(l.band)}</b> мон/ступень.`;
+  if (l.cur_rate != null) {
+    note += ` Текущая ступень: <b>${l.cur_rate}%</b>`;
+    if (l.left_in_band != null) note += ` (до перехода на следующую: ${fmt(l.left_in_band)} мон)`;
+    note += ".";
+  }
+  if (l.stock) note += ` Остаток трофеев на продажу: <b>${fmt(l.stock)}</b> мон.`;
+  document.getElementById("body-loot").innerHTML = `
+    <div class="hearth-stats">
+      <div class="hearth-stat"><div class="hearth-num">${fmt(l.sold)}</div><div class="hearth-lbl">продано, мон</div></div>
+      <div class="hearth-stat"><div class="hearth-num pos">${fmt(l.revenue)}</div><div class="hearth-lbl">выручка, мон</div></div>
+      <div class="hearth-stat"><div class="hearth-num">${eff}</div><div class="hearth-lbl">эфф. цена</div></div>
+    </div>
+    <div class="hearth-note">${note}</div>`;
 }
 
 function hearthHint() {
@@ -1208,14 +1375,36 @@ function renderStaff(settlements) {
 }
 
 // ── Territory ─────────────────────────────────────────────────────────────────
-function supportersHtml(supporters) {
-  if (!supporters) return "";
-  const entries = Object.entries(supporters).filter(([_, v]) => v > 0);
-  if (!entries.length) return "";
-  const items = entries.map(([name, n]) =>
-    `<span class="ly-supp"><b>${esc(name)}</b> ${n}</span>`
-  ).join(" · ");
-  return `<div class="ly-supporters" title="Дворы, играющие на чужих князей — уже вне пула Л/Н/НЛ; порог захвата 40% Домов">Сторонники: ${items}</div>`;
+function supportersHtml(supporters, opponents, houses) {
+  const sup = supporters || {}, opp = opponents || {};
+  const sEntries = Object.entries(sup).filter(([_, v]) => v > 0);
+  const oEntries = Object.entries(opp).filter(([_, v]) => v > 0);
+  if (!sEntries.length && !oEntries.length) return "";
+  let out = "";
+  if (sEntries.length) {
+    const items = sEntries.map(([name, n]) =>
+      `<span class="ly-supp"><b>${esc(name)}</b> ${n}</span>`).join(" · ");
+    out += `<div class="ly-supporters" title="Дворы за игрока — уже вне пула Л/Н/НЛ">Сторонники: ${items}</div>`;
+  }
+  if (oEntries.length) {
+    const items = oEntries.map(([name, n]) =>
+      `<span class="ly-opp"><b>${esc(name)}</b> ${n}</span>`).join(" · ");
+    out += `<div class="ly-supporters" title="Дворы против игрока — вне пула Л/Н/НЛ">Противники: ${items}</div>`;
+  }
+  // Нетто по каждому игроку: (сторонники − противники); порог присяги 40% Домов от РАЗНИЦЫ.
+  const names = new Set([...Object.keys(sup), ...Object.keys(opp)]);
+  const thr = houses ? Math.round(houses * 0.4) : null;
+  const nets = [...names].map(name => {
+    const net = (sup[name] || 0) - (opp[name] || 0);
+    const hit = thr != null && net >= thr ? " ✔" : "";
+    const cls = net > 0 ? "pos" : net < 0 ? "neg" : "";
+    return `<span class="ly-net ${cls}"><b>${esc(name)}</b> ${net >= 0 ? "+" : ""}${net}${hit}</span>`;
+  }).join(" · ");
+  if (nets) {
+    const thrTxt = thr != null ? ` порог присяги: ${thr} (40% Домов)` : "";
+    out += `<div class="ly-supporters" title="Нетто = сторонники − противники;${thrTxt}">Нетто: ${nets}</div>`;
+  }
+  return out;
 }
 
 function loyaltyBar(ly) {
@@ -1376,7 +1565,7 @@ function renderLoyalty(settlements) {
       </div>
       ${rollDeltaCaption(ly.delta)}
       ${rollDeltaCaption(ly.action_delta, "за твои действия (двор.):", false)}
-      ${supportersHtml(ly.supporters)}
+      ${supportersHtml(ly.supporters, ly.opponents, s.houses)}
       ${reasonsHtml ? `<ul class="ly-reasons">${reasonsHtml}</ul>` : ""}
       ${conseq}
     </div>`;
@@ -1588,8 +1777,8 @@ function renderSettlements(setts) {
           <span class="ly-l">Л ${l} (${lp}%)</span>
           <span class="ly-n">Н ${n} (${np}%)</span>
           <span class="ly-nl">НЛ ${nl} (${nlp}%)</span>
-          <span style="color:var(--muted);margin-left:auto">${effBd && effBd.loyalty_penalty > 0
-            ? `эфф. <b style="color:var(--text)">${effBd.total}%</b> = ${effBd.base}% − ${effBd.loyalty_penalty}% нел.`
+          <span style="color:var(--muted);margin-left:auto">${effBd && (effBd.loyalty_penalty > 0 || (effBd.loyalty_bonus || 0) > 0)
+            ? `эфф. <b style="color:var(--text)">${effBd.total}%</b> = ${effBd.base}%${effBd.loyalty_penalty > 0 ? ` − ${effBd.loyalty_penalty}% нел.` : ''}${(effBd.loyalty_bonus || 0) > 0 ? ` + ${effBd.loyalty_bonus}% лоял.` : ''}`
             : `эфф. ${eff}%`} · мод <span class="ly-card-mod ${modCls}">${modStr}</span></span>
         </div>
         ${reasons.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px">${
@@ -1695,10 +1884,14 @@ function renderSettlements(setts) {
     if (buildings.length) {
       html += `<div class="np-sec">Постройки (${buildings.length})</div>`;
       buildings.forEach(b => {
+        const building = (b.status || "").includes("🔨");
         const maint = b.maint ? `${fmt(b.maint)}/сез${b.hands ? " · " + b.hands + "р" : ""}` : "—";
+        const right = building
+          ? `<span style="color:#c8883a;white-space:nowrap;font-size:0.7rem">🔨 строится</span>`
+          : `<span style="color:var(--muted);white-space:nowrap;font-size:0.7rem">${esc(maint)}</span>`;
         html += `<div class="np-row">
           <span class="np-lbl">${esc(b.name)}</span>
-          <span style="color:var(--muted);white-space:nowrap;font-size:0.7rem">${esc(maint)}</span>
+          ${right}
         </div>`;
       });
     }
