@@ -127,6 +127,7 @@
 
     var hero = {
       gx: 5.5, gy: 5.5, faceX: 1, faceY: 0,
+      moveX: 1, moveY: 0, // last movement direction (joystick) — used by Dash
       hp: HERO_MAX_HP, maxHp: HERO_MAX_HP,
       atkCd: 0, whirlCd: 0, dashCd: 0, hammerCd: 0,
       dashT: 0, dashVx: 0, dashVy: 0, iframe: 0,
@@ -427,10 +428,14 @@
       if (hero.dashCd > 0 || phase !== 'playing') return;
       hero.dashCd = DASH_CD;
       hero.dashT = DASH_TIME; hero.iframe = DASH_IFRAME;
-      var fl = Math.hypot(hero.faceX, hero.faceY) || 1;
+      // Dash goes in the MOVEMENT direction (joystick) so it works as an
+      // escape while kiting; if standing still, dash along the aim/facing.
+      var dvx = (joy.active && (joy.vx || joy.vy)) ? hero.moveX : hero.faceX;
+      var dvy = (joy.active && (joy.vx || joy.vy)) ? hero.moveY : hero.faceY;
+      var fl = Math.hypot(dvx, dvy) || 1;
       var spd = (DASH_DIST / DASH_TIME);
-      hero.dashVx = hero.faceX / fl * spd;
-      hero.dashVy = hero.faceY / fl * spd;
+      hero.dashVx = dvx / fl * spd;
+      hero.dashVy = dvy / fl * spd;
       haptic('light');
     }
     function useHammer() {
@@ -530,12 +535,34 @@
           var mag = Math.min(1, Math.hypot(joy.vx, joy.vy));
           hero.gx += ndx * HERO_SPEED * mag * dt;
           hero.gy += ndy * HERO_SPEED * mag * dt;
-          hero.faceX = ndx; hero.faceY = ndy;
+          hero.moveX = ndx; hero.moveY = ndy; // movement dir (for Dash), decoupled from aim
         }
       }
       var lo = HERO_RADIUS, hi = world.gridN - 1 - HERO_RADIUS;
       hero.gx = clamp(hero.gx, lo, hi);
       hero.gy = clamp(hero.gy, lo, hi);
+
+      // Aim (facing) auto-tracks the nearest enemy so attacks land while
+      // strafing/retreating (kiting). No enemy → face movement direction.
+      var ne = nearestEnemy();
+      if (ne) {
+        var adx = ne.gx - hero.gx, ady = ne.gy - hero.gy;
+        var al = Math.hypot(adx, ady) || 1;
+        hero.faceX = adx / al; hero.faceY = ady / al;
+      } else {
+        hero.faceX = hero.moveX; hero.faceY = hero.moveY;
+      }
+    }
+
+    function nearestEnemy() {
+      var best = null, bd = Infinity;
+      for (var i = 0; i < enemies.length; i++) {
+        var e = enemies[i]; if (e.dead) continue;
+        var dx = e.gx - hero.gx, dy = e.gy - hero.gy;
+        var d = dx * dx + dy * dy;
+        if (d < bd) { bd = d; best = e; }
+      }
+      return best;
     }
 
     function updateEnemies(dt) {
