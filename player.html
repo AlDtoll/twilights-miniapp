@@ -76,6 +76,7 @@ body {
 .am-grid { stroke:#241f16; stroke-width:1; }
 .am-road { stroke:var(--gold-dim); stroke-width:2.4; stroke-linecap:round; }
 .am-road-edge { stroke-dasharray:5 4; opacity:.8; }
+.am-cart { opacity:.9; pointer-events:none; }
 .am-node { fill:var(--gold); stroke:#000; stroke-width:1; cursor:pointer; }
 .am-node-sel { stroke:#fff; stroke-width:2; }
 .am-road-hi { stroke:#f0dc8e !important; stroke-width:3.6 !important; opacity:1 !important; }
@@ -980,6 +981,55 @@ function renderAreaMap(am) {
   body.innerHTML =
     `<div class="am-wrap"><svg viewBox="0 0 ${W} ${H}" class="am-svg" preserveAspectRatio="xMidYMid meet">${g}</svg></div>` +
     `<div class="am-note">Иллюстративная карта — клетки лишь ориентир. Пунктир — дорога к соседней области.</div>`;
+  animateAreaCarts(body);
+}
+
+// Телеги на карте области: едут по ВНУТРЕННИМ дорогам (am-road без am-road-edge).
+// Координаты берём в единицах viewBox из уже отрисованных <line>. rAF один на
+// все телеги; при перерисовке дашборда отменяем предыдущий цикл.
+let _amCartRAF = null;
+function animateAreaCarts(root) {
+  if (_amCartRAF) { cancelAnimationFrame(_amCartRAF); _amCartRAF = null; }
+  if (!root) return;
+  const svg = root.querySelector('.am-svg');
+  if (!svg) return;
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const segs = Array.from(svg.querySelectorAll('.am-road'))
+    .filter(l => !l.classList.contains('am-road-edge'))
+    .map(l => {
+      const ax = +l.getAttribute('x1'), ay = +l.getAttribute('y1');
+      const bx = +l.getAttribute('x2'), by = +l.getAttribute('y2');
+      return { ax, ay, bx, by, len: Math.hypot(bx - ax, by - ay) };
+    })
+    .filter(s => s.len > 4);
+  if (!segs.length) return;
+  const CART =
+    '<rect x="-7" y="-5" width="14" height="7" rx="1.6" fill="#7a5a34" stroke="#4a3820" stroke-width="0.9"/>'
+    + '<rect x="-7" y="-8" width="10" height="3.4" rx="1.1" fill="#9a7648" opacity="0.9"/>'
+    + '<circle cx="-3.6" cy="2.6" r="2.1" fill="#2e2214" stroke="#5a4428" stroke-width="0.8"/>'
+    + '<circle cx="3.6" cy="2.6" r="2.1" fill="#2e2214" stroke="#5a4428" stroke-width="0.8"/>';
+  const MAX_CARTS = 6, SPEED = 20; // единицы viewBox/сек
+  const chosen = segs.slice().sort((p, q) => q.len - p.len).slice(0, MAX_CARTS);
+  const carts = chosen.map((s, i) => {
+    const gEl = document.createElementNS(SVGNS, 'g');
+    gEl.setAttribute('class', 'am-cart');
+    gEl.innerHTML = CART;
+    svg.appendChild(gEl);
+    return { g: gEl, s, phase: i / chosen.length };
+  });
+  let t0 = null;
+  const frame = ts => {
+    if (t0 === null) t0 = ts;
+    const el = (ts - t0) / 1000;
+    for (const c of carts) {
+      const s = c.s, period = Math.max(3, s.len / SPEED);
+      const u = ((el / period) + c.phase) % 1;
+      const x = s.ax + (s.bx - s.ax) * u, y = s.ay + (s.by - s.ay) * u;
+      c.g.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
+    }
+    _amCartRAF = requestAnimationFrame(frame);
+  };
+  _amCartRAF = requestAnimationFrame(frame);
 }
 
 // ── Finance ───────────────────────────────────────────────────────────────────

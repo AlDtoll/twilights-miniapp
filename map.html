@@ -309,6 +309,7 @@
   .am-grid { stroke:#241f16; stroke-width:1; }
   .am-road { stroke:#8a7a4a; stroke-width:2.4; stroke-linecap:round; }
   .am-road-edge { stroke-dasharray:5 4; opacity:.8; }
+  .am-cart { opacity:.9; pointer-events:none; }
   .am-node { fill:#c8a84a; stroke:#000; stroke-width:1; cursor:pointer; }
   .am-node-sel { stroke:#fff; stroke-width:2; }
   .am-road-hi { stroke:#f0dc8e !important; stroke-width:3.6 !important; opacity:1 !important; }
@@ -619,10 +620,10 @@ function drawWorldRoads(cellDivs) {
   // <animateMotion>, вставленный через innerHTML, не заводит таймлайн в
   // WKWebView (iOS) — телеги стояли бы. rAF-цикл один на все телеги.
   const CART_SVG =
-    '<rect x="-7" y="-5.5" width="14" height="7" rx="1.8" fill="#7a5a34" stroke="#4a3820" stroke-width="1"/>'
-    + '<rect x="-7" y="-8.5" width="10" height="3.6" rx="1.1" fill="#9a7648" opacity="0.9"/>'
-    + '<circle cx="-3.8" cy="2.8" r="2.3" fill="#2e2214" stroke="#5a4428" stroke-width="0.9"/>'
-    + '<circle cx="3.8" cy="2.8" r="2.3" fill="#2e2214" stroke="#5a4428" stroke-width="0.9"/>';
+    '<rect x="-8.4" y="-6.6" width="16.8" height="8.4" rx="2.2" fill="#7a5a34" stroke="#4a3820" stroke-width="1.1"/>'
+    + '<rect x="-8.4" y="-10.2" width="12" height="4.3" rx="1.3" fill="#9a7648" opacity="0.9"/>'
+    + '<circle cx="-4.6" cy="3.4" r="2.8" fill="#2e2214" stroke="#5a4428" stroke-width="1"/>'
+    + '<circle cx="4.6" cy="3.4" r="2.8" fill="#2e2214" stroke="#5a4428" stroke-width="1"/>';
   const MAX_CARTS = 8, SPEED = 26; // px/сек — заметно, но не суетливо
   const chosen = segs.slice().sort((p, q) => q.len - p.len).slice(0, MAX_CARTS);
   const carts = chosen.map((s, i) => {
@@ -909,10 +910,12 @@ async function openCell(cellData, playerType, cx, cy) {
     ? settlements.map(renderNPCard).join('')
     : '<div class="area-loading">НП не найдены в данных</div>';
   areaNps.innerHTML = descHtml + amHtml + agg + npHtml;
+  animateAreaCarts(areaNps);
 }
 
 function closeArea() {
   areaOverlay.classList.remove('open');
+  if (_amCartRAF) { cancelAnimationFrame(_amCartRAF); _amCartRAF = null; }
 }
 
 // Любая прочая клетка (горы / море / шхеры / опасная область): открываем тот же
@@ -965,6 +968,7 @@ async function openCellDetails(cellData, x, y) {
     const agg = cell.settlements.length > 1 ? faithAggregate(cell.settlements) : '';
     NP_ROADS = buildRoadsByNp((cell.area_map || {}).roads);
     areaNps.innerHTML = headHtml + descHtml + mapHtml + agg + cell.settlements.map(renderNeutralNPCard).join('');
+    animateAreaCarts(areaNps);
   }
 }
 
@@ -1168,6 +1172,54 @@ function renderAreaMap(am) {
   });
   return `<div class="am-wrap"><svg viewBox="0 0 ${W} ${H}" class="am-svg" preserveAspectRatio="xMidYMid meet">${g}</svg></div>` +
     `<div class="am-note">Иллюстративная карта — клетки лишь ориентир. Пунктир — дорога к соседней области.</div>`;
+}
+
+// Телеги на карте области: едут по ВНУТРЕННИМ дорогам (am-road без am-road-edge),
+// как на мировой карте, но координаты берём в единицах viewBox из уже
+// отрисованных <line>. rAF один на все телеги; отменяем при перерисовке/закрытии.
+let _amCartRAF = null;
+function animateAreaCarts(root) {
+  if (_amCartRAF) { cancelAnimationFrame(_amCartRAF); _amCartRAF = null; }
+  if (!root) return;
+  const svg = root.querySelector('.am-svg');
+  if (!svg) return;
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const segs = Array.from(svg.querySelectorAll('.am-road'))
+    .filter(l => !l.classList.contains('am-road-edge'))
+    .map(l => {
+      const ax = +l.getAttribute('x1'), ay = +l.getAttribute('y1');
+      const bx = +l.getAttribute('x2'), by = +l.getAttribute('y2');
+      return { ax, ay, bx, by, len: Math.hypot(bx - ax, by - ay) };
+    })
+    .filter(s => s.len > 4);
+  if (!segs.length) return;
+  const CART =
+    '<rect x="-7" y="-5" width="14" height="7" rx="1.6" fill="#7a5a34" stroke="#4a3820" stroke-width="0.9"/>'
+    + '<rect x="-7" y="-8" width="10" height="3.4" rx="1.1" fill="#9a7648" opacity="0.9"/>'
+    + '<circle cx="-3.6" cy="2.6" r="2.1" fill="#2e2214" stroke="#5a4428" stroke-width="0.8"/>'
+    + '<circle cx="3.6" cy="2.6" r="2.1" fill="#2e2214" stroke="#5a4428" stroke-width="0.8"/>';
+  const MAX_CARTS = 6, SPEED = 20; // единицы viewBox/сек
+  const chosen = segs.slice().sort((p, q) => q.len - p.len).slice(0, MAX_CARTS);
+  const carts = chosen.map((s, i) => {
+    const gEl = document.createElementNS(SVGNS, 'g');
+    gEl.setAttribute('class', 'am-cart');
+    gEl.innerHTML = CART;
+    svg.appendChild(gEl);
+    return { g: gEl, s, phase: i / chosen.length };
+  });
+  let t0 = null;
+  const frame = ts => {
+    if (t0 === null) t0 = ts;
+    const el = (ts - t0) / 1000;
+    for (const c of carts) {
+      const s = c.s, period = Math.max(3, s.len / SPEED);
+      const u = ((el / period) + c.phase) % 1;
+      const x = s.ax + (s.bx - s.ax) * u, y = s.ay + (s.by - s.ay) * u;
+      c.g.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
+    }
+    _amCartRAF = requestAnimationFrame(frame);
+  };
+  _amCartRAF = requestAnimationFrame(frame);
 }
 
 
