@@ -92,8 +92,8 @@
     var HERO_RADIUS = 0.42;      // grid units, for collision
 
     var ATTACK_CD = 0.42;        // basic attack cooldown (s)
-    var ATTACK_RANGE = 1.35;     // grid units
-    var ATTACK_ARC = Math.PI * 0.62; // half-arc handled below
+    var ATTACK_RANGE = 2.2;      // grid units (bigger reach per playtest)
+    var ATTACK_ARC = Math.PI * 0.7; // half-arc handled below
     var ATTACK_DMG = 22;
     var ATTACK_KB = 0.55;
 
@@ -157,6 +157,7 @@
     var joy = { active: false, id: null, ox: 0, oy: 0, vx: 0, vy: 0 };
     // action buttons (canvas-drawn, thumb bottom-right). Each tracks its own touch id.
     var buttons = [];
+    var fieldAtk = { active: false, id: null }; // tap-on-field basic attack (hold to repeat)
     var overBtn = null; // "Готово"/exit button when game over
 
     var started = false, startTime = 0, lastT = 0;
@@ -552,6 +553,9 @@
       } else {
         hero.faceX = hero.moveX; hero.faceY = hero.moveY;
       }
+
+      // held field-tap → auto-repeat basic attack as cooldown allows
+      if (fieldAtk.active) heroBasicAttack();
     }
 
     function nearestEnemy() {
@@ -967,14 +971,14 @@
     // action buttons (canvas, bottom-right, per-touch identifiers)
     // ============================================================
     function layoutButtons() {
-      // radii + positions relative to bottom-right
-      var bigR = 40, smR = 30;
+      // Basic attack is now a tap on the field (right half). Only the 3
+      // skill buttons live here, in an L-cluster at the bottom-right.
+      var r = 34;
       var right = cssW - 20, bottom = cssH - 24;
       buttons = [
-        { id: 'attack', label: '⚔', r: bigR, x: right - bigR, y: bottom - bigR, cdKey: 'atkCd', cdMax: ATTACK_CD, color: '#c94f4f', act: heroBasicAttack, touchId: null },
-        { id: 'whirl',  label: '🌀', r: smR, x: right - bigR * 2 - 10, y: bottom - smR, cdKey: 'whirlCd', cdMax: WHIRL_CD, color: '#e0a020', act: useWhirl, touchId: null },
-        { id: 'dash',   label: '💨', r: smR, x: right - smR, y: bottom - bigR * 2 - 14, cdKey: 'dashCd', cdMax: DASH_CD, color: '#4a9fe0', act: useDash, touchId: null },
-        { id: 'hammer', label: '🔨', r: smR, x: right - bigR * 2 - 4, y: bottom - bigR * 2 - 24, cdKey: 'hammerCd', cdMax: HAMMER_CD, color: '#7a5fe0', act: useHammer, touchId: null }
+        { id: 'whirl',  label: '🌀', r: r, x: right - r,          y: bottom - r,          cdKey: 'whirlCd',  cdMax: WHIRL_CD,  color: '#e0a020', act: useWhirl,  touchId: null },
+        { id: 'dash',   label: '💨', r: r, x: right - r,          y: bottom - r * 3 - 14, cdKey: 'dashCd',   cdMax: DASH_CD,   color: '#4a9fe0', act: useDash,   touchId: null },
+        { id: 'hammer', label: '🔨', r: r, x: right - r * 3 - 14, y: bottom - r,          cdKey: 'hammerCd', cdMax: HAMMER_CD, color: '#7a5fe0', act: useHammer, touchId: null }
       ];
     }
 
@@ -1082,10 +1086,16 @@
           b.act();
           continue;
         }
-        // else joystick on left half
+        // joystick on left half
         if (p.x < cssW / 2 && !joy.active) {
           joy.active = true; joy.id = t.identifier;
           joy.ox = p.x; joy.oy = p.y; joy.vx = 0; joy.vy = 0;
+          continue;
+        }
+        // right-half field tap → basic attack (auto-aimed); hold to repeat
+        if (p.x >= cssW / 2 && !fieldAtk.active) {
+          fieldAtk.active = true; fieldAtk.id = t.identifier;
+          heroBasicAttack();
         }
       }
     }
@@ -1109,6 +1119,9 @@
         var t = e.changedTouches[i];
         if (joy.active && t.identifier === joy.id) {
           joy.active = false; joy.id = null; joy.vx = 0; joy.vy = 0;
+        }
+        if (fieldAtk.active && t.identifier === fieldAtk.id) {
+          fieldAtk.active = false; fieldAtk.id = null;
         }
         for (var b = 0; b < buttons.length; b++) {
           if (buttons[b].touchId === t.identifier) buttons[b].touchId = null;
