@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>⚔️ Арена</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="../shared/styles.css">
+<style>
+  /* ---- isoarena (Iter 1) ---- */
+  html, body { height: 100%; }
+  body {
+    user-select: none; -webkit-user-select: none;
+    overflow: hidden;
+    padding: 0; margin: 0;
+  }
+  /* Ready screen sits in the default centered flex body */
+  #ready {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 24px; text-align: center; width: 100%; max-width: 420px;
+  }
+  #ready h1 { font-size: 1.8rem; margin-bottom: 10px; }
+  #ready p { color: var(--tg-theme-hint-color, #aaa); font-size: 0.95rem; line-height: 1.5; margin-bottom: 8px; }
+
+  /* Game view: fills viewport, overrides body flex-centering */
+  #gameView {
+    display: none;
+    position: fixed; inset: 0;
+    background: var(--tg-theme-bg-color, #1a1a2e);
+  }
+  #cv {
+    display: block;
+    width: 100%; height: 100%;
+    touch-action: none;
+  }
+  #hud {
+    position: fixed; top: 8px; left: 10px;
+    font-size: 0.72rem; font-family: ui-monospace, monospace;
+    color: var(--tg-theme-text-color, #eee);
+    opacity: 0.45; pointer-events: none;
+    white-space: pre; z-index: 5;
+  }
+  #doneBtn {
+    position: fixed; right: 12px; bottom: 14px; z-index: 6;
+    padding: 10px 16px; border: none; border-radius: 12px;
+    font-size: 0.95rem; font-weight: 700; cursor: pointer;
+    background: var(--tg-theme-button-color, #6c5ce7);
+    color: var(--tg-theme-button-text-color, #fff);
+    opacity: 0.92;
+  }
+</style>
+</head>
+<body>
+
+  <div id="ready">
+    <h1>⚔️ Арена</h1>
+    <p class="subtitle" id="subtitle"></p>
+    <p>Разомнись: води героя по арене виртуальным джойстиком (левая половина экрана).</p>
+    <button id="startBtn" class="confirm-btn">Начать</button>
+  </div>
+
+  <div id="gameView">
+    <canvas id="cv"></canvas>
+    <div id="hud"></div>
+    <button id="doneBtn">Готово ✓</button>
+  </div>
+
+  <script src="../shared/core.js"></script>
+  <script>
+  /* ============================================================
+   * isoarena — Iteration 1
+   * Pseudo-isometric ARPG foundation: iso floor + joystick-driven hero.
+   * NO combat / enemies / skills yet (later iterations).
+   *
+   * Structure for future iterations:
+   *   world  — { gridN, tileW, tileH, originX, originY, floorCanvas }
+   *   actors — array of movable entities (Iter 2: enemies push here)
+   *   update(dt) / render()  — kept separate for easy extension
+   * Page-globals from core.js used here: tg, gameData, game, rng, sendResultToBot
+   * gameData assumptions: opened directly => {} (must not throw). We read
+   *   nothing required from gameData for Iter 1 (seed handled by core's rng).
+   * ============================================================ */
+  (function () {
+    'use strict';
+
+    // ---- constants ----
+    var TILE_W = 48, TILE_H = 24;
+    var DPR = Math.min(window.devicePixelRatio || 1, 2);
+    var HERO_SPEED = 3.2; // grid cells per second
+
+    // ---- DOM ----
+    var readyEl = document.getElementById('ready');
+    var viewEl = document.getElementById('gameView');
+    var cv = document.getElementById('cv');
+    var ctx = cv.getContext('2d');
+    var hud = document.getElementById('hud');
+
+    // ---- world / actors ----
+    var world = {
+      gridN: 10,
+      tileW: TILE_W,
+      tileH: TILE_H,
+      originX: 0,
+      originY: 0,
+      floorCanvas: null,
+      floorW: 0,
+      floorH: 0,
+      floorOffX: 0, // origin used when the floor was pre-rendered (local space)
+      floorOffY: 0
+    };
+    var hero = { gx: 4.5, gy: 4.5, faceX: 1, faceY: 0 };
+    var actors = [hero]; // Iter 2: enemies get pushed here
+
+    // ---- viewport state ----
+    var cssW = 0, cssH = 0;
+
+    // ---- input: floating joystick + right-half tap flash ----
+    var joy = { active: false, id: null, ox: 0, oy: 0, x: 0, y: 0, vx: 0, vy: 0 };
+    var flash = { active: false, gx: 0, gy: 0, t: 0 }; // tapped-cell flash (inverse-map proof)
+    var tapCandidate = null; // {id, x, y, moved}
+
+    // ---- timing ----
+    var started = false;
+    var startTime = 0;
+    var lastT = 0;
+    var fps = 0, fpsAcc = 0, fpsFrames = 0, fpsTimer = 0;
+
+    // ============================================================
+    // iso <-> screen mapping
+    // ============================================================
+    function gridToScreen(gx, gy, ox, oy) {
+      return {
+        sx: ox + (gx - gy) * (TILE_W / 2),
+        sy: oy + (gx + gy) * (TILE_H / 2)
+      };
+    }
+    // inverse: screen -> grid (solve the 2x2 iso basis)
+    function screenToGrid(sx, sy, ox, oy) {
+      var dx = sx - ox, dy = sy - oy;
+      // dx = (gx-gy)*W/2 ; dy = (gx+gy)*H/2
+      var a = dx / (TILE_W / 2); // gx - gy
+      var b = dy / (TILE_H / 2); // gx + gy
+      return { gx: (b + a) / 2, gy: (b - a) / 2 };
+    }
+
+    // ============================================================
+    // canvas sizing (DPR capped at 2) + resize
+    // ============================================================
+    function resize() {
+      cssW = window.innerWidth;
+      cssH = window.innerHeight;
+      cv.width = Math.round(cssW * DPR);
+      cv.height = Math.round(cssH * DPR);
+      cv.style.width = cssW + 'px';
+      cv.style.height = cssH + 'px';
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(DPR, DPR);
+      recomputeOrigin();
+      buildFloor();
+    }
+
+    function recomputeOrigin() {
+      // Center the diamond grid in the viewport.
+      var n = world.gridN;
+      // grid extents in screen space (relative to origin 0,0):
+      //   x spans from (0-(n-1)) to ((n-1)-0) => width n*TILE_W
+      //   y spans from 0 to (2*(n-1)) => height (n)*TILE_H roughly
+      world.originX = cssW / 2;
+      world.originY = cssH / 2 - (n - 1) * (TILE_H / 2);
+    }
+
+    // ============================================================
+    // pre-render static floor once to an offscreen canvas
+    // ============================================================
+    function buildFloor() {
+      var n = world.gridN;
+      // Determine bounding box of the whole grid in a LOCAL coord space,
+      // then blit with an offset so it lines up with world origin each frame.
+      // Corners of the diamond (local origin 0,0):
+      var pts = [
+        gridToScreen(0, 0, 0, 0),
+        gridToScreen(n, 0, 0, 0),
+        gridToScreen(0, n, 0, 0),
+        gridToScreen(n, n, 0, 0)
+      ];
+      var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (var i = 0; i < pts.length; i++) {
+        if (pts[i].sx < minX) minX = pts[i].sx;
+        if (pts[i].sx > maxX) maxX = pts[i].sx;
+        if (pts[i].sy < minY) minY = pts[i].sy;
+        if (pts[i].sy > maxY) maxY = pts[i].sy;
+      }
+      var pad = 2;
+      var fw = Math.ceil(maxX - minX) + pad * 2;
+      var fh = Math.ceil(maxY - minY) + pad * 2;
+      // local origin inside the floor canvas
+      var lox = -minX + pad;
+      var loy = -minY + pad;
+
+      var fc = world.floorCanvas || document.createElement('canvas');
+      fc.width = Math.round(fw * DPR);
+      fc.height = Math.round(fh * DPR);
+      var fx = fc.getContext('2d');
+      fx.setTransform(1, 0, 0, 1, 0, 0);
+      fx.clearRect(0, 0, fc.width, fc.height);
+      fx.scale(DPR, DPR);
+
+      for (var gy = 0; gy < n; gy++) {
+        for (var gx = 0; gx < n; gx++) {
+          drawDiamond(fx, gx, gy, lox, loy, (gx + gy) % 2 === 0 ? '#26324f' : '#202b45', '#161e33');
+        }
+      }
+
+      world.floorCanvas = fc;
+      world.floorW = fw;
+      world.floorH = fh;
+      world.floorOffX = lox;
+      world.floorOffY = loy;
+    }
+
+    function diamondPath(c, cx, cy) {
+      var hw = TILE_W / 2, hh = TILE_H / 2;
+      c.beginPath();
+      c.moveTo(cx, cy - hh);      // top
+      c.lineTo(cx + hw, cy);      // right
+      c.lineTo(cx, cy + hh);      // bottom
+      c.lineTo(cx - hw, cy);      // left
+      c.closePath();
+    }
+
+    function drawDiamond(c, gx, gy, ox, oy, fill, stroke) {
+      var s = gridToScreen(gx, gy, ox, oy);
+      // Cell center: shift by half a tile so the diamond sits on the cell.
+      var cx = s.sx, cy = s.sy + TILE_H / 2;
+      diamondPath(c, cx, cy);
+      c.fillStyle = fill;
+      c.fill();
+      c.lineWidth = 1;
+      c.strokeStyle = stroke;
+      c.stroke();
+    }
+
+    // ============================================================
+    // update()
+    // ============================================================
+    function update(dt) {
+      // joystick -> movement, converted through iso basis so "up" = up-screen.
+      if (joy.active && (joy.vx !== 0 || joy.vy !== 0)) {
+        // Screen vector (joy.vx, joy.vy): up-screen is negative sy.
+        // Invert iso: a delta in grid (dgx,dgy) maps to screen
+        //   dsx = (dgx-dgy)*W/2 ; dsy = (dgx+dgy)*H/2
+        // We want hero to travel along the screen vector, so map the screen
+        // unit vector back into grid space via screenToGrid delta.
+        var g = screenToGrid(joy.vx * (TILE_W), joy.vy * (TILE_H), 0, 0);
+        var len = Math.hypot(g.gx, g.gy);
+        if (len > 1e-4) {
+          var ndx = g.gx / len, ndy = g.gy / len;
+          var mag = Math.hypot(joy.vx, joy.vy); // 0..1 stick throw
+          hero.gx += ndx * HERO_SPEED * mag * dt;
+          hero.gy += ndy * HERO_SPEED * mag * dt;
+          hero.faceX = ndx; hero.faceY = ndy;
+        }
+      }
+      // clamp to arena bounds [0 .. gridN-1]
+      var maxC = world.gridN - 1;
+      if (hero.gx < 0) hero.gx = 0; else if (hero.gx > maxC) hero.gx = maxC;
+      if (hero.gy < 0) hero.gy = 0; else if (hero.gy > maxC) hero.gy = maxC;
+
+      if (flash.active) {
+        flash.t -= dt;
+        if (flash.t <= 0) flash.active = false;
+      }
+    }
+
+    // ============================================================
+    // render()
+    // ============================================================
+    function render() {
+      ctx.clearRect(0, 0, cssW, cssH);
+
+      // blit pre-rendered floor
+      var fc = world.floorCanvas;
+      if (fc) {
+        var bx = world.originX - world.floorOffX;
+        var by = world.originY - world.floorOffY;
+        ctx.drawImage(fc, bx, by, world.floorW, world.floorH);
+      }
+
+      // highlight cell under the hero (proves screen<->grid consistency)
+      var hcx = Math.floor(hero.gx), hcy = Math.floor(hero.gy);
+      highlightCell(hcx, hcy, 'rgba(255,230,120,0.9)', 1.6);
+
+      // tap flash (inverse-map proof)
+      if (flash.active) {
+        var a = Math.max(0, flash.t / 0.5);
+        highlightCell(flash.gx, flash.gy, 'rgba(120,200,255,' + (0.9 * a).toFixed(3) + ')', 2);
+      }
+
+      // actors (Iter 1: just hero). Depth trivial; draw shadow then body.
+      for (var i = 0; i < actors.length; i++) drawHero(actors[i]);
+
+      // joystick
+      if (joy.active) drawJoystick();
+    }
+
+    function highlightCell(gx, gy, color, w) {
+      if (gx < 0 || gy < 0 || gx >= world.gridN || gy >= world.gridN) return;
+      var s = gridToScreen(gx, gy, world.originX, world.originY);
+      diamondPath(ctx, s.sx, s.sy + TILE_H / 2);
+      ctx.lineWidth = w;
+      ctx.strokeStyle = color;
+      ctx.stroke();
+    }
+
+    function drawHero(a) {
+      var s = gridToScreen(a.gx, a.gy, world.originX, world.originY);
+      var cx = s.sx, cy = s.sy + TILE_H / 2;
+
+      // ground shadow (flattened ellipse)
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, 13, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // body: stacked rounded shapes lifted off the ground
+      var bh = 26; // body height (pixels lifted)
+      var bodyY = cy - bh;
+      // torso rounded-rect
+      roundRect(ctx, cx - 10, bodyY, 20, bh, 8);
+      ctx.fillStyle = '#c94f4f';
+      ctx.fill();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = '#7a2d2d';
+      ctx.stroke();
+      // head
+      ctx.beginPath();
+      ctx.arc(cx, bodyY - 2, 7, 0, Math.PI * 2);
+      ctx.fillStyle = '#e0a87a';
+      ctx.fill();
+      ctx.strokeStyle = '#8a6a4a';
+      ctx.stroke();
+
+      // facing "nose" triangle (screen-space projection of grid facing)
+      var fs = { sx: (a.faceX - a.faceY) * (TILE_W / 2), sy: (a.faceX + a.faceY) * (TILE_H / 2) };
+      var fl = Math.hypot(fs.sx, fs.sy) || 1;
+      var nx = fs.sx / fl, ny = fs.sy / fl;
+      ctx.beginPath();
+      ctx.moveTo(cx + nx * 14, cy - bh * 0.5 + ny * 7);
+      ctx.lineTo(cx + nx * 6 - ny * 4, cy - bh * 0.5 - ny * 6 + nx * 4);
+      ctx.lineTo(cx + nx * 6 + ny * 4, cy - bh * 0.5 - ny * 6 - nx * 4);
+      ctx.closePath();
+      ctx.fillStyle = '#ffd27a';
+      ctx.fill();
+    }
+
+    function roundRect(c, x, y, w, h, r) {
+      c.beginPath();
+      c.moveTo(x + r, y);
+      c.arcTo(x + w, y, x + w, y + h, r);
+      c.arcTo(x + w, y + h, x, y + h, r);
+      c.arcTo(x, y + h, x, y, r);
+      c.arcTo(x, y, x + w, y, r);
+      c.closePath();
+    }
+
+    function drawJoystick() {
+      // base
+      ctx.beginPath();
+      ctx.arc(joy.ox, joy.oy, JOY_R, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.10)';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+      ctx.stroke();
+      // knob
+      ctx.beginPath();
+      ctx.arc(joy.ox + joy.vx * JOY_R, joy.oy + joy.vy * JOY_R, JOY_KNOB, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.28)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+      ctx.stroke();
+    }
+    var JOY_R = 52, JOY_KNOB = 24;
+
+    // ============================================================
+    // input handlers
+    // ============================================================
+    function localXY(touch) {
+      var r = cv.getBoundingClientRect();
+      return { x: touch.clientX - r.left, y: touch.clientY - r.top };
+    }
+
+    function onTouchStart(e) {
+      e.preventDefault();
+      for (var i = 0; i < e.changedTouches.length; i++) {
+        var t = e.changedTouches[i];
+        var p = localXY(t);
+        if (p.x < cssW / 2 && !joy.active) {
+          // floating joystick on left half
+          joy.active = true; joy.id = t.identifier;
+          joy.ox = p.x; joy.oy = p.y;
+          joy.x = p.x; joy.y = p.y;
+          joy.vx = 0; joy.vy = 0;
+        } else if (p.x >= cssW / 2 && tapCandidate === null) {
+          // possible tap on right half (for inverse-map flash)
+          tapCandidate = { id: t.identifier, x: p.x, y: p.y, moved: false };
+        }
+      }
+    }
+
+    function onTouchMove(e) {
+      e.preventDefault();
+      for (var i = 0; i < e.changedTouches.length; i++) {
+        var t = e.changedTouches[i];
+        var p = localXY(t);
+        if (joy.active && t.identifier === joy.id) {
+          var dx = p.x - joy.ox, dy = p.y - joy.oy;
+          var len = Math.hypot(dx, dy);
+          if (len > JOY_R) { dx = dx / len * JOY_R; dy = dy / len * JOY_R; len = JOY_R; }
+          joy.vx = dx / JOY_R; joy.vy = dy / JOY_R; // normalized -1..1
+        }
+        if (tapCandidate && t.identifier === tapCandidate.id) {
+          if (Math.hypot(p.x - tapCandidate.x, p.y - tapCandidate.y) > 12) tapCandidate.moved = true;
+        }
+      }
+    }
+
+    function onTouchEnd(e) {
+      e.preventDefault();
+      for (var i = 0; i < e.changedTouches.length; i++) {
+        var t = e.changedTouches[i];
+        if (joy.active && t.identifier === joy.id) {
+          joy.active = false; joy.id = null; joy.vx = 0; joy.vy = 0;
+        }
+        if (tapCandidate && t.identifier === tapCandidate.id) {
+          if (!tapCandidate.moved) {
+            var g = screenToGrid(tapCandidate.x, tapCandidate.y, world.originX, world.originY);
+            var cgx = Math.floor(g.gx), cgy = Math.floor(g.gy);
+            if (cgx >= 0 && cgy >= 0 && cgx < world.gridN && cgy < world.gridN) {
+              flash.active = true; flash.gx = cgx; flash.gy = cgy; flash.t = 0.5;
+            }
+          }
+          tapCandidate = null;
+        }
+      }
+    }
+
+    // ============================================================
+    // loop
+    // ============================================================
+    function loop(now) {
+      if (!started) return;
+      var dt = (now - lastT) / 1000;
+      lastT = now;
+      if (dt > 0.05) dt = 0.05; // clamp
+      if (dt < 0) dt = 0;
+
+      // fps sampling
+      fpsAcc += dt; fpsFrames++;
+      fpsTimer += dt;
+      if (fpsTimer >= 0.5) {
+        fps = fpsFrames / fpsAcc;
+        fpsAcc = 0; fpsFrames = 0; fpsTimer = 0;
+      }
+
+      update(dt);
+      render();
+      updateHud();
+
+      requestAnimationFrame(loop);
+    }
+
+    function updateHud() {
+      hud.textContent =
+        'fps ' + fps.toFixed(0) +
+        '  hero ' + hero.gx.toFixed(2) + ',' + hero.gy.toFixed(2) +
+        '  cell ' + Math.floor(hero.gx) + ',' + Math.floor(hero.gy);
+    }
+
+    // ============================================================
+    // start / finish
+    // ============================================================
+    function startGame() {
+      readyEl.style.display = 'none';
+      viewEl.style.display = 'block';
+      resize();
+      started = true;
+      startTime = performance.now();
+      lastT = performance.now();
+      requestAnimationFrame(loop);
+    }
+
+    function finish() {
+      if (!started) return;
+      started = false;
+      var timeSpent = Math.round((performance.now() - startTime) / 1000);
+      sendResultToBot({
+        game: 'isoarena',
+        win: true,
+        outcome: 'Разминка',
+        score: 0,
+        timeSpent: timeSpent,
+        iteration: 1
+      });
+    }
+
+    // ---- wire up ----
+    document.getElementById('startBtn').addEventListener('click', startGame);
+    document.getElementById('doneBtn').addEventListener('click', finish);
+
+    cv.addEventListener('touchstart', onTouchStart, { passive: false });
+    cv.addEventListener('touchmove', onTouchMove, { passive: false });
+    cv.addEventListener('touchend', onTouchEnd, { passive: false });
+    cv.addEventListener('touchcancel', onTouchEnd, { passive: false });
+
+    window.addEventListener('resize', function () { if (started) resize(); });
+    window.addEventListener('orientationchange', function () { if (started) resize(); });
+  })();
+  </script>
+</body>
+</html>
