@@ -77,7 +77,8 @@ body {
 .am-road { stroke:var(--gold-dim); stroke-width:2.4; stroke-linecap:round; }
 .am-road-edge { stroke-dasharray:5 4; opacity:.8; }
 .am-cart { opacity:.9; pointer-events:none; }
-.am-node { fill:var(--gold); stroke:#000; stroke-width:1; cursor:pointer; }
+@keyframes am-house-breathe { 0%,100%{opacity:.82; transform:scale(1)} 50%{opacity:1; transform:scale(1.09)} }
+.am-node { fill:var(--gold); stroke:#000; stroke-width:1; cursor:pointer; transform-box:fill-box; transform-origin:center; animation:am-house-breathe 3.4s ease-in-out infinite; }
 .am-node-sel { stroke:#fff; stroke-width:2; }
 .am-road-hi { stroke:#f0dc8e !important; stroke-width:3.6 !important; opacity:1 !important; }
 .am-arrow { fill:var(--gold-dim); opacity:.9; }
@@ -973,7 +974,7 @@ function renderAreaMap(am) {
     const fill = OWN_COLORS[n.owner] || "#c8a84a";
     const w = 6.5, bh = 6, rh = 5;   // домик = пятиугольник (крыша+корпус)
     const house = `M ${x - w} ${y - 1} L ${x} ${y - 1 - rh} L ${x + w} ${y - 1} L ${x + w} ${y + bh} L ${x - w} ${y + bh} Z`;
-    g += `<path d="${house}" class="am-node" fill="${fill}" data-i="${i}" onclick="amHi(event,${i})"/>`;
+    g += `<path d="${house}" class="am-node" fill="${fill}" data-i="${i}" style="animation-delay:${((i * 0.41) % 3.4).toFixed(2)}s" onclick="amHi(event,${i})"/>`;
     g += `<text x="${x}" y="${y - rh - 5}" class="am-label" text-anchor="middle">${esc(n.name)}</text>`;
     if (n.pop) g += `<text x="${x}" y="${y + bh + 11}" class="am-pop" text-anchor="middle">~${n.pop}</text>`;
   });
@@ -984,9 +985,9 @@ function renderAreaMap(am) {
   animateAreaCarts(body);
 }
 
-// Телеги на карте области: едут по ВНУТРЕННИМ дорогам (am-road без am-road-edge).
-// Координаты берём в единицах viewBox из уже отрисованных <line>. rAF один на
-// все телеги; при перерисовке дашборда отменяем предыдущий цикл.
+// Телеги на карте области: едут по ВСЕМ дорогам (am-road — внутренним между НП
+// и пунктирным выходящим к соседям). Координаты берём в единицах viewBox из уже
+// отрисованных <line>. rAF один на все телеги; при перерисовке отменяем цикл.
 let _amCartRAF = null;
 function animateAreaCarts(root) {
   if (_amCartRAF) { cancelAnimationFrame(_amCartRAF); _amCartRAF = null; }
@@ -995,7 +996,6 @@ function animateAreaCarts(root) {
   if (!svg) return;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const segs = Array.from(svg.querySelectorAll('.am-road'))
-    .filter(l => !l.classList.contains('am-road-edge'))
     .map(l => {
       const ax = +l.getAttribute('x1'), ay = +l.getAttribute('y1');
       const bx = +l.getAttribute('x2'), by = +l.getAttribute('y2');
