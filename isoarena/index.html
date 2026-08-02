@@ -157,7 +157,7 @@
     var joy = { active: false, id: null, ox: 0, oy: 0, vx: 0, vy: 0 };
     // action buttons (canvas-drawn, thumb bottom-right). Each tracks its own touch id.
     var buttons = [];
-    var fieldAtk = { active: false, id: null }; // tap-on-field basic attack (hold to repeat)
+    var fieldAtk = { active: false, id: null, dirX: 1, dirY: 0 }; // tap-on-field: attack toward tap dir (hold to repeat)
     var overBtn = null; // "Готово"/exit button when game over
 
     var started = false, startTime = 0, lastT = 0;
@@ -543,30 +543,23 @@
       hero.gx = clamp(hero.gx, lo, hi);
       hero.gy = clamp(hero.gy, lo, hi);
 
-      // Aim (facing) auto-tracks the nearest enemy so attacks land while
-      // strafing/retreating (kiting). No enemy → face movement direction.
-      var ne = nearestEnemy();
-      if (ne) {
-        var adx = ne.gx - hero.gx, ady = ne.gy - hero.gy;
-        var al = Math.hypot(adx, ady) || 1;
-        hero.faceX = adx / al; hero.faceY = ady / al;
+      // Aim (facing): field-tap points the attack in the tapped direction
+      // (player aims manually). Otherwise face the movement direction.
+      if (fieldAtk.active) {
+        hero.faceX = fieldAtk.dirX; hero.faceY = fieldAtk.dirY;
+        heroBasicAttack(); // held tap → auto-repeat as cooldown allows
       } else {
         hero.faceX = hero.moveX; hero.faceY = hero.moveY;
       }
-
-      // held field-tap → auto-repeat basic attack as cooldown allows
-      if (fieldAtk.active) heroBasicAttack();
     }
 
-    function nearestEnemy() {
-      var best = null, bd = Infinity;
-      for (var i = 0; i < enemies.length; i++) {
-        var e = enemies[i]; if (e.dead) continue;
-        var dx = e.gx - hero.gx, dy = e.gy - hero.gy;
-        var d = dx * dx + dy * dy;
-        if (d < bd) { bd = d; best = e; }
-      }
-      return best;
+    // direction from hero toward a screen point, as a grid unit vector
+    function aimDirFromScreen(px, py) {
+      var g = screenToGrid(px, py, world.originX, world.originY);
+      var dx = g.gx - hero.gx, dy = g.gy - hero.gy;
+      var l = Math.hypot(dx, dy);
+      if (l < 1e-3) return null;
+      return { x: dx / l, y: dy / l };
     }
 
     function updateEnemies(dt) {
@@ -1092,9 +1085,11 @@
           joy.ox = p.x; joy.oy = p.y; joy.vx = 0; joy.vy = 0;
           continue;
         }
-        // right-half field tap → basic attack (auto-aimed); hold to repeat
+        // right-half field tap → attack toward tap direction; hold to repeat
         if (p.x >= cssW / 2 && !fieldAtk.active) {
           fieldAtk.active = true; fieldAtk.id = t.identifier;
+          var d0 = aimDirFromScreen(p.x, p.y);
+          if (d0) { fieldAtk.dirX = d0.x; fieldAtk.dirY = d0.y; hero.faceX = d0.x; hero.faceY = d0.y; }
           heroBasicAttack();
         }
       }
@@ -1109,6 +1104,10 @@
           var len = Math.hypot(dx, dy);
           if (len > JOY_R) { dx = dx / len * JOY_R; dy = dy / len * JOY_R; }
           joy.vx = dx / JOY_R; joy.vy = dy / JOY_R;
+        }
+        if (fieldAtk.active && t.identifier === fieldAtk.id) {
+          var d1 = aimDirFromScreen(p.x, p.y);
+          if (d1) { fieldAtk.dirX = d1.x; fieldAtk.dirY = d1.y; }
         }
       }
     }
