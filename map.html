@@ -619,11 +619,11 @@ function drawWorldRoads(cellDivs) {
   // <animateMotion>, вставленный через innerHTML, не заводит таймлайн в
   // WKWebView (iOS) — телеги стояли бы. rAF-цикл один на все телеги.
   const CART_SVG =
-    '<rect x="-3.2" y="-2.4" width="6.4" height="3" rx="0.8" fill="#7a5a34" stroke="#4a3820" stroke-width="0.5"/>'
-    + '<rect x="-3.2" y="-3.6" width="4.4" height="1.6" rx="0.5" fill="#9a7648" opacity="0.9"/>'
-    + '<circle cx="-1.7" cy="1.2" r="1" fill="#2e2214" stroke="#5a4428" stroke-width="0.4"/>'
-    + '<circle cx="1.7" cy="1.2" r="1" fill="#2e2214" stroke="#5a4428" stroke-width="0.4"/>';
-  const MAX_CARTS = 8, SPEED = 7; // px/сек — медленно
+    '<rect x="-7" y="-5.5" width="14" height="7" rx="1.8" fill="#7a5a34" stroke="#4a3820" stroke-width="1"/>'
+    + '<rect x="-7" y="-8.5" width="10" height="3.6" rx="1.1" fill="#9a7648" opacity="0.9"/>'
+    + '<circle cx="-3.8" cy="2.8" r="2.3" fill="#2e2214" stroke="#5a4428" stroke-width="0.9"/>'
+    + '<circle cx="3.8" cy="2.8" r="2.3" fill="#2e2214" stroke="#5a4428" stroke-width="0.9"/>';
+  const MAX_CARTS = 8, SPEED = 26; // px/сек — заметно, но не суетливо
   const chosen = segs.slice().sort((p, q) => q.len - p.len).slice(0, MAX_CARTS);
   const carts = chosen.map((s, i) => {
     const g = document.createElementNS(SVGNS, 'g');
@@ -639,7 +639,7 @@ function drawWorldRoads(cellDivs) {
     if (t0 === null) t0 = ts;
     const el = (ts - t0) / 1000;
     for (const c of carts) {
-      const s = c.s, period = Math.max(6, s.len / SPEED);
+      const s = c.s, period = Math.max(3, s.len / SPEED);
       const u = ((el / period) + c.phase) % 1;
       const x = s.ax + (s.bx - s.ax) * u, y = s.ay + (s.by - s.ay) * u;
       c.g.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
