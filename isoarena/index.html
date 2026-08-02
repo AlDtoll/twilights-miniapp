@@ -156,6 +156,7 @@
 
     // ---- input ----
     var JOY_R = 52, JOY_KNOB = 24;
+    var JOY_BASE_X = 0, JOY_BASE_Y = 0; // fixed joystick base (bottom-left), set in layoutButtons
     var joy = { active: false, id: null, ox: 0, oy: 0, vx: 0, vy: 0 };
     // action buttons (canvas-drawn, thumb bottom-right). Each tracks its own touch id.
     var buttons = [];
@@ -801,7 +802,7 @@
 
       // UI (not shaken)
       drawButtons();
-      if (joy.active) drawJoystick();
+      if (phase !== 'over') drawJoystick();
       if (phase === 'wavebanner') drawBanner('ВОЛНА ' + currentWave, '#ffd27a');
       if (phase === 'over') drawGameOver();
     }
@@ -1043,14 +1044,15 @@
 
     // ---- joystick ----
     function drawJoystick() {
+      var bx = JOY_BASE_X, by = JOY_BASE_Y;
       ctx.beginPath();
-      ctx.arc(joy.ox, joy.oy, JOY_R, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255,255,255,0.10)'; ctx.fill();
-      ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.stroke();
-      var kx = joy.ox + joy.vx * JOY_R, ky = joy.oy + joy.vy * JOY_R;
+      ctx.arc(bx, by, JOY_R, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.08)'; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,255,255,0.20)'; ctx.stroke();
+      var kx = bx + (joy.active ? joy.vx : 0) * JOY_R, ky = by + (joy.active ? joy.vy : 0) * JOY_R;
       ctx.beginPath();
       ctx.arc(kx, ky, JOY_KNOB, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255,255,255,0.28)'; ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.26)'; ctx.fill();
       ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.stroke();
     }
 
@@ -1058,8 +1060,10 @@
     // action buttons (canvas, bottom-right, per-touch identifiers)
     // ============================================================
     function layoutButtons() {
-      // Basic attack is now a tap on the field (right half). Only the 3
-      // skill buttons live here, in an L-cluster at the bottom-right.
+      // Basic attack is a tap anywhere on the field. Movement joystick is
+      // fixed in the bottom-left; the 3 skills sit bottom-right (L-cluster).
+      JOY_BASE_X = JOY_R + 26;
+      JOY_BASE_Y = cssH - JOY_R - 30;
       var r = 34;
       var right = cssW - 20, bottom = cssH - 24;
       buttons = [
@@ -1173,14 +1177,17 @@
           b.act();
           continue;
         }
-        // joystick on left half
-        if (p.x < cssW / 2 && !joy.active) {
+        // fixed joystick zone (bottom-left)
+        if (!joy.active && Math.hypot(p.x - JOY_BASE_X, p.y - JOY_BASE_Y) <= JOY_R + 38) {
           joy.active = true; joy.id = t.identifier;
-          joy.ox = p.x; joy.oy = p.y; joy.vx = 0; joy.vy = 0;
+          joy.ox = JOY_BASE_X; joy.oy = JOY_BASE_Y;
+          var jdx = p.x - joy.ox, jdy = p.y - joy.oy, jl = Math.hypot(jdx, jdy);
+          if (jl > JOY_R) { jdx = jdx / jl * JOY_R; jdy = jdy / jl * JOY_R; }
+          joy.vx = jdx / JOY_R; joy.vy = jdy / JOY_R;
           continue;
         }
-        // right-half field tap → attack toward tap direction; hold to repeat
-        if (p.x >= cssW / 2 && !fieldAtk.active) {
+        // tap anywhere else on the field → attack toward the tapped point; hold to repeat
+        if (!fieldAtk.active) {
           fieldAtk.active = true; fieldAtk.id = t.identifier;
           var d0 = aimDirFromScreen(p.x, p.y);
           if (d0) { fieldAtk.dirX = d0.x; fieldAtk.dirY = d0.y; hero.faceX = d0.x; hero.faceY = d0.y; }
