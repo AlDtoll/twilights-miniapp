@@ -985,6 +985,25 @@ function renderAreaMap(am) {
   animateAreaCarts(body);
 }
 
+// Строим телегу через createElementNS (НЕ g.innerHTML): innerHTML на SVG-элементе
+// в WKWebView (Telegram iOS) создаёт детей в HTML-namespace — <rect>/<circle> не
+// рендерятся. createElementNS гарантирует SVG-namespace.
+const _CART_SHAPES_AREA = [
+  ['rect', { x: -7, y: -5, width: 14, height: 7, rx: 1.6, fill: '#7a5a34', stroke: '#4a3820', 'stroke-width': 0.9 }],
+  ['rect', { x: -7, y: -8, width: 10, height: 3.4, rx: 1.1, fill: '#9a7648', opacity: 0.9 }],
+  ['circle', { cx: -3.6, cy: 2.6, r: 2.1, fill: '#2e2214', stroke: '#5a4428', 'stroke-width': 0.8 }],
+  ['circle', { cx: 3.6, cy: 2.6, r: 2.1, fill: '#2e2214', stroke: '#5a4428', 'stroke-width': 0.8 }],
+];
+function _buildCartG(SVGNS, cls, shapes) {
+  const g = document.createElementNS(SVGNS, 'g');
+  g.setAttribute('class', cls);
+  for (const [tag, attrs] of shapes) {
+    const e = document.createElementNS(SVGNS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    g.appendChild(e);
+  }
+  return g;
+}
 // Телеги на карте области: едут по ВСЕМ дорогам (am-road — внутренним между НП
 // и пунктирным выходящим к соседям). Координаты берём в единицах viewBox из уже
 // отрисованных <line>. rAF один на все телеги; при перерисовке отменяем цикл.
@@ -1003,17 +1022,10 @@ function animateAreaCarts(root) {
     })
     .filter(s => s.len > 4);
   if (!segs.length) return;
-  const CART =
-    '<rect x="-7" y="-5" width="14" height="7" rx="1.6" fill="#7a5a34" stroke="#4a3820" stroke-width="0.9"/>'
-    + '<rect x="-7" y="-8" width="10" height="3.4" rx="1.1" fill="#9a7648" opacity="0.9"/>'
-    + '<circle cx="-3.6" cy="2.6" r="2.1" fill="#2e2214" stroke="#5a4428" stroke-width="0.8"/>'
-    + '<circle cx="3.6" cy="2.6" r="2.1" fill="#2e2214" stroke="#5a4428" stroke-width="0.8"/>';
   const MAX_CARTS = 6, SPEED = 20; // единицы viewBox/сек
   const chosen = segs.slice().sort((p, q) => q.len - p.len).slice(0, MAX_CARTS);
   const carts = chosen.map((s, i) => {
-    const gEl = document.createElementNS(SVGNS, 'g');
-    gEl.setAttribute('class', 'am-cart');
-    gEl.innerHTML = CART;
+    const gEl = _buildCartG(SVGNS, 'am-cart', _CART_SHAPES_AREA);
     svg.appendChild(gEl);
     return { g: gEl, s, phase: i / chosen.length };
   });

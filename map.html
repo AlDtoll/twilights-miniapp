@@ -592,6 +592,31 @@ function rebuildMap() {
 // Дороги мировой карты: линии между центрами клеток (координаты берём из DOM —
 // gap/размеры клеток учитываются сами). Оверлей поверх грида, клики проходят сквозь.
 let _cartRAF = null;
+// Строим телегу через createElementNS (НЕ g.innerHTML): innerHTML на SVG-элементе
+// в WKWebView (Telegram iOS) создаёт детей в HTML-namespace — <rect>/<circle> не
+// рендерятся, телега пустая/невидимая. createElementNS гарантирует SVG-namespace.
+const _CART_SHAPES_WORLD = [
+  ['rect', { x: -8.4, y: -6.6, width: 16.8, height: 8.4, rx: 2.2, fill: '#7a5a34', stroke: '#4a3820', 'stroke-width': 1.1 }],
+  ['rect', { x: -8.4, y: -10.2, width: 12, height: 4.3, rx: 1.3, fill: '#9a7648', opacity: 0.9 }],
+  ['circle', { cx: -4.6, cy: 3.4, r: 2.8, fill: '#2e2214', stroke: '#5a4428', 'stroke-width': 1 }],
+  ['circle', { cx: 4.6, cy: 3.4, r: 2.8, fill: '#2e2214', stroke: '#5a4428', 'stroke-width': 1 }],
+];
+const _CART_SHAPES_AREA = [
+  ['rect', { x: -7, y: -5, width: 14, height: 7, rx: 1.6, fill: '#7a5a34', stroke: '#4a3820', 'stroke-width': 0.9 }],
+  ['rect', { x: -7, y: -8, width: 10, height: 3.4, rx: 1.1, fill: '#9a7648', opacity: 0.9 }],
+  ['circle', { cx: -3.6, cy: 2.6, r: 2.1, fill: '#2e2214', stroke: '#5a4428', 'stroke-width': 0.8 }],
+  ['circle', { cx: 3.6, cy: 2.6, r: 2.1, fill: '#2e2214', stroke: '#5a4428', 'stroke-width': 0.8 }],
+];
+function _buildCartG(SVGNS, cls, shapes) {
+  const g = document.createElementNS(SVGNS, 'g');
+  g.setAttribute('class', cls);
+  for (const [tag, attrs] of shapes) {
+    const e = document.createElementNS(SVGNS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    g.appendChild(e);
+  }
+  return g;
+}
 function drawWorldRoads(cellDivs) {
   const SVGNS = 'http://www.w3.org/2000/svg';
   if (_cartRAF) { cancelAnimationFrame(_cartRAF); _cartRAF = null; }
@@ -606,31 +631,26 @@ function drawWorldRoads(cellDivs) {
   svg.setAttribute('width', W);
   svg.setAttribute('height', H);
   const cen = d => [d.offsetLeft + d.offsetWidth / 2, d.offsetTop + d.offsetHeight / 2];
-  let lines = '';
   const segs = [];
   for (const [a, b] of edges) {
     const da = cellDivs[a[0] + ',' + a[1]], db = cellDivs[b[0] + ',' + b[1]];
     if (!da || !db) continue;
     const [ax, ay] = cen(da), [bx, by] = cen(db);
-    lines += `<line class="wr-line" x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}"/>`;
+    const ln = document.createElementNS(SVGNS, 'line');
+    ln.setAttribute('class', 'wr-line');
+    ln.setAttribute('x1', ax); ln.setAttribute('y1', ay);
+    ln.setAttribute('x2', bx); ln.setAttribute('y2', by);
+    svg.appendChild(ln);
     segs.push({ ax, ay, bx, by, len: Math.hypot(bx - ax, by - ay) });
   }
-  svg.innerHTML = lines;
   // Тележки торговцев — не более MAX_CARTS (самые длинные дороги), едут в одну
   // сторону и зацикливаются. Двигаем через requestAnimationFrame: SMIL
   // <animateMotion>, вставленный через innerHTML, не заводит таймлайн в
   // WKWebView (iOS) — телеги стояли бы. rAF-цикл один на все телеги.
-  const CART_SVG =
-    '<rect x="-8.4" y="-6.6" width="16.8" height="8.4" rx="2.2" fill="#7a5a34" stroke="#4a3820" stroke-width="1.1"/>'
-    + '<rect x="-8.4" y="-10.2" width="12" height="4.3" rx="1.3" fill="#9a7648" opacity="0.9"/>'
-    + '<circle cx="-4.6" cy="3.4" r="2.8" fill="#2e2214" stroke="#5a4428" stroke-width="1"/>'
-    + '<circle cx="4.6" cy="3.4" r="2.8" fill="#2e2214" stroke="#5a4428" stroke-width="1"/>';
   const MAX_CARTS = 8, SPEED = 26; // px/сек — заметно, но не суетливо
   const chosen = segs.slice().sort((p, q) => q.len - p.len).slice(0, MAX_CARTS);
   const carts = chosen.map((s, i) => {
-    const g = document.createElementNS(SVGNS, 'g');
-    g.setAttribute('class', 'wr-cart');
-    g.innerHTML = CART_SVG;
+    const g = _buildCartG(SVGNS, 'wr-cart', _CART_SHAPES_WORLD);
     svg.appendChild(g);
     return { g, s, phase: i / chosen.length };
   });
@@ -1195,17 +1215,10 @@ function animateAreaCarts(root) {
     })
     .filter(s => s.len > 4);
   if (!segs.length) return;
-  const CART =
-    '<rect x="-7" y="-5" width="14" height="7" rx="1.6" fill="#7a5a34" stroke="#4a3820" stroke-width="0.9"/>'
-    + '<rect x="-7" y="-8" width="10" height="3.4" rx="1.1" fill="#9a7648" opacity="0.9"/>'
-    + '<circle cx="-3.6" cy="2.6" r="2.1" fill="#2e2214" stroke="#5a4428" stroke-width="0.8"/>'
-    + '<circle cx="3.6" cy="2.6" r="2.1" fill="#2e2214" stroke="#5a4428" stroke-width="0.8"/>';
   const MAX_CARTS = 6, SPEED = 20; // единицы viewBox/сек
   const chosen = segs.slice().sort((p, q) => q.len - p.len).slice(0, MAX_CARTS);
   const carts = chosen.map((s, i) => {
-    const gEl = document.createElementNS(SVGNS, 'g');
-    gEl.setAttribute('class', 'am-cart');
-    gEl.innerHTML = CART;
+    const gEl = _buildCartG(SVGNS, 'am-cart', _CART_SHAPES_AREA);
     svg.appendChild(gEl);
     return { g: gEl, s, phase: i / chosen.length };
   });
