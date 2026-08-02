@@ -7,7 +7,7 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="stylesheet" href="../shared/styles.css">
 <style>
-  /* ---- isoarena (Iter 1) ---- */
+  /* ---- isoarena ---- */
   html, body { height: 100%; }
   body {
     user-select: none; -webkit-user-select: none;
@@ -35,18 +35,11 @@
   }
   #hud {
     position: fixed; top: 8px; left: 10px;
-    font-size: 0.72rem; font-family: ui-monospace, monospace;
+    font-size: 0.78rem; font-family: ui-monospace, monospace;
     color: var(--tg-theme-text-color, #eee);
-    opacity: 0.45; pointer-events: none;
+    opacity: 0.85; pointer-events: none;
     white-space: pre; z-index: 5;
-  }
-  #doneBtn {
-    position: fixed; right: 12px; bottom: 14px; z-index: 6;
-    padding: 10px 16px; border: none; border-radius: 12px;
-    font-size: 0.95rem; font-weight: 700; cursor: pointer;
-    background: var(--tg-theme-button-color, #6c5ce7);
-    color: var(--tg-theme-button-text-color, #fff);
-    opacity: 0.92;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
   }
 </style>
 </head>
@@ -55,38 +48,64 @@
   <div id="ready">
     <h1>⚔️ Арена</h1>
     <p class="subtitle" id="subtitle"></p>
-    <p>Разомнись: води героя по арене виртуальным джойстиком (левая половина экрана).</p>
+    <p>Отбей все волны! Левый палец — джойстик движения. Правый низ — атака и умения (Вихрь, Рывок, Молот).</p>
     <button id="startBtn" class="confirm-btn">Начать</button>
   </div>
 
   <div id="gameView">
     <canvas id="cv"></canvas>
     <div id="hud"></div>
-    <button id="doneBtn">Готово ✓</button>
   </div>
 
   <script src="../shared/core.js"></script>
   <script>
   /* ============================================================
-   * isoarena — Iteration 1
-   * Pseudo-isometric ARPG foundation: iso floor + joystick-driven hero.
-   * NO combat / enemies / skills yet (later iterations).
+   * isoarena — full ARPG arena brawler (canvas 2D + rAF)
    *
-   * Structure for future iterations:
-   *   world  — { gridN, tileW, tileH, originX, originY, floorCanvas }
-   *   actors — array of movable entities (Iter 2: enemies push here)
-   *   update(dt) / render()  — kept separate for easy extension
-   * Page-globals from core.js used here: tg, gameData, game, rng, sendResultToBot
-   * gameData assumptions: opened directly => {} (must not throw). We read
-   *   nothing required from gameData for Iter 1 (seed handled by core's rng).
+   * Built on the Iter-1 foundation (iso projection, DPR sizing,
+   * floating joystick, pre-rendered floor, loop/update/render split).
+   *
+   * Page-globals from core.js: tg, gameData, game, rng, sendResultToBot
+   * gameData MAY be {} — nothing is required; optional scaling reads
+   *   gameData.rounds / gameData.size / gameData.seed if present.
+   *
+   * iOS/mobile rules respected: canvas2D+rAF only, no SMIL/innerHTML anim,
+   *   all touch handlers {passive:false}+preventDefault, DPR<=2, dt clamped,
+   *   multi-touch via identifiers, sendResultToBot fires exactly once.
    * ============================================================ */
   (function () {
     'use strict';
 
-    // ---- constants ----
+    // ---- optional external difficulty (never required) ----
+    var GD = (typeof gameData === 'object' && gameData) ? gameData : {};
+    var R = (typeof rng === 'function') ? rng : Math.random;
+
+    // ============================================================
+    // constants / tuning  (worth tuning later — see report)
+    // ============================================================
     var TILE_W = 48, TILE_H = 24;
     var DPR = Math.min(window.devicePixelRatio || 1, 2);
-    var HERO_SPEED = 3.2; // grid cells per second
+    var GRID_N = 12; // arena size in cells
+
+    var HERO_SPEED = 3.6;        // grid cells / sec
+    var HERO_MAX_HP = 100;
+    var HERO_RADIUS = 0.42;      // grid units, for collision
+
+    var ATTACK_CD = 0.42;        // basic attack cooldown (s)
+    var ATTACK_RANGE = 1.35;     // grid units
+    var ATTACK_ARC = Math.PI * 0.62; // half-arc handled below
+    var ATTACK_DMG = 22;
+    var ATTACK_KB = 0.55;
+
+    // skills
+    var WHIRL_CD = 4.5, WHIRL_RANGE = 1.9, WHIRL_DMG = 30, WHIRL_KB = 0.75;
+    var DASH_CD = 3.0, DASH_DIST = 2.6, DASH_TIME = 0.16, DASH_IFRAME = 0.24;
+    var HAMMER_CD = 6.0, HAMMER_RADIUS = 1.5, HAMMER_DMG = 55, HAMMER_KB = 1.3;
+
+    var MAX_ENEMIES = 12;        // concurrent cap (mobile perf + separation cost)
+
+    // wave scaling from optional gameData
+    var WAVE_COUNT = clampInt(GD.rounds || GD.waves || 5, 3, 8);
 
     // ---- DOM ----
     var readyEl = document.getElementById('ready');
@@ -94,57 +113,85 @@
     var cv = document.getElementById('cv');
     var ctx = cv.getContext('2d');
     var hud = document.getElementById('hud');
+    var subtitle = document.getElementById('subtitle');
+    if (subtitle) subtitle.textContent = WAVE_COUNT + ' волн · выживи и победи';
 
-    // ---- world / actors ----
+    // ============================================================
+    // world / state
+    // ============================================================
     var world = {
-      gridN: 10,
-      tileW: TILE_W,
-      tileH: TILE_H,
-      originX: 0,
-      originY: 0,
-      floorCanvas: null,
-      floorW: 0,
-      floorH: 0,
-      floorOffX: 0, // origin used when the floor was pre-rendered (local space)
-      floorOffY: 0
+      gridN: GRID_N, tileW: TILE_W, tileH: TILE_H,
+      originX: 0, originY: 0,
+      floorCanvas: null, floorW: 0, floorH: 0, floorOffX: 0, floorOffY: 0
     };
-    var hero = { gx: 4.5, gy: 4.5, faceX: 1, faceY: 0 };
-    var actors = [hero]; // Iter 2: enemies get pushed here
 
-    // ---- viewport state ----
+    var hero = {
+      gx: 5.5, gy: 5.5, faceX: 1, faceY: 0,
+      hp: HERO_MAX_HP, maxHp: HERO_MAX_HP,
+      atkCd: 0, whirlCd: 0, dashCd: 0, hammerCd: 0,
+      dashT: 0, dashVx: 0, dashVy: 0, iframe: 0,
+      hitFlash: 0, bob: 0,
+      swing: 0, swingDir: 1 // attack swing animation timer
+    };
+
+    var enemies = [];
+    var projectiles = [];
+    var pickups = [];
+    var fx = [];       // particles + floating numbers + rings
+
     var cssW = 0, cssH = 0;
+    var shake = 0;
 
-    // ---- input: floating joystick + right-half tap flash ----
-    var joy = { active: false, id: null, ox: 0, oy: 0, x: 0, y: 0, vx: 0, vy: 0 };
-    var flash = { active: false, gx: 0, gy: 0, t: 0 }; // tapped-cell flash (inverse-map proof)
-    var tapCandidate = null; // {id, x, y, moved}
+    // game phase: 'playing' | 'wavebanner' | 'over'
+    var phase = 'wavebanner';
+    var currentWave = 0;       // 1-based once spawned
+    var wavesCleared = 0;
+    var bannerT = 0;
+    var kills = 0, gold = 0;
+    var resultSent = false;
+    var gameWon = false;       // authoritative outcome, set once in endGame()
 
-    // ---- timing ----
-    var started = false;
-    var startTime = 0;
-    var lastT = 0;
+    // ---- input ----
+    var JOY_R = 52, JOY_KNOB = 24;
+    var joy = { active: false, id: null, ox: 0, oy: 0, vx: 0, vy: 0 };
+    // action buttons (canvas-drawn, thumb bottom-right). Each tracks its own touch id.
+    var buttons = [];
+    var overBtn = null; // "Готово"/exit button when game over
+
+    var started = false, startTime = 0, lastT = 0;
     var fps = 0, fpsAcc = 0, fpsFrames = 0, fpsTimer = 0;
 
     // ============================================================
-    // iso <-> screen mapping
+    // helpers
+    // ============================================================
+    function clampInt(v, lo, hi) { v = Math.round(+v || 0); return v < lo ? lo : v > hi ? hi : v; }
+    function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+    function haptic(kind) {
+      try {
+        if (tg && tg.HapticFeedback) {
+          if (kind === 'impact') tg.HapticFeedback.impactOccurred('medium');
+          else if (kind === 'heavy') tg.HapticFeedback.impactOccurred('heavy');
+          else if (kind === 'light') tg.HapticFeedback.impactOccurred('light');
+          else if (kind === 'warn') tg.HapticFeedback.notificationOccurred('warning');
+        }
+      } catch (e) { /* ignore */ }
+    }
+
+    // ============================================================
+    // iso <-> screen mapping  (kept from Iter 1, verified inverse)
     // ============================================================
     function gridToScreen(gx, gy, ox, oy) {
-      return {
-        sx: ox + (gx - gy) * (TILE_W / 2),
-        sy: oy + (gx + gy) * (TILE_H / 2)
-      };
+      return { sx: ox + (gx - gy) * (TILE_W / 2), sy: oy + (gx + gy) * (TILE_H / 2) };
     }
-    // inverse: screen -> grid (solve the 2x2 iso basis)
     function screenToGrid(sx, sy, ox, oy) {
       var dx = sx - ox, dy = sy - oy;
-      // dx = (gx-gy)*W/2 ; dy = (gx+gy)*H/2
       var a = dx / (TILE_W / 2); // gx - gy
       var b = dy / (TILE_H / 2); // gx + gy
       return { gx: (b + a) / 2, gy: (b - a) / 2 };
     }
 
     // ============================================================
-    // canvas sizing (DPR capped at 2) + resize
+    // canvas sizing (DPR<=2) + resize   (kept from Iter 1)
     // ============================================================
     function resize() {
       cssW = window.innerWidth;
@@ -157,31 +204,20 @@
       ctx.scale(DPR, DPR);
       recomputeOrigin();
       buildFloor();
+      layoutButtons();
     }
-
     function recomputeOrigin() {
-      // Center the diamond grid in the viewport.
       var n = world.gridN;
-      // grid extents in screen space (relative to origin 0,0):
-      //   x spans from (0-(n-1)) to ((n-1)-0) => width n*TILE_W
-      //   y spans from 0 to (2*(n-1)) => height (n)*TILE_H roughly
       world.originX = cssW / 2;
       world.originY = cssH / 2 - (n - 1) * (TILE_H / 2);
     }
 
-    // ============================================================
-    // pre-render static floor once to an offscreen canvas
-    // ============================================================
+    // ---- pre-render static floor (kept from Iter 1) ----
     function buildFloor() {
       var n = world.gridN;
-      // Determine bounding box of the whole grid in a LOCAL coord space,
-      // then blit with an offset so it lines up with world origin each frame.
-      // Corners of the diamond (local origin 0,0):
       var pts = [
-        gridToScreen(0, 0, 0, 0),
-        gridToScreen(n, 0, 0, 0),
-        gridToScreen(0, n, 0, 0),
-        gridToScreen(n, n, 0, 0)
+        gridToScreen(0, 0, 0, 0), gridToScreen(n, 0, 0, 0),
+        gridToScreen(0, n, 0, 0), gridToScreen(n, n, 0, 0)
       ];
       var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
       for (var i = 0; i < pts.length; i++) {
@@ -193,168 +229,38 @@
       var pad = 2;
       var fw = Math.ceil(maxX - minX) + pad * 2;
       var fh = Math.ceil(maxY - minY) + pad * 2;
-      // local origin inside the floor canvas
-      var lox = -minX + pad;
-      var loy = -minY + pad;
+      var lox = -minX + pad, loy = -minY + pad;
 
       var fc = world.floorCanvas || document.createElement('canvas');
       fc.width = Math.round(fw * DPR);
       fc.height = Math.round(fh * DPR);
-      var fx = fc.getContext('2d');
-      fx.setTransform(1, 0, 0, 1, 0, 0);
-      fx.clearRect(0, 0, fc.width, fc.height);
-      fx.scale(DPR, DPR);
-
+      var f = fc.getContext('2d');
+      f.setTransform(1, 0, 0, 1, 0, 0);
+      f.clearRect(0, 0, fc.width, fc.height);
+      f.scale(DPR, DPR);
       for (var gy = 0; gy < n; gy++) {
         for (var gx = 0; gx < n; gx++) {
-          drawDiamond(fx, gx, gy, lox, loy, (gx + gy) % 2 === 0 ? '#26324f' : '#202b45', '#161e33');
+          var edge = (gx === 0 || gy === 0 || gx === n - 1 || gy === n - 1);
+          var fill = edge ? '#1b2540' : ((gx + gy) % 2 === 0 ? '#26324f' : '#202b45');
+          drawDiamond(f, gx, gy, lox, loy, fill, '#161e33');
         }
       }
-
-      world.floorCanvas = fc;
-      world.floorW = fw;
-      world.floorH = fh;
-      world.floorOffX = lox;
-      world.floorOffY = loy;
+      world.floorCanvas = fc; world.floorW = fw; world.floorH = fh;
+      world.floorOffX = lox; world.floorOffY = loy;
     }
-
-    function diamondPath(c, cx, cy) {
-      var hw = TILE_W / 2, hh = TILE_H / 2;
+    function diamondPath(c, cx, cy, scale) {
+      var hw = (TILE_W / 2) * (scale || 1), hh = (TILE_H / 2) * (scale || 1);
       c.beginPath();
-      c.moveTo(cx, cy - hh);      // top
-      c.lineTo(cx + hw, cy);      // right
-      c.lineTo(cx, cy + hh);      // bottom
-      c.lineTo(cx - hw, cy);      // left
-      c.closePath();
+      c.moveTo(cx, cy - hh); c.lineTo(cx + hw, cy);
+      c.lineTo(cx, cy + hh); c.lineTo(cx - hw, cy); c.closePath();
     }
-
     function drawDiamond(c, gx, gy, ox, oy, fill, stroke) {
       var s = gridToScreen(gx, gy, ox, oy);
-      // Cell center: shift by half a tile so the diamond sits on the cell.
       var cx = s.sx, cy = s.sy + TILE_H / 2;
       diamondPath(c, cx, cy);
-      c.fillStyle = fill;
-      c.fill();
-      c.lineWidth = 1;
-      c.strokeStyle = stroke;
-      c.stroke();
+      c.fillStyle = fill; c.fill();
+      c.lineWidth = 1; c.strokeStyle = stroke; c.stroke();
     }
-
-    // ============================================================
-    // update()
-    // ============================================================
-    function update(dt) {
-      // joystick -> movement, converted through iso basis so "up" = up-screen.
-      if (joy.active && (joy.vx !== 0 || joy.vy !== 0)) {
-        // Screen vector (joy.vx, joy.vy): up-screen is negative sy.
-        // Invert iso: a delta in grid (dgx,dgy) maps to screen
-        //   dsx = (dgx-dgy)*W/2 ; dsy = (dgx+dgy)*H/2
-        // We want hero to travel along the screen vector, so map the screen
-        // unit vector back into grid space via screenToGrid delta.
-        var g = screenToGrid(joy.vx * (TILE_W), joy.vy * (TILE_H), 0, 0);
-        var len = Math.hypot(g.gx, g.gy);
-        if (len > 1e-4) {
-          var ndx = g.gx / len, ndy = g.gy / len;
-          var mag = Math.hypot(joy.vx, joy.vy); // 0..1 stick throw
-          hero.gx += ndx * HERO_SPEED * mag * dt;
-          hero.gy += ndy * HERO_SPEED * mag * dt;
-          hero.faceX = ndx; hero.faceY = ndy;
-        }
-      }
-      // clamp to arena bounds [0 .. gridN-1]
-      var maxC = world.gridN - 1;
-      if (hero.gx < 0) hero.gx = 0; else if (hero.gx > maxC) hero.gx = maxC;
-      if (hero.gy < 0) hero.gy = 0; else if (hero.gy > maxC) hero.gy = maxC;
-
-      if (flash.active) {
-        flash.t -= dt;
-        if (flash.t <= 0) flash.active = false;
-      }
-    }
-
-    // ============================================================
-    // render()
-    // ============================================================
-    function render() {
-      ctx.clearRect(0, 0, cssW, cssH);
-
-      // blit pre-rendered floor
-      var fc = world.floorCanvas;
-      if (fc) {
-        var bx = world.originX - world.floorOffX;
-        var by = world.originY - world.floorOffY;
-        ctx.drawImage(fc, bx, by, world.floorW, world.floorH);
-      }
-
-      // highlight cell under the hero (proves screen<->grid consistency)
-      var hcx = Math.floor(hero.gx), hcy = Math.floor(hero.gy);
-      highlightCell(hcx, hcy, 'rgba(255,230,120,0.9)', 1.6);
-
-      // tap flash (inverse-map proof)
-      if (flash.active) {
-        var a = Math.max(0, flash.t / 0.5);
-        highlightCell(flash.gx, flash.gy, 'rgba(120,200,255,' + (0.9 * a).toFixed(3) + ')', 2);
-      }
-
-      // actors (Iter 1: just hero). Depth trivial; draw shadow then body.
-      for (var i = 0; i < actors.length; i++) drawHero(actors[i]);
-
-      // joystick
-      if (joy.active) drawJoystick();
-    }
-
-    function highlightCell(gx, gy, color, w) {
-      if (gx < 0 || gy < 0 || gx >= world.gridN || gy >= world.gridN) return;
-      var s = gridToScreen(gx, gy, world.originX, world.originY);
-      diamondPath(ctx, s.sx, s.sy + TILE_H / 2);
-      ctx.lineWidth = w;
-      ctx.strokeStyle = color;
-      ctx.stroke();
-    }
-
-    function drawHero(a) {
-      var s = gridToScreen(a.gx, a.gy, world.originX, world.originY);
-      var cx = s.sx, cy = s.sy + TILE_H / 2;
-
-      // ground shadow (flattened ellipse)
-      ctx.save();
-      ctx.fillStyle = 'rgba(0,0,0,0.35)';
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, 13, 6, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-
-      // body: stacked rounded shapes lifted off the ground
-      var bh = 26; // body height (pixels lifted)
-      var bodyY = cy - bh;
-      // torso rounded-rect
-      roundRect(ctx, cx - 10, bodyY, 20, bh, 8);
-      ctx.fillStyle = '#c94f4f';
-      ctx.fill();
-      ctx.lineWidth = 1.5;
-      ctx.strokeStyle = '#7a2d2d';
-      ctx.stroke();
-      // head
-      ctx.beginPath();
-      ctx.arc(cx, bodyY - 2, 7, 0, Math.PI * 2);
-      ctx.fillStyle = '#e0a87a';
-      ctx.fill();
-      ctx.strokeStyle = '#8a6a4a';
-      ctx.stroke();
-
-      // facing "nose" triangle (screen-space projection of grid facing)
-      var fs = { sx: (a.faceX - a.faceY) * (TILE_W / 2), sy: (a.faceX + a.faceY) * (TILE_H / 2) };
-      var fl = Math.hypot(fs.sx, fs.sy) || 1;
-      var nx = fs.sx / fl, ny = fs.sy / fl;
-      ctx.beginPath();
-      ctx.moveTo(cx + nx * 14, cy - bh * 0.5 + ny * 7);
-      ctx.lineTo(cx + nx * 6 - ny * 4, cy - bh * 0.5 - ny * 6 + nx * 4);
-      ctx.lineTo(cx + nx * 6 + ny * 4, cy - bh * 0.5 - ny * 6 - nx * 4);
-      ctx.closePath();
-      ctx.fillStyle = '#ffd27a';
-      ctx.fill();
-    }
-
     function roundRect(c, x, y, w, h, r) {
       c.beginPath();
       c.moveTo(x + r, y);
@@ -365,47 +271,794 @@
       c.closePath();
     }
 
-    function drawJoystick() {
-      // base
-      ctx.beginPath();
-      ctx.arc(joy.ox, joy.oy, JOY_R, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255,255,255,0.10)';
-      ctx.fill();
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = 'rgba(255,255,255,0.22)';
-      ctx.stroke();
-      // knob
-      ctx.beginPath();
-      ctx.arc(joy.ox + joy.vx * JOY_R, joy.oy + joy.vy * JOY_R, JOY_KNOB, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255,255,255,0.28)';
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-      ctx.stroke();
+    // ============================================================
+    // entity factories
+    // ============================================================
+    var EN_TYPES = {
+      grunt:   { hp: 44,  speed: 1.7, dmg: 10, radius: 0.42, atkCd: 1.1, ranged: false, color: '#8e6b4a', edge: '#5a4127', gold: 3,  size: 1.0 },
+      skirm:   { hp: 24,  speed: 2.9, dmg: 7,  radius: 0.34, atkCd: 0.8, ranged: false, color: '#6ec06e', edge: '#3f7c3f', gold: 2,  size: 0.82 },
+      caster:  { hp: 28,  speed: 1.4, dmg: 12, radius: 0.38, atkCd: 1.9, ranged: true,  color: '#b06ec0', edge: '#6f3f7c', gold: 5,  size: 0.9, keep: 3.4, tele: 0.55, projSpeed: 4.5 },
+      brute:   { hp: 120, speed: 1.1, dmg: 20, radius: 0.58, atkCd: 1.6, ranged: false, color: '#c05050', edge: '#7c3030', gold: 8,  size: 1.35 }
+    };
+
+    function makeEnemy(type, gx, gy, hpScale) {
+      var t = EN_TYPES[type];
+      return {
+        type: type, gx: gx, gy: gy,
+        hp: Math.round(t.hp * (hpScale || 1)), maxHp: Math.round(t.hp * (hpScale || 1)),
+        speed: t.speed, dmg: t.dmg, radius: t.radius, atkCd: 0, atkMax: t.atkCd,
+        ranged: t.ranged, color: t.color, edge: t.edge, gold: t.gold, size: t.size,
+        keep: t.keep || 0, tele: 0, teleMax: t.tele || 0, projSpeed: t.projSpeed || 0,
+        hitFlash: 0, kbVx: 0, kbVy: 0, dead: false, deathT: 0, bob: R() * 6.28,
+        faceX: 0, faceY: 1
+      };
     }
-    var JOY_R = 52, JOY_KNOB = 24;
+    function makeProjectile(gx, gy, vx, vy, dmg, fromHero) {
+      return { gx: gx, gy: gy, vx: vx, vy: vy, dmg: dmg, fromHero: !!fromHero, life: 3.0, r: fromHero ? 0.28 : 0.24 };
+    }
+    function makePickup(gx, gy, kind) {
+      // kind: 'gold' | 'heal'
+      return { gx: gx, gy: gy, kind: kind, t: 0, life: 12, vY: -18, offY: 0 };
+    }
+    function makeFX(o) { fx.push(o); return o; }
+    function damageNumber(gx, gy, text, color) {
+      makeFX({ kind: 'num', gx: gx, gy: gy, text: '' + text, color: color || '#ffe08a', t: 0, life: 0.9, offY: 0 });
+    }
+    function burst(gx, gy, color, n) {
+      n = n || 6;
+      for (var i = 0; i < n; i++) {
+        var a = R() * 6.283, sp = 20 + R() * 40;
+        makeFX({ kind: 'part', gx: gx, gy: gy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, color: color, t: 0, life: 0.4 + R() * 0.3, sz: 2 + R() * 2 });
+      }
+    }
+    function ringFX(gx, gy, color, maxR) {
+      makeFX({ kind: 'ring', gx: gx, gy: gy, color: color, t: 0, life: 0.35, maxR: maxR });
+    }
 
     // ============================================================
-    // input handlers
+    // waves
     // ============================================================
-    function localXY(touch) {
+    function waveComposition(w) {
+      // returns array of type strings for wave w (1-based)
+      var out = [];
+      var base = 3 + w; // grows
+      var hpScale = 1 + (w - 1) * 0.12;
+      // difficulty scaling from optional gameData.size (1..3)
+      var sizeMul = clamp(+GD.size || 1, 0.7, 1.6);
+      base = Math.round(base * sizeMul);
+      for (var i = 0; i < base; i++) {
+        var r = R();
+        var type;
+        if (w <= 1) type = r < 0.7 ? 'grunt' : 'skirm';
+        else if (w === 2) type = r < 0.45 ? 'grunt' : (r < 0.8 ? 'skirm' : 'caster');
+        else if (w === 3) type = r < 0.35 ? 'grunt' : (r < 0.65 ? 'skirm' : (r < 0.9 ? 'caster' : 'brute'));
+        else type = r < 0.28 ? 'grunt' : (r < 0.55 ? 'skirm' : (r < 0.82 ? 'caster' : 'brute'));
+        out.push({ type: type, hpScale: hpScale });
+      }
+      return out;
+    }
+    var pendingSpawn = []; // queue of {type,hpScale} to drip in
+    var spawnTimer = 0;
+
+    function startWave(w) {
+      currentWave = w;
+      pendingSpawn = waveComposition(w);
+      spawnTimer = 0.2;
+    }
+    function spawnFromQueue(dt) {
+      if (!pendingSpawn.length) return;
+      spawnTimer -= dt;
+      if (spawnTimer > 0) return;
+      if (enemies.length >= MAX_ENEMIES) { spawnTimer = 0.4; return; }
+      var e = pendingSpawn.shift();
+      // spawn on a random edge cell
+      var n = world.gridN, gx, gy, side = Math.floor(R() * 4);
+      if (side === 0) { gx = 1 + R() * (n - 2); gy = 1; }
+      else if (side === 1) { gx = 1 + R() * (n - 2); gy = n - 2; }
+      else if (side === 2) { gx = 1; gy = 1 + R() * (n - 2); }
+      else { gx = n - 2; gy = 1 + R() * (n - 2); }
+      var en = makeEnemy(e.type, gx, gy, e.hpScale);
+      enemies.push(en);
+      ringFX(gx, gy, 'rgba(180,120,220,0.7)', 0.7);
+      spawnTimer = 0.35 + R() * 0.3;
+    }
+
+    // ============================================================
+    // combat resolution
+    // ============================================================
+    function heroBasicAttack() {
+      if (hero.atkCd > 0 || phase !== 'playing') return;
+      hero.atkCd = ATTACK_CD;
+      hero.swing = 1; hero.swingDir = -hero.swingDir;
+      haptic('light');
+      var fa = Math.atan2(hero.faceY, hero.faceX);
+      var hit = false;
+      for (var i = 0; i < enemies.length; i++) {
+        var e = enemies[i]; if (e.dead) continue;
+        var dx = e.gx - hero.gx, dy = e.gy - hero.gy;
+        var d = Math.hypot(dx, dy);
+        if (d > ATTACK_RANGE + e.radius) continue;
+        var ang = Math.atan2(dy, dx);
+        var diff = Math.abs(angDiff(ang, fa));
+        if (diff <= ATTACK_ARC) {
+          applyDamage(e, ATTACK_DMG, dx / (d || 1), dy / (d || 1), ATTACK_KB);
+          hit = true;
+        }
+      }
+      if (hit) { haptic('impact'); shake = Math.max(shake, 3); }
+    }
+    function angDiff(a, b) {
+      var d = a - b;
+      while (d > Math.PI) d -= 2 * Math.PI;
+      while (d < -Math.PI) d += 2 * Math.PI;
+      return d;
+    }
+    function applyDamage(e, dmg, nx, ny, kb) {
+      e.hp -= dmg;
+      e.hitFlash = 0.12;
+      damageNumber(e.gx, e.gy - 0.2, Math.round(dmg), '#fff2b0');
+      if (kb) { e.kbVx += nx * kb; e.kbVy += ny * kb; }
+      if (e.hp <= 0 && !e.dead) killEnemy(e);
+    }
+    function killEnemy(e) {
+      e.dead = true; e.deathT = 0;
+      kills++;
+      burst(e.gx, e.gy, e.color, 8);
+      // drops
+      pickups.push(makePickup(e.gx, e.gy, 'gold'));
+      if (R() < 0.12) pickups.push(makePickup(e.gx + 0.2, e.gy + 0.1, 'heal'));
+    }
+
+    function useWhirl() {
+      if (hero.whirlCd > 0 || phase !== 'playing') return;
+      hero.whirlCd = WHIRL_CD;
+      ringFX(hero.gx, hero.gy, 'rgba(255,220,120,0.9)', WHIRL_RANGE);
+      haptic('impact'); shake = Math.max(shake, 4);
+      for (var i = 0; i < enemies.length; i++) {
+        var e = enemies[i]; if (e.dead) continue;
+        var dx = e.gx - hero.gx, dy = e.gy - hero.gy, d = Math.hypot(dx, dy);
+        if (d <= WHIRL_RANGE + e.radius) {
+          var n = d || 1;
+          applyDamage(e, WHIRL_DMG, dx / n, dy / n, WHIRL_KB);
+        }
+      }
+    }
+    function useDash() {
+      if (hero.dashCd > 0 || phase !== 'playing') return;
+      hero.dashCd = DASH_CD;
+      hero.dashT = DASH_TIME; hero.iframe = DASH_IFRAME;
+      var fl = Math.hypot(hero.faceX, hero.faceY) || 1;
+      var spd = (DASH_DIST / DASH_TIME);
+      hero.dashVx = hero.faceX / fl * spd;
+      hero.dashVy = hero.faceY / fl * spd;
+      haptic('light');
+    }
+    function useHammer() {
+      if (hero.hammerCd > 0 || phase !== 'playing') return;
+      hero.hammerCd = HAMMER_CD;
+      // slam a bit ahead of hero in facing dir
+      var fl = Math.hypot(hero.faceX, hero.faceY) || 1;
+      var tx = hero.gx + hero.faceX / fl * 1.2;
+      var ty = hero.gy + hero.faceY / fl * 1.2;
+      ringFX(tx, ty, 'rgba(120,200,255,0.95)', HAMMER_RADIUS);
+      burst(tx, ty, '#8fd0ff', 12);
+      haptic('heavy'); shake = Math.max(shake, 7);
+      for (var i = 0; i < enemies.length; i++) {
+        var e = enemies[i]; if (e.dead) continue;
+        var dx = e.gx - tx, dy = e.gy - ty, d = Math.hypot(dx, dy);
+        if (d <= HAMMER_RADIUS + e.radius) {
+          var n = d || 1;
+          applyDamage(e, HAMMER_DMG, dx / n, dy / n, HAMMER_KB);
+        }
+      }
+    }
+
+    function hurtHero(dmg) {
+      if (hero.iframe > 0 || phase !== 'playing') return;
+      hero.hp -= dmg;
+      hero.hitFlash = 0.18;
+      shake = Math.max(shake, 6);
+      haptic('warn');
+      damageNumber(hero.gx, hero.gy - 0.3, '-' + Math.round(dmg), '#ff8080');
+      if (hero.hp <= 0) { hero.hp = 0; endGame(false); }
+    }
+
+    // ============================================================
+    // update systems
+    // ============================================================
+    function update(dt) {
+      // cooldown ticks always run
+      hero.atkCd = Math.max(0, hero.atkCd - dt);
+      hero.whirlCd = Math.max(0, hero.whirlCd - dt);
+      hero.dashCd = Math.max(0, hero.dashCd - dt);
+      hero.hammerCd = Math.max(0, hero.hammerCd - dt);
+      hero.iframe = Math.max(0, hero.iframe - dt);
+      hero.hitFlash = Math.max(0, hero.hitFlash - dt);
+      hero.swing = Math.max(0, hero.swing - dt * 4.5);
+      hero.bob += dt * 6;
+      if (shake > 0) shake = Math.max(0, shake - dt * 22);
+
+      if (phase === 'wavebanner') {
+        bannerT -= dt;
+        if (bannerT <= 0) {
+          phase = 'playing';
+          startWave(currentWave); // currentWave was pre-incremented before banner
+        }
+        updateFX(dt);
+        return;
+      }
+      if (phase === 'over') { updateFX(dt); return; }
+
+      // ---- playing ----
+      spawnFromQueue(dt);
+      updateHero(dt);
+      updateEnemies(dt);
+      updateProjectiles(dt);
+      updatePickups(dt);
+      updateFX(dt);
+
+      // wave clear check: no pending, no live enemies
+      if (pendingSpawn.length === 0 && liveEnemyCount() === 0) {
+        wavesCleared = currentWave;
+        if (currentWave >= WAVE_COUNT) {
+          endGame(true);
+        } else {
+          currentWave += 1;
+          phase = 'wavebanner';
+          bannerT = 1.8;
+        }
+      }
+    }
+
+    function liveEnemyCount() {
+      var c = 0;
+      for (var i = 0; i < enemies.length; i++) if (!enemies[i].dead) c++;
+      return c;
+    }
+
+    function updateHero(dt) {
+      if (hero.dashT > 0) {
+        hero.dashT -= dt;
+        hero.gx += hero.dashVx * dt;
+        hero.gy += hero.dashVy * dt;
+      } else if (joy.active && (joy.vx !== 0 || joy.vy !== 0)) {
+        // screen unit vector -> grid via inverse iso
+        var g = screenToGrid(joy.vx * TILE_W, joy.vy * TILE_H, 0, 0);
+        var len = Math.hypot(g.gx, g.gy);
+        if (len > 1e-4) {
+          var ndx = g.gx / len, ndy = g.gy / len;
+          var mag = Math.min(1, Math.hypot(joy.vx, joy.vy));
+          hero.gx += ndx * HERO_SPEED * mag * dt;
+          hero.gy += ndy * HERO_SPEED * mag * dt;
+          hero.faceX = ndx; hero.faceY = ndy;
+        }
+      }
+      var lo = HERO_RADIUS, hi = world.gridN - 1 - HERO_RADIUS;
+      hero.gx = clamp(hero.gx, lo, hi);
+      hero.gy = clamp(hero.gy, lo, hi);
+    }
+
+    function updateEnemies(dt) {
+      var lo = 0.5, hi = world.gridN - 1.5;
+      // separation (pairwise; N<=12 so ~66 pairs — cheap)
+      for (var i = 0; i < enemies.length; i++) {
+        var a = enemies[i]; if (a.dead) continue;
+        for (var j = i + 1; j < enemies.length; j++) {
+          var b = enemies[j]; if (b.dead) continue;
+          var dx = b.gx - a.gx, dy = b.gy - a.gy;
+          var d = Math.hypot(dx, dy);
+          var minD = a.radius + b.radius;
+          if (d > 1e-4 && d < minD) {
+            var push = (minD - d) * 0.5;
+            var nx = dx / d, ny = dy / d;
+            a.gx -= nx * push; a.gy -= ny * push;
+            b.gx += nx * push; b.gy += ny * push;
+          }
+        }
+      }
+      for (var k = 0; k < enemies.length; k++) {
+        var e = enemies[k];
+        e.hitFlash = Math.max(0, e.hitFlash - dt);
+        e.bob += dt * 5;
+        if (e.dead) { e.deathT += dt; continue; }
+
+        // knockback decay
+        if (e.kbVx || e.kbVy) {
+          e.gx += e.kbVx * dt * 6; e.gy += e.kbVy * dt * 6;
+          e.kbVx *= 0.82; e.kbVy *= 0.82;
+          if (Math.abs(e.kbVx) < 0.01) e.kbVx = 0;
+          if (Math.abs(e.kbVy) < 0.01) e.kbVy = 0;
+        }
+
+        var tdx = hero.gx - e.gx, tdy = hero.gy - e.gy;
+        var dist = Math.hypot(tdx, tdy) || 1;
+        e.faceX = tdx / dist; e.faceY = tdy / dist;
+        e.atkCd = Math.max(0, e.atkCd - dt);
+
+        if (e.ranged) {
+          // keep distance, telegraph, then fire
+          var desired = e.keep;
+          if (dist > desired + 0.4) { e.gx += e.faceX * e.speed * dt; e.gy += e.faceY * e.speed * dt; }
+          else if (dist < desired - 0.4) { e.gx -= e.faceX * e.speed * dt; e.gy -= e.faceY * e.speed * dt; }
+          if (e.tele > 0) {
+            e.tele -= dt;
+            if (e.tele <= 0) {
+              var s = e.projSpeed;
+              projectiles.push(makeProjectile(e.gx, e.gy - 0.2, e.faceX * s, e.faceY * s, e.dmg, false));
+              e.atkCd = e.atkMax;
+            }
+          } else if (e.atkCd <= 0 && dist < e.keep + 2.5) {
+            e.tele = e.teleMax; // begin telegraph
+          }
+        } else {
+          // melee: chase & bump
+          if (dist > e.radius + HERO_RADIUS + 0.02) {
+            e.gx += e.faceX * e.speed * dt; e.gy += e.faceY * e.speed * dt;
+          } else if (e.atkCd <= 0) {
+            hurtHero(e.dmg); e.atkCd = e.atkMax;
+            e.kbVx -= e.faceX * 0.2; e.kbVy -= e.faceY * 0.2;
+          }
+        }
+        e.gx = clamp(e.gx, lo, hi); e.gy = clamp(e.gy, lo, hi);
+      }
+      // cull faded dead
+      for (var m = enemies.length - 1; m >= 0; m--) {
+        if (enemies[m].dead && enemies[m].deathT > 0.5) enemies.splice(m, 1);
+      }
+    }
+
+    function updateProjectiles(dt) {
+      for (var i = projectiles.length - 1; i >= 0; i--) {
+        var p = projectiles[i];
+        p.gx += p.vx * dt; p.gy += p.vy * dt;
+        p.life -= dt;
+        var kill = false;
+        if (p.life <= 0) kill = true;
+        else if (p.gx < 0 || p.gy < 0 || p.gx > world.gridN || p.gy > world.gridN) kill = true;
+        else if (p.fromHero) {
+          for (var j = 0; j < enemies.length; j++) {
+            var e = enemies[j]; if (e.dead) continue;
+            if (Math.hypot(e.gx - p.gx, e.gy - p.gy) < e.radius + p.r) {
+              var n = Math.hypot(p.vx, p.vy) || 1;
+              applyDamage(e, p.dmg, p.vx / n, p.vy / n, 0.4);
+              kill = true; break;
+            }
+          }
+        } else {
+          if (hero.iframe <= 0 && Math.hypot(hero.gx - p.gx, hero.gy - p.gy) < HERO_RADIUS + p.r) {
+            hurtHero(p.dmg); kill = true;
+          }
+        }
+        if (kill) { burst(p.gx, p.gy, p.fromHero ? '#ffe08a' : '#c07adf', 4); projectiles.splice(i, 1); }
+      }
+    }
+
+    function updatePickups(dt) {
+      for (var i = pickups.length - 1; i >= 0; i--) {
+        var pk = pickups[i];
+        pk.t += dt; pk.life -= dt;
+        // small pop animation
+        if (pk.offY > -6) pk.offY = Math.min(0, pk.offY); // settle handled in render bob
+        // magnet + collect
+        var dx = hero.gx - pk.gx, dy = hero.gy - pk.gy, d = Math.hypot(dx, dy);
+        if (d < 1.3) { pk.gx += (dx / (d || 1)) * dt * 3.5; pk.gy += (dy / (d || 1)) * dt * 3.5; }
+        if (d < HERO_RADIUS + 0.25) {
+          if (pk.kind === 'gold') { gold += 1 + Math.floor(R() * 3); haptic('light'); }
+          else { hero.hp = Math.min(hero.maxHp, hero.hp + 25); damageNumber(hero.gx, hero.gy - 0.4, '+25', '#7cf07c'); haptic('light'); }
+          pickups.splice(i, 1); continue;
+        }
+        if (pk.life <= 0) pickups.splice(i, 1);
+      }
+    }
+
+    function updateFX(dt) {
+      for (var i = fx.length - 1; i >= 0; i--) {
+        var o = fx[i];
+        o.t += dt;
+        if (o.kind === 'part') { o.gx += o.vx * dt * 0.03; o.gy += o.vy * dt * 0.03; }
+        else if (o.kind === 'num') { o.offY -= dt * 26; }
+        if (o.t >= o.life) fx.splice(i, 1);
+      }
+    }
+
+    // ============================================================
+    // render (layered: floor -> shadows -> actors depth-sorted -> proj/fx -> UI)
+    // ============================================================
+    var _drawList = []; // reused each frame to avoid alloc storms
+
+    function render() {
+      ctx.save();
+      var sx = 0, sy = 0;
+      if (shake > 0) { sx = (R() - 0.5) * shake; sy = (R() - 0.5) * shake; }
+      ctx.translate(sx, sy);
+
+      ctx.clearRect(-20, -20, cssW + 40, cssH + 40);
+
+      // floor
+      var fc = world.floorCanvas;
+      if (fc) {
+        ctx.drawImage(fc, world.originX - world.floorOffX, world.originY - world.floorOffY, world.floorW, world.floorH);
+      }
+
+      // shadows first (all ground-level)
+      drawShadow(hero.gx, hero.gy, 14, 6);
+      for (var i = 0; i < enemies.length; i++) {
+        var e = enemies[i];
+        drawShadow(e.gx, e.gy, 12 * e.size, 5 * e.size);
+      }
+      for (var p = 0; p < pickups.length; p++) drawShadow(pickups[p].gx, pickups[p].gy, 6, 3);
+
+      // ground FX (rings) under actors
+      for (var r = 0; r < fx.length; r++) if (fx[r].kind === 'ring') drawRing(fx[r]);
+
+      // depth-sorted actors (far first): key = gx+gy ascending
+      _drawList.length = 0;
+      _drawList.push({ k: hero.gx + hero.gy, draw: drawHero });
+      for (var a = 0; a < enemies.length; a++) {
+        (function (en) { _drawList.push({ k: en.gx + en.gy, draw: function () { drawEnemy(en); } }); })(enemies[a]);
+      }
+      _drawList.sort(function (u, v) { return u.k - v.k; });
+      for (var d = 0; d < _drawList.length; d++) _drawList[d].draw();
+
+      // pickups (small, above ground)
+      for (var pk = 0; pk < pickups.length; pk++) drawPickup(pickups[pk]);
+
+      // projectiles + air particles + numbers
+      for (var pj = 0; pj < projectiles.length; pj++) drawProjectile(projectiles[pj]);
+      for (var f2 = 0; f2 < fx.length; f2++) {
+        if (fx[f2].kind === 'part') drawParticle(fx[f2]);
+        else if (fx[f2].kind === 'num') drawNumber(fx[f2]);
+      }
+
+      ctx.restore();
+
+      // UI (not shaken)
+      drawButtons();
+      if (joy.active) drawJoystick();
+      if (phase === 'wavebanner') drawBanner('ВОЛНА ' + currentWave, '#ffd27a');
+      if (phase === 'over') drawGameOver();
+    }
+
+    function drawShadow(gx, gy, rx, ry) {
+      var s = gridToScreen(gx, gy, world.originX, world.originY);
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.32)';
+      ctx.beginPath();
+      ctx.ellipse(s.sx, s.sy + TILE_H / 2, rx, ry, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawHero(a) {
+      a = a || hero;
+      var s = gridToScreen(hero.gx, hero.gy, world.originX, world.originY);
+      var cx = s.sx, cy = s.sy + TILE_H / 2;
+      var bobY = Math.sin(hero.bob) * 1.2;
+      var bh = 26;
+      var bodyY = cy - bh + bobY;
+
+      // attack swing arc (in facing dir)
+      if (hero.swing > 0) drawSwing(cx, cy - bh * 0.5);
+
+      // dash trail
+      if (hero.dashT > 0) {
+        ctx.save();
+        ctx.globalAlpha = 0.35;
+        ctx.fillStyle = '#9fd0ff';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy - bh * 0.5, 14, 20, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      var flashing = hero.hitFlash > 0;
+      // torso
+      roundRect(ctx, cx - 10, bodyY, 20, bh, 8);
+      ctx.fillStyle = flashing ? '#ffffff' : '#c94f4f';
+      ctx.fill();
+      ctx.lineWidth = 1.5; ctx.strokeStyle = '#7a2d2d'; ctx.stroke();
+      // head
+      ctx.beginPath();
+      ctx.arc(cx, bodyY - 2, 7, 0, Math.PI * 2);
+      ctx.fillStyle = flashing ? '#ffffff' : '#e0a87a';
+      ctx.fill();
+      ctx.strokeStyle = '#8a6a4a'; ctx.stroke();
+      // facing nose
+      var fs = { sx: (hero.faceX - hero.faceY) * (TILE_W / 2), sy: (hero.faceX + hero.faceY) * (TILE_H / 2) };
+      var fl = Math.hypot(fs.sx, fs.sy) || 1;
+      var nx = fs.sx / fl, ny = fs.sy / fl;
+      ctx.beginPath();
+      ctx.moveTo(cx + nx * 14, bodyY + bh * 0.5 + ny * 7);
+      ctx.lineTo(cx + nx * 6 - ny * 4, bodyY + bh * 0.5 - ny * 6 + nx * 4);
+      ctx.lineTo(cx + nx * 6 + ny * 4, bodyY + bh * 0.5 - ny * 6 - nx * 4);
+      ctx.closePath();
+      ctx.fillStyle = '#ffd27a'; ctx.fill();
+
+      // hero HP bar above head
+      drawBar(cx, bodyY - 16, 26, 4, hero.hp / hero.maxHp, '#ff5b5b', '#2a1414');
+    }
+
+    function drawSwing(cx, cy) {
+      var fa = Math.atan2((hero.faceX + hero.faceY), (hero.faceX - hero.faceY)); // approx screen angle
+      var sw = 1 - hero.swing; // 0..1 progress
+      var spread = ATTACK_ARC;
+      var a0 = fa - spread, a1 = fa + spread;
+      ctx.save();
+      ctx.globalAlpha = 0.5 * hero.swing;
+      ctx.strokeStyle = '#fff0b0';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, 22, 12, 0, a0, a1);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawEnemy(e) {
+      var s = gridToScreen(e.gx, e.gy, world.originX, world.originY);
+      var cx = s.sx, cy = s.sy + TILE_H / 2;
+      var alpha = e.dead ? Math.max(0, 1 - e.deathT / 0.5) : 1;
+      var bobY = Math.sin(e.bob) * 1.0;
+      var bh = 22 * e.size;
+      var bodyY = cy - bh + bobY;
+
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      var flashing = e.hitFlash > 0 && !e.dead;
+
+      // telegraph glow for casters
+      if (e.ranged && e.tele > 0) {
+        ctx.save();
+        ctx.globalAlpha = 0.5 * alpha;
+        ctx.fillStyle = '#ff6bd0';
+        ctx.beginPath();
+        ctx.arc(cx, bodyY + bh * 0.4, 12 * e.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      var w = 18 * e.size;
+      roundRect(ctx, cx - w / 2, bodyY, w, bh, 6);
+      ctx.fillStyle = flashing ? '#ffffff' : e.color;
+      ctx.fill();
+      ctx.lineWidth = 1.5; ctx.strokeStyle = e.edge; ctx.stroke();
+      // head
+      ctx.beginPath();
+      ctx.arc(cx, bodyY - 2, 6 * e.size, 0, Math.PI * 2);
+      ctx.fillStyle = flashing ? '#ffffff' : e.color;
+      ctx.fill(); ctx.stroke();
+
+      // little eyes for menace
+      if (!e.dead) {
+        ctx.fillStyle = flashing ? '#222' : '#1a0d0d';
+        ctx.beginPath(); ctx.arc(cx - 2.5 * e.size, bodyY - 2, 1.3, 0, 6.28); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx + 2.5 * e.size, bodyY - 2, 1.3, 0, 6.28); ctx.fill();
+      }
+      ctx.restore();
+
+      // HP bar
+      if (!e.dead && e.hp < e.maxHp) drawBar(cx, bodyY - 12, w + 4, 3, e.hp / e.maxHp, '#e05555', '#2a1414');
+    }
+
+    function drawProjectile(p) {
+      var s = gridToScreen(p.gx, p.gy, world.originX, world.originY);
+      var cx = s.sx, cy = s.sy + TILE_H / 2 - 10;
+      ctx.save();
+      ctx.fillStyle = p.fromHero ? '#ffe08a' : '#d67ae0';
+      ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.arc(cx, cy, p.r * TILE_W * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawPickup(pk) {
+      var s = gridToScreen(pk.gx, pk.gy, world.originX, world.originY);
+      var cy = s.sy + TILE_H / 2 - 8 + Math.sin(pk.t * 5) * 2;
+      ctx.save();
+      if (pk.kind === 'gold') {
+        ctx.fillStyle = '#ffcf40';
+        ctx.strokeStyle = '#a97e0a'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(s.sx, cy, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#fff3c0';
+        ctx.beginPath(); ctx.arc(s.sx - 1.5, cy - 1.5, 1.6, 0, Math.PI * 2); ctx.fill();
+      } else {
+        ctx.fillStyle = '#4ce04c';
+        ctx.strokeStyle = '#1f7a1f'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(s.sx, cy, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(s.sx - 3, cy - 1, 6, 2);
+        ctx.fillRect(s.sx - 1, cy - 3, 2, 6);
+      }
+      ctx.restore();
+    }
+
+    function drawParticle(o) {
+      var s = gridToScreen(o.gx, o.gy, world.originX, world.originY);
+      var a = 1 - o.t / o.life;
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, a);
+      ctx.fillStyle = o.color;
+      ctx.beginPath();
+      ctx.arc(s.sx, s.sy + TILE_H / 2 - 12, o.sz, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawNumber(o) {
+      var s = gridToScreen(o.gx, o.gy, world.originX, world.originY);
+      var a = 1 - o.t / o.life;
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, a);
+      ctx.font = 'bold 15px ui-monospace, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = o.color;
+      ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.lineWidth = 3;
+      var y = s.sy + TILE_H / 2 - 24 + o.offY;
+      ctx.strokeText(o.text, s.sx, y);
+      ctx.fillText(o.text, s.sx, y);
+      ctx.restore();
+    }
+
+    function drawRing(o) {
+      var s = gridToScreen(o.gx, o.gy, world.originX, world.originY);
+      var prog = o.t / o.life;
+      var rad = o.maxR * (TILE_W / 2) * prog;
+      ctx.save();
+      ctx.globalAlpha = (1 - prog) * 0.9;
+      ctx.strokeStyle = o.color;
+      ctx.lineWidth = 4 * (1 - prog) + 1;
+      ctx.beginPath();
+      ctx.ellipse(s.sx, s.sy + TILE_H / 2, rad, rad * (TILE_H / TILE_W), 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawBar(cx, y, w, h, frac, fg, bg) {
+      frac = clamp(frac, 0, 1);
+      ctx.save();
+      ctx.fillStyle = bg; ctx.fillRect(cx - w / 2, y, w, h);
+      ctx.fillStyle = fg; ctx.fillRect(cx - w / 2, y, w * frac, h);
+      ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = 1;
+      ctx.strokeRect(cx - w / 2, y, w, h);
+      ctx.restore();
+    }
+
+    // ---- joystick ----
+    function drawJoystick() {
+      ctx.beginPath();
+      ctx.arc(joy.ox, joy.oy, JOY_R, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.10)'; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.stroke();
+      var kx = joy.ox + joy.vx * JOY_R, ky = joy.oy + joy.vy * JOY_R;
+      ctx.beginPath();
+      ctx.arc(kx, ky, JOY_KNOB, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.28)'; ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.stroke();
+    }
+
+    // ============================================================
+    // action buttons (canvas, bottom-right, per-touch identifiers)
+    // ============================================================
+    function layoutButtons() {
+      // radii + positions relative to bottom-right
+      var bigR = 40, smR = 30;
+      var right = cssW - 20, bottom = cssH - 24;
+      buttons = [
+        { id: 'attack', label: '⚔', r: bigR, x: right - bigR, y: bottom - bigR, cdKey: 'atkCd', cdMax: ATTACK_CD, color: '#c94f4f', act: heroBasicAttack, touchId: null },
+        { id: 'whirl',  label: '🌀', r: smR, x: right - bigR * 2 - 10, y: bottom - smR, cdKey: 'whirlCd', cdMax: WHIRL_CD, color: '#e0a020', act: useWhirl, touchId: null },
+        { id: 'dash',   label: '💨', r: smR, x: right - smR, y: bottom - bigR * 2 - 14, cdKey: 'dashCd', cdMax: DASH_CD, color: '#4a9fe0', act: useDash, touchId: null },
+        { id: 'hammer', label: '🔨', r: smR, x: right - bigR * 2 - 4, y: bottom - bigR * 2 - 24, cdKey: 'hammerCd', cdMax: HAMMER_CD, color: '#7a5fe0', act: useHammer, touchId: null }
+      ];
+    }
+
+    function drawButtons() {
+      for (var i = 0; i < buttons.length; i++) {
+        var b = buttons[i];
+        var cd = hero[b.cdKey] || 0;
+        var ready = cd <= 0;
+        ctx.save();
+        // base
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.fillStyle = ready ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.06)';
+        ctx.fill();
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = ready ? b.color : 'rgba(180,180,180,0.4)';
+        ctx.stroke();
+        // cooldown sweep (pie from top, clockwise)
+        if (!ready) {
+          var frac = cd / b.cdMax;
+          ctx.beginPath();
+          ctx.moveTo(b.x, b.y);
+          ctx.arc(b.x, b.y, b.r - 2, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * frac, false);
+          ctx.closePath();
+          ctx.fillStyle = 'rgba(0,0,0,0.5)';
+          ctx.fill();
+        }
+        // label
+        ctx.globalAlpha = ready ? 1 : 0.5;
+        ctx.font = (b.r * 0.85) + 'px sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#fff';
+        ctx.fillText(b.label, b.x, b.y + 1);
+        ctx.restore();
+      }
+    }
+
+    function buttonAt(x, y) {
+      for (var i = 0; i < buttons.length; i++) {
+        var b = buttons[i];
+        if (Math.hypot(x - b.x, y - b.y) <= b.r + 6) return b;
+      }
+      return null;
+    }
+
+    // ---- banners / game over overlay ----
+    function drawBanner(text, color) {
+      ctx.save();
+      ctx.globalAlpha = clamp(bannerT / 0.6, 0, 1);
+      ctx.font = 'bold 40px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = color;
+      ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.lineWidth = 5;
+      ctx.strokeText(text, cssW / 2, cssH * 0.4);
+      ctx.fillText(text, cssW / 2, cssH * 0.4);
+      ctx.restore();
+    }
+
+    function drawGameOver() {
+      var won = wavesCleared >= WAVE_COUNT && hero.hp > 0;
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillRect(0, 0, cssW, cssH);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 44px sans-serif';
+      ctx.fillStyle = won ? '#7cf07c' : '#ff7070';
+      ctx.fillText(won ? 'ПОБЕДА' : 'ПОРАЖЕНИЕ', cssW / 2, cssH * 0.34);
+      ctx.font = '18px sans-serif';
+      ctx.fillStyle = '#e8e8e8';
+      ctx.fillText('Волн: ' + wavesCleared + '/' + WAVE_COUNT + '   Убито: ' + kills + '   Золото: ' + gold, cssW / 2, cssH * 0.34 + 40);
+      // exit button
+      if (overBtn) {
+        roundRect(ctx, overBtn.x, overBtn.y, overBtn.w, overBtn.h, 12);
+        ctx.fillStyle = '#6c5ce7'; ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 18px sans-serif';
+        ctx.fillText('Готово ✓', overBtn.x + overBtn.w / 2, overBtn.y + overBtn.h / 2 + 1);
+      }
+      ctx.restore();
+    }
+
+    // ============================================================
+    // input handlers (multi-touch via identifiers)
+    // ============================================================
+    function localXY(t) {
       var r = cv.getBoundingClientRect();
-      return { x: touch.clientX - r.left, y: touch.clientY - r.top };
+      return { x: t.clientX - r.left, y: t.clientY - r.top };
     }
 
     function onTouchStart(e) {
       e.preventDefault();
       for (var i = 0; i < e.changedTouches.length; i++) {
-        var t = e.changedTouches[i];
-        var p = localXY(t);
+        var t = e.changedTouches[i], p = localXY(t);
+
+        if (phase === 'over') {
+          if (overBtn && p.x >= overBtn.x && p.x <= overBtn.x + overBtn.w && p.y >= overBtn.y && p.y <= overBtn.y + overBtn.h) {
+            finishAndSend();
+          }
+          continue;
+        }
+
+        // action button first (right side)
+        var b = buttonAt(p.x, p.y);
+        if (b && b.touchId === null) {
+          b.touchId = t.identifier;
+          b.act();
+          continue;
+        }
+        // else joystick on left half
         if (p.x < cssW / 2 && !joy.active) {
-          // floating joystick on left half
           joy.active = true; joy.id = t.identifier;
-          joy.ox = p.x; joy.oy = p.y;
-          joy.x = p.x; joy.y = p.y;
-          joy.vx = 0; joy.vy = 0;
-        } else if (p.x >= cssW / 2 && tapCandidate === null) {
-          // possible tap on right half (for inverse-map flash)
-          tapCandidate = { id: t.identifier, x: p.x, y: p.y, moved: false };
+          joy.ox = p.x; joy.oy = p.y; joy.vx = 0; joy.vy = 0;
         }
       }
     }
@@ -413,16 +1066,12 @@
     function onTouchMove(e) {
       e.preventDefault();
       for (var i = 0; i < e.changedTouches.length; i++) {
-        var t = e.changedTouches[i];
-        var p = localXY(t);
+        var t = e.changedTouches[i], p = localXY(t);
         if (joy.active && t.identifier === joy.id) {
           var dx = p.x - joy.ox, dy = p.y - joy.oy;
           var len = Math.hypot(dx, dy);
-          if (len > JOY_R) { dx = dx / len * JOY_R; dy = dy / len * JOY_R; len = JOY_R; }
-          joy.vx = dx / JOY_R; joy.vy = dy / JOY_R; // normalized -1..1
-        }
-        if (tapCandidate && t.identifier === tapCandidate.id) {
-          if (Math.hypot(p.x - tapCandidate.x, p.y - tapCandidate.y) > 12) tapCandidate.moved = true;
+          if (len > JOY_R) { dx = dx / len * JOY_R; dy = dy / len * JOY_R; }
+          joy.vx = dx / JOY_R; joy.vy = dy / JOY_R;
         }
       }
     }
@@ -434,15 +1083,8 @@
         if (joy.active && t.identifier === joy.id) {
           joy.active = false; joy.id = null; joy.vx = 0; joy.vy = 0;
         }
-        if (tapCandidate && t.identifier === tapCandidate.id) {
-          if (!tapCandidate.moved) {
-            var g = screenToGrid(tapCandidate.x, tapCandidate.y, world.originX, world.originY);
-            var cgx = Math.floor(g.gx), cgy = Math.floor(g.gy);
-            if (cgx >= 0 && cgy >= 0 && cgx < world.gridN && cgy < world.gridN) {
-              flash.active = true; flash.gx = cgx; flash.gy = cgy; flash.t = 0.5;
-            }
-          }
-          tapCandidate = null;
+        for (var b = 0; b < buttons.length; b++) {
+          if (buttons[b].touchId === t.identifier) buttons[b].touchId = null;
         }
       }
     }
@@ -454,33 +1096,28 @@
       if (!started) return;
       var dt = (now - lastT) / 1000;
       lastT = now;
-      if (dt > 0.05) dt = 0.05; // clamp
+      if (dt > 0.05) dt = 0.05;
       if (dt < 0) dt = 0;
 
-      // fps sampling
-      fpsAcc += dt; fpsFrames++;
-      fpsTimer += dt;
-      if (fpsTimer >= 0.5) {
-        fps = fpsFrames / fpsAcc;
-        fpsAcc = 0; fpsFrames = 0; fpsTimer = 0;
-      }
+      fpsAcc += dt; fpsFrames++; fpsTimer += dt;
+      if (fpsTimer >= 0.5) { fps = fpsFrames / fpsAcc; fpsAcc = 0; fpsFrames = 0; fpsTimer = 0; }
 
       update(dt);
       render();
       updateHud();
-
       requestAnimationFrame(loop);
     }
 
     function updateHud() {
       hud.textContent =
-        'fps ' + fps.toFixed(0) +
-        '  hero ' + hero.gx.toFixed(2) + ',' + hero.gy.toFixed(2) +
-        '  cell ' + Math.floor(hero.gx) + ',' + Math.floor(hero.gy);
+        '❤ ' + Math.max(0, Math.round(hero.hp)) + '/' + hero.maxHp +
+        '   Волна ' + Math.min(currentWave, WAVE_COUNT) + '/' + WAVE_COUNT +
+        '   Врагов ' + liveEnemyCount() +
+        '\n💰 ' + gold + '   ☠ ' + kills;
     }
 
     // ============================================================
-    // start / finish
+    // start / finish (sendResultToBot exactly once)
     // ============================================================
     function startGame() {
       readyEl.style.display = 'none';
@@ -489,32 +1126,47 @@
       started = true;
       startTime = performance.now();
       lastT = performance.now();
+      // first wave banner
+      phase = 'wavebanner';
+      currentWave = 1;
+      bannerT = 1.8;
       requestAnimationFrame(loop);
     }
 
-    function finish() {
-      if (!started) return;
+    function endGame(won) {
+      if (phase === 'over') return;
+      phase = 'over';
+      gameWon = won;
+      if (won) { wavesCleared = WAVE_COUNT; haptic('heavy'); }
+      else { haptic('warn'); }
+      // place exit button
+      var w = 180, h = 52;
+      overBtn = { x: (cssW - w) / 2, y: cssH * 0.34 + 80, w: w, h: h };
+    }
+
+    function finishAndSend() {
+      if (resultSent) return;
+      resultSent = true;
       started = false;
+      var won = gameWon; // authoritative flag from endGame(), not a recompute
       var timeSpent = Math.round((performance.now() - startTime) / 1000);
       sendResultToBot({
         game: 'isoarena',
-        win: true,
-        outcome: 'Разминка',
-        score: 0,
-        timeSpent: timeSpent,
-        iteration: 1
+        win: won,
+        outcome: won ? 'Победа' : 'Поражение',
+        score: gold,
+        waves: wavesCleared,
+        kills: kills,
+        timeSpent: timeSpent
       });
     }
 
     // ---- wire up ----
     document.getElementById('startBtn').addEventListener('click', startGame);
-    document.getElementById('doneBtn').addEventListener('click', finish);
-
     cv.addEventListener('touchstart', onTouchStart, { passive: false });
     cv.addEventListener('touchmove', onTouchMove, { passive: false });
     cv.addEventListener('touchend', onTouchEnd, { passive: false });
     cv.addEventListener('touchcancel', onTouchEnd, { passive: false });
-
     window.addEventListener('resize', function () { if (started) resize(); });
     window.addEventListener('orientationchange', function () { if (started) resize(); });
   })();
