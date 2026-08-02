@@ -91,9 +91,9 @@
     var HERO_MAX_HP = 100;
     var HERO_RADIUS = 0.42;      // grid units, for collision
 
-    var ATTACK_CD = 0.28;        // basic attack cooldown (s) — faster per playtest
-    var ATTACK_RANGE = 2.9;      // grid units — longer reach per playtest
-    var ATTACK_ARC = Math.PI * 0.4; // half-arc, narrower cone per playtest
+    var ATTACK_CD = 0.5;         // basic attack cooldown (s) — slower per playtest
+    var ATTACK_RANGE = 1.8;      // grid units — shorter reach per playtest
+    var ATTACK_ARC = Math.PI * 0.4; // half-arc; swing visual shows the true range
     var ATTACK_DMG = 22;
     var ATTACK_KB = 0.55;
 
@@ -101,6 +101,7 @@
     var WHIRL_CD = 4.5, WHIRL_RANGE = 1.9, WHIRL_DMG = 30, WHIRL_KB = 0.75;
     var DASH_CD = 3.0, DASH_DIST = 2.6, DASH_TIME = 0.16, DASH_IFRAME = 0.24;
     var HAMMER_CD = 6.0, HAMMER_RADIUS = 1.5, HAMMER_DMG = 55, HAMMER_KB = 1.3;
+    var SHIELD_CD = 8.0, SHIELD_DUR = 1.7; // defensive guard: blocks all damage while active
 
     var MAX_ENEMIES = 12;        // concurrent cap (mobile perf + separation cost)
 
@@ -131,8 +132,8 @@
       gx: 5.5, gy: 5.5, faceX: 1, faceY: 0,
       moveX: 1, moveY: 0, // last movement direction (joystick) — used by Dash
       hp: HERO_MAX_HP, maxHp: HERO_MAX_HP,
-      atkCd: 0, whirlCd: 0, dashCd: 0, hammerCd: 0,
-      dashT: 0, dashVx: 0, dashVy: 0, iframe: 0,
+      atkCd: 0, whirlCd: 0, dashCd: 0, hammerCd: 0, shieldCd: 0,
+      dashT: 0, dashVx: 0, dashVy: 0, iframe: 0, shieldT: 0,
       hitFlash: 0, bob: 0,
       swing: 0, swingDir: 1 // attack swing animation timer
     };
@@ -155,7 +156,7 @@
     var gameWon = false;       // authoritative outcome, set once in endGame()
 
     // ---- input ----
-    var JOY_R = 52, JOY_KNOB = 24;
+    var JOY_R = 68, JOY_KNOB = 30;
     var JOY_BASE_X = 0, JOY_BASE_Y = 0; // fixed joystick base (bottom-left), set in layoutButtons
     var joy = { active: false, id: null, ox: 0, oy: 0, vx: 0, vy: 0 };
     // action buttons (canvas-drawn, thumb bottom-right). Each tracks its own touch id.
@@ -513,9 +514,20 @@
         }
       }
     }
+    function useShield() {
+      if (hero.shieldCd > 0 || phase !== 'playing') return;
+      hero.shieldCd = SHIELD_CD;
+      hero.shieldT = SHIELD_DUR; // blocks all damage while active
+      ringFX(hero.gx, hero.gy, 'rgba(120,200,255,0.9)', 1.1);
+      haptic('impact');
+    }
 
     function hurtHero(dmg) {
       if (hero.iframe > 0 || phase !== 'playing') return;
+      if (hero.shieldT > 0) { // guard blocks the hit
+        damageNumber(hero.gx, hero.gy - 0.3, 'БЛОК', '#8fd0ff');
+        haptic('light'); return;
+      }
       hero.hp -= dmg;
       hero.hitFlash = 0.18;
       shake = Math.max(shake, 6);
@@ -533,6 +545,8 @@
       hero.whirlCd = Math.max(0, hero.whirlCd - dt);
       hero.dashCd = Math.max(0, hero.dashCd - dt);
       hero.hammerCd = Math.max(0, hero.hammerCd - dt);
+      hero.shieldCd = Math.max(0, hero.shieldCd - dt);
+      hero.shieldT = Math.max(0, hero.shieldT - dt);
       hero.iframe = Math.max(0, hero.iframe - dt);
       hero.hitFlash = Math.max(0, hero.hitFlash - dt);
       hero.swing = Math.max(0, hero.swing - dt * 4.5);
@@ -856,8 +870,8 @@
       var bh = 26;
       var bodyY = cy - bh + bobY;
 
-      // attack swing arc (in facing dir)
-      if (hero.swing > 0) drawSwing(cx, cy - bh * 0.5);
+      // attack swing wedge (true range, on the ground in facing dir)
+      if (hero.swing > 0) drawSwing(cx, cy);
 
       // dash trail
       if (hero.dashT > 0) {
@@ -895,20 +909,40 @@
 
       // hero HP bar above head
       drawBar(cx, bodyY - 16, 26, 4, hero.hp / hero.maxHp, '#ff5b5b', '#2a1414');
+
+      // shield bubble (defensive guard active)
+      if (hero.shieldT > 0) {
+        ctx.save();
+        ctx.globalAlpha = 0.35 + 0.25 * Math.sin(hero.bob * 3);
+        ctx.strokeStyle = '#9fe0ff'; ctx.lineWidth = 2.5;
+        ctx.fillStyle = 'rgba(120,200,255,0.14)';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy - bh * 0.5, 20, 26, 0, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+        ctx.restore();
+      }
     }
 
+    // Draw the swing wedge at the TRUE hit area: a grid-space sector of radius
+    // ATTACK_RANGE and half-angle ATTACK_ARC around the aim, projected to iso.
+    // cx,cy must be the hero's ground center.
     function drawSwing(cx, cy) {
-      var fa = Math.atan2((hero.faceX + hero.faceY), (hero.faceX - hero.faceY)); // approx screen angle
-      var sw = 1 - hero.swing; // 0..1 progress
-      var spread = ATTACK_ARC;
-      var a0 = fa - spread, a1 = fa + spread;
+      var fa = Math.atan2(hero.faceY, hero.faceX); // grid-space aim angle
+      var steps = 14;
       ctx.save();
-      ctx.globalAlpha = 0.5 * hero.swing;
-      ctx.strokeStyle = '#fff0b0';
-      ctx.lineWidth = 5;
       ctx.beginPath();
-      ctx.ellipse(cx, cy, 22, 12, 0, a0, a1);
-      ctx.stroke();
+      ctx.moveTo(cx, cy);
+      for (var i = 0; i <= steps; i++) {
+        var a = fa - ATTACK_ARC + (2 * ATTACK_ARC) * (i / steps);
+        var gxo = Math.cos(a) * ATTACK_RANGE, gyo = Math.sin(a) * ATTACK_RANGE;
+        var sxo = (gxo - gyo) * (TILE_W / 2), syo = (gxo + gyo) * (TILE_H / 2);
+        ctx.lineTo(cx + sxo, cy + syo);
+      }
+      ctx.closePath();
+      ctx.globalAlpha = 0.28 * hero.swing;
+      ctx.fillStyle = '#fff0b0'; ctx.fill();
+      ctx.globalAlpha = 0.6 * hero.swing;
+      ctx.strokeStyle = '#fff0b0'; ctx.lineWidth = 2; ctx.stroke();
       ctx.restore();
     }
 
@@ -1069,7 +1103,8 @@
       buttons = [
         { id: 'whirl',  label: '🌀', r: r, x: right - r,          y: bottom - r,          cdKey: 'whirlCd',  cdMax: WHIRL_CD,  color: '#e0a020', act: useWhirl,  touchId: null },
         { id: 'dash',   label: '💨', r: r, x: right - r,          y: bottom - r * 3 - 14, cdKey: 'dashCd',   cdMax: DASH_CD,   color: '#4a9fe0', act: useDash,   touchId: null },
-        { id: 'hammer', label: '🔨', r: r, x: right - r * 3 - 14, y: bottom - r,          cdKey: 'hammerCd', cdMax: HAMMER_CD, color: '#7a5fe0', act: useHammer, touchId: null }
+        { id: 'hammer', label: '🔨', r: r, x: right - r * 3 - 14, y: bottom - r,          cdKey: 'hammerCd', cdMax: HAMMER_CD, color: '#7a5fe0', act: useHammer, touchId: null },
+        { id: 'shield', label: '🛡', r: r, x: right - r * 3 - 14, y: bottom - r * 3 - 14, cdKey: 'shieldCd', cdMax: SHIELD_CD, color: '#3fb98f', act: useShield, touchId: null }
       ];
     }
 
