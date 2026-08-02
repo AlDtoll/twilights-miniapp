@@ -91,9 +91,9 @@
     var HERO_MAX_HP = 100;
     var HERO_RADIUS = 0.42;      // grid units, for collision
 
-    var ATTACK_CD = 0.42;        // basic attack cooldown (s)
-    var ATTACK_RANGE = 2.2;      // grid units (bigger reach per playtest)
-    var ATTACK_ARC = Math.PI * 0.7; // half-arc handled below
+    var ATTACK_CD = 0.28;        // basic attack cooldown (s) — faster per playtest
+    var ATTACK_RANGE = 2.9;      // grid units — longer reach per playtest
+    var ATTACK_ARC = Math.PI * 0.4; // half-arc, narrower cone per playtest
     var ATTACK_DMG = 22;
     var ATTACK_KB = 0.55;
 
@@ -122,8 +122,10 @@
     var world = {
       gridN: GRID_N, tileW: TILE_W, tileH: TILE_H,
       originX: 0, originY: 0,
-      floorCanvas: null, floorW: 0, floorH: 0, floorOffX: 0, floorOffY: 0
+      floorCanvas: null, floorW: 0, floorH: 0, floorOffX: 0, floorOffY: 0,
+      walls: [] // obstacle cells {cx,cy}: block movement + projectiles (cover)
     };
+    var WALL_H = 26; // pixel height of obstacle blocks (visual)
 
     var hero = {
       gx: 5.5, gy: 5.5, faceX: 1, faceY: 0,
@@ -271,6 +273,58 @@
       c.arcTo(x, y + h, x, y, r);
       c.arcTo(x, y, x + w, y, r);
       c.closePath();
+    }
+
+    // ============================================================
+    // obstacles (walls)
+    // ============================================================
+    function generateWalls() {
+      world.walls = [];
+      var n = world.gridN;
+      var count = 6 + Math.floor(R() * 4); // 6..9 blocks
+      var used = {}, tries = 0;
+      while (world.walls.length < count && tries < 200) {
+        tries++;
+        var cx = 2 + Math.floor(R() * (n - 4)); // interior 2..n-3
+        var cy = 2 + Math.floor(R() * (n - 4));
+        if (cx >= 4 && cx <= 7 && cy >= 4 && cy <= 7) continue; // keep hero spawn clear
+        var key = cx + ',' + cy;
+        if (used[key]) continue;
+        used[key] = 1;
+        world.walls.push({ cx: cx, cy: cy });
+      }
+    }
+    // push a circle (entity) out of any wall cell it overlaps
+    function resolveWalls(ent, rr) {
+      var walls = world.walls;
+      for (var i = 0; i < walls.length; i++) {
+        var cx = walls[i].cx, cy = walls[i].cy;
+        var qx = clamp(ent.gx, cx - 0.5, cx + 0.5);
+        var qy = clamp(ent.gy, cy - 0.5, cy + 0.5);
+        var dx = ent.gx - qx, dy = ent.gy - qy;
+        var d2 = dx * dx + dy * dy;
+        if (d2 >= rr * rr) continue;
+        var d = Math.sqrt(d2);
+        if (d > 1e-4) {
+          ent.gx = qx + dx / d * rr; ent.gy = qy + dy / d * rr;
+        } else {
+          var pl = ent.gx - (cx - 0.5), pr = (cx + 0.5) - ent.gx;
+          var pu = ent.gy - (cy - 0.5), pd = (cy + 0.5) - ent.gy;
+          var m = Math.min(pl, pr, pu, pd);
+          if (m === pl) ent.gx = cx - 0.5 - rr;
+          else if (m === pr) ent.gx = cx + 0.5 + rr;
+          else if (m === pu) ent.gy = cy - 0.5 - rr;
+          else ent.gy = cy + 0.5 + rr;
+        }
+      }
+    }
+    function wallAtPoint(px, py) {
+      var walls = world.walls;
+      for (var i = 0; i < walls.length; i++) {
+        if (px >= walls[i].cx - 0.5 && px <= walls[i].cx + 0.5 &&
+            py >= walls[i].cy - 0.5 && py <= walls[i].cy + 0.5) return true;
+      }
+      return false;
     }
 
     // ============================================================
@@ -542,6 +596,9 @@
       var lo = HERO_RADIUS, hi = world.gridN - 1 - HERO_RADIUS;
       hero.gx = clamp(hero.gx, lo, hi);
       hero.gy = clamp(hero.gy, lo, hi);
+      resolveWalls(hero, HERO_RADIUS);
+      hero.gx = clamp(hero.gx, lo, hi);
+      hero.gy = clamp(hero.gy, lo, hi);
 
       // Aim (facing): field-tap points the attack in the tapped direction
       // (player aims manually). Otherwise face the movement direction.
@@ -624,6 +681,8 @@
           }
         }
         e.gx = clamp(e.gx, lo, hi); e.gy = clamp(e.gy, lo, hi);
+        resolveWalls(e, e.radius);
+        e.gx = clamp(e.gx, lo, hi); e.gy = clamp(e.gy, lo, hi);
       }
       // cull faded dead
       for (var m = enemies.length - 1; m >= 0; m--) {
@@ -639,6 +698,7 @@
         var kill = false;
         if (p.life <= 0) kill = true;
         else if (p.gx < 0 || p.gy < 0 || p.gx > world.gridN || p.gy > world.gridN) kill = true;
+        else if (wallAtPoint(p.gx, p.gy)) kill = true; // walls give cover
         else if (p.fromHero) {
           for (var j = 0; j < enemies.length; j++) {
             var e = enemies[j]; if (e.dead) continue;
@@ -715,11 +775,14 @@
       // ground FX (rings) under actors
       for (var r = 0; r < fx.length; r++) if (fx[r].kind === 'ring') drawRing(fx[r]);
 
-      // depth-sorted actors (far first): key = gx+gy ascending
+      // depth-sorted actors + walls (far first): key = gx+gy ascending
       _drawList.length = 0;
       _drawList.push({ k: hero.gx + hero.gy, draw: drawHero });
       for (var a = 0; a < enemies.length; a++) {
         (function (en) { _drawList.push({ k: en.gx + en.gy, draw: function () { drawEnemy(en); } }); })(enemies[a]);
+      }
+      for (var wq = 0; wq < world.walls.length; wq++) {
+        (function (wl) { _drawList.push({ k: wl.cx + wl.cy, draw: function () { drawWall(wl.cx, wl.cy); } }); })(world.walls[wq]);
       }
       _drawList.sort(function (u, v) { return u.k - v.k; });
       for (var d = 0; d < _drawList.length; d++) _drawList[d].draw();
@@ -751,6 +814,37 @@
       ctx.ellipse(s.sx, s.sy + TILE_H / 2, rx, ry, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
+    }
+
+    function drawWall(cx, cy) {
+      var s = gridToScreen(cx, cy, world.originX, world.originY);
+      var bx = s.sx, by = s.sy + TILE_H / 2; // ground diamond center
+      var hw = TILE_W / 2, hh = TILE_H / 2, H = WALL_H;
+      // ground corners
+      var topG = { x: bx, y: by - hh }, rightG = { x: bx + hw, y: by },
+          botG = { x: bx, y: by + hh }, leftG = { x: bx - hw, y: by };
+      // raised (top) corners
+      var topT = { x: bx, y: by - hh - H }, rightT = { x: bx + hw, y: by - H },
+          botT = { x: bx, y: by + hh - H }, leftT = { x: bx - hw, y: by - H };
+      // left face
+      ctx.fillStyle = '#39415e';
+      ctx.beginPath();
+      ctx.moveTo(leftG.x, leftG.y); ctx.lineTo(botG.x, botG.y);
+      ctx.lineTo(botT.x, botT.y); ctx.lineTo(leftT.x, leftT.y); ctx.closePath();
+      ctx.fill();
+      // right face (darker)
+      ctx.fillStyle = '#2c3350';
+      ctx.beginPath();
+      ctx.moveTo(rightG.x, rightG.y); ctx.lineTo(botG.x, botG.y);
+      ctx.lineTo(botT.x, botT.y); ctx.lineTo(rightT.x, rightT.y); ctx.closePath();
+      ctx.fill();
+      // top face (lighter)
+      ctx.fillStyle = '#5b678f';
+      ctx.beginPath();
+      ctx.moveTo(topT.x, topT.y); ctx.lineTo(rightT.x, rightT.y);
+      ctx.lineTo(botT.x, botT.y); ctx.lineTo(leftT.x, leftT.y); ctx.closePath();
+      ctx.fill();
+      ctx.lineWidth = 1; ctx.strokeStyle = '#20263c'; ctx.stroke();
     }
 
     function drawHero(a) {
@@ -1162,6 +1256,7 @@
       readyEl.style.display = 'none';
       viewEl.style.display = 'block';
       resize();
+      generateWalls();
       started = true;
       startTime = performance.now();
       lastT = performance.now();
