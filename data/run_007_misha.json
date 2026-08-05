@@ -21,7 +21,7 @@
         "name": "Чистозерье",
         "col": 1,
         "row": 2,
-        "terrain": "",
+        "terrain": "t-player",
         "owner": "misha",
         "pop": 700
       },
@@ -29,7 +29,7 @@
         "name": "Чистолесье",
         "col": 4,
         "row": 3,
-        "terrain": "",
+        "terrain": "t-player",
         "owner": "misha",
         "pop": 300
       }

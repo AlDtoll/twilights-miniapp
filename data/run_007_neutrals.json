@@ -24,7 +24,7 @@
             "name": "Ельник",
             "col": 2,
             "row": 2,
-            "terrain": "",
+            "terrain": "t-forest",
             "owner": "",
             "pop": 500
           }
@@ -100,7 +100,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 500",
             "neutral": true
-          }
+          },
+          "buildings": []
         }
       ]
     },
@@ -130,7 +131,7 @@
             "name": "Гостиный Порт",
             "col": 1,
             "row": 1,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 850
           },
@@ -138,7 +139,7 @@
             "name": "Гостиный Порт-Купеческий Двор",
             "col": 4,
             "row": 2,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 500
           },
@@ -146,7 +147,7 @@
             "name": "Гостиный Порт-Пристань",
             "col": 2,
             "row": 4,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 650
           }
@@ -170,6 +171,15 @@
             "type": "internal",
             "from": "Гостиный Порт",
             "to": "Гостиный Порт-Пристань"
+          },
+          {
+            "type": "edge",
+            "from": "Гостиный Порт",
+            "to": "Утёсная гавань",
+            "dir": {
+              "dx": 1,
+              "dy": -1
+            }
           }
         ]
       },
@@ -244,7 +254,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 850",
             "neutral": true
-          }
+          },
+          "buildings": []
         },
         {
           "name": "Гостиный Порт-Купеческий Двор",
@@ -316,7 +327,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 500",
             "neutral": true
-          }
+          },
+          "buildings": []
         },
         {
           "name": "Гостиный Порт-Пристань",
@@ -388,7 +400,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 650",
             "neutral": true
-          }
+          },
+          "buildings": []
         }
       ]
     },
@@ -415,7 +428,7 @@
             "name": "Кабанья Тропа",
             "col": 3,
             "row": 3,
-            "terrain": "",
+            "terrain": "t-forest",
             "owner": "",
             "pop": 600
           },
@@ -423,7 +436,7 @@
             "name": "Кабанья Тропа-Ключи",
             "col": 1,
             "row": 1,
-            "terrain": "",
+            "terrain": "t-forest",
             "owner": "",
             "pop": 200
           }
@@ -517,7 +530,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 600",
             "neutral": true
-          }
+          },
+          "buildings": []
         },
         {
           "name": "Кабанья Тропа-Ключи",
@@ -581,7 +595,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 200",
             "neutral": true
-          }
+          },
+          "buildings": []
         }
       ]
     },
@@ -608,7 +623,7 @@
             "name": "Каменные Пальцы",
             "col": 2,
             "row": 2,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 50
           }
@@ -710,7 +725,8 @@
             ],
             "fighters_src": "ополчение ~1.4% от 50",
             "neutral": true
-          }
+          },
+          "buildings": []
         }
       ]
     },
@@ -737,7 +753,7 @@
             "name": "Каменный Хребет",
             "col": 2,
             "row": 2,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 400
           }
@@ -852,7 +868,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 400",
             "neutral": true
-          }
+          },
+          "buildings": []
         }
       ]
     },
@@ -879,7 +896,7 @@
             "name": "Хвалибов Двор",
             "col": 2,
             "row": 1,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 1000
           },
@@ -887,7 +904,7 @@
             "name": "Придорожные Хутора",
             "col": 1,
             "row": 2,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 500
           }
@@ -1000,7 +1017,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 1000",
             "neutral": true
-          }
+          },
+          "buildings": []
         },
         {
           "name": "Придорожные Хутора",
@@ -1068,7 +1086,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 500",
             "neutral": true
-          }
+          },
+          "buildings": []
         }
       ]
     },
@@ -1095,7 +1114,7 @@
             "name": "Ковыльные Стойбища",
             "col": 1,
             "row": 2,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "danil",
             "pop": 200
           },
@@ -1103,7 +1122,7 @@
             "name": "Ковыльные Стойбища-Ближнее",
             "col": 4,
             "row": 3,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 800
           }
@@ -1194,7 +1213,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 200",
             "neutral": true
-          }
+          },
+          "buildings": []
         },
         {
           "name": "Ковыльные Стойбища-Ближнее",
@@ -1257,7 +1277,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 800",
             "neutral": true
-          }
+          },
+          "buildings": []
         }
       ]
     },
@@ -1284,7 +1305,7 @@
             "name": "Крайнее Озеро",
             "col": 2,
             "row": 2,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 500
           }
@@ -1364,7 +1385,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 500",
             "neutral": true
-          }
+          },
+          "buildings": []
         }
       ]
     },
@@ -1391,7 +1413,7 @@
             "name": "Кремневая Гряда",
             "col": 1,
             "row": 1,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 400
           },
@@ -1399,7 +1421,7 @@
             "name": "Кремневая Гряда-Верхняя",
             "col": 4,
             "row": 2,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 150
           },
@@ -1407,7 +1429,7 @@
             "name": "Кремневая Гряда-Нижняя",
             "col": 2,
             "row": 4,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 250
           }
@@ -1510,7 +1532,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 400",
             "neutral": true
-          }
+          },
+          "buildings": []
         },
         {
           "name": "Кремневая Гряда-Верхняя",
@@ -1578,7 +1601,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 150",
             "neutral": true
-          }
+          },
+          "buildings": []
         },
         {
           "name": "Кремневая Гряда-Нижняя",
@@ -1646,7 +1670,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 250",
             "neutral": true
-          }
+          },
+          "buildings": []
         }
       ]
     },
@@ -1673,7 +1698,7 @@
             "name": "Междолесье",
             "col": 1,
             "row": 2,
-            "terrain": "",
+            "terrain": "t-forest",
             "owner": "",
             "pop": 500
           },
@@ -1681,7 +1706,7 @@
             "name": "Междолесье-Ясенево",
             "col": 4,
             "row": 3,
-            "terrain": "",
+            "terrain": "t-forest",
             "owner": "",
             "pop": 300
           }
@@ -1771,7 +1796,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 500",
             "neutral": true
-          }
+          },
+          "buildings": []
         },
         {
           "name": "Междолесье-Ясенево",
@@ -1831,7 +1857,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 300",
             "neutral": true
-          }
+          },
+          "buildings": []
         }
       ]
     },
@@ -1858,7 +1885,7 @@
             "name": "Мшары",
             "col": 1,
             "row": 2,
-            "terrain": "",
+            "terrain": "t-swamp",
             "owner": "",
             "pop": 100
           },
@@ -1866,7 +1893,7 @@
             "name": "Мшары-Мшистое",
             "col": 4,
             "row": 3,
-            "terrain": "",
+            "terrain": "t-swamp",
             "owner": "",
             "pop": 100
           }
@@ -1969,7 +1996,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 100",
             "neutral": true
-          }
+          },
+          "buildings": []
         },
         {
           "name": "Мшары-Мшистое",
@@ -2033,7 +2061,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 100",
             "neutral": true
-          }
+          },
+          "buildings": []
         }
       ]
     },
@@ -2060,7 +2089,7 @@
             "name": "Ольшаник",
             "col": 2,
             "row": 2,
-            "terrain": "",
+            "terrain": "t-forest",
             "owner": "",
             "pop": 800
           }
@@ -2153,7 +2182,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 800",
             "neutral": true
-          }
+          },
+          "buildings": []
         }
       ]
     },
@@ -2180,7 +2210,7 @@
             "name": "Северный Перевал",
             "col": 1,
             "row": 2,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 50
           },
@@ -2188,7 +2218,7 @@
             "name": "Северный Перевал-Восточные Ворота",
             "col": 4,
             "row": 3,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 150
           }
@@ -2299,7 +2329,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 50",
             "neutral": true
-          }
+          },
+          "buildings": []
         },
         {
           "name": "Северный Перевал-Восточные Ворота",
@@ -2371,7 +2402,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 150",
             "neutral": true
-          }
+          },
+          "buildings": []
         }
       ]
     },
@@ -2398,7 +2430,7 @@
             "name": "Собрание Юксек-иле",
             "col": 1,
             "row": 1,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 500
           },
@@ -2406,7 +2438,7 @@
             "name": "Западная полоса (роды малых родов)",
             "col": 4,
             "row": 2,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 700
           },
@@ -2414,7 +2446,7 @@
             "name": "Восточная полоса (роды малых родов)",
             "col": 2,
             "row": 4,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 800
           }
@@ -2514,7 +2546,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 500",
             "neutral": true
-          }
+          },
+          "buildings": []
         },
         {
           "name": "Западная полоса (роды малых родов)",
@@ -2588,7 +2621,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 700",
             "neutral": true
-          }
+          },
+          "buildings": []
         },
         {
           "name": "Восточная полоса (роды малых родов)",
@@ -2656,7 +2690,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 800",
             "neutral": true
-          }
+          },
+          "buildings": []
         }
       ]
     },
@@ -2683,7 +2718,7 @@
             "name": "Соляной Тракт",
             "col": 1,
             "row": 2,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 200
           },
@@ -2691,7 +2726,7 @@
             "name": "Соляной Тракт-Постой",
             "col": 4,
             "row": 3,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 300
           }
@@ -2789,7 +2824,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 200",
             "neutral": true
-          }
+          },
+          "buildings": []
         },
         {
           "name": "Соляной Тракт-Постой",
@@ -2857,7 +2893,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 300",
             "neutral": true
-          }
+          },
+          "buildings": []
         }
       ]
     },
@@ -2884,7 +2921,7 @@
             "name": "Ставка Ахьяр-иле",
             "col": 1,
             "row": 2,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 500
           },
@@ -2892,7 +2929,7 @@
             "name": "Кочевая полоса Ахьяр-иле",
             "col": 4,
             "row": 3,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 1000
           }
@@ -3023,7 +3060,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 500",
             "neutral": true
-          }
+          },
+          "buildings": []
         },
         {
           "name": "Кочевая полоса Ахьяр-иле",
@@ -3097,7 +3135,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 1000",
             "neutral": true
-          }
+          },
+          "buildings": []
         }
       ]
     },
@@ -3124,7 +3163,7 @@
             "name": "Ставка Аргамак-иле",
             "col": 1,
             "row": 2,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 400
           },
@@ -3132,7 +3171,7 @@
             "name": "Кочевая полоса Аргамак-иле",
             "col": 4,
             "row": 3,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 800
           }
@@ -3226,7 +3265,8 @@
             ],
             "fighters_src": "ополчение ~1.4% от 400",
             "neutral": true
-          }
+          },
+          "buildings": []
         },
         {
           "name": "Кочевая полоса Аргамак-иле",
@@ -3305,7 +3345,8 @@
             ],
             "fighters_src": "ополчение ~1.4% от 800",
             "neutral": true
-          }
+          },
+          "buildings": []
         }
       ]
     },
@@ -3332,7 +3373,7 @@
             "name": "Талый Лог",
             "col": 2,
             "row": 2,
-            "terrain": "",
+            "terrain": "t-forest",
             "owner": "",
             "pop": 800
           }
@@ -3430,7 +3471,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 800",
             "neutral": true
-          }
+          },
+          "buildings": []
         }
       ]
     },
@@ -3457,7 +3499,7 @@
             "name": "Ветровой Перевал",
             "col": 2,
             "row": 2,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 150
           }
@@ -3537,7 +3579,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 150",
             "neutral": true
-          }
+          },
+          "buildings": []
         }
       ]
     },
@@ -3564,7 +3607,7 @@
             "name": "Волчьи Пустоши",
             "col": 2,
             "row": 2,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 150
           }
@@ -3665,7 +3708,8 @@
             ],
             "fighters_src": "ополчение ~1.4% от 150",
             "neutral": true
-          }
+          },
+          "buildings": []
         }
       ]
     },
@@ -3692,7 +3736,7 @@
             "name": "Волчий Стан",
             "col": 2,
             "row": 2,
-            "terrain": "",
+            "terrain": "t-evil",
             "owner": "",
             "pop": 800
           }
@@ -3779,7 +3823,8 @@
             ],
             "fighters_src": "ополчение ~1.4% от 800",
             "neutral": true
-          }
+          },
+          "buildings": []
         }
       ]
     },
@@ -3806,7 +3851,7 @@
             "name": "Юго-Западные Предгорья",
             "col": 1,
             "row": 1,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 150
           },
@@ -3814,7 +3859,7 @@
             "name": "Юго-Западные Предгорья-Северное",
             "col": 4,
             "row": 2,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 50
           },
@@ -3822,7 +3867,7 @@
             "name": "Юго-Западные Предгорья-Южное",
             "col": 2,
             "row": 4,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 100
           }
@@ -3844,15 +3889,6 @@
             "dir": {
               "dx": 1,
               "dy": 0
-            }
-          },
-          {
-            "type": "edge",
-            "from": "Юго-Западные Предгорья",
-            "to": "Утёсная гавань",
-            "dir": {
-              "dx": 1,
-              "dy": 1
             }
           },
           {
@@ -3930,7 +3966,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 150",
             "neutral": true
-          }
+          },
+          "buildings": []
         },
         {
           "name": "Юго-Западные Предгорья-Северное",
@@ -3990,7 +4027,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 50",
             "neutral": true
-          }
+          },
+          "buildings": []
         },
         {
           "name": "Юго-Западные Предгорья-Южное",
@@ -4054,7 +4092,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 100",
             "neutral": true
-          }
+          },
+          "buildings": []
         }
       ]
     },
@@ -4084,7 +4123,7 @@
             "name": "Южные Предгорья",
             "col": 1,
             "row": 2,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 100
           },
@@ -4092,7 +4131,7 @@
             "name": "Южные Предгорья-Северное",
             "col": 4,
             "row": 3,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 300
           }
@@ -4177,7 +4216,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 100",
             "neutral": true
-          }
+          },
+          "buildings": []
         },
         {
           "name": "Южные Предгорья-Северное",
@@ -4241,7 +4281,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 300",
             "neutral": true
-          }
+          },
+          "buildings": []
         }
       ]
     },
@@ -4268,7 +4309,7 @@
             "name": "Западные Предгорья",
             "col": 2,
             "row": 2,
-            "terrain": "",
+            "terrain": "t-neutral",
             "owner": "",
             "pop": 300
           }
@@ -4348,7 +4389,8 @@
             "tag_list": [],
             "fighters_src": "ополчение ~1.4% от 300",
             "neutral": true
-          }
+          },
+          "buildings": []
         }
       ]
     }
