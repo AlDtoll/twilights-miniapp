@@ -131,7 +131,7 @@
   "user_id": 579387502,
   "telegram": "@aldtoll",
   "season": "3",
-  "active_phase": "hearth",
+  "active_phase": "idle",
   "finance": {
     "start": 13747,
     "income": [
@@ -720,11 +720,16 @@
         "next_threshold": 10
       },
       {
-        "name": "Риторика (0)",
-        "techniques": [],
-        "bank": 14,
-        "ups": 0,
-        "next_threshold": 10
+        "name": "Риторика (I)",
+        "techniques": [
+          {
+            "name": "«Весомые доводы»",
+            "kind": "техника"
+          }
+        ],
+        "bank": 4,
+        "ups": 1,
+        "next_threshold": 12
       },
       {
         "name": "Наблюдательность (0)",
@@ -1043,8 +1048,8 @@
       "stash": [],
       "loyalty": {
         "Л": 35,
-        "Н": 27,
-        "НЛ": 8,
+        "Н": 28,
+        "НЛ": 7,
         "Тип": "стартовая",
         "mod": 2,
         "reasons": [
