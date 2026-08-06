@@ -73,7 +73,7 @@
   "user_id": 445288231,
   "telegram": "@ValterTasadar",
   "season": "3",
-  "active_phase": "adventure_done",
+  "active_phase": "hearth",
   "finance": {
     "start": 7649,
     "income": [
@@ -776,8 +776,8 @@
     "threshold_pct": 15
   },
   "hearth": {
-    "remaining": null,
-    "total": null
+    "remaining": 1,
+    "total": 1
   },
   "loot": null,
   "settlements": [
