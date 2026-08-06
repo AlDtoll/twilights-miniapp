@@ -73,7 +73,7 @@
   "user_id": 445288231,
   "telegram": "@ValterTasadar",
   "season": "3",
-  "active_phase": "hearth",
+  "active_phase": "idle",
   "finance": {
     "start": 7649,
     "income": [
@@ -181,6 +181,10 @@
       {
         "label": "Плотники к балкам маяка Мыса Стражи (канцлер С3)",
         "amount": 364
+      },
+      {
+        "label": "Стройка: Больница",
+        "amount": 10000
       }
     ],
     "income_by": {
@@ -291,15 +295,15 @@
     },
     "total_income": 50028,
     "total_expenses": 40260,
-    "balance": 15920
+    "balance": 5920
   },
   "buildings": {
     "slots": {
       "base": 2,
       "extra": 0,
-      "used": 0,
+      "used": 1,
       "max_extra": 2,
-      "free": 2
+      "free": 1
     },
     "buildings": [
       {
@@ -323,6 +327,14 @@
         "cost": 5000,
         "status": "✅ готова (С2)",
         "maint": 250,
+        "rate": 5,
+        "hands": 0
+      },
+      {
+        "name": "Больница",
+        "cost": 10000,
+        "status": "🔨 С3 (1 сезон)",
+        "maint": 500,
         "rate": 5,
         "hands": 0
       },
@@ -618,30 +630,44 @@
         "next_threshold": 10
       },
       {
-        "name": "Адепт Фортуны (I)",
-        "techniques": [],
-        "bank": 11,
-        "ups": 0,
-        "next_threshold": 10
+        "name": "Адепт Фортуны (II)",
+        "techniques": [
+          {
+            "name": "«Стабильный Знак»",
+            "kind": "техника"
+          }
+        ],
+        "bank": 1,
+        "ups": 1,
+        "next_threshold": 12
       },
       {
-        "name": "Лидерство (I)",
+        "name": "Лидерство (II)",
         "techniques": [
           {
             "name": "«Учитель стрелков»",
             "kind": "приём"
+          },
+          {
+            "name": "«Харизма»",
+            "kind": "техника"
           }
         ],
-        "bank": 12,
-        "ups": 0,
-        "next_threshold": 10
+        "bank": 2,
+        "ups": 1,
+        "next_threshold": 12
       },
       {
-        "name": "Инженер (I)",
-        "techniques": [],
-        "bank": 12,
-        "ups": 0,
-        "next_threshold": 10
+        "name": "Инженер (II)",
+        "techniques": [
+          {
+            "name": "«Полевой ремонт механизма»",
+            "kind": "приём"
+          }
+        ],
+        "bank": 2,
+        "ups": 1,
+        "next_threshold": 12
       },
       {
         "name": "Наблюдательность (I)",
@@ -668,7 +694,7 @@
         "housing": 0.0,
         "housing_tier": null,
         "leadership": 0.5,
-        "leadership_level": "I",
+        "leadership_level": "II",
         "artifacts": 0.0
       }
     },
@@ -835,6 +861,14 @@
           "maint": 250,
           "rate": 5,
           "hands": 0
+        },
+        {
+          "name": "Больница",
+          "cost": 10000,
+          "status": "🔨 С3 (1 сезон)",
+          "maint": 500,
+          "rate": 5,
+          "hands": 0
         }
       ],
       "promysly": [
@@ -883,10 +917,11 @@
           }
         ],
         "Тип": "стартовая",
-        "mod": 3,
+        "mod": 4,
         "reasons": [
           "+1 стартовая",
           "+1 Управа",
+          "+1 Больница",
           "+1 Брох принял слово князя (С3) (×1)"
         ],
         "delta": {},
@@ -928,10 +963,10 @@
         }
       },
       "might": {
-        "total": 5,
+        "total": 6,
         "fighters": 7,
         "base": 1,
-        "loyalty": 3,
+        "loyalty": 4,
         "defense": 1,
         "tags": 0,
         "tag_list": [],
