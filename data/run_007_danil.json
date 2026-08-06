@@ -36,15 +36,15 @@
       },
       {
         "name": "Кочевье",
-        "col": 4,
-        "row": 2,
+        "col": 3,
+        "row": 3,
         "terrain": "t-player",
         "owner": "danil",
         "pop": 250
       },
       {
         "name": "Каменка",
-        "col": 2,
+        "col": 1,
         "row": 4,
         "terrain": "t-player",
         "owner": "danil",
@@ -89,15 +89,6 @@
       },
       {
         "type": "edge",
-        "from": "Былицы",
-        "to": "Волчьи Пустоши",
-        "dir": {
-          "dx": -1,
-          "dy": -1
-        }
-      },
-      {
-        "type": "edge",
         "from": "Ковыльные Стойбища",
         "to": "Кремневая Гряда",
         "dir": {
@@ -123,6 +114,25 @@
         "type": "internal",
         "from": "Ковыльные Стойбища",
         "to": "Ковыльные Стойбища-Ближнее"
+      },
+      {
+        "type": "internal",
+        "from": "Каменка",
+        "to": "Кочевье"
+      },
+      {
+        "type": "internal",
+        "from": "Каменка",
+        "to": "Ковыльные Стойбища"
+      },
+      {
+        "type": "edge",
+        "from": "Каменка",
+        "to": "Волчьи Пустоши",
+        "dir": {
+          "dx": -1,
+          "dy": -1
+        }
       }
     ]
   },
@@ -131,21 +141,21 @@
   "user_id": 579387502,
   "telegram": "@aldtoll",
   "season": "3",
-  "active_phase": "adventure",
+  "active_phase": "",
   "finance": {
     "start": 13747,
     "income": [
       {
-        "label": "Налог (63 × 5 × 90 × 73%)",
-        "amount": 20696
+        "label": "Налог (63 × 5 × 90 × 75%)",
+        "amount": 21262
       },
       {
-        "label": "Лавки (14 × 3 × 90 × 73%)",
-        "amount": 2759
+        "label": "Лавки (14 × 3 × 90 × 75%)",
+        "amount": 2835
       },
       {
-        "label": "Торговцы (7 × 6 × 90 × 73%)",
-        "amount": 2759
+        "label": "Торговцы (7 × 6 × 90 × 75%)",
+        "amount": 2835
       },
       {
         "label": "Столярная лавка (доходная)",
@@ -293,16 +303,16 @@
     "income_by": {
       "Былицы": [
         {
-          "label": "Налог (63 × 5 × 90 × 73%)",
-          "amount": 20696
+          "label": "Налог (63 × 5 × 90 × 75%)",
+          "amount": 21262
         },
         {
-          "label": "Лавки (14 × 3 × 90 × 73%)",
-          "amount": 2759
+          "label": "Лавки (14 × 3 × 90 × 75%)",
+          "amount": 2835
         },
         {
-          "label": "Торговцы (7 × 6 × 90 × 73%)",
-          "amount": 2759
+          "label": "Торговцы (7 × 6 × 90 × 75%)",
+          "amount": 2835
         },
         {
           "label": "Столярная лавка (доходная)",
@@ -416,9 +426,9 @@
         }
       ]
     },
-    "total_income": 49757,
+    "total_income": 50475,
     "total_expenses": 49460,
-    "balance": 8255
+    "balance": 8973
   },
   "buildings": {
     "slots": {
@@ -694,7 +704,7 @@
       {
         "name": "Пара тонф (I)",
         "techniques": [],
-        "bank": 7,
+        "bank": 10,
         "ups": 0,
         "next_threshold": 10
       },
@@ -708,7 +718,7 @@
       {
         "name": "Языки (II)",
         "techniques": [],
-        "bank": 5,
+        "bank": 7,
         "ups": 1,
         "next_threshold": 12
       },
@@ -727,14 +737,21 @@
             "kind": "техника"
           }
         ],
-        "bank": 4,
+        "bank": 6,
         "ups": 1,
         "next_threshold": 12
       },
       {
         "name": "Наблюдательность (0)",
         "techniques": [],
-        "bank": 8,
+        "bank": 12,
+        "ups": 0,
+        "next_threshold": 10
+      },
+      {
+        "name": "Акробатика (0)",
+        "techniques": [],
+        "bank": 2,
         "ups": 0,
         "next_threshold": 10
       },
@@ -755,7 +772,7 @@
       {
         "name": "Лидерство (0)",
         "techniques": [],
-        "bank": 4,
+        "bank": 8,
         "ups": 0,
         "next_threshold": 10
       },
@@ -1019,16 +1036,16 @@
       ],
       "income": [
         {
-          "label": "Налог (63 × 5 × 90 × 73%)",
-          "amount": 20696
+          "label": "Налог (63 × 5 × 90 × 75%)",
+          "amount": 21262
         },
         {
-          "label": "Лавки (14 × 3 × 90 × 73%)",
-          "amount": 2759
+          "label": "Лавки (14 × 3 × 90 × 75%)",
+          "amount": 2835
         },
         {
-          "label": "Торговцы (7 × 6 × 90 × 73%)",
-          "amount": 2759
+          "label": "Торговцы (7 × 6 × 90 × 75%)",
+          "amount": 2835
         },
         {
           "label": "Столярная лавка (доходная)",
@@ -1114,9 +1131,9 @@
       },
       "eff_breakdown": {
         "base": 90,
-        "loyalty_penalty": 17,
+        "loyalty_penalty": 15,
         "loyalty_bonus": 0,
-        "total": 73
+        "total": 75
       }
     },
     {
