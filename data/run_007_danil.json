@@ -298,6 +298,10 @@
       {
         "label": "Приём беженцев с земель Хвалибора в Каменку (канцлер)",
         "amount": 461
+      },
+      {
+        "label": "Стройка: Управа",
+        "amount": 5000
       }
     ],
     "income_by": {
@@ -428,15 +432,15 @@
     },
     "total_income": 59069,
     "total_expenses": 49460,
-    "balance": 17567
+    "balance": 12567
   },
   "buildings": {
     "slots": {
       "base": 2,
       "extra": 0,
-      "used": 0,
+      "used": 1,
       "max_extra": 2,
-      "free": 2
+      "free": 1
     },
     "buildings": [
       {
@@ -451,6 +455,14 @@
         "name": "Дом князя #жильё",
         "cost": 5000,
         "status": "✅ готова (С2)",
+        "maint": 250,
+        "rate": 5,
+        "hands": 0
+      },
+      {
+        "name": "Управа",
+        "cost": 5000,
+        "status": "🔨 С3 (1 сезон)",
         "maint": 250,
         "rate": 5,
         "hands": 0
@@ -1018,6 +1030,14 @@
           "maint": 250,
           "rate": 5,
           "hands": 0
+        },
+        {
+          "name": "Управа",
+          "cost": 5000,
+          "status": "🔨 С3 (1 сезон)",
+          "maint": 250,
+          "rate": 5,
+          "hands": 0
         }
       ],
       "promysly": [
@@ -1068,9 +1088,10 @@
         "Н": 28,
         "НЛ": 7,
         "Тип": "стартовая",
-        "mod": 2,
+        "mod": 3,
         "reasons": [
           "+1 стартовая",
+          "+1 Управа",
           "+1 вера (религия)"
         ],
         "delta": {}
@@ -1114,10 +1135,10 @@
         }
       },
       "might": {
-        "total": 6,
+        "total": 7,
         "fighters": 10,
         "base": 2,
-        "loyalty": 2,
+        "loyalty": 3,
         "defense": 1,
         "tags": 1,
         "tag_list": [
