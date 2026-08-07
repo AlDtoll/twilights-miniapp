@@ -141,6 +141,7 @@
   "user_id": 579387502,
   "telegram": "@aldtoll",
   "season": "4",
+  "season_name": "зима",
   "active_phase": "",
   "finance": {
     "start": 13067,
@@ -221,6 +222,10 @@
       },
       {
         "label": "Дом князя #жильё содержание",
+        "amount": 250
+      },
+      {
+        "label": "Управа содержание",
         "amount": 250
       },
       {
@@ -352,6 +357,10 @@
         {
           "label": "Дом князя #жильё содержание",
           "amount": 250
+        },
+        {
+          "label": "Управа содержание",
+          "amount": 250
         }
       ],
       "Кочевье": [
@@ -390,8 +399,8 @@
       ]
     },
     "total_income": 59069,
-    "total_expenses": 49460,
-    "balance": 20166
+    "total_expenses": 49710,
+    "balance": 19916
   },
   "buildings": {
     "slots": {
@@ -421,7 +430,7 @@
       {
         "name": "Управа",
         "cost": 5000,
-        "status": "🔨 С3 (1 сезон)",
+        "status": "✅ готова (С4)",
         "maint": 250,
         "rate": 5,
         "hands": 0
@@ -1032,7 +1041,7 @@
         {
           "name": "Управа",
           "cost": 5000,
-          "status": "🔨 С3 (1 сезон)",
+          "status": "✅ готова (С4)",
           "maint": 250,
           "rate": 5,
           "hands": 0
