@@ -652,7 +652,7 @@
             "kind": "приём"
           }
         ],
-        "bank": 4,
+        "bank": 6,
         "ups": 1,
         "next_threshold": 12
       },
@@ -671,7 +671,7 @@
       {
         "name": "Наблюдательность (I)",
         "techniques": [],
-        "bank": 11,
+        "bank": 13,
         "ups": 1,
         "next_threshold": 12
       }
