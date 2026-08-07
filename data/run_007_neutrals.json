@@ -131,7 +131,7 @@
             "name": "Гостиный Порт",
             "col": 1,
             "row": 1,
-            "terrain": "t-neutral",
+            "terrain": "t-ocean",
             "owner": "",
             "pop": 850
           },
@@ -139,7 +139,7 @@
             "name": "Гостиный Порт-Купеческий Двор",
             "col": 4,
             "row": 2,
-            "terrain": "t-neutral",
+            "terrain": "t-ocean",
             "owner": "",
             "pop": 500
           },
@@ -147,7 +147,7 @@
             "name": "Гостиный Порт-Пристань",
             "col": 2,
             "row": 4,
-            "terrain": "t-neutral",
+            "terrain": "t-ocean",
             "owner": "",
             "pop": 650
           }
@@ -623,7 +623,7 @@
             "name": "Каменные Пальцы",
             "col": 2,
             "row": 2,
-            "terrain": "t-neutral",
+            "terrain": "t-mountain",
             "owner": "",
             "pop": 50
           }
@@ -753,7 +753,7 @@
             "name": "Каменный Хребет",
             "col": 2,
             "row": 2,
-            "terrain": "t-neutral",
+            "terrain": "t-mountain",
             "owner": "",
             "pop": 400
           }
@@ -896,7 +896,7 @@
             "name": "Хвалибов Двор",
             "col": 2,
             "row": 1,
-            "terrain": "t-neutral",
+            "terrain": "t-meadow",
             "owner": "",
             "pop": 1000
           },
@@ -904,7 +904,7 @@
             "name": "Придорожные Хутора",
             "col": 1,
             "row": 2,
-            "terrain": "t-neutral",
+            "terrain": "t-meadow",
             "owner": "",
             "pop": 500
           }
@@ -1114,7 +1114,7 @@
             "name": "Ковыльные Стойбища",
             "col": 1,
             "row": 2,
-            "terrain": "t-neutral",
+            "terrain": "t-meadow",
             "owner": "danil",
             "pop": 200
           },
@@ -1122,7 +1122,7 @@
             "name": "Ковыльные Стойбища-Ближнее",
             "col": 4,
             "row": 3,
-            "terrain": "t-neutral",
+            "terrain": "t-meadow",
             "owner": "",
             "pop": 800
           }
@@ -1314,7 +1314,7 @@
             "name": "Крайнее Озеро",
             "col": 2,
             "row": 2,
-            "terrain": "t-neutral",
+            "terrain": "t-ocean",
             "owner": "",
             "pop": 500
           }
@@ -1422,7 +1422,7 @@
             "name": "Кремневая Гряда",
             "col": 1,
             "row": 1,
-            "terrain": "t-neutral",
+            "terrain": "t-mountain",
             "owner": "",
             "pop": 400
           },
@@ -1430,7 +1430,7 @@
             "name": "Кремневая Гряда-Верхняя",
             "col": 4,
             "row": 2,
-            "terrain": "t-neutral",
+            "terrain": "t-mountain",
             "owner": "",
             "pop": 150
           },
@@ -1438,7 +1438,7 @@
             "name": "Кремневая Гряда-Нижняя",
             "col": 2,
             "row": 4,
-            "terrain": "t-neutral",
+            "terrain": "t-mountain",
             "owner": "",
             "pop": 250
           }
@@ -2219,7 +2219,7 @@
             "name": "Северный Перевал",
             "col": 1,
             "row": 2,
-            "terrain": "t-neutral",
+            "terrain": "t-mountain",
             "owner": "",
             "pop": 50
           },
@@ -2227,7 +2227,7 @@
             "name": "Северный Перевал-Восточные Ворота",
             "col": 4,
             "row": 3,
-            "terrain": "t-neutral",
+            "terrain": "t-mountain",
             "owner": "",
             "pop": 150
           }
@@ -2439,7 +2439,7 @@
             "name": "Собрание Юксек-иле",
             "col": 1,
             "row": 1,
-            "terrain": "t-neutral",
+            "terrain": "t-meadow",
             "owner": "",
             "pop": 500
           },
@@ -2447,7 +2447,7 @@
             "name": "Западная полоса (роды малых родов)",
             "col": 4,
             "row": 2,
-            "terrain": "t-neutral",
+            "terrain": "t-meadow",
             "owner": "",
             "pop": 700
           },
@@ -2455,7 +2455,7 @@
             "name": "Восточная полоса (роды малых родов)",
             "col": 2,
             "row": 4,
-            "terrain": "t-neutral",
+            "terrain": "t-meadow",
             "owner": "",
             "pop": 800
           }
@@ -2727,7 +2727,7 @@
             "name": "Соляной Тракт",
             "col": 1,
             "row": 2,
-            "terrain": "t-neutral",
+            "terrain": "t-meadow",
             "owner": "",
             "pop": 200
           },
@@ -2735,7 +2735,7 @@
             "name": "Соляной Тракт-Постой",
             "col": 4,
             "row": 3,
-            "terrain": "t-neutral",
+            "terrain": "t-meadow",
             "owner": "",
             "pop": 300
           }
@@ -2930,7 +2930,7 @@
             "name": "Ставка Ахьяр-иле",
             "col": 1,
             "row": 2,
-            "terrain": "t-neutral",
+            "terrain": "t-meadow",
             "owner": "",
             "pop": 500
           },
@@ -2938,7 +2938,7 @@
             "name": "Кочевая полоса Ахьяр-иле",
             "col": 4,
             "row": 3,
-            "terrain": "t-neutral",
+            "terrain": "t-meadow",
             "owner": "",
             "pop": 400
           }
@@ -3172,7 +3172,7 @@
             "name": "Ставка Аргамак-иле",
             "col": 1,
             "row": 2,
-            "terrain": "t-neutral",
+            "terrain": "t-meadow",
             "owner": "",
             "pop": 400
           },
@@ -3180,7 +3180,7 @@
             "name": "Кочевая полоса Аргамак-иле",
             "col": 4,
             "row": 3,
-            "terrain": "t-neutral",
+            "terrain": "t-meadow",
             "owner": "",
             "pop": 800
           }
@@ -3508,7 +3508,7 @@
             "name": "Ветровой Перевал",
             "col": 2,
             "row": 2,
-            "terrain": "t-neutral",
+            "terrain": "t-mountain",
             "owner": "",
             "pop": 150
           }
@@ -3616,7 +3616,7 @@
             "name": "Волчьи Пустоши",
             "col": 2,
             "row": 2,
-            "terrain": "t-neutral",
+            "terrain": "t-meadow",
             "owner": "",
             "pop": 150
           }
@@ -3860,7 +3860,7 @@
             "name": "Юго-Западные Предгорья",
             "col": 1,
             "row": 1,
-            "terrain": "t-neutral",
+            "terrain": "t-mountain",
             "owner": "",
             "pop": 150
           },
@@ -3868,7 +3868,7 @@
             "name": "Юго-Западные Предгорья-Северное",
             "col": 4,
             "row": 2,
-            "terrain": "t-neutral",
+            "terrain": "t-mountain",
             "owner": "",
             "pop": 50
           },
@@ -3876,7 +3876,7 @@
             "name": "Юго-Западные Предгорья-Южное",
             "col": 2,
             "row": 4,
-            "terrain": "t-neutral",
+            "terrain": "t-mountain",
             "owner": "",
             "pop": 100
           }
@@ -4132,7 +4132,7 @@
             "name": "Южные Предгорья",
             "col": 1,
             "row": 2,
-            "terrain": "t-neutral",
+            "terrain": "t-mountain",
             "owner": "",
             "pop": 100
           },
@@ -4140,7 +4140,7 @@
             "name": "Южные Предгорья-Северное",
             "col": 4,
             "row": 3,
-            "terrain": "t-neutral",
+            "terrain": "t-mountain",
             "owner": "",
             "pop": 300
           }
@@ -4318,7 +4318,7 @@
             "name": "Западные Предгорья",
             "col": 2,
             "row": 2,
-            "terrain": "t-neutral",
+            "terrain": "t-mountain",
             "owner": "",
             "pop": 300
           }

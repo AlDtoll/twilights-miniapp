@@ -25,7 +25,7 @@
         "name": "Утёсная гавань",
         "col": 1,
         "row": 1,
-        "terrain": "t-player",
+        "terrain": "t-mountain",
         "owner": "valter",
         "pop": 500
       },
@@ -33,7 +33,7 @@
         "name": "Рудный двор",
         "col": 1,
         "row": 4,
-        "terrain": "t-player",
+        "terrain": "t-mountain",
         "owner": "valter",
         "pop": 300
       },
@@ -41,7 +41,7 @@
         "name": "Мыс Стража",
         "col": 4,
         "row": 2,
-        "terrain": "t-player",
+        "terrain": "t-mountain",
         "owner": "valter",
         "pop": 200
       }
@@ -74,7 +74,7 @@
   "telegram": "@ValterTasadar",
   "season": "4",
   "season_name": "зима",
-  "active_phase": "adventure_prep",
+  "active_phase": "adventure",
   "finance": {
     "start": 4309,
     "income": [

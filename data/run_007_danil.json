@@ -30,7 +30,7 @@
         "name": "Былицы",
         "col": 1,
         "row": 1,
-        "terrain": "t-player",
+        "terrain": "t-meadow",
         "owner": "danil",
         "pop": 700
       },
@@ -38,7 +38,7 @@
         "name": "Кочевье",
         "col": 3,
         "row": 3,
-        "terrain": "t-player",
+        "terrain": "t-meadow",
         "owner": "danil",
         "pop": 250
       },
@@ -46,7 +46,7 @@
         "name": "Каменка",
         "col": 1,
         "row": 4,
-        "terrain": "t-player",
+        "terrain": "t-meadow",
         "owner": "danil",
         "pop": 150
       },
@@ -54,7 +54,7 @@
         "name": "Ковыльные Стойбища",
         "col": 1,
         "row": 6,
-        "terrain": "t-neutral",
+        "terrain": "t-meadow",
         "owner": "danil",
         "pop": 200
       },
@@ -62,7 +62,7 @@
         "name": "Ковыльные Стойбища-Ближнее",
         "col": 4,
         "row": 7,
-        "terrain": "t-neutral",
+        "terrain": "t-meadow",
         "owner": "",
         "pop": 800
       }
