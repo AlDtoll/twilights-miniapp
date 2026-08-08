@@ -162,7 +162,12 @@
       }
     ],
     "receipts": [],
-    "spendings": [],
+    "spendings": [
+      {
+        "label": "Праздник культа Айдана в Чистозерье (большой сход)",
+        "amount": 1500
+      }
+    ],
     "income_by": {
       "Чистозерье": [
         {
@@ -267,7 +272,7 @@
     },
     "total_income": 51214,
     "total_expenses": 44235,
-    "balance": 18788
+    "balance": 17288
   },
   "buildings": {
     "slots": {
@@ -362,7 +367,7 @@
       },
       "willpower": {
         "total": 2,
-        "left": 2
+        "left": 1
       }
     },
     "incidents": [
@@ -875,6 +880,29 @@
     "total": null
   },
   "loot": null,
+  "threat": {
+    "total": 13,
+    "factors": {
+      "base": 1,
+      "perimeter": 8,
+      "neighbors": [
+        "Мшары (-1, 2)",
+        "Талый Лог (-1, 3)",
+        "Крайнее Озеро (-1, 4)",
+        "Междолесье (0, 2)",
+        "Волчий Стан (0, 4)",
+        "Кабанья Тропа (1, 2)",
+        "Ельник (1, 3)",
+        "Ветровой Перевал (1, 4)"
+      ],
+      "razed": 1,
+      "danger": 1,
+      "year": 1,
+      "hero_exit": 0,
+      "manual": 0,
+      "manual_mods": []
+    }
+  },
   "settlements": [
     {
       "name": "Чистозерье",

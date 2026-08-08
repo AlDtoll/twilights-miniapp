@@ -628,19 +628,14 @@
       {
         "name": "Стрелок (пороховое) (I)",
         "techniques": [],
-        "bank": 7,
+        "bank": 11,
         "ups": 0,
         "next_threshold": 10
       },
       {
         "name": "Адепт Фортуны (II)",
-        "techniques": [
-          {
-            "name": "«Стабильный Знак»",
-            "kind": "техника"
-          }
-        ],
-        "bank": 1,
+        "techniques": [],
+        "bank": 3,
         "ups": 1,
         "next_threshold": 12
       },
@@ -652,7 +647,7 @@
             "kind": "приём"
           }
         ],
-        "bank": 6,
+        "bank": 10,
         "ups": 1,
         "next_threshold": 12
       },
@@ -671,7 +666,7 @@
       {
         "name": "Наблюдательность (I)",
         "techniques": [],
-        "bank": 13,
+        "bank": 15,
         "ups": 1,
         "next_threshold": 12
       }
@@ -805,6 +800,29 @@
     "total": null
   },
   "loot": null,
+  "threat": {
+    "total": 13,
+    "factors": {
+      "base": 1,
+      "perimeter": 8,
+      "neighbors": [
+        "Юго-Западные Предгорья (2, 0)",
+        "Западные Предгорья (2, 1)",
+        "Гостиный Порт (2, 2)",
+        "Южные Предгорья (3, 0)",
+        "Спорные Косяки (3, 2)",
+        "Море (юго-восток) (4, 0)",
+        "Море (восток) (4, 1)",
+        "Море (северо-восток) (4, 2)"
+      ],
+      "razed": 1,
+      "danger": 1,
+      "year": 1,
+      "hero_exit": 0,
+      "manual": 0,
+      "manual_mods": []
+    }
+  },
   "settlements": [
     {
       "name": "Утёсная гавань",
