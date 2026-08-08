@@ -74,7 +74,7 @@
   "telegram": "@ValterTasadar",
   "season": "4",
   "season_name": "зима",
-  "active_phase": "adventure",
+  "active_phase": "adventure_done",
   "finance": {
     "start": 4309,
     "income": [
