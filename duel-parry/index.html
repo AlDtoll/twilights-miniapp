@@ -73,7 +73,7 @@ let S={};
 const DIRS=['←','↑','→','↓'];
 function gStart(){
   goPlay();
-  S={i:0,max:Math.max(8,Math.min(20,gameData.rounds||12)),ok:0,score:0,cur:null,start:Date.now(),done:false,window:false};
+  S={i:0,max:Math.max(8,Math.min(20,gameData.rounds||12)),ok:0,score:0,cur:null,start:Date.now(),done:false,window:false,win:Math.max(500,gameData.parryWindow||1800)};
   document.querySelectorAll('.chip-btn').forEach(b=>b.onclick=()=>parry(b.dataset.d));
   hud(); next();
 }
@@ -91,8 +91,8 @@ function next(){
     document.getElementById('flash').textContent=S.cur;
     document.getElementById('g-hint').textContent='Парируй!';
     S.window=true;
-    S.timer=setTimeout(()=>{ if(S.window){S.window=false; S.i++; hud(); next();} },700);
-  },400+rng()*400);
+    S.timer=setTimeout(()=>{ if(S.window){S.window=false; S.i++; hud(); next();} },S.win);
+  },500+rng()*500);
 }
 function parry(d){ if(!S.window||S.done)return; S.window=false; clearTimeout(S.timer);
   if(d===S.cur){ S.ok++; S.score+=10; document.getElementById('flash').textContent='✔'; }

@@ -55,11 +55,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <script src="../shared/core.js"></script>
 <script>
 
-function tierBy(pct){
-  if(pct>=0.9)return {outcome:'Идеально',level:4};
-  if(pct>=0.75)return {outcome:'Отлично',level:3};
-  if(pct>=0.55)return {outcome:'Хорошо',level:2};
-  if(pct>=0.35)return {outcome:'Неплохо',level:1};
+function tierBy(sec){
+  if(sec>=10)return {outcome:'Идеально',level:4};
+  if(sec>=9)return {outcome:'Отлично',level:3};
+  if(sec>=7)return {outcome:'Хорошо',level:2};
+  if(sec>=5)return {outcome:'Неплохо',level:1};
   return {outcome:'Слабо',level:0};
 }
 function showReady(defTitle, defInfo){
@@ -81,7 +81,7 @@ function finish(game, payload, title, sub){
 let S={},RAF;
 function gStart(){
   goPlay();
-  const time=(gameData.timeLimit||10)*1000;
+  const time=(gameData.timeLimit||13)*1000;
   const lo=40,hi=65;
   document.getElementById('zone').style.bottom=lo+'%';
   document.getElementById('zone').style.height=(hi-lo)+'%';
@@ -97,7 +97,7 @@ function loop(now){
   if(S.v>=40&&S.v<=65)S.ok+=dt;
   const left=Math.max(0,(S.limit-(Date.now()-S.t0))/1000);
   document.getElementById('g-hud').innerHTML=`<div class="hud-item"><div class="hud-l">Время</div><div class="hud-v">${left.toFixed(1)}</div></div><div class="hud-item"><div class="hud-l">В зоне</div><div class="hud-v">${S.ok.toFixed(1)}с</div></div>`;
-  if(Date.now()-S.t0>=S.limit){ S.done=true; const pct=S.ok/(S.limit/1000); const t=tierBy(pct);
+  if(Date.now()-S.t0>=S.limit){ S.done=true; const t=tierBy(S.ok);
     finish('whisper',{inZone:Math.round(S.ok*10)/10,limit:S.limit/1000,outcome:t.outcome,level:t.level,timeSpent:Math.round(S.limit/1000)},t.outcome,S.ok.toFixed(1)+'с в зоне'); return; }
   RAF=requestAnimationFrame(loop);
 }

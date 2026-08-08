@@ -86,6 +86,29 @@ body {
 .am-pop { fill:var(--muted); font-family:var(--font); font-size:8.5px; }
 .am-edge-label { fill:var(--muted); font-family:var(--font); font-size:10px; }
 .am-note { color:var(--muted); font-size:11px; text-align:center; padding:2px 8px 8px; }
+
+/* ── Атмосферные анимации (amb-*) — только для карты области ── */
+@keyframes amb-smoke {
+  0%   { opacity: 0;    transform: translateY(0)     scale(.5); }
+  30%  { opacity: .16; }
+  100% { opacity: 0;    transform: translateY(-15px) scale(1.3); }
+}
+.amb-smoke circle { transform-box: fill-box; transform-origin: center; }
+@keyframes amb-water-pulse {
+  0%,100% { opacity: .85; }
+  50%     { opacity: .5;  }
+}
+.amb-water { animation: amb-water-pulse 6s ease-in-out infinite; }
+
+/* Флажок на постройках admin/military в панораме */
+@keyframes pano-flag-wave { 0%,100% { transform: skewX(-3deg); } 50% { transform: skewX(3deg); } }
+@keyframes pano-particle-fall {
+  0%   { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0; }
+  10%  { opacity: 0.7; }
+  90%  { opacity: 0.6; }
+  100% { transform: translateY(110vh) translateX(var(--drift, 0)) rotate(360deg); opacity: 0; }
+}
+
 .badge-season { border-color: var(--gold-dim); color: var(--gold); background: #2a2010; }
 .badge-phase  { border-color: var(--blue); color: #6a9acc; background: #0a1a2a; }
 
@@ -403,6 +426,22 @@ body {
 .roll-delta .rd-none { color: var(--muted); font-style: italic; }
 .staff-eff-hint { color: var(--red); font-size: 0.68rem; }
 .staff-sub-note { font-size: 0.66rem; color: var(--muted); margin-top: 8px; line-height: 1.4; }
+
+/* ── Threat (Уровень угрозы) ── */
+.threat-total { font-size: 2rem; font-weight: bold; text-align: center; padding: 8px 0 4px; }
+.threat-total.low  { color: var(--green); }
+.threat-total.mid  { color: var(--gold); }
+.threat-total.high { color: var(--red); }
+.threat-bar-wrap { height: 8px; border-radius: 4px; overflow: hidden; background: var(--border); margin: 4px 0 10px; }
+.threat-bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+.threat-bar-fill.low  { background: var(--green); }
+.threat-bar-fill.mid  { background: var(--gold); }
+.threat-bar-fill.high { background: var(--red); }
+.threat-factors { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 2px; }
+.threat-factors li { font-size: 0.72rem; color: var(--muted); display: flex; justify-content: space-between; padding: 2px 0; border-bottom: 1px solid #1a1814; }
+.threat-factors li:last-child { border-bottom: none; }
+.threat-factors .tf-val { color: var(--text); font-weight: bold; white-space: nowrap; padding-left: 8px; }
+.threat-note { font-size: 0.7rem; color: var(--muted); margin-top: 8px; line-height: 1.4; }
 .faith-card { padding: 10px 0 14px; border-bottom: 1px solid var(--border); }
 .faith-card:last-child { border-bottom: none; }
 .faith-bar-full { display: flex; height: 10px; border-radius: 4px; overflow: hidden; background: var(--border); margin-bottom: 6px; }
@@ -539,10 +578,73 @@ select:focus { outline: none; border-color: var(--gold-dim); }
 }
 .map-link:hover { color: var(--text); border-color: var(--muted); }
 .nav-links { display: flex; gap: 6px; flex-shrink: 0; }
+
+/* ── Панорама поселения (pano-overlay) ── */
+#pano-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: none;
+  flex-direction: column;
+  background: #0a0908;
+}
+#pano-overlay.open { display: flex; }
+.pano-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px 8px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: rgba(10,9,8,0.9);
+}
+.pano-back {
+  background: none;
+  border: 1px solid var(--gold-dim);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.75rem;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.pano-back:hover { background: var(--bg2); }
+.pano-title {
+  flex: 1;
+  font-size: 0.95rem;
+  color: var(--gold);
+  letter-spacing: 0.05em;
+}
+#pano-stage {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  align-items: stretch;
+  position: relative;
+}
+#pano-stage svg {
+  width: 100%;
+  height: 100%;
+}
 </style>
 </head>
 <body>
 <div id="loading">Загрузка…</div>
+
+<!-- Панорама поселения -->
+<div id="pano-overlay">
+  <div class="pano-header">
+    <button class="pano-back" onclick="closePano()">← Назад</button>
+    <div class="pano-title" id="pano-title"></div>
+    <div id="pano-np-meta" style="font-size:0.72rem;color:#7a6a4a"></div>
+  </div>
+  <div id="pano-stage" onclick="closeBldCard()"></div>
+  <div id="pano-bld-card" style="display:none;position:absolute;bottom:0;left:0;right:0;background:rgba(12,10,6,0.97);border-top:1px solid #4a3a20;padding:14px 16px 20px;z-index:10" onclick="event.stopPropagation()">
+    <button onclick="closeBldCard()" style="float:right;background:none;border:none;color:#9a8a6a;font-size:1rem;cursor:pointer;padding:0 4px">✕</button>
+    <div id="pano-bld-card-content"></div>
+  </div>
+</div>
+
 <div id="app" style="display:none">
   <div class="top-bar">
     <div class="select-wrap">
@@ -692,6 +794,15 @@ select:focus { outline: none; border-color: var(--gold-dim); }
       <div class="card-body" id="body-faith"></div>
     </div>
 
+    <!-- Threat / Уровень угрозы -->
+    <div class="card card-wide" id="card-threat">
+      <div class="card-title" onclick="toggleCard('card-threat')">
+        <span class="icon">⚠️</span> Уровень угрозы
+        <em class="chevron">▼</em>
+      </div>
+      <div class="card-body" id="body-threat"></div>
+    </div>
+
     <!-- Per-НП view -->
     <div class="card card-wide" id="card-settlements">
       <div class="card-title" onclick="toggleCard('card-settlements')">
@@ -834,9 +945,18 @@ function render(d, npFilter) {
   renderMight(setts);
   renderLoyalty(setts);
   renderFaith(setts, d.religion);
+  renderThreat(d.threat);
   NP_ROADS = buildRoadsByNp((d.area_map || {}).roads);
+  // Заполняем словарь имя→settlement для панорамы
+  panoSetts = {};
+  (d.settlements || []).forEach(s => { panoSetts[s.name] = s; });
+  currentPanoSeasonName = d.season_name || null;
   renderSettlements(setts);
 }
+
+// Словарь имя НП → объект settlement для панорамы (заполняется в render)
+let panoSetts = {};
+let currentPanoSeasonName = null;
 
 // Дороги на НП: из area_map.roads строим name → [соседи]. internal — в обе
 // стороны, edge — только у якоря (from = НП владения, to = внешний сосед).
@@ -852,7 +972,7 @@ function buildRoadsByNp(roads) {
 }
 
 // ── Внутренняя карта области (иллюстративная) ───────────────────────────────────
-// Тап по домику НП: подсветить дороги, выходящие из него (повторный тап — снять).
+// Тап по домику НП: подсветить дороги + открыть панораму поселения.
 function amHi(ev, idx) {
   ev.stopPropagation();
   const svg = ev.target.ownerSVGElement;
@@ -865,6 +985,294 @@ function amHi(ev, idx) {
   svg.querySelectorAll(".am-road").forEach(r => {
     if ((r.getAttribute("data-i") || "").split(" ").includes(String(idx))) r.classList.add("am-road-hi");
   });
+  const labels = svg.querySelectorAll(".am-label");
+  const nm = labels[idx] ? labels[idx].textContent.trim() : null;
+  if (nm) {
+    const s = panoSetts[nm] || null;
+    const terrainHint = panoTerrainFor(nm, (_panoNodes[idx] && _panoNodes[idx].terrain) || '');
+    openPano(nm, s, terrainHint);
+  }
+}
+
+// ── Панорама поселения ─────────────────────────────────────────────────────────
+
+// Маппинг ключевых слов названия постройки → emoji
+function buildingEmoji(name) {
+  const n = (name || '').toLowerCase();
+  if (n.includes('управ'))                                  return '🏛';
+  if (n.includes('карауль') || n.includes('стража'))       return '🛡';
+  if (n.includes('часовн') || n.includes('алтарь') ||
+      n.includes('святилищ') || n.includes('храм') ||
+      n.includes('монастыр'))                              return '⛪';
+  if (n.includes('вышк') || n.includes('башн'))            return '🗼';
+  if (n.includes('псарн'))                                 return '🐕';
+  if (n.includes('склад'))                                 return '📦';
+  if (n.includes('сапож') || n.includes('обув'))           return '👟';
+  if (n.includes('конюшн'))                                return '🐴';
+  if (n.includes('казарм'))                                return '⚔';
+  if (n.includes('лечебниц') || n.includes('больниц'))     return '🏥';
+  if (n.includes('таверн'))                                return '🍺';
+  if (n.includes('пивовар'))                               return '🍺';
+  if (n.includes('мельниц') || n.includes('амбар'))        return '🌾';
+  if (n.includes('пекарн'))                                return '🍞';
+  if (n.includes('коопер'))                                return '🤝';
+  if (n.includes('тренир') || n.includes('плац'))          return '🏋';
+  if (n.includes('цитадел') || n.includes('форт') ||
+      n.includes('крепост'))                               return '🏰';
+  if (n.includes('кожевн'))                                return '🧵';
+  if (n.includes('столярн'))                               return '🪵';
+  if (n.includes('рыбац') || n.includes('коптильн'))       return '🐟';
+  if (n.includes('рынок') || n.includes('торгов'))         return '🏪';
+  return '🏠';
+}
+
+// Детерминированный тип местности НП: реальный terrain клетки, иначе стабильно-случайный по имени.
+function panoTerrainFor(name, real){
+  const r=(real||'').toLowerCase();
+  if(r.match(/t-mountain|гор|▲|предгор/)) return 't-mountain';
+  if(r.match(/t-swamp|болот|🌿/)) return 't-swamp';
+  if(r.match(/t-forest|лес|🌲/)) return 't-forest';
+  if(r.match(/t-ocean|t-skerry|мор|〰|шхер/)) return 't-ocean';
+  if(r.match(/t-evil|опас|☠/)) return 't-evil';
+  return 't-meadow';
+}
+function terrainTileColor(t){ return {'t-mountain':'#9a8f78','t-forest':'#3f7a34','t-swamp':'#5f7040','t-ocean':'#4a86c0','t-evil':'#7a5a5a','t-meadow':'#7fae54'}[t]||'#7fae54'; }
+
+// Категория постройки по ключевым словам имени
+function buildingArchetype(name) {
+  const n = (name || '').toLowerCase();
+  if (n.includes('управ')) return 'admin';
+  if (n.match(/казарм|цитадел|форт|крепост|карауль|стража|вышк|башн|тренир|плац/)) return 'military';
+  if (n.match(/часовн|алтарь|святилищ|храм|монастыр/)) return 'religious';
+  if (n.match(/мельниц|пекарн|кожевн|столярн|сапож|пивовар|рыбац|коптильн|коопер|конюшн|псарн/)) return 'production';
+  if (n.match(/склад|амбар|рынок|торгов/)) return 'storage';
+  return 'residential';
+}
+
+// Каталог эффектов построек (ключ = подстрока нижнего регистра имени)
+const BLD_EFFECTS = {
+  'управ':'+1 очко канцлера в фазе лидера',
+  'карауль':'+1 очко капитана стражи (постфактум)',
+  'часовн':'+1 к взаимодействию с культом; +1 к броску миграции',
+  'алтарь':'+1 к взаимодействию с культом; +1 к броску миграции',
+  'святилищ':'+1 к взаимодействию с культом; +1 к броску миграции',
+  'храм':'+2 к взаимодействию с культом; +2 к броску миграции; жрец в области',
+  'монастыр':'+3 к взаимодействию с культом; +3 к броску миграции',
+  'вышк':'+1 к обнаружению угроз с направления',
+  'псарн':'Охрана двора; именной пёс в свиту героя',
+  'склад':'Хранение ресурсов; +1 к доходу от торговли',
+  'торгов':'+1 к доходу от торговцев; привлекает купцов',
+  'сапож':'Доход от лавки; дешевле кожаное снаряжение стражи',
+  'конюшн':'Содержание лошадей; +скорость (сцена)',
+  'казарм':'Гарнизон; +1 к решениям капитана; +2 опыта стражи',
+  'лечебниц':'+1 к медицине; +1% прирост населения НП',
+  'больниц':'+2% прирост НП + 1% соседям по дороге; +1 к медицине',
+  'таверн':'Доход 250/сезон; тавернщик — 2 действия',
+  'мельниц':'Пассивный доход; дешевле пропитание стражи',
+  'пекарн':'Пассивный доход; +1 к лояльности',
+  'пивовар':'Пассивный доход; +1 к доходу таверны',
+  'коопер':'Пассивный доход; +1 к стабильности',
+  'амбар':'Защита урожая; меньше потерь при бедствиях',
+  'тренир':'+1 опыта стражи/сезон; быстрее новобранцы',
+  'цитадел':'Укреплённый центр; бонусы по договорённости',
+  'форт':'Укреплённый центр; бонусы по договорённости',
+  'крепост':'Укреплённый центр; бонусы по договорённости',
+  'кожевн':'Производство кожи; доход от промысла',
+  'столярн':'Изделия из дерева; доход от промысла',
+  'рыбац':'Рыболовный промысел; доход',
+  'коптильн':'Переработка рыбы; доход',
+  'рынок':'Торговый узел; +доход от купцов',
+};
+function bldEffect(name){const n=(name||'').toLowerCase();for(const [k,v] of Object.entries(BLD_EFFECTS)){if(n.includes(k))return v;}return null;}
+function openBldCard(i){
+  const b=_panoBlds[i]; if(!b) return;
+  const slots=parseInt((b.name.match(/(\d+)\s*слот/)||[])[1]||'1',10);
+  const st=(b.status||''); const building=st.includes('🔨')||st.toLowerCase().includes('строит');
+  const _pm=st.match(/\((\d+)\/(\d+)\s*сл\)/); const _pp=_pm?` ${_pm[1]}/${_pm[2]} сл`:'';
+  const statusIcon=building?('🔨 Строится'+_pp):'✅ Готова';
+  const effect=bldEffect(b.name);
+  document.getElementById('pano-bld-card-content').innerHTML=
+    `<div style="color:#e0d090;font-weight:bold;margin-bottom:6px">${esc(b.name)}</div>`+
+    `<div style="font-size:0.8rem;color:#9a8a6a">${statusIcon} · ${slots} слот${slots>1?'а':''} · Содержание: ${esc(String(b.maint??'—'))} мон/сезон`+
+    (b.hands?` · Рук: ${esc(String(b.hands))}`:'')+`</div>`+
+    (effect?`<div style="font-size:0.82rem;color:#c8b89a;margin-top:6px">${esc(effect)}</div>`:'');
+  document.getElementById('pano-bld-card').style.display='';
+}
+function closeBldCard(){const c=document.getElementById('pano-bld-card'); if(c) c.style.display='none';}
+
+// Узлы area_map последнего отрисованного блока — для terrain-хинта панорамы
+let _panoNodes = [];
+// Здания текущей открытой панорамы — для openBldCard
+let _panoBlds = [];
+
+function openPano(npName, settlement, terrainHint) {
+  document.getElementById('pano-title').textContent = npName;
+  // Шапка НП: население, тип terrain, количество построек
+  const bldCount=(settlement&&settlement.buildings)?settlement.buildings.length:0;
+  const pop=(settlement&&settlement.population)?settlement.population:null;
+  const tLabel={'t-mountain':'Горы','t-forest':'Лес','t-swamp':'Болото','t-ocean':'Море','t-skerry':'Шхеры','t-evil':'Опасная зона'}[terrainHint]||'';
+  const meta=[pop?`👥 ${pop}`:null,tLabel||null,bldCount?`🏠 ${bldCount}`:null].filter(Boolean).join(' · ');
+  const mEl=document.getElementById('pano-np-meta'); if(mEl) mEl.textContent=meta;
+  document.getElementById('pano-overlay').classList.add('open');
+  renderPano(npName, settlement, terrainHint, currentPanoSeasonName);
+}
+
+function closePano() {
+  closeBldCard();
+  document.getElementById('pano-overlay').classList.remove('open');
+}
+
+function renderPano(npName, settlement, terrainHint, seasonName) {
+  const stage = document.getElementById('pano-stage');
+  const buildings = (settlement && settlement.buildings) ? settlement.buildings : [];
+  _panoBlds = buildings;
+  const VW = 800, VH = 500;
+  const E = (typeof esc === 'function') ? esc : (x => String(x));
+  const shade = (hex, f) => { const n = parseInt(hex.slice(1), 16); let r=(n>>16)&255,g=(n>>8)&255,b=n&255; r=Math.max(0,Math.min(255,Math.round(r*f)));g=Math.max(0,Math.min(255,Math.round(g*f)));b=Math.max(0,Math.min(255,Math.round(b*f))); return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1); };
+
+  const terrainRaw = terrainHint || (settlement && settlement.terrain) || '';
+  const terrain = terrainRaw.toLowerCase();
+  let skyTop='#5aa6e0', skyMid='#a9d6ef', skyBot='#e9f2da';
+  let hillBack='#9cc06e', hillFront='#75a049', grassTop='#8ab958', grassBot='#5f8a3c', mtn='#a6bcce', evil=false;
+  if (terrain.match(/t-mountain|гор|▲|предгор/)) { skyTop='#6fa4cc';skyMid='#bcd2e0';skyBot='#e6e2d0'; hillBack='#a8a592';hillFront='#8a8676'; grassTop='#9a9c70';grassBot='#767854'; mtn='#8f97a6'; }
+  else if (terrain.match(/t-swamp|болот|🌿/)) { skyTop='#84a69e';skyMid='#bcd0c0';skyBot='#dee3c8'; hillBack='#809a58';hillFront='#5e7c3a'; grassTop='#6f8a42';grassBot='#516a32'; mtn='#8fa08e'; }
+  else if (terrain.match(/t-forest|лес|🌲/)) { skyTop='#69a4ce';skyMid='#a9d0e0';skyBot='#dcecc6'; hillBack='#5f9a4c';hillFront='#3d7832'; grassTop='#579040';grassBot='#3c6c2c'; mtn='#7fa09e'; }
+  else if (terrain.match(/t-ocean|t-skerry|мор|〰|шхер/)) { skyTop='#54a4e6';skyMid='#a9d8f2';skyBot='#dcefe0'; hillBack='#8fb87a';hillFront='#6c9856'; grassTop='#80ac68';grassBot='#5c8849'; mtn='#9fc0d0'; }
+  else if (terrain.match(/t-evil|опас|☠/)) { skyTop='#8f6a76';skyMid='#bfa0a0';skyBot='#d6c0b2'; hillBack='#897a5a';hillFront='#665742'; grassTop='#786848';grassBot='#564a36'; mtn='#a08f8f'; evil=true; }
+
+  const groundY = VH*0.66;
+  let _vseed=0; { const _s=(npName||'')+'|'+terrain; for(let k=0;k<_s.length;k++){ _vseed=(_vseed*31+_s.charCodeAt(k))>>>0; } }
+  const rng=()=>{ _vseed=(_vseed+0x6D2B79F5)>>>0; let t=_vseed; t=Math.imul(t^(t>>>15),t|1); t^=t+Math.imul(t^(t>>>7),t|61); return ((t^(t>>>14))>>>0)/4294967296; };
+  const popNum=parseInt(String((settlement&&settlement.population)||'').replace(/[^\d]/g,''),10)||0;
+  const hutCount=Math.max(4, Math.min(26, Math.round(popNum/40)+3));
+  const roofPal = terrain.match(/t-mountain|гор|предгор/) ? ['#7a7266','#8a8276','#6a6258']
+    : terrain.match(/t-forest|лес/) ? ['#5a3d24','#6f4a2a','#4a3620']
+    : terrain.match(/t-swamp|болот/) ? ['#5f6a3a','#6a5a34','#556036']
+    : ['#b5532e','#9c6a3c','#c0703a','#a85432'];
+  const wallPal=['#e6d6b2','#dcd0b0','#cfc6b2','#e0d2ac'];
+  function miniHut(x,y,sc){ const bw=16*sc, bh=14*sc, L=x-bw/2,R=x+bw/2, wt=y-bh*0.55, peak=y-bh; const wall=wallPal[Math.floor(rng()*wallPal.length)], roof=roofPal[Math.floor(rng()*roofPal.length)]; let s='<g pointer-events="none">'; s+=`<rect x="${L}" y="${wt}" width="${bw}" height="${y-wt}" fill="${wall}"/>`; s+=`<rect x="${x}" y="${wt}" width="${bw/2}" height="${y-wt}" fill="${shade(wall,0.9)}"/>`; s+=`<path d="M ${L-bw*0.14} ${wt} L ${x} ${peak} L ${R+bw*0.14} ${wt} Z" fill="${roof}"/>`; s+=`<path d="M ${L-bw*0.14} ${wt} L ${x} ${peak} L ${x} ${wt} Z" fill="${shade(roof,1.12)}"/>`; s+=`<rect x="${x-bw*0.13}" y="${y-bh*0.32}" width="${bw*0.26}" height="${bh*0.32}" fill="#3a2414"/>`; s+='</g>'; return s; }
+  const _huts=[]; for(let k=0;k<hutCount;k++){ const depth=rng(); const hx=40+rng()*(VW-80); const hy=groundY-4+depth*80; const hsc=0.55+depth*0.9; _huts.push({hx,hy,hsc}); }
+  _huts.sort((a,b)=>a.hy-b.hy);
+  let village=''; _huts.forEach(h=>{ village+=miniHut(h.hx,h.hy,h.hsc); });
+  const water = terrain.match(/t-ocean|t-skerry|мор|〰|шхер/) ? `<rect x="0" y="${groundY-8}" width="${VW}" height="30" fill="#3f7fb8" opacity="0.85" pointer-events="none"/><path d="M 0 ${groundY+8} q 40 -5 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0" fill="none" stroke="#cfe6f2" stroke-width="1.5" opacity="0.6" pointer-events="none"/>` : '';
+
+  function rowPositions(n, baseY, marginX){ const arr=[]; if(!n) return arr; const usable=VW-2*marginX; for(let k=0;k<n;k++){ const cx = n===1? VW/2 : marginX + usable*k/(n-1); arr.push({cx, baseY}); } return arr; }
+  function drawFlag(px, py, w, h, animate){ const pole=`<line x1="${px}" y1="${py-h*1.4}" x2="${px}" y2="${py+h*0.2}" stroke="#6a5a44" stroke-width="1.4" pointer-events="none"/>`; const style=animate?`style="transform-origin:${px}px ${py-h*1.3}px;animation:pano-flag-wave 3s ease-in-out infinite"`:''; const flag=`<path d="M ${px} ${py-h*1.4} L ${px+w} ${py-h*1.15} L ${px+w*0.72} ${py-h*0.95} L ${px+w} ${py-h*0.72} L ${px} ${py-h*0.6} Z" fill="#2f5fbf" stroke="#25488f" stroke-width="0.6" pointer-events="none" ${style}/>`; const gold=`<circle cx="${px}" cy="${py-h*1.4}" r="1.6" fill="#e8c84a" pointer-events="none"/>`; return pole+flag+gold; }
+  function win(x,y,w,h,lit){ const c=lit?'#ffdf9e':'#a9c4d0'; return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${c}" stroke="#4a3420" stroke-width="1"/><line x1="${x+w/2}" y1="${y}" x2="${x+w/2}" y2="${y+h}" stroke="#4a3420" stroke-width="0.7"/><line x1="${x}" y1="${y+h/2}" x2="${x+w}" y2="${y+h/2}" stroke="#4a3420" stroke-width="0.7"/>`; }
+  function gableRoof(L,R,wallTop,peak,roof){ const over=(R-L)*0.12, cx=(L+R)/2; let s=''; s+=`<path d="M ${L-over} ${wallTop} L ${cx} ${peak} L ${cx} ${wallTop} Z" fill="${shade(roof,1.12)}"/>`; s+=`<path d="M ${cx} ${peak} L ${R+over} ${wallTop} L ${cx} ${wallTop} Z" fill="${shade(roof,0.82)}"/>`; s+=`<path d="M ${L-over} ${wallTop} L ${cx} ${peak} L ${R+over} ${wallTop}" fill="none" stroke="${shade(roof,0.6)}" stroke-width="1"/>`; return s; }
+  function bodyResidential(cx,baseY,bw,bh,wall,roof,timber,lit){ const wallTop=baseY-bh*0.6, L=cx-bw/2, R=cx+bw/2, peak=baseY-bh; let s=`<rect x="${L}" y="${wallTop}" width="${bw}" height="${baseY-wallTop}" fill="${wall}"/>`; s+=`<rect x="${cx}" y="${wallTop}" width="${bw/2}" height="${baseY-wallTop}" fill="${shade(wall,0.88)}"/>`; if(timber){ const bm='#5a3d24'; s+=`<line x1="${L}" y1="${wallTop}" x2="${R}" y2="${baseY}" stroke="${bm}" stroke-width="1.4"/><line x1="${R}" y1="${wallTop}" x2="${L}" y2="${baseY}" stroke="${bm}" stroke-width="1.4"/><line x1="${cx}" y1="${wallTop}" x2="${cx}" y2="${baseY}" stroke="${bm}" stroke-width="1.2"/><rect x="${L}" y="${wallTop}" width="${bw}" height="${baseY-wallTop}" fill="none" stroke="${bm}" stroke-width="1.6"/>`; } s+=gableRoof(L,R,wallTop,peak,roof); s+=win(cx-bw*0.32,wallTop+bh*0.12,bw*0.2,bh*0.18,lit); s+=win(cx+bw*0.12,wallTop+bh*0.12,bw*0.2,bh*0.18,lit); s+=`<rect x="${cx-bw*0.1}" y="${baseY-bh*0.3}" width="${bw*0.2}" height="${bh*0.3}" fill="#3a2414"/>`; return {svg:s, chimneyX:cx+bw*0.3, chimneyY:wallTop-bh*0.02}; }
+
+  function drawBuilding(b,i,cx,baseY,bw,bh,isBuilding){ const arch=buildingArchetype(b.name||''); const name=(b.name||'').toLowerCase(); const L=cx-bw/2,R=cx+bw/2; let inner='',flag='',smoke=''; if(arch==='military'){ const wall='#c3bdad', wtop=baseY-bh*0.82; inner+=`<rect x="${L}" y="${wtop}" width="${bw}" height="${baseY-wtop}" fill="${wall}"/>`; inner+=`<rect x="${cx}" y="${wtop}" width="${bw/2}" height="${baseY-wtop}" fill="${shade(wall,0.86)}"/>`; const cH=bh*0.1, cW=bw/7; for(let k=0;k<4;k++){ inner+=`<rect x="${L+cW*(k*1.7)}" y="${wtop-cH}" width="${cW}" height="${cH}" fill="${wall}"/>`; } for(let k=1;k<=3;k++){ const yy=wtop+(baseY-wtop)*k/4; inner+=`<line x1="${L}" y1="${yy}" x2="${R}" y2="${yy}" stroke="${shade(wall,0.75)}" stroke-width="0.6"/>`; } inner+=`<rect x="${cx-bw*0.28}" y="${wtop+bh*0.14}" width="${bw*0.05}" height="${bh*0.2}" fill="#2a2018"/>`; inner+=`<rect x="${cx+bw*0.23}" y="${wtop+bh*0.14}" width="${bw*0.05}" height="${bh*0.2}" fill="#2a2018"/>`; inner+=`<path d="M ${cx-bw*0.14} ${baseY} L ${cx-bw*0.14} ${baseY-bh*0.3} Q ${cx} ${baseY-bh*0.42} ${cx+bw*0.14} ${baseY-bh*0.3} L ${cx+bw*0.14} ${baseY} Z" fill="#3a2414" stroke="${shade(wall,0.7)}" stroke-width="1"/>`; if(!isBuilding) flag=drawFlag(cx, wtop-cH, bw*0.34, bh*0.16, true); } else if(arch==='admin'){ const sc=1.3, iw=bw*sc, ih=bw*1.205*sc; inner=`<image href="assets/uprava.svg" x="${cx-iw/2}" y="${baseY-ih*0.9285}" width="${iw}" height="${ih}" preserveAspectRatio="xMidYMax meet" pointer-events="all"/>`; flag=''; } else if(arch==='religious'){ const wall='#efe7d2', roof='#8a5a38', wtop=baseY-bh*0.56, peak=baseY-bh*0.76; inner+=`<rect x="${L}" y="${wtop}" width="${bw}" height="${baseY-wtop}" fill="${wall}"/>`; inner+=`<rect x="${cx}" y="${wtop}" width="${bw/2}" height="${baseY-wtop}" fill="${shade(wall,0.9)}"/>`; inner+=gableRoof(L,R,wtop,peak,roof); const spBase=wtop, spPeak=baseY-bh*1.3, spW=bw*0.16; inner+=`<polygon points="${cx-spW/2},${spBase} ${cx},${spPeak} ${cx+spW/2},${spBase}" fill="${shade(roof,0.85)}"/>`; inner+=`<polygon points="${cx-spW/2},${spBase} ${cx},${spPeak} ${cx},${spBase}" fill="${shade(roof,1.05)}"/>`; inner+=`<circle cx="${cx}" cy="${spPeak}" r="${spW*0.5}" fill="#e8c84a" stroke="#a8863a" stroke-width="0.6"/>`; inner+=`<path d="M ${cx-bw*0.12} ${baseY-bh*0.06} L ${cx-bw*0.12} ${wtop+bh*0.16} Q ${cx} ${wtop+bh*0.02} ${cx+bw*0.12} ${wtop+bh*0.16} L ${cx+bw*0.12} ${baseY-bh*0.06} Z" fill="#7fa8c8" stroke="${shade(roof,0.7)}" stroke-width="1.2"/>`; inner+=`<line x1="${cx}" y1="${wtop+bh*0.06}" x2="${cx}" y2="${baseY-bh*0.06}" stroke="${shade(roof,0.7)}" stroke-width="0.8"/>`; if(!isBuilding) flag=drawFlag(cx+bw*0.4, wtop-bh*0.02, bw*0.2, bh*0.14, true); } else if(arch==='storage'){ if(name.match(/рынок|торгов/)){ const tTop=baseY-bh*0.5; const stripes=5; const sw=bw/stripes; for(let k=0;k<stripes;k++){ inner+=`<rect x="${L+sw*k}" y="${tTop}" width="${sw}" height="${baseY-tTop}" fill="${k%2?'#d84a3a':'#f0ead8'}"/>`; } inner+=`<path d="M ${L-bw*0.08} ${tTop} L ${cx} ${tTop-bh*0.28} L ${R+bw*0.08} ${tTop} Z" fill="#c23a2c"/>`; inner+=`<rect x="${L}" y="${baseY-bh*0.14}" width="${bw}" height="${bh*0.14}" fill="#7d5730"/>`; } else { const wall='#a9713f', roof='#6f4a2a', wtop=baseY-bh*0.5; inner+=`<rect x="${L}" y="${wtop}" width="${bw}" height="${baseY-wtop}" fill="${wall}"/>`; inner+=`<rect x="${cx}" y="${wtop}" width="${bw/2}" height="${baseY-wtop}" fill="${shade(wall,0.86)}"/>`; inner+=`<path d="M ${L-bw*0.08} ${wtop} L ${cx} ${wtop-bh*0.24} L ${R+bw*0.08} ${wtop} Z" fill="${roof}"/>`; for(let k=1;k<4;k++){ inner+=`<line x1="${L}" y1="${wtop+(baseY-wtop)*k/4}" x2="${R}" y2="${wtop+(baseY-wtop)*k/4}" stroke="${shade(wall,0.8)}" stroke-width="0.6"/>`; } inner+=`<rect x="${cx-bw*0.18}" y="${baseY-bh*0.34}" width="${bw*0.36}" height="${bh*0.34}" fill="#5a3d24" stroke="${shade(wall,0.7)}" stroke-width="1"/>`; inner+=`<line x1="${cx}" y1="${baseY-bh*0.34}" x2="${cx}" y2="${baseY}" stroke="${shade(wall,0.6)}" stroke-width="1"/>`; } } else { const timber=(arch==='production'); const wall=timber?'#e3d3ac':'#e8d6b0'; const roof=timber?'#9c6a3c':'#b5532e'; const r=bodyResidential(cx,baseY,bw,bh,wall,roof,timber,true); inner+=r.svg; if(!isBuilding){ const cxh=r.chimneyX, cyh=r.chimneyY; inner+=`<rect x="${cxh-bw*0.04}" y="${cyh-bh*0.14}" width="${bw*0.08}" height="${bh*0.2}" fill="${shade(wall,0.7)}"/>`; const sd1=((i*1.7)%4).toFixed(1), sd2=((i*1.7+2.3)%4).toFixed(1); smoke=`<g pointer-events="none"><circle cx="${cxh-1}" cy="${cyh-bh*0.18}" r="2.4" fill="#e8e4dc" style="animation:amb-smoke 4s ease-out ${sd1}s infinite" opacity="0"/><circle cx="${cxh+1.5}" cy="${cyh-bh*0.24}" r="3" fill="#e8e4dc" style="animation:amb-smoke 4s ease-out ${sd2}s infinite" opacity="0"/></g>`; } if(name.includes('мельниц')){ const wr=bh*0.17, wx=R-wr*0.2, wy=baseY-wr*0.7; inner+=`<circle cx="${wx}" cy="${wy}" r="${wr}" fill="#6b4a2c" stroke="#3f2a18" stroke-width="1.5"/><circle cx="${wx}" cy="${wy}" r="${wr*0.62}" fill="none" stroke="#3f2a18" stroke-width="1"/>`; for(let k=0;k<8;k++){ const a=k*Math.PI/4; inner+=`<line x1="${wx}" y1="${wy}" x2="${wx+Math.cos(a)*wr}" y2="${wy+Math.sin(a)*wr}" stroke="#3f2a18" stroke-width="1"/>`; } inner+=`<circle cx="${wx}" cy="${wy}" r="${wr*0.14}" fill="#3f2a18"/>`; } } return {inner, flag, smoke}; }
+
+  function bldGroup(item, cx, baseY, bw, bh){ const {b,i}=item; const st=(b.status||'').toLowerCase(); const isBuilding=st.includes('🔨')||st.includes('строит')||st.includes('в работе'); const d=drawBuilding(b,i,cx,baseY,bw,bh,isBuilding); const shadow=`<ellipse cx="${cx}" cy="${baseY+2}" rx="${bw*0.66}" ry="${bw*0.12}" fill="#000000" opacity="0.18" pointer-events="none"/>`; let scaffold=''; if(isBuilding){ const L=cx-bw/2,R=cx+bw/2,T=baseY-bh*0.7; scaffold=`<g pointer-events="none" stroke="#caa24a" stroke-width="1" opacity="0.8"><line x1="${L}" y1="${T}" x2="${R}" y2="${baseY}" stroke-dasharray="3 2"/><line x1="${R}" y1="${T}" x2="${L}" y2="${baseY}" stroke-dasharray="3 2"/><line x1="${L}" y1="${baseY-bh*0.4}" x2="${R}" y2="${baseY-bh*0.4}" stroke-dasharray="3 2"/></g>`; } const op=isBuilding?0.6:1; return `${shadow}<g class="pano-bld" opacity="${op}" onclick="openBldCard(${i});event.stopPropagation()" cursor="pointer">${d.inner}${scaffold}${d.flag}${d.smoke}</g>`; }
+  function bldLabel(item,cx,baseY){ const nm=(item.b.name||''); const short=nm.length>14?nm.slice(0,13)+'…':nm; const w=short.length*5.6+10; return `<g pointer-events="none"><rect x="${cx-w/2}" y="${baseY+5}" width="${w}" height="13" rx="6" fill="#1a1206" opacity="0.55"/><text x="${cx}" y="${baseY+14}" font-size="9" fill="#f0e4c8" text-anchor="middle">${E(short)}</text></g>`; }
+
+  const monumental = n => ['admin','military','religious'].includes(buildingArchetype(n));
+  const back=[], front=[];
+  buildings.forEach((b,i)=>{ (monumental(b.name||'')?back:front).push({b,i}); });
+  if(!front.length && back.length>3){ while(back.length>3 && front.length<back.length){ front.unshift(back.pop()); } }
+  if(!back.length && front.length>4){ const half=Math.ceil(front.length/2); back.push(...front.splice(0,half)); }
+
+  const bMargin=150, fMargin=64;
+  const backBaseY=groundY-6, frontBaseY=groundY+104;
+  const backBW=Math.min(118, back.length?((VW-2*bMargin)/back.length)*0.86:118);
+  const frontBW=Math.min(102, front.length?((VW-2*fMargin)/front.length)*0.9:102);
+  const backPos=rowPositions(back.length, backBaseY, bMargin);
+  const frontPos=rowPositions(front.length, frontBaseY, fMargin);
+
+  let backSvg='',frontSvg='',labelSvg='';
+  back.forEach((it,k)=>{ const p=backPos[k]; backSvg+=bldGroup(it,p.cx,p.baseY,backBW,backBW*1.5); labelSvg+=bldLabel(it,p.cx,p.baseY); });
+  front.forEach((it,k)=>{ const p=frontPos[k]; frontSvg+=bldGroup(it,p.cx,p.baseY,frontBW,frontBW*1.12); labelSvg+=bldLabel(it,p.cx,p.baseY); });
+  const emptyMsg = '';
+
+  const sun = evil? '' : `<circle cx="640" cy="90" r="80" fill="#fff6d8" opacity="0.35" pointer-events="none"/><circle cx="640" cy="90" r="34" fill="#fff2c4" opacity="0.9" pointer-events="none"/>`;
+  const cloud=(cx,cy,s,o)=>`<g pointer-events="none" opacity="${o}" fill="#ffffff"><ellipse cx="${cx}" cy="${cy}" rx="${46*s}" ry="${16*s}"/><ellipse cx="${cx-30*s}" cy="${cy+6*s}" rx="${30*s}" ry="${12*s}"/><ellipse cx="${cx+34*s}" cy="${cy+5*s}" rx="${28*s}" ry="${11*s}"/></g>`;
+  const clouds = cloud(180,80,1,0.85)+cloud(430,54,0.7,0.7)+cloud(700,120,0.9,0.8);
+  const peaks=`<path d="M 0 ${groundY-20} L 120 ${VH*0.34} L 210 ${groundY-30} L 330 ${VH*0.28} L 430 ${groundY-24} L 560 ${VH*0.32} L 680 ${groundY-34} L 800 ${VH*0.36} L 800 ${groundY} L 0 ${groundY} Z" fill="${mtn}" opacity="0.5" pointer-events="none"/>`;
+  const softHills=`<path d="M 0 ${groundY-10} Q 130 ${groundY-46} 260 ${groundY-16} Q 400 ${groundY-50} 540 ${groundY-14} Q 680 ${groundY-44} 800 ${groundY-18} L 800 ${groundY} L 0 ${groundY} Z" fill="${mtn}" opacity="0.4" pointer-events="none"/>`;
+  let treeline=''; { let tl=''; for(let k=0;k<15;k++){ const bx=k*57+(k%2?16:0); const by=groundY-4; const tw=30+(k%3)*10; const th=48+(k%4)*16; tl+=`<polygon points="${bx-tw/2},${by} ${bx},${by-th} ${bx+tw/2},${by}" fill="${shade(hillBack,0.85)}" opacity="${(0.55+(k%3)*0.12).toFixed(2)}" pointer-events="none"/>`; } treeline=`<g pointer-events="none">${tl}</g>`; }
+  const seaBand=`<rect x="0" y="${groundY-40}" width="${VW}" height="40" fill="${mtn}" opacity="0.3" pointer-events="none"/><path d="M 0 ${groundY-40} q 60 8 120 0 t 120 0 t 120 0 t 120 0 t 120 0 t 120 0 t 80 0" fill="none" stroke="#ffffff" stroke-width="1" opacity="0.25" pointer-events="none"/>`;
+  let bog=''; { const humps=`<path d="M 0 ${groundY-6} Q 160 ${groundY-30} 320 ${groundY-8} Q 480 ${groundY-28} 640 ${groundY-8} Q 720 ${groundY-20} 800 ${groundY-10} L 800 ${groundY} L 0 ${groundY} Z" fill="${mtn}" opacity="0.4" pointer-events="none"/>`; let dead=''; for(const dx of [120,300,470,650]){ const dy=groundY-8; dead+=`<g pointer-events="none" opacity="0.5" stroke="${shade(mtn,0.6)}" stroke-width="1.4" fill="none"><line x1="${dx}" y1="${dy}" x2="${dx}" y2="${dy-26}"/><line x1="${dx}" y1="${dy-18}" x2="${dx-8}" y2="${dy-24}"/><line x1="${dx}" y1="${dy-14}" x2="${dx+9}" y2="${dy-22}"/></g>`; } bog=humps+dead; }
+  const horizon = (terrain.match(/t-mountain|гор|▲|предгор/)||evil) ? peaks
+    : terrain.match(/t-forest|лес|🌲/) ? treeline
+    : terrain.match(/t-ocean|t-skerry|мор|〰|шхер/) ? seaBand
+    : terrain.match(/t-swamp|болот|🌿/) ? bog
+    : softHills;
+  const hills=`<path d="M 0 ${groundY-8} Q 160 ${groundY-64} 320 ${groundY-20} Q 470 ${groundY-58} 620 ${groundY-16} Q 720 ${groundY-40} 800 ${groundY-22} L 800 ${groundY} L 0 ${groundY} Z" fill="${hillBack}" pointer-events="none"/><path d="M 0 ${groundY+8} Q 140 ${groundY-30} 300 ${groundY+6} Q 460 ${groundY-24} 640 ${groundY+8} Q 730 ${groundY-14} 800 ${groundY+2} L 800 ${VH} L 0 ${VH} Z" fill="${hillFront}" pointer-events="none"/>`;
+  const midHill=`<path d="M 0 ${frontBaseY-40} Q 200 ${frontBaseY-64} 400 ${frontBaseY-44} Q 600 ${frontBaseY-24} 800 ${frontBaseY-46} L 800 ${VH} L 0 ${VH} Z" fill="${shade(hillFront,0.94)}" opacity="0.6" pointer-events="none"/>`;
+  const foreground=`<path d="M 0 ${VH*0.94} Q 60 ${VH*0.9} 140 ${VH*0.94} Q 220 ${VH*0.98} 320 ${VH*0.93} Q 440 ${VH*0.9} 560 ${VH*0.94} Q 680 ${VH*0.98} 800 ${VH*0.93} L 800 ${VH} L 0 ${VH} Z" fill="${grassBot}" opacity="0.85" pointer-events="none"/>`;
+  const tree=(x,y,s)=>`<g pointer-events="none"><rect x="${x-2*s}" y="${y-9*s}" width="${4*s}" height="${11*s}" fill="#6a4a2c"/><circle cx="${x}" cy="${y-14*s}" r="${10*s}" fill="#4a7a3a"/><circle cx="${x-7*s}" cy="${y-9*s}" r="${7*s}" fill="#3f6f32"/><circle cx="${x+7*s}" cy="${y-9*s}" r="${7*s}" fill="#568a44"/></g>`;
+  const trees = tree(46,VH-8,1.3)+tree(766,VH-4,1.5);
+  let tufts=''; for(let k=0;k<26;k++){ const tx=6+k*31+(k%3)*6; const ty=VH-5-(k%4)*3; tufts+=`<path d="M ${tx} ${ty} l -2 -7 M ${tx} ${ty} l 2 -8 M ${tx} ${ty} l 5 -6" stroke="${shade(grassBot,0.75)}" stroke-width="1" fill="none" pointer-events="none"/>`; }
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VW} ${VH}" preserveAspectRatio="xMidYMid meet" width="100%" height="100%">
+  <defs>
+    <linearGradient id="pano-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${skyTop}"/><stop offset="55%" stop-color="${skyMid}"/><stop offset="100%" stop-color="${skyBot}"/></linearGradient>
+    <linearGradient id="pano-grass" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${grassTop}"/><stop offset="100%" stop-color="${grassBot}"/></linearGradient>
+    <linearGradient id="pano-vshade" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffffff" stop-opacity="0.18"/><stop offset="45%" stop-color="#ffffff" stop-opacity="0"/><stop offset="100%" stop-color="#000000" stop-opacity="0.22"/></linearGradient>
+  </defs>
+  <rect x="0" y="0" width="${VW}" height="${VH}" fill="url(#pano-sky)" pointer-events="none"/>
+  ${sun}
+  ${clouds}
+  ${horizon}
+  ${hills}
+  <rect x="0" y="${groundY}" width="${VW}" height="${VH-groundY}" fill="url(#pano-grass)" pointer-events="none"/>
+  ${water}
+  ${village}
+  ${backSvg}
+  ${midHill}
+  ${frontSvg}
+  ${foreground}
+  ${tufts}
+  ${trees}
+  ${labelSvg}
+  ${emptyMsg}
+</svg>`;
+  stage.innerHTML = svg;
+
+  // Сезонная тонировка (z-index:2) и частицы (z-index:3) поверх SVG-сцены
+  const SEASON_VIS = {
+    'зима':  { tint: 'rgba(180,210,255,0.13)', particles: 'snow' },
+    'весна': { tint: 'rgba(180,240,160,0.09)', particles: 'blossom' },
+    'лето':  { tint: 'rgba(255,220,120,0.07)', particles: null },
+    'осень': { tint: 'rgba(220,140,40,0.11)',  particles: 'leaves' },
+  };
+  const sv = SEASON_VIS[seasonName] || { tint: null, particles: null };
+
+  let tintEl = document.getElementById('pano-season-tint');
+  if (!tintEl) {
+    tintEl = document.createElement('div');
+    tintEl.id = 'pano-season-tint';
+    tintEl.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:2;transition:background 0.6s';
+    stage.appendChild(tintEl);
+  }
+  tintEl.style.background = sv.tint || 'transparent';
+
+  let partEl = document.getElementById('pano-particles');
+  if (!partEl) {
+    partEl = document.createElement('div');
+    partEl.id = 'pano-particles';
+    partEl.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:3;overflow:hidden';
+    stage.appendChild(partEl);
+  }
+  partEl.innerHTML = sv.particles ? makePanoParticles(sv.particles) : '';
+}
+
+function makePanoParticles(type) {
+  const COUNT = { snow: 40, leaves: 28, blossom: 32 }[type] || 0;
+  if (!COUNT) return '';
+  const palette = { snow: ['❄','·','·'], leaves: ['🍂','🍁','🍃'], blossom: ['🌸','·','·'] }[type];
+  let html = '';
+  for (let k = 0; k < COUNT; k++) {
+    const left  = (Math.random() * 100).toFixed(1);
+    const delay = (Math.random() * 8).toFixed(2);
+    const dur   = (5 + Math.random() * 7).toFixed(1);
+    const size  = type === 'snow' ? (8 + Math.random()*6).toFixed(0) : (12 + Math.random()*10).toFixed(0);
+    const char  = palette[Math.floor(Math.random() * palette.length)];
+    const drift = type === 'leaves' ? ((Math.random() > 0.5 ? 1 : -1) * (20 + Math.random()*30)).toFixed(0) : 0;
+    html += `<span style="position:absolute;left:${left}%;top:-2em;font-size:${size}px;opacity:0.7;animation:pano-particle-fall ${dur}s linear ${delay}s infinite;--drift:${drift}px">${char}</span>`;
+  }
+  return html;
 }
 
 // SVG-градиенты водных краёв: синий у границы блока → прозрачный внутрь.
@@ -888,6 +1296,8 @@ function renderAreaMap(am) {
   if (!am || !am.nodes || !am.nodes.length) { card.style.display = "none"; return; }
   card.style.display = "";
   nameEl.textContent = am.area ? " · " + am.area : "";
+  // Сохраняем ноды глобально — для terrain-хинта при открытии панорамы
+  _panoNodes = am.nodes;
 
   // Холст сшит из блоков клеток мира 4×4: cols мини-колонок × rows мини-рядов.
   const cols = am.cols || 4, rows = am.rows || 4;
@@ -922,7 +1332,7 @@ function renderAreaMap(am) {
       else if (side === 's') { y = by + sz - WBAND; h = WBAND; }
       else if (side === 'w') { w = WBAND; }
       else if (side === 'e') { x = bx + sz - WBAND; w = WBAND; }
-      g += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#wg-${side})"/>`;
+      g += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#wg-${side})" class="amb-water" style="animation-delay:${(side === 'n' ? 0 : side === 's' ? 1.5 : side === 'e' ? 3 : 4.5)}s"/>`;
     });
   });
 
@@ -971,14 +1381,26 @@ function renderAreaMap(am) {
   const OWN_COLORS = { danil: "#6ba9e6", misha: "#e0894a", valter: "#7bc96f" };
   am.nodes.forEach((n, i) => {
     const [x, y] = pos[n.name];
+    const _tt = panoTerrainFor(n.name, n.terrain||''); const _tc = terrainTileColor(_tt);
+    g += `<rect x="${x-17}" y="${y-14}" width="34" height="30" rx="6" fill="${_tc}" opacity="0.72" pointer-events="none"/>`;
+    if(_tt==='t-forest'){ g += `<circle cx="${x-9}" cy="${y+6}" r="3" fill="#2f5f28" pointer-events="none"/><circle cx="${x+9}" cy="${y+7}" r="2.6" fill="#356a2e" pointer-events="none"/>`; }
+    else if(_tt==='t-mountain'){ g += `<path d="M ${x-11} ${y+12} L ${x-5} ${y+2} L ${x+1} ${y+12} Z" fill="#b7ad98" pointer-events="none"/><path d="M ${x+2} ${y+12} L ${x+9} ${y+1} L ${x+14} ${y+12} Z" fill="#c7bda8" pointer-events="none"/>`; }
+    else if(_tt==='t-ocean'){ g += `<path d="M ${x-15} ${y+9} q 4 -3 8 0 t 8 0 t 8 0 t 8 0" fill="none" stroke="#cfe6f2" stroke-width="1.2" pointer-events="none"/>`; }
+    else if(_tt==='t-swamp'){ g += `<circle cx="${x-8}" cy="${y+9}" r="3" fill="#3f5a2e" opacity="0.8" pointer-events="none"/><circle cx="${x+7}" cy="${y+10}" r="2.4" fill="#47623a" opacity="0.8" pointer-events="none"/>`; }
     const fill = OWN_COLORS[n.owner] || "#c8a84a";
     const w = 6.5, bh = 6, rh = 5;   // домик = пятиугольник (крыша+корпус)
     const house = `M ${x - w} ${y - 1} L ${x} ${y - 1 - rh} L ${x + w} ${y - 1} L ${x + w} ${y + bh} L ${x - w} ${y + bh} Z`;
-    g += `<path d="${house}" class="am-node" fill="${fill}" data-i="${i}" style="animation-delay:${((i * 0.41) % 3.4).toFixed(2)}s" onclick="amHi(event,${i})"/>`;
+    g += `<path d="${house}" class="am-node" data-i="${i}" style="fill:${fill};animation-delay:${((i * 0.41) % 3.4).toFixed(2)}s" onclick="amHi(event,${i})"/>`;
+    // Дымок над крышей домика: 2 кружка с разным delay, идут вверх
+    const smokeDelay1 = ((i * 1.3) % 4).toFixed(1);
+    const smokeDelay2 = ((i * 1.3 + 2.1) % 4).toFixed(1);
+    g += `<g class="amb-smoke" pointer-events="none">`
+      + `<circle cx="${x - 1.2}" cy="${y - 1 - rh - 3}" r="1.3" fill="#cfc8bd" style="animation:amb-smoke 4s ease-out ${smokeDelay1}s infinite"/>`
+      + `<circle cx="${x + 1.5}" cy="${y - 1 - rh - 5}" r="1.8" fill="#cfc8bd" style="animation:amb-smoke 4s ease-out ${smokeDelay2}s infinite"/>`
+      + `</g>`;
     g += `<text x="${x}" y="${y - rh - 5}" class="am-label" text-anchor="middle">${esc(n.name)}</text>`;
     if (n.pop) g += `<text x="${x}" y="${y + bh + 11}" class="am-pop" text-anchor="middle">~${n.pop}</text>`;
   });
-
   body.innerHTML =
     `<div class="am-wrap"><svg viewBox="0 0 ${W} ${H}" class="am-svg" preserveAspectRatio="xMidYMid meet">${g}</svg></div>` +
     `<div class="am-note">Иллюстративная карта — клетки лишь ориентир. Пунктир — дорога к соседней области.</div>`;
@@ -1207,8 +1629,10 @@ function renderBuildings(b, settlements) {
         const building = (bld.status || "").includes("🔨");
         const maint = bld.maint ? `${fmt(bld.maint)}${bld.rate ? " ("+bld.rate+"%)" : ""}` : bld.status === "доходная" ? "дох." : "—";
         const hands = bld.hands ? `<span class="building-hands">${bld.hands}р</span>` : "";
+        const _m = (bld.status || "").match(/\((\d+)\/(\d+)\s*сл\)/);
+        const _prog = _m ? ` ${_m[1]}/${_m[2]} сл` : "";
         const right = building
-          ? `<span class="building-status" style="color:#c8883a">🔨 строится</span>`
+          ? `<span class="building-status" style="color:#c8883a">🔨 строится${_prog}</span>`
           : `<span class="building-maint">${esc(maint)}</span>`;
         html += `<div class="building-row">
           <span class="building-name">${esc(bld.name)}</span>
@@ -1223,8 +1647,10 @@ function renderBuildings(b, settlements) {
       const building = (bld.status || "").includes("🔨");
       const maint = bld.maint ? `${fmt(bld.maint)}${bld.rate ? " ("+bld.rate+"%)" : ""}` : bld.status === "доходная" ? "дох." : "—";
       const hands = bld.hands ? `<span class="building-hands">${bld.hands}р</span>` : "";
+      const _m = (bld.status || "").match(/\((\d+)\/(\d+)\s*сл\)/);
+      const _prog = _m ? ` ${_m[1]}/${_m[2]} сл` : "";
       const right = building
-        ? `<span class="building-status" style="color:#c8883a">🔨 строится</span>`
+        ? `<span class="building-status" style="color:#c8883a">🔨 строится${_prog}</span>`
         : `<span class="building-maint">${esc(maint)}</span>`;
       html += `<div class="building-row">
         <span class="building-name">${esc(bld.name)}</span>
@@ -1598,18 +2024,8 @@ function renderTerritory(settlements) {
 }
 
 // ── Боевая мощь (отдельный блок) ────────────────────────────────────────────
-// Отдельная плашка на КАЖДЫЙ тег боевой мощи/немощи (с причиной), а не общая сумма.
-function mightTagParts(m) {
-  const sgn = v => (v >= 0 ? "+" : "") + v;
-  const tl = m.tag_list || [];
-  if (tl.length) {
-    return tl.map(t => {
-      const reason = t.reason ? ` <span class="might-part-src">${esc(t.reason)}</span>` : "";
-      return `<span class="might-part"><b>${sgn(t.value)}</b> тег${reason}</span>`;
-    });
-  }
-  return m.tags ? [`<span class="might-part"><b>${sgn(m.tags)}</b> теги (#боевая_мощь/немощь)</span>`] : [];
-}
+// Форматирование числа: целое без «.0», дробное с 1 знаком.
+function fmtNum(x) { return Number.isInteger(x) ? x : x.toFixed(1); }
 
 function renderMight(settlements) {
   const el = document.getElementById("body-might");
@@ -1620,22 +2036,46 @@ function renderMight(settlements) {
     const m = s.might;
     const cls = m.total > 0 ? "pos" : m.total < 0 ? "neg" : "zero";
     const sgn = v => (v >= 0 ? "+" : "") + v;
-    // Слагаемые считаются из данных НП: бойцы, мод лояльности, база обороны, теги.
-    const parts = [
-      `<span class="might-part"><b>${sgn(m.base)}</b> бойцы <span class="might-part-src">⌊${m.fighters}÷5⌋ · ${esc(m.fighters_src)}</span></span>`,
-      `<span class="might-part"><b>${sgn(m.loyalty)}</b> лояльность</span>`,
-      `<span class="might-part"><b>${sgn(m.defense)}</b> оборона</span>`,
-    ];
-    mightTagParts(m).forEach(p => parts.push(p));
+    const pct = v => (v >= 0 ? "+" : "") + v + "%";
+
+    // Строка базы бойцов
+    let baseLine;
+    const units = m.units || [];
+    if (units.length) {
+      const breakdown = units.map(u => `${esc(u.cls)} ${u.count}×${fmtNum(u.str)}`).join(", ");
+      baseLine = `<span class="might-part"><b>${fmtNum(m.fighters_sum)}</b> бойц. (сила) <span class="might-part-src">${breakdown}</span></span>`;
+    } else {
+      baseLine = `<span class="might-part"><b>${fmtNum(m.fighters_sum)}</b> бойц. (сила) <span class="might-part-src">${esc(m.fighters_src)} × 1.0</span></span>`;
+    }
+
+    const parts = [baseLine];
+    // Компоненты множителя
+    parts.push(`<span class="might-part">Лояльность: <b>${pct(m.loyalty_pct)}</b></span>`);
+    parts.push(`<span class="might-part">База обороны: <b>+${m.defense_pct}%</b></span>`);
+    if (m.cult_war_pct > 0) {
+      parts.push(`<span class="might-part">Культ войны: <b>+${m.cult_war_pct}%</b></span>`);
+    }
+    const tl = m.tag_list || [];
+    if (tl.length) {
+      const tagStr = tl.map(t => {
+        const sign = t.value >= 0 ? "+" : "";
+        const reason = t.reason ? ` (${esc(t.reason)})` : "";
+        return `${sign}${t.value}${reason}`;
+      }).join(", ");
+      parts.push(`<span class="might-part">Теги: <b>${pct(m.tags_pct)}</b> <span class="might-part-src">${tagStr}</span></span>`);
+    }
+    // Итог: fighters_sum × mult = total
+    parts.push(`<span class="might-part">= ${fmtNum(m.fighters_sum)} × ${fmtNum(m.mult)} = <b>${m.total}</b></span>`);
+
     html += `<div class="might-row">
       <div class="might-head">
         <span class="might-np">${esc(s.name)}</span>
-        <span class="might-badge ${cls}">⚔ ${m.total}</span>
+        <span class="might-badge ${cls}">⚔️ Боевая мощь: ${m.total}</span>
       </div>
       <div class="might-breakdown">${parts.join('<span class="might-sep">·</span>')}</div>
     </div>`;
   });
-  html += `<div class="staff-sub-note">⚔ <b>Боевая мощь</b> — сила обороны НП, считается автоматически: <b>+1 за каждые 5 бойцов</b> (у игрока бойцы = стража НП) + <b>мод лояльности</b> + <b>оборона +1</b> + теги <b>#боевая_мощь</b>/<b>#боевая_немощь</b>. Тематический авто-тег: если Культ войны — топ культ НП с преобладанием (≥50% дворов), к тегам добавляется <b>+1 (#боевая_мощь_1_культ_войны)</b>.</div>`;
+  html += `<div class="staff-sub-note">⚔️ <b>Боевая мощь</b> — мультипликативная модель: <b>fighters_sum × (1 + Σ%)</b>. Σ% = лояльность×10% + база обороны +10% (всем) + культ войны +10% (если Культ войны топ ≥50% дворов) + теги <b>#боевая_мощь</b>/<b>#боевая_немощь</b> ×10%. Опциональный блок <b>### Гарнизон</b> позволяет задать разные классы с разной силой.</div>`;
   el.innerHTML = html;
 }
 
@@ -1843,6 +2283,46 @@ function renderFaith(settlements, religion) {
   el.innerHTML = html;
 }
 
+// ── Threat (Уровень угрозы) ───────────────────────────────────────────────────
+function renderThreat(threat) {
+  const el = document.getElementById("body-threat");
+  if (!el) return;
+  if (!threat || threat.total == null) {
+    el.innerHTML = "<div class='placeholder-body'>Данные об угрозе недоступны</div>";
+    return;
+  }
+  const total = threat.total;
+  const f = threat.factors || {};
+  const barPct = Math.min(100, total);
+  const lvl = total < 20 ? "low" : total < 50 ? "mid" : "high";
+  const rows = [];
+  if ((f.base || 0) !== 0) rows.push({ label: "База (стабильная угроза)", val: f.base });
+  const neighbors = f.neighbors || [];
+  const perimCount = neighbors.length;
+  const perimLabel = perimCount
+    ? `Периметр (${perimCount} сос.: ${neighbors.slice(0, 3).map(n => esc(n)).join(", ")}${perimCount > 3 ? "…" : ""})`
+    : "Периметр";
+  if ((f.perimeter || 0) !== 0) rows.push({ label: perimLabel, val: f.perimeter });
+  if ((f.razed || 0) !== 0) rows.push({ label: "Разорённые НП (регион)", val: f.razed });
+  if ((f.danger || 0) !== 0) rows.push({ label: `Опасные места (${f.danger} × 2)`, val: f.danger * 2 });
+  if ((f.year || 0) !== 0) rows.push({ label: "Год кампании", val: f.year });
+  if ((f.hero_exit || 0) !== 0) rows.push({ label: "Герой за пределами владений", val: f.hero_exit });
+  (f.manual_mods || []).filter(m => !m.hidden).forEach(m => {
+    const turns = m.turns > 0 ? ` (ещё ${m.turns} сез.)` : "";
+    rows.push({ label: esc(m.reason || "Ручной мод") + turns, val: m.val });
+  });
+  const rowsHtml = rows.map(r => {
+    const sign = r.val >= 0 ? `+${r.val}` : String(r.val);
+    return `<li><span>${r.label}</span><span class="tf-val">${sign}%</span></li>`;
+  }).join("");
+  el.innerHTML = `
+    <div class="threat-total ${lvl}">${total}%</div>
+    <div class="threat-bar-wrap"><div class="threat-bar-fill ${lvl}" style="width:${barPct}%"></div></div>
+    ${rowsHtml ? `<ul class="threat-factors">${rowsHtml}</ul>` : ""}
+    <div class="threat-note">⚠ <b>Уровень угрозы</b> — вероятность нападения на ваши владения в этом сезоне.</div>
+  `;
+}
+
 // ── Settlements (per-НП) ──────────────────────────────────────────────────────
 function toggleNP(id) {
   document.getElementById(id).classList.toggle("collapsed");
@@ -1939,18 +2419,27 @@ function renderSettlements(setts) {
         }</div>` : ""}`;
     }
 
-    // Боевая мощь (та же логика, что в карточке «Боевая мощь» — здесь рядом с лояльностью/верой НП)
+    // Боевая мощь — мультипликативная модель (fighters_sum × mult)
     const mgt = s.might;
     if (mgt) {
       const mcls = mgt.total > 0 ? "pos" : mgt.total < 0 ? "neg" : "zero";
-      const sgn = v => (v >= 0 ? "+" : "") + v;
-      const mparts = [
-        `<span class="might-part"><b>${sgn(mgt.base)}</b> бойцы <span class="might-part-src">⌊${mgt.fighters}÷5⌋ · ${esc(mgt.fighters_src)}</span></span>`,
-        `<span class="might-part"><b>${sgn(mgt.loyalty)}</b> лояльность</span>`,
-        `<span class="might-part"><b>${sgn(mgt.defense)}</b> оборона</span>`,
-      ];
-      mightTagParts(mgt).forEach(p => mparts.push(p));
-      html += `<div class="np-sec" style="display:flex;align-items:center">Боевая мощь <span class="might-badge ${mcls}" style="margin-left:auto">⚔ ${mgt.total}</span></div>
+      const pct = v => (v >= 0 ? "+" : "") + v + "%";
+      const munits = mgt.units || [];
+      let mbaseLine;
+      if (munits.length) {
+        const mbd = munits.map(u => `${esc(u.cls)} ${u.count}×${fmtNum(u.str)}`).join(", ");
+        mbaseLine = `<span class="might-part"><b>${fmtNum(mgt.fighters_sum)}</b> бойц. <span class="might-part-src">${mbd}</span></span>`;
+      } else {
+        mbaseLine = `<span class="might-part"><b>${fmtNum(mgt.fighters_sum)}</b> бойц. <span class="might-part-src">${esc(mgt.fighters_src)} × 1.0</span></span>`;
+      }
+      const mparts = [mbaseLine];
+      mparts.push(`<span class="might-part">Лоял.: <b>${pct(mgt.loyalty_pct)}</b></span>`);
+      mparts.push(`<span class="might-part">Оборона: <b>+${mgt.defense_pct}%</b></span>`);
+      if (mgt.cult_war_pct > 0) mparts.push(`<span class="might-part">Культ войны: <b>+${mgt.cult_war_pct}%</b></span>`);
+      const mtl = mgt.tag_list || [];
+      if (mtl.length) mparts.push(`<span class="might-part">Теги: <b>${pct(mgt.tags_pct)}</b></span>`);
+      mparts.push(`<span class="might-part">= ${fmtNum(mgt.fighters_sum)} × ${fmtNum(mgt.mult)} = <b>${mgt.total}</b></span>`);
+      html += `<div class="np-sec" style="display:flex;align-items:center">⚔️ Боевая мощь: ${mgt.total} <span class="might-badge ${mcls}" style="margin-left:auto">⚔️ ${mgt.total}</span></div>
         <div class="might-breakdown" style="margin-bottom:4px">${mparts.join('<span class="might-sep">·</span>')}</div>`;
     }
 

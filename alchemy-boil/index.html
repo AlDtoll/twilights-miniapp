@@ -47,11 +47,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <script src="../shared/core.js"></script>
 <script>
 
-function tierBy(pct){
-  if(pct>=0.9)return {outcome:'Идеально',level:4};
-  if(pct>=0.75)return {outcome:'Отлично',level:3};
-  if(pct>=0.55)return {outcome:'Хорошо',level:2};
-  if(pct>=0.35)return {outcome:'Неплохо',level:1};
+function tierBy(sec){
+  if(sec>=10)return {outcome:'Идеально',level:4};
+  if(sec>=9)return {outcome:'Отлично',level:3};
+  if(sec>=7)return {outcome:'Хорошо',level:2};
+  if(sec>=5)return {outcome:'Неплохо',level:1};
   return {outcome:'Слабо',level:0};
 }
 function combatOutcome(win, revisit, heroHp, enemyHp){
@@ -77,8 +77,8 @@ function finish(game, payload, title, sub){
 let S={},RAF;
 function gStart(){
   goPlay();
-  const time=(gameData.timeLimit||12)*1000;
-  S={vals:[30,50,70],vel:[10,-8,6],zones:[[35,55],[40,60],[45,65]],t0:Date.now(),limit:time,ok:0,done:false,last:performance.now()};
+  const time=(gameData.timeLimit||13)*1000;
+  S={vals:[45,50,55],vel:[10,-8,6],zones:[[35,55],[40,60],[45,65]],t0:Date.now(),limit:time,ok:0,done:false,last:performance.now()};
   const names=['Жар','Мешай','Сними'];
   const colors=['#e17055','#74b9ff','#a29bfe'];
   const meters=document.getElementById('meters'); meters.innerHTML='';
@@ -100,7 +100,7 @@ function loop(now){ if(S.done)return; const dt=Math.min(40,now-S.last)/1000; S.l
   for(let i=0;i<3;i++){
     S.vals[i]+=S.vel[i]*dt; S.vel[i]*=0.985;
     // drift
-    S.vel[i]+=(rng()-0.5)*20*dt;
+    S.vel[i]+=(rng()-0.5)*10*dt;
     S.vals[i]=Math.max(0,Math.min(100,S.vals[i]));
     document.getElementById('f'+i).style.width=S.vals[i]+'%';
     const [a,b]=S.zones[i]; if(!(S.vals[i]>=a&&S.vals[i]<=b)) all=false;
@@ -112,7 +112,7 @@ function loop(now){ if(S.done)return; const dt=Math.min(40,now-S.last)/1000; S.l
   RAF=requestAnimationFrame(loop);
 }
 function end(){ if(S.done)return; S.done=true; cancelAnimationFrame(RAF);
-  const pct=S.ok/(S.limit/1000); const t=tierBy(pct);
+  const t=tierBy(S.ok);
   finish('alchemy-boil',{stable:Math.round(S.ok*10)/10,limit:S.limit/1000,outcome:t.outcome,level:t.level,timeSpent:Math.round(S.limit/1000)},t.outcome,S.ok.toFixed(1)+'с стабильно');
 }
 showReady('⚗️ Варево','Три шкалы сразу · кнопки ±');
