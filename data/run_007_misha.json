@@ -733,13 +733,8 @@
       },
       {
         "name": "Лидерство (II)",
-        "techniques": [
-          {
-            "name": "«Аппаратный запас»",
-            "kind": "техника"
-          }
-        ],
-        "bank": 1,
+        "techniques": [],
+        "bank": 3,
         "ups": 1,
         "next_threshold": 12
       },
