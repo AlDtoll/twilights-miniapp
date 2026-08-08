@@ -110,6 +110,10 @@ body {
 }
 
 .badge-season { border-color: var(--gold-dim); color: var(--gold); background: #2a2010; }
+.badge-season.s-winter { border-color:#6fa8d6; color:#bfe0f5; background:#12202e; }
+.badge-season.s-spring { border-color:#7bbf5a; color:#cdeeb4; background:#14220e; }
+.badge-season.s-summer { border-color:#d6b24a; color:#f3e6b0; background:#2a2410; }
+.badge-season.s-autumn { border-color:#cc8a3a; color:#f0c98a; background:#2a1c0e; }
 .badge-phase  { border-color: var(--blue); color: #6a9acc; background: #0a1a2a; }
 
 /* ── Cards grid ── */
@@ -916,6 +920,13 @@ function buildNPSelect(settlements) {
   sel.onchange = () => render(currentData, sel.value || null);
 }
 
+const SEASON_OF_YEAR = {
+  'зима':  { label:'Зима',  emoji:'❄', cls:'s-winter' },
+  'весна': { label:'Весна', emoji:'🌸', cls:'s-spring' },
+  'лето':  { label:'Лето',  emoji:'☀', cls:'s-summer' },
+  'осень': { label:'Осень', emoji:'🍂', cls:'s-autumn' },
+};
+
 function render(d, npFilter) {
   // Header
   const heroName = d.hero?.name?.replace(/—.+/, "").trim() || "—";
@@ -923,7 +934,16 @@ function render(d, npFilter) {
   document.getElementById("hdr-run").textContent    = runLabel(d.run) + " · С" + (d.season || "?");
   document.getElementById("hdr-char").textContent   = heroName;
   document.getElementById("hdr-player").textContent = d.player_name || d.player;
-  document.getElementById("hdr-season").textContent = "Сезон " + (d.season || "?");
+  const _seasonBadge = document.getElementById("hdr-season");
+  const _sn = (d.season_name || "").toLowerCase();
+  const _si = SEASON_OF_YEAR[_sn];
+  _seasonBadge.classList.remove("s-winter","s-spring","s-summer","s-autumn");
+  if (_si) {
+    _seasonBadge.textContent = "Сезон " + (d.season || "?") + " · " + _si.label + " " + _si.emoji;
+    _seasonBadge.classList.add(_si.cls);
+  } else {
+    _seasonBadge.textContent = "Сезон " + (d.season || "?");
+  }
   const phase = d.active_phase;
   document.getElementById("hdr-phase").textContent  = PHASE_LABELS[phase] || phase || "?";
 
