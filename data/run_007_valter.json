@@ -74,7 +74,7 @@
   "telegram": "@ValterTasadar",
   "season": "4",
   "season_name": "зима",
-  "active_phase": "",
+  "active_phase": "hearth",
   "finance": {
     "start": 4309,
     "income": [
@@ -796,8 +796,8 @@
     "threshold_pct": 15
   },
   "hearth": {
-    "remaining": null,
-    "total": null
+    "remaining": 1,
+    "total": 1
   },
   "loot": null,
   "threat": {
