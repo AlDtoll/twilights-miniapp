@@ -671,7 +671,7 @@
             "kind": "приём"
           }
         ],
-        "bank": 13,
+        "bank": 15,
         "ups": 1,
         "next_threshold": 12
       }
@@ -999,13 +999,19 @@
         "reasons": []
       },
       "might": {
-        "total": 3,
+        "total": 8,
         "fighters": 7,
-        "base": 1,
+        "fighters_sum": 7.0,
+        "units": [],
         "loyalty": 1,
-        "defense": 1,
-        "tags": 0,
+        "loyalty_pct": 10,
+        "defense_pct": 10,
+        "cult_war_pct": 0,
+        "tags_pct": 0,
+        "tag_sum": 0,
         "tag_list": [],
+        "sum_pct": 20,
+        "mult": 1.2,
         "fighters_src": "стража 7",
         "neutral": false
       },
@@ -1113,13 +1119,19 @@
         "reasons": []
       },
       "might": {
-        "total": 3,
+        "total": 4,
         "fighters": 4,
-        "base": 1,
+        "fighters_sum": 4.0,
+        "units": [],
         "loyalty": 1,
-        "defense": 1,
-        "tags": 0,
+        "loyalty_pct": 10,
+        "defense_pct": 10,
+        "cult_war_pct": 0,
+        "tags_pct": 0,
+        "tag_sum": 0,
         "tag_list": [],
+        "sum_pct": 20,
+        "mult": 1.2,
         "fighters_src": "стража 4",
         "neutral": false
       },
@@ -1239,13 +1251,19 @@
         ]
       },
       "might": {
-        "total": 2,
+        "total": 3,
         "fighters": 3,
-        "base": 1,
+        "fighters_sum": 3.0,
+        "units": [],
         "loyalty": 0,
-        "defense": 1,
-        "tags": 0,
+        "loyalty_pct": 0,
+        "defense_pct": 10,
+        "cult_war_pct": 0,
+        "tags_pct": 0,
+        "tag_sum": 0,
         "tag_list": [],
+        "sum_pct": 10,
+        "mult": 1.1,
         "fighters_src": "стража 3",
         "neutral": false
       },

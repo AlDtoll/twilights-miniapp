@@ -449,7 +449,7 @@
     "points": {
       "player": {
         "total": 3,
-        "left": 3
+        "left": 2
       },
       "chancellor": {
         "name": "Мокей «Прямой»",
@@ -671,7 +671,7 @@
       },
       {
         "text": "Драча: у Каменки на снегу свежие тени — по следу узнали двоих аргамаковских разведчиков, ушли на юг, но след не первый в этом месяце",
-        "done": false,
+        "done": true,
         "tags": [
           "#нп:Каменка"
         ],
@@ -1162,18 +1162,19 @@
         ]
       },
       "might": {
-        "total": 7,
+        "total": 15,
         "fighters": 10,
-        "base": 2,
+        "fighters_sum": 10.0,
+        "units": [],
         "loyalty": 3,
-        "defense": 1,
-        "tags": 1,
-        "tag_list": [
-          {
-            "value": 1,
-            "reason": "культ войны (топ ≥50%)"
-          }
-        ],
+        "loyalty_pct": 30,
+        "defense_pct": 10,
+        "cult_war_pct": 10,
+        "tags_pct": 0,
+        "tag_sum": 0,
+        "tag_list": [],
+        "sum_pct": 50,
+        "mult": 1.5,
         "fighters_src": "стража 10",
         "neutral": false
       },
@@ -1295,16 +1296,17 @@
       "might": {
         "total": 5,
         "fighters": 4,
-        "base": 1,
+        "fighters_sum": 4.0,
+        "units": [],
         "loyalty": 2,
-        "defense": 1,
-        "tags": 1,
-        "tag_list": [
-          {
-            "value": 1,
-            "reason": "культ войны (топ ≥50%)"
-          }
-        ],
+        "loyalty_pct": 20,
+        "defense_pct": 10,
+        "cult_war_pct": 10,
+        "tags_pct": 0,
+        "tag_sum": 0,
+        "tag_list": [],
+        "sum_pct": 40,
+        "mult": 1.4,
         "fighters_src": "стража 4",
         "neutral": false
       },
@@ -1445,11 +1447,17 @@
       "might": {
         "total": 2,
         "fighters": 2,
-        "base": 0,
+        "fighters_sum": 2.0,
+        "units": [],
         "loyalty": 1,
-        "defense": 1,
-        "tags": 0,
+        "loyalty_pct": 10,
+        "defense_pct": 10,
+        "cult_war_pct": 0,
+        "tags_pct": 0,
+        "tag_sum": 0,
         "tag_list": [],
+        "sum_pct": 20,
+        "mult": 1.2,
         "fighters_src": "стража 2",
         "neutral": false
       },
@@ -1577,13 +1585,19 @@
         ]
       },
       "might": {
-        "total": 0,
+        "total": 2,
         "fighters": 2,
-        "base": 0,
+        "fighters_sum": 2.0,
+        "units": [],
         "loyalty": -1,
-        "defense": 1,
-        "tags": 0,
+        "loyalty_pct": -10,
+        "defense_pct": 10,
+        "cult_war_pct": 0,
+        "tags_pct": 0,
+        "tag_sum": 0,
         "tag_list": [],
+        "sum_pct": 0,
+        "mult": 1.0,
         "fighters_src": "стража 2",
         "neutral": false
       },
