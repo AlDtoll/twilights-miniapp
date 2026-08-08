@@ -169,7 +169,12 @@
         "amount": 1800
       }
     ],
-    "receipts": [],
+    "receipts": [
+      {
+        "label": "Откат: 2 срочных разобраны админом в очаге С4 (лавочник vs клерк 925 + заезжий купец 981)",
+        "amount": 1906
+      }
+    ],
     "spendings": [
       {
         "label": "Ремонт крепи в шахте Рудного двора (брусья, гвозди, оплата плотникам)",
@@ -316,7 +321,7 @@
     },
     "total_income": 50028,
     "total_expenses": 40260,
-    "balance": 8786
+    "balance": 10692
   },
   "buildings": {
     "slots": {
@@ -642,7 +647,7 @@
             "kind": "приём"
           }
         ],
-        "bank": 12,
+        "bank": 10,
         "ups": 1,
         "next_threshold": 12
       },
@@ -659,16 +664,16 @@
         "next_threshold": 12
       },
       {
-        "name": "Наблюдательность (II)",
+        "name": "Наблюдательность (I)",
         "techniques": [
           {
-            "name": "«Разобрать обстановку»",
+            "name": "None",
             "kind": "приём"
           }
         ],
-        "bank": 3,
-        "ups": 2,
-        "next_threshold": 14
+        "bank": 13,
+        "ups": 1,
+        "next_threshold": 12
       }
     ],
     "features": [
