@@ -66,7 +66,7 @@
   "telegram": "@Мишачья",
   "season": "4",
   "season_name": "зима",
-  "active_phase": "leader",
+  "active_phase": "idle",
   "finance": {
     "start": 11809,
     "income": [
