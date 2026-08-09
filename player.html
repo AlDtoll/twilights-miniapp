@@ -630,9 +630,38 @@ select:focus { outline: none; border-color: var(--gold-dim); }
   width: 100%;
   height: 100%;
 }
+
+/* ===== Seasonal theme (время года) — субтильно ===== */
+body.season-winter { --season-a:#6fa8d6; --season-b:#bfe0f5; --season-bg:#0d1620; }
+body.season-spring { --season-a:#7bbf5a; --season-b:#cdeeb4; --season-bg:#0e1609; }
+body.season-summer { --season-a:#d6b24a; --season-b:#f3e6b0; --season-bg:#181206; }
+body.season-autumn { --season-a:#cc8a3a; --season-b:#f0c98a; --season-bg:#180f06; }
+body::before {
+  content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
+  background: radial-gradient(120% 60% at 50% -10%, var(--season-bg, transparent) 0%, transparent 60%);
+  opacity:.55; transition:background .6s ease;
+}
+.season-strip {
+  height:4px; width:100%; border-radius:3px; margin:0 0 10px 0;
+  background: linear-gradient(90deg, transparent 0%, var(--season-a,#c8a84a) 25%, var(--season-b,#e8dfc6) 50%, var(--season-a,#c8a84a) 75%, transparent 100%);
+  box-shadow: 0 0 8px -2px var(--season-a,#c8a84a); opacity:.85;
+}
+body:not(.season-winter):not(.season-spring):not(.season-summer):not(.season-autumn) .season-strip { display:none; }
+#season-ambient { position:fixed; inset:0; overflow:hidden; pointer-events:none; z-index:40; }
+#season-ambient .sp {
+  position:absolute; top:-24px; pointer-events:none; user-select:none;
+  opacity:0; will-change:transform,opacity; animation: season-fall linear infinite;
+}
+@keyframes season-fall {
+  0%   { transform: translate(0,-24px) rotate(0deg); opacity:0; }
+  10%  { opacity:var(--peak,.5); }
+  90%  { opacity:var(--peak,.5); }
+  100% { transform: translate(var(--drift,0px), 104vh) rotate(var(--rot,180deg)); opacity:0; }
+}
 </style>
 </head>
 <body>
+<div id="season-ambient" aria-hidden="true"></div>
 <div id="loading">Загрузка…</div>
 
 <!-- Панорама поселения -->
@@ -662,6 +691,7 @@ select:focus { outline: none; border-color: var(--gold-dim); }
   </div>
 
   <div class="header">
+      <div class="season-strip"></div>
     <div class="header-run" id="hdr-run"></div>
     <div class="header-char" id="hdr-char"></div>
     <div class="header-player" id="hdr-player"></div>
@@ -927,6 +957,35 @@ const SEASON_OF_YEAR = {
   'осень': { label:'Осень', emoji:'🍂', cls:'s-autumn' },
 };
 
+const SEASON_PARTICLE = {
+  's-winter': { chars:['❄','❅','❆'], n:12, size:[10,17], dur:[9,17],  drift:[-40,40], rot:[120,240], peak:.5  },
+  's-spring': { chars:['🌸','🌸','·'], n:10, size:[11,17], dur:[10,18], drift:[-70,70], rot:[180,540], peak:.5  },
+  's-summer': { chars:['✦','·','•'],  n:14, size:[4,8],   dur:[12,22], drift:[-30,30], rot:[0,60],    peak:.35, color:'#f3e6b0' },
+  's-autumn': { chars:['🍂','🍁','·'], n:10, size:[12,18], dur:[9,16],  drift:[-80,80], rot:[180,540], peak:.5  },
+};
+function _seasRand(a, b) { return a + Math.random() * (b - a); }
+function applySeasonAmbient(cls) {
+  const box = document.getElementById('season-ambient');
+  if (!box) return;
+  box.innerHTML = '';
+  const cfg = SEASON_PARTICLE[cls];
+  if (!cfg) return;
+  for (let i = 0; i < cfg.n; i++) {
+    const s = document.createElement('span');
+    s.className = 'sp';
+    s.textContent = cfg.chars[Math.floor(Math.random() * cfg.chars.length)];
+    s.style.left = _seasRand(0, 100).toFixed(2) + '%';
+    s.style.fontSize = _seasRand(cfg.size[0], cfg.size[1]).toFixed(1) + 'px';
+    s.style.setProperty('--drift', _seasRand(cfg.drift[0], cfg.drift[1]).toFixed(0) + 'px');
+    s.style.setProperty('--rot', _seasRand(cfg.rot[0], cfg.rot[1]).toFixed(0) + 'deg');
+    s.style.setProperty('--peak', cfg.peak);
+    s.style.animationDuration = _seasRand(cfg.dur[0], cfg.dur[1]).toFixed(1) + 's';
+    s.style.animationDelay = (-_seasRand(0, cfg.dur[1])).toFixed(1) + 's';
+    if (cfg.color) s.style.color = cfg.color;
+    box.appendChild(s);
+  }
+}
+
 function render(d, npFilter) {
   // Header
   const heroName = d.hero?.name?.replace(/—.+/, "").trim() || "—";
@@ -938,11 +997,15 @@ function render(d, npFilter) {
   const _sn = (d.season_name || "").toLowerCase();
   const _si = SEASON_OF_YEAR[_sn];
   _seasonBadge.classList.remove("s-winter","s-spring","s-summer","s-autumn");
+  document.body.classList.remove("season-winter","season-spring","season-summer","season-autumn");
   if (_si) {
     _seasonBadge.textContent = "Сезон " + (d.season || "?") + " · " + _si.label + " " + _si.emoji;
     _seasonBadge.classList.add(_si.cls);
+    document.body.classList.add(_si.cls.replace("s-", "season-"));
+    applySeasonAmbient(_si.cls);
   } else {
     _seasonBadge.textContent = "Сезон " + (d.season || "?");
+    applySeasonAmbient(null);
   }
   const phase = d.active_phase;
   document.getElementById("hdr-phase").textContent  = PHASE_LABELS[phase] || phase || "?";
