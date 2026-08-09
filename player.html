@@ -805,7 +805,7 @@ body:not(.season-winter):not(.season-spring):not(.season-summer):not(.season-aut
     <!-- Might -->
     <div class="card card-wide" id="card-might">
       <div class="card-title" onclick="toggleCard('card-might')">
-        <span class="icon">⚔</span> Боевая мощь
+        <span class="icon">⚔</span> Боевая мощь (оборона)
         <em class="chevron">▼</em>
       </div>
       <div class="card-body" id="body-might"></div>
@@ -2153,12 +2153,12 @@ function renderMight(settlements) {
     html += `<div class="might-row">
       <div class="might-head">
         <span class="might-np">${esc(s.name)}</span>
-        <span class="might-badge ${cls}">⚔️ Боевая мощь: ${m.total}</span>
+        <span class="might-badge ${cls}">⚔️ Оборона: ${m.total}</span>
       </div>
       <div class="might-breakdown">${parts.join('<span class="might-sep">·</span>')}</div>
     </div>`;
   });
-  html += `<div class="staff-sub-note">⚔️ <b>Боевая мощь</b> — мультипликативная модель: <b>fighters_sum × (1 + Σ%)</b>. Σ% = лояльность×10% + база обороны +10% (всем) + культ войны +10% (если Культ войны топ ≥50% дворов) + теги <b>#боевая_мощь</b>/<b>#боевая_немощь</b> ×10%. Опциональный блок <b>### Гарнизон</b> позволяет задать разные классы с разной силой.</div>`;
+  html += `<div class="staff-sub-note">⚔️ <b>Боевая мощь (оборона)</b> — сколько НП выстоит при нападении. Мультипликативная: <b>fighters_sum × (1 + Σ%)</b>. Σ% = лояльность×10% + база обороны +10% + культ войны +10% (если Культ войны топ ≥50% дворов) + теги <b>#боевая_мощь</b>/<b>#боевая_немощь</b> ×10%. <b>При АТАКЕ</b> лояльность и база обороны НЕ считаются (войско формируется отдельно от стражи): наступ. мощь = бойцы × (1 + культ войны% + теги%). Опциональный блок <b>### Гарнизон</b> — разные классы с разной силой.</div>`;
   el.innerHTML = html;
 }
 
@@ -2522,7 +2522,7 @@ function renderSettlements(setts) {
       const mtl = mgt.tag_list || [];
       if (mtl.length) mparts.push(`<span class="might-part">Теги: <b>${pct(mgt.tags_pct)}</b></span>`);
       mparts.push(`<span class="might-part">= ${fmtNum(mgt.fighters_sum)} × ${fmtNum(mgt.mult)} = <b>${mgt.total}</b></span>`);
-      html += `<div class="np-sec" style="display:flex;align-items:center">⚔️ Боевая мощь: ${mgt.total} <span class="might-badge ${mcls}" style="margin-left:auto">⚔️ ${mgt.total}</span></div>
+      html += `<div class="np-sec" style="display:flex;align-items:center">⚔️ Боевая мощь (оборона): ${mgt.total} <span class="might-badge ${mcls}" style="margin-left:auto">⚔️ ${mgt.total}</span></div>
         <div class="might-breakdown" style="margin-bottom:4px">${mparts.join('<span class="might-sep">·</span>')}</div>`;
     }
 

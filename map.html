@@ -1739,7 +1739,7 @@ function mightBlock(m) {
   const sumParts = [`лоял. ${pct(m.loyalty_pct)}`, `база +${m.defense_pct}%`];
   if (m.cult_war_pct > 0) sumParts.push(`культ войны +${m.cult_war_pct}%`);
   if (m.tags_pct) sumParts.push(`теги ${pct(m.tags_pct)}`);
-  const tip = `Боевая мощь ${m.total}\n= ${fmtN(m.fighters_sum)} × ${fmtN(m.mult)}\nΣ% (${sumParts.join(', ')})\n(${m.fighters_src})`;
+  const tip = `Боевая мощь (оборона) ${m.total}\n= ${fmtN(m.fighters_sum)} × ${fmtN(m.mult)}\nΣ% (${sumParts.join(', ')})\n(${m.fighters_src})`;
   // Видимая строка разбивки (тултип на мобиле недоступен)
   const parts = [
     `<span class="np-might-part"><b>${fmtN(m.fighters_sum)}</b> бойц.</span>`,
@@ -1750,7 +1750,7 @@ function mightBlock(m) {
   const tl = m.tag_list || [];
   if (tl.length) parts.push(`<span class="np-might-part">теги <b>${pct(m.tags_pct)}</b></span>`);
   parts.push(`<span class="np-might-part">= ${fmtN(m.fighters_sum)} × ${fmtN(m.mult)} = <b>${m.total}</b></span>`);
-  return `<div class="np-stat"><span class="np-stat-label">Боевая мощь:</span> `
+  return `<div class="np-stat"><span class="np-stat-label">Боевая мощь (оборона):</span> `
     + `<span class="np-might ${cls}" title="${esc(tip)}">⚔ ${m.total}</span></div>`
     + `<div class="np-might-breakdown">${parts.join(' · ')}</div>`;
 }
