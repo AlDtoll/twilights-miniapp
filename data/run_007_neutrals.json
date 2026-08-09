@@ -3846,7 +3846,7 @@
           "population": "~150",
           "houses": "15",
           "treasury": {
-            "pct": 18,
+            "pct": 25,
             "razoreno": true
           },
           "promysly": [
