@@ -860,7 +860,7 @@ python3 twilights/minigames/send_miniapp.py <chat_id> \
 → offer/ceiling/accepted/error/level
 
 ### track — след
-`--config '{"rounds":5,"perImage":2.5}'` (rounds — целое 3–8; perImage — секунд на образец, дефолт 2.5, макс 10, истёк = промах) → correct/total/outcome/level/timeSpent
+`--config '{"rounds":5,"perImage":2.3}'` (rounds — целое 3–8; perImage — секунд на образец, дефолт 2.3, макс 10, истёк = промах) → correct/total/outcome/level/timeSpent
 
 ### herb-sort — травы
 → correct/total/level

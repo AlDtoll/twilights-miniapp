@@ -32,6 +32,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div id="g-ready">
     <div class="ready-title" id="g-title">🐾 След</div>
     <div class="ready-info" id="g-info">Выбери отпечаток, совпадающий с образцом.</div>
+    <div class="ready-info" id="g-cond" style="margin-top:6px;font-weight:600;"></div>
     <button class="confirm-btn" onclick="gStart()">Начать</button>
   </div>
   <div class="play" id="g-play">
@@ -54,6 +55,11 @@ function tierBy(pct){
 function showReady(defTitle, defInfo){
   document.getElementById('g-title').textContent=gameData.prompt||defTitle;
   document.getElementById('g-info').textContent=defInfo;
+  let rn=Number(gameData.rounds);
+  const rounds=Math.max(3,Math.min(8,(Number.isFinite(rn)&&rn>=1)?Math.floor(rn):5));
+  let pi=Number(gameData.perImage);
+  const perImage=(Number.isFinite(pi)&&pi>0)?Math.min(10,pi):2.3;
+  document.getElementById('g-cond').textContent=`⏱ ${perImage}с на образец · ${rounds} раундов`;
 }
 function goPlay(){
   document.getElementById('g-ready').style.display='none';
@@ -78,7 +84,7 @@ function gStart(){
   let rn=Number(gameData.rounds);
   const rounds=Math.max(3,Math.min(8,(Number.isFinite(rn)&&rn>=1)?Math.floor(rn):5));
   let pi=Number(gameData.perImage);
-  const perImage=(Number.isFinite(pi)&&pi>0)?Math.min(10,pi):2.5;
+  const perImage=(Number.isFinite(pi)&&pi>0)?Math.min(10,pi):2.3;
   S={rounds,i:0,ok:0,start:Date.now(),done:false,perImage,answered:false,deadline:0,timer:null};
   S.timer=setInterval(tick,100);
   next();
