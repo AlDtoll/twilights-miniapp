@@ -32,7 +32,7 @@
         "row": 1,
         "terrain": "t-meadow",
         "owner": "danil",
-        "pop": 700
+        "pop": 760
       },
       {
         "name": "Кочевье",
@@ -855,8 +855,8 @@
     {
       "category": "Стража (бойцы)",
       "fact": "10",
-      "norm": "10",
-      "status": "✅",
+      "norm": "11",
+      "status": "⚠️ нехватка −1 (+1d2 П&О)",
       "np": "Былицы"
     },
     {
@@ -869,7 +869,7 @@
     {
       "category": "Рабочие руки",
       "fact": "4",
-      "norm": "14",
+      "norm": "16",
       "status": "✅",
       "np": "Былицы"
     },
@@ -989,9 +989,9 @@
     "sold": 0,
     "revenue": 0,
     "eff_pct": null,
-    "band": 2720,
+    "band": 2840,
     "cur_rate": 80,
-    "left_in_band": 2720,
+    "left_in_band": 2840,
     "stock": 6500
   },
   "threat": {
@@ -1023,7 +1023,7 @@
     {
       "name": "Былицы",
       "area": "Полынье",
-      "population": "~700",
+      "population": "~760",
       "growth": null,
       "med_growth": null,
       "houses": "76",
@@ -1031,8 +1031,8 @@
         {
           "category": "Стража (бойцы)",
           "fact": "10",
-          "norm": "10",
-          "status": "✅",
+          "norm": "11",
+          "status": "⚠️ нехватка −1 (+1d2 П&О)",
           "np": "Былицы"
         },
         {
@@ -1045,7 +1045,7 @@
         {
           "category": "Рабочие руки",
           "fact": "4",
-          "norm": "14",
+          "norm": "16",
           "status": "✅",
           "np": "Былицы"
         }
@@ -1124,10 +1124,11 @@
         "Н": 28,
         "НЛ": 7,
         "Тип": "стартовая",
-        "mod": 3,
+        "mod": 2,
         "reasons": [
           "+1 стартовая",
           "+1 Управа",
+          "−1 нехватка стражи (10/11)",
           "+1 вера (религия)"
         ]
       },
@@ -1166,19 +1167,19 @@
         ]
       },
       "might": {
-        "total": 15,
+        "total": 14,
         "fighters": 10,
         "fighters_sum": 10.0,
         "units": [],
-        "loyalty": 3,
-        "loyalty_pct": 30,
+        "loyalty": 2,
+        "loyalty_pct": 20,
         "defense_pct": 10,
         "cult_war_pct": 10,
         "tags_pct": 0,
         "tag_sum": 0,
         "tag_list": [],
-        "sum_pct": 50,
-        "mult": 1.5,
+        "sum_pct": 40,
+        "mult": 1.4,
         "fighters_src": "стража 10",
         "neutral": false
       },
