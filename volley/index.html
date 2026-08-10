@@ -35,6 +35,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div id="g-ready">
     <div class="ready-title" id="g-title">🏹 Залп</div>
     <div class="ready-info" id="g-info">Зажми для прицела, отпусти для выстрела на выдохе.</div>
+    <div class="ready-info" id="g-cond" style="margin-top:6px;font-weight:600;"></div>
     <button class="confirm-btn" onclick="gStart()">Начать</button>
   </div>
   <div class="play" id="g-play">
@@ -57,6 +58,8 @@ function tierBy(pct){
 function showReady(defTitle, defInfo){
   document.getElementById('g-title').textContent=gameData.prompt||defTitle;
   document.getElementById('g-info').textContent=defInfo;
+  const shots=Math.max(4,Math.min(10,gameData.shots||6));
+  document.getElementById('g-cond').textContent=`🏹 ${shots} выстрелов`;
 }
 function goPlay(){
   document.getElementById('g-ready').style.display='none';

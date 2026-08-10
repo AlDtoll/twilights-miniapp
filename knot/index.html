@@ -32,6 +32,7 @@ canvas{width:100%;border-radius:16px;background:#12121f;border:2px solid rgba(25
   <div id="g-ready">
     <div class="ready-title" id="g-title">🪢 Узел</div>
     <div class="ready-info" id="g-info">Поменяй концы местами, чтобы линии не пересекались.</div>
+    <div class="ready-info" id="g-cond" style="margin-top:6px;font-weight:600;"></div>
     <button class="confirm-btn" onclick="gStart()">Начать</button>
   </div>
   <div class="play" id="g-play">
@@ -54,6 +55,8 @@ function tierBy(pct){
 function showReady(defTitle, defInfo){
   document.getElementById('g-title').textContent=gameData.prompt||defTitle;
   document.getElementById('g-info').textContent=defInfo;
+  const pairs=Math.max(3,Math.min(6,gameData.pairs||4));
+  document.getElementById('g-cond').textContent=`🪢 ${pairs} пар`;
 }
 function goPlay(){
   document.getElementById('g-ready').style.display='none';

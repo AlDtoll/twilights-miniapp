@@ -35,6 +35,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div id="g-ready">
     <div class="ready-title" id="g-title">✨ Сигил</div>
     <div class="ready-info" id="g-info">Соедини точки по порядку одним росчерком.</div>
+    <div class="ready-info" id="g-cond" style="margin-top:6px;font-weight:600;"></div>
     <button class="confirm-btn" onclick="gStart()">Начать</button>
   </div>
   <div class="play" id="g-play">
@@ -62,6 +63,8 @@ function combatOutcome(win, revisit, heroHp, enemyHp){
 function showReady(defTitle, defInfo){
   document.getElementById('g-title').textContent=gameData.prompt||defTitle;
   document.getElementById('g-info').textContent=defInfo;
+  const points=Math.max(4,Math.min(8,gameData.points||5));
+  document.getElementById('g-cond').textContent=`✦ ${points} точек`;
 }
 function goPlay(){
   document.getElementById('g-ready').style.display='none';

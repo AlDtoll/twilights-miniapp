@@ -461,6 +461,7 @@
   <div id="timing-ready">
     <div class="seq-ready-title" id="timing-ready-title">⚡ Тайминг</div>
     <div class="seq-ready-info" id="timing-ready-info"></div>
+    <div id="timing-cond" style="margin-top:6px;font-weight:600;"></div>
     <button class="confirm-btn" onclick="timingStart()">Готов</button>
   </div>
   <div id="timing-play" style="display:none">
@@ -502,6 +503,8 @@ function initTiming() {
   document.getElementById('timing-ready-title').textContent = gameData.prompt ? gameData.prompt.split('\n')[0] : '⚡ Тайминг';
   document.getElementById('timing-ready-info').textContent = gameData.prompt ? gameData.prompt.split('\n').slice(1).join('\n') : 'Нажми в нужный момент!';
   document.getElementById('timing-prompt').textContent = gameData.prompt || 'Нажми в нужный момент!';
+  var _t=gameData.time||15; var _s=gameData.speed||1.5;
+  document.getElementById('timing-cond').textContent=`⏱ ${_t}с · скорость ×${_s}`;
 
   const rawZones = (gameData.thresholds && gameData.thresholds.length) ? gameData.thresholds : DEFAULT_TIMING_ZONES;
   const zones = rawZones.slice().sort((a,b) => (a.max-a.min)-(b.max-b.min)); // narrowest first
