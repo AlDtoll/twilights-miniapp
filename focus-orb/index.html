@@ -35,6 +35,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div id="g-ready">
     <div class="ready-title" id="g-title">🔵 Сфера концентрации</div>
     <div class="ready-info" id="g-info">Удержи орб в центре против ветра.</div>
+    <div class="ready-info" id="g-cond" style="margin-top:6px;font-weight:600;"></div>
     <button class="confirm-btn" onclick="gStart()">Начать</button>
   </div>
   <div class="play" id="g-play">
@@ -62,6 +63,8 @@ function combatOutcome(win, revisit, heroHp, enemyHp){
 function showReady(defTitle, defInfo){
   document.getElementById('g-title').textContent=gameData.prompt||defTitle;
   document.getElementById('g-info').textContent=defInfo;
+  const timeLimit=gameData.timeLimit||10;
+  document.getElementById('g-cond').textContent=`⏱ ${timeLimit}с`;
 }
 function goPlay(){
   document.getElementById('g-ready').style.display='none';
