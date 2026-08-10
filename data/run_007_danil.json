@@ -938,18 +938,18 @@
     }
   ],
   "religion": {
-    "total_houses": 136,
+    "total_houses": 142,
     "cults": [
       {
         "name": "Культ войны",
         "count": 74,
-        "pct": 54,
+        "pct": 52,
         "events": true
       },
       {
         "name": "Бурий",
         "count": 13,
-        "pct": 10,
+        "pct": 9,
         "events": false
       },
       {
@@ -977,8 +977,8 @@
         "events": false
       }
     ],
-    "neutral": 29,
-    "neutral_pct": 21,
+    "neutral": 35,
+    "neutral_pct": 25,
     "threshold_pct": 15
   },
   "hearth": {
@@ -1026,7 +1026,7 @@
       "population": "~700",
       "growth": null,
       "med_growth": null,
-      "houses": "70",
+      "houses": "76",
       "staff": [
         {
           "category": "Стража (бойцы)",
@@ -1136,7 +1136,7 @@
           {
             "name": "Культ войны",
             "count": 44,
-            "pct": 63,
+            "pct": 58,
             "rel_mod": 2,
             "rel_reasons": [
               "+1 герой культа Культ войны",
@@ -1158,11 +1158,11 @@
             "rel_reasons": []
           }
         ],
-        "neutral": 18,
-        "neutral_pct": 26,
+        "neutral": 24,
+        "neutral_pct": 32,
         "mod": 1,
         "reasons": [
-          "+1 Культ войны преобладает (63%), герой-единоверец"
+          "+1 Культ войны преобладает (58%), герой-единоверец"
         ]
       },
       "might": {
