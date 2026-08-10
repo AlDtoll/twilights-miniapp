@@ -1121,7 +1121,7 @@
       "stash": [],
       "loyalty": {
         "Л": 35,
-        "Н": 28,
+        "Н": 34,
         "НЛ": 7,
         "Тип": "стартовая",
         "mod": 2,
@@ -1185,8 +1185,8 @@
       },
       "eff_breakdown": {
         "base": 90,
-        "loyalty_penalty": 13,
-        "loyalty_bonus": 8,
+        "loyalty_penalty": 12,
+        "loyalty_bonus": 7,
         "total": 85
       }
     },
