@@ -48,7 +48,7 @@
         "row": 4,
         "terrain": "t-meadow",
         "owner": "danil",
-        "pop": 150
+        "pop": 210
       },
       {
         "name": "Ковыльные Стойбища",
@@ -897,8 +897,8 @@
     {
       "category": "Стража (бойцы)",
       "fact": "2",
-      "norm": "2",
-      "status": "✅",
+      "norm": "3",
+      "status": "⚠️ нехватка −1 (+1d2 П&О)",
       "np": "Каменка"
     },
     {
@@ -911,7 +911,7 @@
     {
       "category": "Рабочие руки",
       "fact": "0",
-      "norm": "3",
+      "norm": "5",
       "status": "✅",
       "np": "Каменка"
     },
@@ -989,9 +989,9 @@
     "sold": 0,
     "revenue": 0,
     "eff_pct": null,
-    "band": 2600,
+    "band": 2720,
     "cur_rate": 80,
-    "left_in_band": 2600,
+    "left_in_band": 2720,
     "stock": 6500
   },
   "threat": {
@@ -1324,7 +1324,7 @@
     {
       "name": "Каменка",
       "area": "Полынье",
-      "population": "~150",
+      "population": "~210",
       "growth": null,
       "med_growth": null,
       "houses": "21",
@@ -1332,8 +1332,8 @@
         {
           "category": "Стража (бойцы)",
           "fact": "2",
-          "norm": "2",
-          "status": "✅",
+          "norm": "3",
+          "status": "⚠️ нехватка −1 (+1d2 П&О)",
           "np": "Каменка"
         },
         {
@@ -1346,7 +1346,7 @@
         {
           "category": "Рабочие руки",
           "fact": "0",
-          "norm": "3",
+          "norm": "5",
           "status": "✅",
           "np": "Каменка"
         }
@@ -1408,9 +1408,10 @@
           }
         ],
         "Тип": "стартовая",
-        "mod": 2,
+        "mod": 1,
         "reasons": [
           "+1 стартовая",
+          "−1 нехватка стражи (2/3)",
           "+1 Помощь Свею-дозорному (артель плотников, крыша)"
         ]
       },
@@ -1450,15 +1451,15 @@
         "fighters": 2,
         "fighters_sum": 2.0,
         "units": [],
-        "loyalty": 2,
-        "loyalty_pct": 20,
+        "loyalty": 1,
+        "loyalty_pct": 10,
         "defense_pct": 10,
         "cult_war_pct": 0,
         "tags_pct": 0,
         "tag_sum": 0,
         "tag_list": [],
-        "sum_pct": 30,
-        "mult": 1.3,
+        "sum_pct": 20,
+        "mult": 1.2,
         "fighters_src": "стража 2",
         "neutral": false
       },
