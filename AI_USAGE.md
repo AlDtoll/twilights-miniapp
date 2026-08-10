@@ -860,7 +860,7 @@ python3 twilights/minigames/send_miniapp.py <chat_id> \
 → offer/ceiling/accepted/error/level
 
 ### track — след
-`--config '{"rounds":5}'` → correct/total/level
+`--config '{"rounds":5}'` (rounds — целое 3–8, НЕ список) · опц. `--time-limit N` (сек, обратный отсчёт; без лимита — счёт вверх) → correct/total/outcome/level/timeSpent
 
 ### herb-sort — травы
 → correct/total/level

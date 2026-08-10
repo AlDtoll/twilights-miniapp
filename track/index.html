@@ -75,8 +75,12 @@ const SETS=[
 ];
 function gStart(){
   goPlay();
-  const rounds=Math.max(3,Math.min(8,gameData.rounds||5));
-  S={rounds,i:0,ok:0,start:Date.now(),done:false};
+  let rn=Number(gameData.rounds);
+  const rounds=Math.max(3,Math.min(8,(Number.isFinite(rn)&&rn>=1)?Math.floor(rn):5));
+  let tl=Number(gameData.timeLimit);
+  const timeLimit=(Number.isFinite(tl)&&tl>0)?Math.floor(tl):0;
+  S={rounds,i:0,ok:0,start:Date.now(),done:false,timeLimit,timer:null};
+  S.timer=setInterval(hud,250);
   next();
 }
 function next(){
@@ -102,8 +106,15 @@ function pick(o,el){ if(S.done)return;
   const good=o===S.target; if(good){S.ok++;el.classList.add('ok');} else el.classList.add('bad');
   S.i++; setTimeout(next,350); hud();
 }
-function hud(){document.getElementById('g-hud').innerHTML=`<div class="hud-item"><div class="hud-l">Раунд</div><div class="hud-v">${Math.min(S.i+1,S.rounds)}/${S.rounds}</div></div><div class="hud-item"><div class="hud-l">Верно</div><div class="hud-v">${S.ok}</div></div>`;}
-function end(){ if(S.done)return; S.done=true; const pct=S.ok/S.rounds; const t=tierBy(pct);
+function hud(){
+  const el=Math.round((Date.now()-S.start)/1000);
+  let timeStr,timedOut=false;
+  if(S.timeLimit){const rem=S.timeLimit-el; if(rem<=0){timeStr='0с';timedOut=true;} else timeStr=rem+'с';}
+  else timeStr=el+'с';
+  document.getElementById('g-hud').innerHTML=`<div class="hud-item"><div class="hud-l">Раунд</div><div class="hud-v">${Math.min(S.i+1,S.rounds)}/${S.rounds}</div></div><div class="hud-item"><div class="hud-l">Время</div><div class="hud-v">${timeStr}</div></div><div class="hud-item"><div class="hud-l">Верно</div><div class="hud-v">${S.ok}</div></div>`;
+  if(timedOut&&!S.done)end();
+}
+function end(){ if(S.done)return; S.done=true; if(S.timer){clearInterval(S.timer);S.timer=null;} const pct=S.ok/S.rounds; const t=tierBy(pct);
   finish('track',{correct:S.ok,total:S.rounds,outcome:t.outcome,level:t.level,timeSpent:Math.round((Date.now()-S.start)/1000)},t.outcome,S.ok+'/'+S.rounds);}
 showReady('🐾 След','Сопоставь отпечаток с образцом');
 
