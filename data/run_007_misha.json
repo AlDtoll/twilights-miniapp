@@ -75,7 +75,7 @@
   "telegram": "@Мишачья",
   "season": "4",
   "season_name": "зима",
-  "active_phase": "adventure",
+  "active_phase": "adventure_done",
   "finance": {
     "start": 11809,
     "income": [
@@ -891,6 +891,13 @@
       },
       {
         "name": "Стрелок (пороховое) (0)",
+        "techniques": [],
+        "bank": 4,
+        "ups": 0,
+        "next_threshold": 10
+      },
+      {
+        "name": "Риторика (0)",
         "techniques": [],
         "bank": 4,
         "ups": 0,

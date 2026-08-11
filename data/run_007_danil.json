@@ -785,16 +785,21 @@
     "patronage": "Культ войны",
     "skills": [
       {
-        "name": "Пара тонф (I)",
-        "techniques": [],
-        "bank": 12,
-        "ups": 0,
-        "next_threshold": 10
+        "name": "Пара тонф (II)",
+        "techniques": [
+          {
+            "name": "Фарватер",
+            "kind": "приём"
+          }
+        ],
+        "bank": 2,
+        "ups": 1,
+        "next_threshold": 12
       },
       {
         "name": "Адепт Хереца (I)",
         "techniques": [],
-        "bank": 0,
+        "bank": 2,
         "ups": 0,
         "next_threshold": 10
       },
