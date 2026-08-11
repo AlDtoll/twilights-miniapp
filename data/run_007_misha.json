@@ -869,7 +869,7 @@
       {
         "name": "Тактика (I)",
         "techniques": [],
-        "bank": 7,
+        "bank": 9,
         "ups": 1,
         "next_threshold": 12
       },
