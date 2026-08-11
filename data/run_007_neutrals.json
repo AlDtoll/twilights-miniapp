@@ -1157,7 +1157,7 @@
           {
             "coord": [
               0,
-              -1
+              0
             ],
             "col0": 1,
             "row0": 1,
@@ -1178,7 +1178,7 @@
             "col": 4,
             "row": 3,
             "terrain": "t-meadow",
-            "owner": "",
+            "owner": "danil",
             "pop": 800
           }
         ],
@@ -1198,31 +1198,13 @@
             "to": "Кремневая Гряда",
             "dir": {
               "dx": 1,
-              "dy": 1
-            }
-          },
-          {
-            "type": "edge",
-            "from": "Ковыльные Стойбища",
-            "to": "Кочевье",
-            "dir": {
-              "dx": 0,
-              "dy": 1
+              "dy": 0
             }
           },
           {
             "type": "internal",
             "from": "Ковыльные Стойбища",
             "to": "Ковыльные Стойбища-Ближнее"
-          },
-          {
-            "type": "edge",
-            "from": "Ковыльные Стойбища",
-            "to": "Каменка",
-            "dir": {
-              "dx": 0,
-              "dy": 1
-            }
           }
         ]
       },
@@ -1523,7 +1505,7 @@
             "to": "Ковыльные Стойбища",
             "dir": {
               "dx": -1,
-              "dy": -1
+              "dy": 0
             }
           },
           {
@@ -2849,6 +2831,393 @@
             "sum_pct": 30,
             "mult": 1.3,
             "fighters_src": "ополчение ~2% от 800",
+            "neutral": true
+          },
+          "buildings": []
+        }
+      ]
+    },
+    {
+      "area": "Сол-Пряности — нейтральная клетка (3, -3)",
+      "file": "sol_pryanosti",
+      "area_map": {
+        "area": "Сол-Пряности — нейтральная клетка (3, -3)",
+        "cols": 4,
+        "rows": 4,
+        "blocks": [
+          {
+            "coord": [
+              3,
+              -3
+            ],
+            "col0": 1,
+            "row0": 1,
+            "owned": true,
+            "water": [
+              "e"
+            ]
+          }
+        ],
+        "nodes": [
+          {
+            "name": "Сол-Пряности",
+            "col": 1,
+            "row": 2,
+            "terrain": "t-ocean",
+            "owner": "",
+            "pop": 700
+          },
+          {
+            "name": "Подворье Тарбана",
+            "col": 4,
+            "row": 3,
+            "terrain": "t-ocean",
+            "owner": "",
+            "pop": 500
+          }
+        ],
+        "roads": []
+      },
+      "settlements": [
+        {
+          "name": "Сол-Пряности",
+          "population": "~700",
+          "houses": "70",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
+          "promysly": [
+            {
+              "name": "Торговля пряностями",
+              "tier": "2",
+              "chain": "привоз→расфасовка→сбыт",
+              "owner": "купец Тарбан"
+            },
+            {
+              "name": "Рыбная ловля",
+              "tier": "1",
+              "chain": "рыба→засол→припасы",
+              "owner": "местные"
+            },
+            {
+              "name": "Кожевня",
+              "tier": "1",
+              "chain": "кожа→изделия",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "смута",
+            "Тип": "нейтральная",
+            "Л": 28,
+            "Н": 28,
+            "НЛ": 14,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Кипона",
+                "count": 20,
+                "pct": 29
+              },
+              {
+                "name": "Айдан «Кот»",
+                "count": 12,
+                "pct": 17
+              },
+              {
+                "name": "Мизеракль",
+                "count": 6,
+                "pct": 9
+              }
+            ],
+            "neutral": 32,
+            "neutral_pct": 46,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 18,
+            "fighters": 14,
+            "fighters_sum": 14.0,
+            "units": [],
+            "loyalty": 2,
+            "loyalty_pct": 20,
+            "defense_pct": 10,
+            "cult_war_pct": 0,
+            "tags_pct": 0,
+            "tag_sum": 0,
+            "tag_list": [],
+            "sum_pct": 30,
+            "mult": 1.3,
+            "fighters_src": "ополчение ~2% от 700",
+            "neutral": true
+          },
+          "buildings": []
+        },
+        {
+          "name": "Подворье Тарбана",
+          "population": "~500",
+          "houses": "50",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
+          "promysly": [
+            {
+              "name": "Торговля пряностями",
+              "tier": "2",
+              "chain": "привоз→расфасовка→сбыт",
+              "owner": "купец Тарбан"
+            }
+          ],
+          "loyalty": {
+            "уклад": "смута",
+            "Тип": "нейтральная",
+            "Л": 20,
+            "Н": 20,
+            "НЛ": 10,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Кипона",
+                "count": 15,
+                "pct": 30
+              },
+              {
+                "name": "Айдан «Кот»",
+                "count": 8,
+                "pct": 16
+              },
+              {
+                "name": "Мизеракль",
+                "count": 4,
+                "pct": 8
+              }
+            ],
+            "neutral": 23,
+            "neutral_pct": 46,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 13,
+            "fighters": 10,
+            "fighters_sum": 10.0,
+            "units": [],
+            "loyalty": 2,
+            "loyalty_pct": 20,
+            "defense_pct": 10,
+            "cult_war_pct": 0,
+            "tags_pct": 0,
+            "tag_sum": 0,
+            "tag_list": [],
+            "sum_pct": 30,
+            "mult": 1.3,
+            "fighters_src": "ополчение ~2% от 500",
+            "neutral": true
+          },
+          "buildings": []
+        }
+      ]
+    },
+    {
+      "area": "Солеград — нейтральная клетка (4, -2)",
+      "file": "solegrad",
+      "area_map": {
+        "area": "Солеград — нейтральная клетка (4, -2)",
+        "cols": 4,
+        "rows": 4,
+        "blocks": [
+          {
+            "coord": [
+              4,
+              -2
+            ],
+            "col0": 1,
+            "row0": 1,
+            "owned": true,
+            "water": [
+              "n",
+              "s"
+            ]
+          }
+        ],
+        "nodes": [
+          {
+            "name": "Солеград",
+            "col": 1,
+            "row": 2,
+            "terrain": "t-ocean",
+            "owner": "",
+            "pop": 1300
+          },
+          {
+            "name": "Соляной посад",
+            "col": 4,
+            "row": 3,
+            "terrain": "t-ocean",
+            "owner": "",
+            "pop": 700
+          }
+        ],
+        "roads": []
+      },
+      "settlements": [
+        {
+          "name": "Солеград",
+          "population": "~1300",
+          "houses": "130",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
+          "promysly": [
+            {
+              "name": "Добыча и торговля солью",
+              "tier": "2",
+              "chain": "соль→фасовка→сбыт",
+              "owner": "братство «Соляной Ковчег»"
+            },
+            {
+              "name": "Морская торговля",
+              "tier": "2",
+              "chain": "привоз→склад→сбыт",
+              "owner": "купец Наум Крой"
+            },
+            {
+              "name": "Рыбная ловля",
+              "tier": "1",
+              "chain": "рыба→засол→припасы",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "крепкий",
+            "Тип": "нейтральная",
+            "Л": 40,
+            "Н": 40,
+            "НЛ": 20,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Кипона",
+                "count": 25,
+                "pct": 19
+              },
+              {
+                "name": "Айдан «Кот»",
+                "count": 15,
+                "pct": 12
+              },
+              {
+                "name": "Мизеракль",
+                "count": 8,
+                "pct": 6
+              }
+            ],
+            "neutral": 82,
+            "neutral_pct": 63,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 33,
+            "fighters": 26,
+            "fighters_sum": 26.0,
+            "units": [],
+            "loyalty": 2,
+            "loyalty_pct": 20,
+            "defense_pct": 10,
+            "cult_war_pct": 0,
+            "tags_pct": 0,
+            "tag_sum": 0,
+            "tag_list": [],
+            "sum_pct": 30,
+            "mult": 1.3,
+            "fighters_src": "ополчение ~2% от 1300",
+            "neutral": true
+          },
+          "buildings": []
+        },
+        {
+          "name": "Соляной посад",
+          "population": "~700",
+          "houses": "70",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
+          "promysly": [
+            {
+              "name": "Солеварни",
+              "tier": "1",
+              "chain": "рассол→соль",
+              "owner": "местные"
+            },
+            {
+              "name": "Рыбная ловля",
+              "tier": "1",
+              "chain": "рыба→засол→припасы",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "крепкий",
+            "Тип": "нейтральная",
+            "Л": 30,
+            "Н": 35,
+            "НЛ": 15,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Кипона",
+                "count": 18,
+                "pct": 26
+              },
+              {
+                "name": "Айдан «Кот»",
+                "count": 10,
+                "pct": 14
+              },
+              {
+                "name": "Мизеракль",
+                "count": 6,
+                "pct": 9
+              }
+            ],
+            "neutral": 36,
+            "neutral_pct": 51,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 18,
+            "fighters": 14,
+            "fighters_sum": 14.0,
+            "units": [],
+            "loyalty": 2,
+            "loyalty_pct": 20,
+            "defense_pct": 10,
+            "cult_war_pct": 0,
+            "tags_pct": 0,
+            "tag_sum": 0,
+            "tag_list": [],
+            "sum_pct": 30,
+            "mult": 1.3,
+            "fighters_src": "ополчение ~2% от 700",
             "neutral": true
           },
           "buildings": []

@@ -4,17 +4,8 @@
   "area_map": {
     "area": "Полынье",
     "cols": 4,
-    "rows": 8,
+    "rows": 4,
     "blocks": [
-      {
-        "coord": [
-          0,
-          -1
-        ],
-        "col0": 1,
-        "row0": 5,
-        "owned": true
-      },
       {
         "coord": [
           0,
@@ -53,7 +44,7 @@
       {
         "name": "Ковыльные Стойбища",
         "col": 1,
-        "row": 6,
+        "row": 2,
         "terrain": "t-meadow",
         "owner": "danil",
         "pop": 200
@@ -61,9 +52,9 @@
       {
         "name": "Ковыльные Стойбища-Ближнее",
         "col": 4,
-        "row": 7,
+        "row": 3,
         "terrain": "t-meadow",
-        "owner": "",
+        "owner": "danil",
         "pop": 800
       }
     ],
@@ -93,7 +84,7 @@
         "to": "Кремневая Гряда",
         "dir": {
           "dx": 1,
-          "dy": 1
+          "dy": 0
         }
       },
       {
@@ -142,7 +133,7 @@
   "telegram": "@aldtoll",
   "season": "4",
   "season_name": "зима",
-  "active_phase": "adventure_done",
+  "active_phase": "",
   "finance": {
     "start": 13067,
     "income": [
@@ -197,6 +188,18 @@
       {
         "label": "Торговцы (2 × 6 × 90 × 72%)",
         "amount": 778
+      },
+      {
+        "label": "Налог (65 × 5 × 90 × 62%)",
+        "amount": 18135
+      },
+      {
+        "label": "Лавки (10 × 3 × 90 × 62%)",
+        "amount": 1674
+      },
+      {
+        "label": "Торговцы (5 × 6 × 90 × 62%)",
+        "amount": 1674
       }
     ],
     "expenses": [
@@ -255,6 +258,14 @@
       {
         "label": "Клерки (1 × 20 × 90)",
         "amount": 1800
+      },
+      {
+        "label": "Стража (16 × 20 × 90)",
+        "amount": 28800
+      },
+      {
+        "label": "Клерки (3 × 20 × 90)",
+        "amount": 5400
       }
     ],
     "receipts": [],
@@ -278,6 +289,14 @@
       {
         "label": "Крыши в Каменке после ветра: плотники княжьего расчёта (канцлер С4)",
         "amount": 484
+      },
+      {
+        "label": "Дар старейшинам Ковыльные Стойбища Дальнее (Т1 приключения С4, ткани/соль/три кобылы)",
+        "amount": 1000
+      },
+      {
+        "label": "Дар Бай-бию «Долгому» и старейшинам Ковыльные-Ближнее (Т3 приключения С4, седло/клинок/соль)",
+        "amount": 1000
       }
     ],
     "income_by": {
@@ -339,6 +358,20 @@
         {
           "label": "Торговцы (2 × 6 × 90 × 72%)",
           "amount": 778
+        }
+      ],
+      "Ковыльные Стойбища-Ближнее": [
+        {
+          "label": "Налог (65 × 5 × 90 × 62%)",
+          "amount": 18135
+        },
+        {
+          "label": "Лавки (10 × 3 × 90 × 62%)",
+          "amount": 1674
+        },
+        {
+          "label": "Торговцы (5 × 6 × 90 × 62%)",
+          "amount": 1674
         }
       ]
     },
@@ -408,11 +441,21 @@
           "label": "Клерки (1 × 20 × 90)",
           "amount": 1800
         }
+      ],
+      "Ковыльные Стойбища-Ближнее": [
+        {
+          "label": "Стража (16 × 20 × 90)",
+          "amount": 28800
+        },
+        {
+          "label": "Клерки (3 × 20 × 90)",
+          "amount": 5400
+        }
       ]
     },
-    "total_income": 62975,
-    "total_expenses": 51510,
-    "balance": 20990
+    "total_income": 84458,
+    "total_expenses": 85710,
+    "balance": 6273
   },
   "buildings": {
     "slots": {
@@ -735,7 +778,7 @@
       {
         "name": "Пара тонф (I)",
         "techniques": [],
-        "bank": 10,
+        "bank": 12,
         "ups": 0,
         "next_threshold": 10
       },
@@ -749,7 +792,7 @@
       {
         "name": "Языки (II)",
         "techniques": [],
-        "bank": 7,
+        "bank": 9,
         "ups": 1,
         "next_threshold": 12
       },
@@ -763,14 +806,14 @@
       {
         "name": "Риторика (I)",
         "techniques": [],
-        "bank": 8,
+        "bank": 12,
         "ups": 1,
         "next_threshold": 12
       },
       {
         "name": "Наблюдательность (0)",
         "techniques": [],
-        "bank": 14,
+        "bank": 16,
         "ups": 0,
         "next_threshold": 10
       },
@@ -798,7 +841,7 @@
       {
         "name": "Лидерство (0)",
         "techniques": [],
-        "bank": 8,
+        "bank": 12,
         "ups": 0,
         "next_threshold": 10
       },
@@ -820,6 +863,13 @@
         "name": "Инженерия (0)",
         "techniques": [],
         "bank": 1,
+        "ups": 0,
+        "next_threshold": 10
+      },
+      {
+        "name": "Путник (0)",
+        "techniques": [],
+        "bank": 2,
         "ups": 0,
         "next_threshold": 10
       }
@@ -938,50 +988,71 @@
       "norm": "4",
       "status": "✅",
       "np": "Ковыльные Стойбища"
+    },
+    {
+      "category": "Стража (бойцы)",
+      "fact": "16",
+      "norm": "16",
+      "status": "✅ (ополчение кочевья, при переезде под князя целиком)",
+      "np": "Ковыльные Стойбища-Ближнее"
+    },
+    {
+      "category": "Клерки",
+      "fact": "3",
+      "norm": "3",
+      "status": "✅ (местные писари при старейшинах, при переезде под князя)",
+      "np": "Ковыльные Стойбища-Ближнее"
+    },
+    {
+      "category": "Рабочие руки",
+      "fact": "16",
+      "norm": "16",
+      "status": "✅",
+      "np": "Ковыльные Стойбища-Ближнее"
     }
   ],
   "religion": {
-    "total_houses": 142,
+    "total_houses": 222,
     "cults": [
       {
         "name": "Культ войны",
-        "count": 74,
-        "pct": 52,
+        "count": 97,
+        "pct": 44,
         "events": true
       },
       {
         "name": "Бурий",
-        "count": 13,
-        "pct": 9,
+        "count": 30,
+        "pct": 14,
+        "events": false
+      },
+      {
+        "name": "Местный культ",
+        "count": 22,
+        "pct": 10,
         "events": false
       },
       {
         "name": "Айдан «Кот»",
         "count": 7,
-        "pct": 5,
+        "pct": 3,
         "events": false
       },
       {
         "name": "Мизеракль",
         "count": 5,
-        "pct": 4,
-        "events": false
-      },
-      {
-        "name": "Местный культ",
-        "count": 5,
-        "pct": 4,
+        "pct": 2,
         "events": false
       },
       {
         "name": "Херец",
         "count": 3,
-        "pct": 2,
+        "pct": 1,
         "events": false
       }
     ],
-    "neutral": 35,
-    "neutral_pct": 25,
+    "neutral": 58,
+    "neutral_pct": 26,
     "threshold_pct": 15
   },
   "hearth": {
@@ -992,24 +1063,22 @@
     "sold": 0,
     "revenue": 0,
     "eff_pct": null,
-    "band": 2840,
+    "band": 4440,
     "cur_rate": 80,
-    "left_in_band": 2840,
+    "left_in_band": 4440,
     "stock": 6500
   },
   "threat": {
-    "total": 15,
+    "total": 13,
     "factors": {
       "base": 1,
-      "perimeter": 10,
+      "perimeter": 8,
       "neighbors": [
-        "(-1, -2) — туман/край",
         "Волчьи Пустоши (-1, -1)",
         "Каменный Хребет (-1, 0)",
         "Северный Перевал (-1, 1)",
-        "Ставка Ахьяр-иле (0, -2)",
+        "~~Ковыльные Стойбища~~ (переехали под Пало С2+С4) (0, -1)",
         "Ольшаник (0, 1)",
-        "Каменные Пальцы (1, -2)",
         "Соляной Тракт (1, -1)",
         "Кремневая Гряда (1, 0)",
         "Хвалибов Двор (1, 1)"
@@ -1611,6 +1680,142 @@
         "loyalty_penalty": 26,
         "loyalty_bonus": 8,
         "total": 72
+      }
+    },
+    {
+      "name": "Ковыльные Стойбища-Ближнее",
+      "area": "Полынье",
+      "population": "~800",
+      "growth": null,
+      "med_growth": null,
+      "houses": "80",
+      "staff": [
+        {
+          "category": "Стража (бойцы)",
+          "fact": "16",
+          "norm": "16",
+          "status": "✅ (ополчение кочевья, при переезде под князя целиком)",
+          "np": "Ковыльные Стойбища-Ближнее"
+        },
+        {
+          "category": "Клерки",
+          "fact": "3",
+          "norm": "3",
+          "status": "✅ (местные писари при старейшинах, при переезде под князя)",
+          "np": "Ковыльные Стойбища-Ближнее"
+        },
+        {
+          "category": "Рабочие руки",
+          "fact": "16",
+          "norm": "16",
+          "status": "✅",
+          "np": "Ковыльные Стойбища-Ближнее"
+        }
+      ],
+      "buildings": [],
+      "promysly": [
+        {
+          "name": "Скотоводство (кочевое, лошадь-овца)",
+          "tier": "1",
+          "chain": "скот→кожа→изделия",
+          "owner": "NPC"
+        }
+      ],
+      "income": [
+        {
+          "label": "Налог (65 × 5 × 90 × 62%)",
+          "amount": 18135
+        },
+        {
+          "label": "Лавки (10 × 3 × 90 × 62%)",
+          "amount": 1674
+        },
+        {
+          "label": "Торговцы (5 × 6 × 90 × 62%)",
+          "amount": 1674
+        }
+      ],
+      "expenses_np": [
+        {
+          "label": "Стража (16 × 20 × 90)",
+          "amount": 28800
+        },
+        {
+          "label": "Клерки (3 × 20 × 90)",
+          "amount": 5400
+        }
+      ],
+      "stash": [],
+      "loyalty": {
+        "Л": 39,
+        "Н": 6,
+        "НЛ": 35,
+        "Тип": "присоединённая (присяга, С4 приключение мета)",
+        "inline_mod": -1,
+        "inline_mods": [
+          {
+            "val": -1,
+            "desc": "Присоединённая"
+          }
+        ],
+        "mod": -1,
+        "reasons": [
+          "-1 Присоединённая"
+        ]
+      },
+      "faith": {
+        "cults": [
+          {
+            "name": "Культ войны",
+            "count": 23,
+            "pct": 29,
+            "rel_mod": 1,
+            "rel_reasons": [
+              "+1 герой культа Культ войны"
+            ]
+          },
+          {
+            "name": "Бурий",
+            "count": 17,
+            "pct": 21,
+            "rel_mod": 0,
+            "rel_reasons": []
+          },
+          {
+            "name": "Местный культ",
+            "count": 17,
+            "pct": 21,
+            "rel_mod": 0,
+            "rel_reasons": []
+          }
+        ],
+        "neutral": 23,
+        "neutral_pct": 29,
+        "mod": 0,
+        "reasons": []
+      },
+      "might": {
+        "total": 16,
+        "fighters": 16,
+        "fighters_sum": 16.0,
+        "units": [],
+        "loyalty": -1,
+        "loyalty_pct": -10,
+        "defense_pct": 10,
+        "cult_war_pct": 0,
+        "tags_pct": 0,
+        "tag_sum": 0,
+        "tag_list": [],
+        "sum_pct": 0,
+        "mult": 1.0,
+        "fighters_src": "стража 16",
+        "neutral": false
+      },
+      "eff_breakdown": {
+        "base": 90,
+        "loyalty_penalty": 44,
+        "loyalty_bonus": 16,
+        "total": 62
       }
     }
   ]
