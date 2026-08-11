@@ -249,8 +249,8 @@
         "amount": 1800
       },
       {
-        "label": "Стража (2 × 20 × 90)",
-        "amount": 3600
+        "label": "Стража (3 × 20 × 90)",
+        "amount": 5400
       },
       {
         "label": "Клерки (1 × 20 × 90)",
@@ -429,8 +429,8 @@
       ],
       "Каменка": [
         {
-          "label": "Стража (2 × 20 × 90)",
-          "amount": 3600
+          "label": "Стража (3 × 20 × 90)",
+          "amount": 5400
         },
         {
           "label": "Клерки (1 × 20 × 90)",
@@ -463,8 +463,8 @@
       ]
     },
     "total_income": 84458,
-    "total_expenses": 87510,
-    "balance": 4473
+    "total_expenses": 89310,
+    "balance": 2673
   },
   "buildings": {
     "slots": {
@@ -958,9 +958,9 @@
     },
     {
       "category": "Стража (бойцы)",
-      "fact": "2",
+      "fact": "3",
       "norm": "3",
-      "status": "⚠️ нехватка −1 (+1d2 П&О)",
+      "status": "✅",
       "np": "Каменка"
     },
     {
@@ -1413,9 +1413,9 @@
       "staff": [
         {
           "category": "Стража (бойцы)",
-          "fact": "2",
+          "fact": "3",
           "norm": "3",
-          "status": "⚠️ нехватка −1 (+1d2 П&О)",
+          "status": "✅",
           "np": "Каменка"
         },
         {
@@ -1467,8 +1467,8 @@
       ],
       "expenses_np": [
         {
-          "label": "Стража (2 × 20 × 90)",
-          "amount": 3600
+          "label": "Стража (3 × 20 × 90)",
+          "amount": 5400
         },
         {
           "label": "Клерки (1 × 20 × 90)",
@@ -1490,9 +1490,8 @@
           }
         ],
         "Тип": "стартовая",
-        "mod": 0,
+        "mod": 1,
         "reasons": [
-          "−1 нехватка стражи (2/3)",
           "+1 Помощь Свею-дозорному (артель плотников, крыша)"
         ]
       },
@@ -1528,20 +1527,20 @@
         "reasons": []
       },
       "might": {
-        "total": 2,
-        "fighters": 2,
-        "fighters_sum": 2.0,
+        "total": 3,
+        "fighters": 3,
+        "fighters_sum": 3.0,
         "units": [],
-        "loyalty": 0,
-        "loyalty_pct": 0,
+        "loyalty": 1,
+        "loyalty_pct": 10,
         "defense_pct": 10,
         "cult_war_pct": 0,
         "tags_pct": 0,
         "tag_sum": 0,
         "tag_list": [],
-        "sum_pct": 10,
-        "mult": 1.1,
-        "fighters_src": "стража 2",
+        "sum_pct": 20,
+        "mult": 1.2,
+        "fighters_src": "стража 3",
         "neutral": false
       },
       "eff_breakdown": {
