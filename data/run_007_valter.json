@@ -65,6 +65,15 @@
           "dx": -1,
           "dy": 1
         }
+      },
+      {
+        "type": "edge",
+        "from": "Утёсная гавань",
+        "to": "Солеград",
+        "dir": {
+          "dx": 1,
+          "dy": -1
+        }
       }
     ]
   },
@@ -956,9 +965,8 @@
           }
         ],
         "Тип": "стартовая",
-        "mod": 1,
+        "mod": 0,
         "reasons": [
-          "+1 стартовая",
           "+1 Управа",
           "+1 Больница",
           "+1 Брох принял слово князя (С3) (×1)",
@@ -999,19 +1007,19 @@
         "reasons": []
       },
       "might": {
-        "total": 8,
+        "total": 7,
         "fighters": 7,
         "fighters_sum": 7.0,
         "units": [],
-        "loyalty": 1,
-        "loyalty_pct": 10,
+        "loyalty": 0,
+        "loyalty_pct": 0,
         "defense_pct": 10,
         "cult_war_pct": 0,
         "tags_pct": 0,
         "tag_sum": 0,
         "tag_list": [],
-        "sum_pct": 20,
-        "mult": 1.2,
+        "sum_pct": 10,
+        "mult": 1.1,
         "fighters_src": "стража 7",
         "neutral": false
       },
@@ -1091,10 +1099,8 @@
         "Н": 8,
         "НЛ": 0,
         "Тип": "стартовая",
-        "mod": 1,
-        "reasons": [
-          "+1 стартовая"
-        ]
+        "mod": 0,
+        "reasons": []
       },
       "faith": {
         "cults": [
@@ -1123,15 +1129,15 @@
         "fighters": 4,
         "fighters_sum": 4.0,
         "units": [],
-        "loyalty": 1,
-        "loyalty_pct": 10,
+        "loyalty": 0,
+        "loyalty_pct": 0,
         "defense_pct": 10,
         "cult_war_pct": 0,
         "tags_pct": 0,
         "tag_sum": 0,
         "tag_list": [],
-        "sum_pct": 20,
-        "mult": 1.2,
+        "sum_pct": 10,
+        "mult": 1.1,
         "fighters_src": "стража 4",
         "neutral": false
       },
@@ -1220,9 +1226,8 @@
         "Н": 1,
         "НЛ": 0,
         "Тип": "стартовая",
-        "mod": 0,
+        "mod": -1,
         "reasons": [
-          "+1 стартовая",
           "-1 вера (религия)"
         ]
       },
@@ -1255,15 +1260,15 @@
         "fighters": 3,
         "fighters_sum": 3.0,
         "units": [],
-        "loyalty": 0,
-        "loyalty_pct": 0,
+        "loyalty": -1,
+        "loyalty_pct": -10,
         "defense_pct": 10,
         "cult_war_pct": 0,
         "tags_pct": 0,
         "tag_sum": 0,
         "tag_list": [],
-        "sum_pct": 10,
-        "mult": 1.1,
+        "sum_pct": 0,
+        "mult": 1.0,
         "fighters_src": "стража 3",
         "neutral": false
       },
