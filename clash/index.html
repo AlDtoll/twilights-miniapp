@@ -49,10 +49,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <script>
 
 function tierBy(pct){
-  if(pct>=0.9)return {outcome:'Идеально',level:4};
-  if(pct>=0.75)return {outcome:'Отлично',level:3};
-  if(pct>=0.55)return {outcome:'Хорошо',level:2};
-  if(pct>=0.35)return {outcome:'Неплохо',level:1};
+  if(pct>=0.85)return {outcome:'Идеально',level:4};
+  if(pct>=0.65)return {outcome:'Отлично',level:3};
+  if(pct>=0.45)return {outcome:'Хорошо',level:2};
+  if(pct>=0.25)return {outcome:'Неплохо',level:1};
   return {outcome:'Слабо',level:0};
 }
 function showReady(defTitle, defInfo){
