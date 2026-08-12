@@ -69,7 +69,8 @@
               3
             ]
           }
-        ]
+        ],
+        "tiles": []
       },
       "settlements": [
         {
@@ -226,7 +227,8 @@
             ],
             "sea": true
           }
-        ]
+        ],
+        "tiles": []
       },
       "settlements": [
         {
@@ -502,6 +504,14 @@
             "terrain": "t-forest",
             "owner": "",
             "pop": 200
+          },
+          {
+            "name": "Метки местности",
+            "col": 2,
+            "row": 4,
+            "terrain": "t-forest",
+            "owner": "",
+            "pop": 0
           }
         ],
         "roads": [
@@ -535,6 +545,15 @@
               1,
               1
             ]
+          }
+        ],
+        "tiles": [
+          {
+            "x": 2,
+            "y": 2,
+            "col": 3,
+            "row": 2,
+            "terrain": "t-forest"
           }
         ]
       },
@@ -680,6 +699,36 @@
             "neutral": true
           },
           "buildings": []
+        },
+        {
+          "name": "Метки местности",
+          "population": null,
+          "houses": null,
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
+          "promysly": [],
+          "loyalty": null,
+          "faith": null,
+          "might": {
+            "total": 0,
+            "fighters": 0,
+            "fighters_sum": 0.0,
+            "units": [],
+            "loyalty": 2,
+            "loyalty_pct": 20,
+            "defense_pct": 10,
+            "cult_war_pct": 0,
+            "tags_pct": 0,
+            "tag_sum": 0,
+            "tag_list": [],
+            "sum_pct": 30,
+            "mult": 1.3,
+            "fighters_src": "ополчение ~2% от 0",
+            "neutral": true
+          },
+          "buildings": []
         }
       ]
     },
@@ -751,7 +800,8 @@
               -1
             ]
           }
-        ]
+        ],
+        "tiles": []
       },
       "settlements": [
         {
@@ -877,7 +927,8 @@
               1
             ]
           }
-        ]
+        ],
+        "tiles": []
       },
       "settlements": [
         {
@@ -1103,7 +1154,8 @@
               2
             ]
           }
-        ]
+        ],
+        "tiles": []
       },
       "settlements": [
         {
@@ -1319,7 +1371,8 @@
               3
             ]
           }
-        ]
+        ],
+        "tiles": []
       },
       "settlements": [
         {
@@ -1528,7 +1581,8 @@
             "from": "Кремневая Гряда",
             "to": "Кремневая Гряда-Нижняя"
           }
-        ]
+        ],
+        "tiles": []
       },
       "settlements": [
         {
@@ -1865,7 +1919,8 @@
             "from": "Междолесье",
             "to": "Междолесье-Ясенево"
           }
-        ]
+        ],
+        "tiles": []
       },
       "settlements": [
         {
@@ -2085,7 +2140,8 @@
             "from": "Мшары",
             "to": "Мшары-Мшистое"
           }
-        ]
+        ],
+        "tiles": []
       },
       "settlements": [
         {
@@ -2313,7 +2369,8 @@
               1
             ]
           }
-        ]
+        ],
+        "tiles": []
       },
       "settlements": [
         {
@@ -2487,7 +2544,8 @@
               2
             ]
           }
-        ]
+        ],
+        "tiles": []
       },
       "settlements": [
         {
@@ -2718,7 +2776,8 @@
             "from": "Собрание Юксек-иле",
             "to": "Восточная полоса (роды малых родов)"
           }
-        ]
+        ],
+        "tiles": []
       },
       "settlements": [
         {
@@ -3045,7 +3104,8 @@
               -3
             ]
           }
-        ]
+        ],
+        "tiles": []
       },
       "settlements": [
         {
@@ -3271,7 +3331,8 @@
             ],
             "sea": true
           }
-        ]
+        ],
+        "tiles": []
       },
       "settlements": [
         {
@@ -3509,7 +3570,8 @@
               0
             ]
           }
-        ]
+        ],
+        "tiles": []
       },
       "settlements": [
         {
@@ -3771,7 +3833,8 @@
             "from": "Ставка Ахьяр-иле",
             "to": "Кочевая полоса Ахьяр-иле"
           }
-        ]
+        ],
+        "tiles": []
       },
       "settlements": [
         {
@@ -4019,7 +4082,8 @@
               -3
             ]
           }
-        ]
+        ],
+        "tiles": []
       },
       "settlements": [
         {
@@ -4248,7 +4312,8 @@
               4
             ]
           }
-        ]
+        ],
+        "tiles": []
       },
       "settlements": [
         {
@@ -4366,7 +4431,8 @@
               3
             ]
           }
-        ]
+        ],
+        "tiles": []
       },
       "settlements": [
         {
@@ -4510,7 +4576,8 @@
               0
             ]
           }
-        ]
+        ],
+        "tiles": []
       },
       "settlements": [
         {
@@ -4644,7 +4711,8 @@
               3
             ]
           }
-        ]
+        ],
+        "tiles": []
       },
       "settlements": [
         {
@@ -4842,7 +4910,8 @@
               0
             ]
           }
-        ]
+        ],
+        "tiles": []
       },
       "settlements": [
         {
@@ -5114,7 +5183,8 @@
             "from": "Южные Предгорья",
             "to": "Южные Предгорья-Северное"
           }
-        ]
+        ],
+        "tiles": []
       },
       "settlements": [
         {
@@ -5303,7 +5373,8 @@
               0
             ]
           }
-        ]
+        ],
+        "tiles": []
       },
       "settlements": [
         {
