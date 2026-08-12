@@ -1074,7 +1074,7 @@
     "stock": 6500
   },
   "threat": {
-    "total": 16,
+    "total": 15,
     "factors": {
       "base": 1,
       "perimeter": 10,
@@ -1094,8 +1094,15 @@
       "danger": 1,
       "year": 2,
       "hero_exit": 0,
-      "manual": 0,
-      "manual_mods": []
+      "manual": -1,
+      "manual_mods": [
+        {
+          "val": -1,
+          "turns": null,
+          "hidden": false,
+          "reason": "Микула-посол Хвалибора при управе — пока жив, барон не бьёт (С4 лидер, крючок)"
+        }
+      ]
     }
   },
   "settlements": [
@@ -1846,6 +1853,45 @@
         "loyalty_penalty": 55,
         "loyalty_bonus": 7,
         "total": 42
+      }
+    },
+    {
+      "name": "Уровень угрозы",
+      "area": "Уровень угрозы",
+      "population": null,
+      "growth": null,
+      "med_growth": null,
+      "houses": null,
+      "staff": [],
+      "buildings": [],
+      "promysly": [],
+      "income": [],
+      "expenses_np": [],
+      "stash": [],
+      "loyalty": null,
+      "faith": null,
+      "might": {
+        "total": 0,
+        "fighters": 0,
+        "fighters_sum": 0.0,
+        "units": [],
+        "loyalty": 0,
+        "loyalty_pct": 0,
+        "defense_pct": 10,
+        "cult_war_pct": 0,
+        "tags_pct": 0,
+        "tag_sum": 0,
+        "tag_list": [],
+        "sum_pct": 10,
+        "mult": 1.1,
+        "fighters_src": "стража 0",
+        "neutral": false
+      },
+      "eff_breakdown": {
+        "base": 90,
+        "loyalty_penalty": 0,
+        "loyalty_bonus": 0,
+        "total": 90
       }
     }
   ]
