@@ -71,12 +71,16 @@
       {
         "type": "internal",
         "from": "Былицы",
-        "to": "Кочевье"
+        "to": "Кочевье",
+        "own": true,
+        "player": "danil"
       },
       {
         "type": "internal",
         "from": "Былицы",
-        "to": "Каменка"
+        "to": "Каменка",
+        "own": true,
+        "player": "danil"
       },
       {
         "type": "edge",
@@ -108,22 +112,30 @@
       {
         "type": "internal",
         "from": "Ковыльные Стойбища",
-        "to": "Кочевье"
+        "to": "Кочевье",
+        "own": true,
+        "player": "danil"
       },
       {
         "type": "internal",
         "from": "Ковыльные Стойбища",
-        "to": "Ковыльные Стойбища-Ближнее"
+        "to": "Ковыльные Стойбища-Ближнее",
+        "own": true,
+        "player": "danil"
       },
       {
         "type": "internal",
         "from": "Каменка",
-        "to": "Кочевье"
+        "to": "Кочевье",
+        "own": true,
+        "player": "danil"
       },
       {
         "type": "internal",
         "from": "Каменка",
-        "to": "Ковыльные Стойбища"
+        "to": "Ковыльные Стойбища",
+        "own": true,
+        "player": "danil"
       },
       {
         "type": "edge",

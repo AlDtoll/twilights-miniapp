@@ -50,12 +50,16 @@
       {
         "type": "internal",
         "from": "Утёсная гавань",
-        "to": "Рудный двор"
+        "to": "Рудный двор",
+        "own": true,
+        "player": "valter"
       },
       {
         "type": "internal",
         "from": "Утёсная гавань",
-        "to": "Мыс Стража"
+        "to": "Мыс Стража",
+        "own": true,
+        "player": "valter"
       },
       {
         "type": "edge",
