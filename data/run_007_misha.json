@@ -295,6 +295,10 @@
       {
         "label": "Обоз с образом Айдана в Гостиный Порт (телега, сопровождение стражи 3-4 бойца в пути ~5-6 дней, утварь для показа братчине, дары старейшинам)",
         "amount": 700
+      },
+      {
+        "label": "Стройка: Соляная хижина",
+        "amount": 5000
       }
     ],
     "income_by": {
@@ -421,15 +425,15 @@
     },
     "total_income": 61043,
     "total_expenses": 48835,
-    "balance": 17091
+    "balance": 12091
   },
   "buildings": {
     "slots": {
       "base": 2,
       "extra": 0,
-      "used": 0,
+      "used": 1,
       "max_extra": 2,
-      "free": 2
+      "free": 1
     },
     "buildings": [
       {
@@ -484,6 +488,14 @@
         "name": "Таверна",
         "cost": 5000,
         "status": "✅ готова (С4)",
+        "maint": 250,
+        "rate": 5,
+        "hands": 0
+      },
+      {
+        "name": "Соляная хижина",
+        "cost": 5000,
+        "status": "🔨 С5 (1/1 сл)",
         "maint": 250,
         "rate": 5,
         "hands": 0
@@ -1062,6 +1074,14 @@
           "maint": 250,
           "rate": 5,
           "hands": 0
+        },
+        {
+          "name": "Соляная хижина",
+          "cost": 5000,
+          "status": "🔨 С5 (1/1 сл)",
+          "maint": 250,
+          "rate": 5,
+          "hands": 0
         }
       ],
       "promysly": [
@@ -1173,9 +1193,9 @@
         "reasons": []
       },
       "might": {
-        "total": 20,
-        "fighters": 11,
-        "fighters_sum": 11.0,
+        "total": 119,
+        "fighters": 63,
+        "fighters_sum": 63.0,
         "units": [],
         "loyalty": 8,
         "loyalty_pct": 80,
@@ -1186,7 +1206,7 @@
         "tag_list": [],
         "sum_pct": 90,
         "mult": 1.9,
-        "fighters_src": "стража 11",
+        "fighters_src": "стража 11 + ополч. 52",
         "neutral": false
       },
       "eff_breakdown": {
@@ -1366,9 +1386,9 @@
         ]
       },
       "might": {
-        "total": 7,
-        "fighters": 5,
-        "fighters_sum": 5.0,
+        "total": 40,
+        "fighters": 27,
+        "fighters_sum": 27.0,
         "units": [],
         "loyalty": 4,
         "loyalty_pct": 40,
@@ -1379,7 +1399,7 @@
         "tag_list": [],
         "sum_pct": 50,
         "mult": 1.5,
-        "fighters_src": "стража 5",
+        "fighters_src": "стража 5 + ополч. 22",
         "neutral": false
       },
       "eff_breakdown": {

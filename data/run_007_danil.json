@@ -1300,9 +1300,9 @@
         ]
       },
       "might": {
-        "total": 12,
-        "fighters": 11,
-        "fighters_sum": 11.0,
+        "total": 50,
+        "fighters": 46,
+        "fighters_sum": 46.0,
         "units": [],
         "loyalty": -1,
         "loyalty_pct": -10,
@@ -1313,7 +1313,7 @@
         "tag_list": [],
         "sum_pct": 10,
         "mult": 1.1,
-        "fighters_src": "стража 11",
+        "fighters_src": "стража 11 + ополч. 35",
         "neutral": false
       },
       "eff_breakdown": {
@@ -1439,9 +1439,9 @@
         ]
       },
       "might": {
-        "total": 4,
-        "fighters": 4,
-        "fighters_sum": 4.0,
+        "total": 27,
+        "fighters": 27,
+        "fighters_sum": 27.0,
         "units": [],
         "loyalty": -2,
         "loyalty_pct": -20,
@@ -1452,7 +1452,7 @@
         "tag_list": [],
         "sum_pct": 0,
         "mult": 1.0,
-        "fighters_src": "стража 4",
+        "fighters_src": "стража 4 + ополч. 23",
         "neutral": false
       },
       "eff_breakdown": {
@@ -1586,9 +1586,9 @@
         "reasons": []
       },
       "might": {
-        "total": 2,
-        "fighters": 3,
-        "fighters_sum": 3.0,
+        "total": 8,
+        "fighters": 10,
+        "fighters_sum": 10.0,
         "units": [],
         "loyalty": -3,
         "loyalty_pct": -30,
@@ -1599,7 +1599,7 @@
         "tag_list": [],
         "sum_pct": -20,
         "mult": 0.8,
-        "fighters_src": "стража 3",
+        "fighters_src": "стража 3 + ополч. 7",
         "neutral": false
       },
       "eff_breakdown": {
@@ -1728,9 +1728,9 @@
         "reasons": []
       },
       "might": {
-        "total": 1,
-        "fighters": 3,
-        "fighters_sum": 3.0,
+        "total": 7,
+        "fighters": 13,
+        "fighters_sum": 13.0,
         "units": [],
         "loyalty": -5,
         "loyalty_pct": -50,
@@ -1741,7 +1741,7 @@
         "tag_list": [],
         "sum_pct": -40,
         "mult": 0.6,
-        "fighters_src": "стража 3",
+        "fighters_src": "стража 3 + ополч. 10",
         "neutral": false
       },
       "eff_breakdown": {
@@ -1871,9 +1871,9 @@
         "reasons": []
       },
       "might": {
-        "total": 6,
-        "fighters": 12,
-        "fighters_sum": 12.0,
+        "total": 25,
+        "fighters": 51,
+        "fighters_sum": 51.0,
         "units": [],
         "loyalty": -6,
         "loyalty_pct": -60,
@@ -1884,7 +1884,7 @@
         "tag_list": [],
         "sum_pct": -50,
         "mult": 0.5,
-        "fighters_src": "стража 12",
+        "fighters_src": "стража 12 + ополч. 39",
         "neutral": false
       },
       "eff_breakdown": {
@@ -1923,7 +1923,7 @@
         "tag_list": [],
         "sum_pct": 10,
         "mult": 1.1,
-        "fighters_src": "стража 0",
+        "fighters_src": "нет бойцов",
         "neutral": false
       },
       "eff_breakdown": {

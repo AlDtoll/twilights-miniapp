@@ -70,7 +70,85 @@
             ]
           }
         ],
-        "tiles": []
+        "tiles": [
+          {
+            "x": 0,
+            "y": 0,
+            "col": 1,
+            "row": 4,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 0,
+            "y": 1,
+            "col": 1,
+            "row": 3,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 0,
+            "y": 2,
+            "col": 1,
+            "row": 2,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 0,
+            "y": 3,
+            "col": 1,
+            "row": 1,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 1,
+            "y": 0,
+            "col": 2,
+            "row": 4,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 1,
+            "y": 3,
+            "col": 2,
+            "row": 1,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 2,
+            "y": 0,
+            "col": 3,
+            "row": 4,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 2,
+            "y": 3,
+            "col": 3,
+            "row": 1,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 3,
+            "y": 0,
+            "col": 4,
+            "row": 4,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 3,
+            "y": 2,
+            "col": 4,
+            "row": 2,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 3,
+            "y": 3,
+            "col": 4,
+            "row": 1,
+            "terrain": "t-forest-thicket"
+          }
+        ]
       },
       "settlements": [
         {
@@ -135,7 +213,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополчение ~2% от 500",
+            "fighters_src": "ополч. 10",
             "neutral": true
           },
           "buildings": []
@@ -228,7 +306,43 @@
             "sea": true
           }
         ],
-        "tiles": []
+        "tiles": [
+          {
+            "x": 0,
+            "y": 0,
+            "col": 1,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 0,
+            "y": 1,
+            "col": 1,
+            "row": 3,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 0,
+            "y": 3,
+            "col": 1,
+            "row": 1,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 1,
+            "y": 0,
+            "col": 2,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 1,
+            "y": 3,
+            "col": 2,
+            "row": 1,
+            "terrain": "t-meadow"
+          }
+        ]
       },
       "settlements": [
         {
@@ -292,9 +406,9 @@
             "reasons": []
           },
           "might": {
-            "total": 22,
-            "fighters": 17,
-            "fighters_sum": 17.0,
+            "total": 44,
+            "fighters": 34,
+            "fighters_sum": 34.0,
             "units": [],
             "loyalty": 2,
             "loyalty_pct": 20,
@@ -305,7 +419,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополчение ~2% от 850",
+            "fighters_src": "ополч. 34",
             "neutral": true
           },
           "buildings": []
@@ -371,9 +485,9 @@
             "reasons": []
           },
           "might": {
-            "total": 13,
-            "fighters": 10,
-            "fighters_sum": 10.0,
+            "total": 26,
+            "fighters": 20,
+            "fighters_sum": 20.0,
             "units": [],
             "loyalty": 2,
             "loyalty_pct": 20,
@@ -384,7 +498,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополчение ~2% от 500",
+            "fighters_src": "ополч. 20",
             "neutral": true
           },
           "buildings": []
@@ -450,9 +564,9 @@
             "reasons": []
           },
           "might": {
-            "total": 16,
-            "fighters": 13,
-            "fighters_sum": 13.0,
+            "total": 33,
+            "fighters": 26,
+            "fighters_sum": 26.0,
             "units": [],
             "loyalty": 2,
             "loyalty_pct": 20,
@@ -463,7 +577,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополчение ~2% от 650",
+            "fighters_src": "ополч. 26",
             "neutral": true
           },
           "buildings": []
@@ -680,9 +794,9 @@
             ]
           },
           "might": {
-            "total": 14,
-            "fighters": 12,
-            "fighters_sum": 12.0,
+            "total": 43,
+            "fighters": 36,
+            "fighters_sum": 36.0,
             "units": [],
             "loyalty": 1,
             "loyalty_pct": 10,
@@ -693,7 +807,7 @@
             "tag_list": [],
             "sum_pct": 20,
             "mult": 1.2,
-            "fighters_src": "ополчение ~2% от 600",
+            "fighters_src": "ополч. 36",
             "neutral": true
           },
           "buildings": []
@@ -751,9 +865,9 @@
             ]
           },
           "might": {
-            "total": 4,
-            "fighters": 4,
-            "fighters_sum": 4.0,
+            "total": 14,
+            "fighters": 12,
+            "fighters_sum": 12.0,
             "units": [],
             "loyalty": 1,
             "loyalty_pct": 10,
@@ -764,7 +878,7 @@
             "tag_list": [],
             "sum_pct": 20,
             "mult": 1.2,
-            "fighters_src": "ополчение ~2% от 200",
+            "fighters_src": "ополч. 12",
             "neutral": true
           },
           "buildings": []
@@ -840,7 +954,57 @@
             ]
           }
         ],
-        "tiles": []
+        "tiles": [
+          {
+            "x": 1,
+            "y": 1,
+            "col": 2,
+            "row": 3,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 1,
+            "y": 3,
+            "col": 2,
+            "row": 1,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 2,
+            "y": 2,
+            "col": 3,
+            "row": 2,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "col": 1,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 0,
+            "y": 3,
+            "col": 1,
+            "row": 1,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 3,
+            "y": 0,
+            "col": 4,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 3,
+            "y": 3,
+            "col": 4,
+            "row": 1,
+            "terrain": "t-meadow"
+          }
+        ]
       },
       "settlements": [
         {
@@ -904,9 +1068,9 @@
             ]
           },
           "might": {
-            "total": 1,
-            "fighters": 1,
-            "fighters_sum": 1.0,
+            "total": 19,
+            "fighters": 15,
+            "fighters_sum": 15.0,
             "units": [],
             "loyalty": 1,
             "loyalty_pct": 10,
@@ -917,7 +1081,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополчение ~2% от 50",
+            "fighters_src": "ополч. 15",
             "neutral": true
           },
           "buildings": []
@@ -967,7 +1131,78 @@
             ]
           }
         ],
-        "tiles": []
+        "tiles": [
+          {
+            "x": 0,
+            "y": 0,
+            "col": 1,
+            "row": 4,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 0,
+            "y": 1,
+            "col": 1,
+            "row": 3,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 0,
+            "y": 3,
+            "col": 1,
+            "row": 1,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 1,
+            "y": 0,
+            "col": 2,
+            "row": 4,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 1,
+            "y": 3,
+            "col": 2,
+            "row": 1,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 2,
+            "y": 0,
+            "col": 3,
+            "row": 4,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 2,
+            "y": 3,
+            "col": 3,
+            "row": 1,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 3,
+            "y": 0,
+            "col": 4,
+            "row": 4,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 3,
+            "y": 2,
+            "col": 4,
+            "row": 2,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 3,
+            "y": 3,
+            "col": 4,
+            "row": 1,
+            "terrain": "t-mountain"
+          }
+        ]
       },
       "settlements": [
         {
@@ -1053,7 +1288,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополчение ~2% от 400",
+            "fighters_src": "ополч. 8",
             "neutral": true
           },
           "buildings": []
@@ -1194,7 +1429,71 @@
             ]
           }
         ],
-        "tiles": []
+        "tiles": [
+          {
+            "x": 0,
+            "y": 0,
+            "col": 1,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 0,
+            "y": 1,
+            "col": 1,
+            "row": 3,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 1,
+            "y": 0,
+            "col": 2,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 1,
+            "y": 1,
+            "col": 2,
+            "row": 3,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 2,
+            "y": 0,
+            "col": 3,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 2,
+            "y": 1,
+            "col": 3,
+            "row": 3,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 3,
+            "y": 0,
+            "col": 4,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 3,
+            "y": 1,
+            "col": 4,
+            "row": 3,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 3,
+            "y": 2,
+            "col": 4,
+            "row": 2,
+            "terrain": "t-meadow"
+          }
+        ]
       },
       "settlements": [
         {
@@ -1260,9 +1559,9 @@
             "reasons": []
           },
           "might": {
-            "total": 26,
-            "fighters": 20,
-            "fighters_sum": 20.0,
+            "total": 91,
+            "fighters": 70,
+            "fighters_sum": 70.0,
             "units": [],
             "loyalty": 2,
             "loyalty_pct": 20,
@@ -1273,7 +1572,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополчение ~2% от 1000",
+            "fighters_src": "ополч. 70",
             "neutral": true
           },
           "buildings": []
@@ -1335,9 +1634,9 @@
             "reasons": []
           },
           "might": {
-            "total": 13,
-            "fighters": 10,
-            "fighters_sum": 10.0,
+            "total": 45,
+            "fighters": 35,
+            "fighters_sum": 35.0,
             "units": [],
             "loyalty": 2,
             "loyalty_pct": 20,
@@ -1348,7 +1647,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополчение ~2% от 500",
+            "fighters_src": "ополч. 35",
             "neutral": true
           },
           "buildings": []
@@ -1411,7 +1710,43 @@
             ]
           }
         ],
-        "tiles": []
+        "tiles": [
+          {
+            "x": 0,
+            "y": 0,
+            "col": 1,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 0,
+            "y": 3,
+            "col": 1,
+            "row": 1,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 3,
+            "y": 0,
+            "col": 4,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 3,
+            "y": 3,
+            "col": 4,
+            "row": 1,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 0,
+            "y": 1,
+            "col": 1,
+            "row": 3,
+            "terrain": "t-meadow"
+          }
+        ]
       },
       "settlements": [
         {
@@ -1467,9 +1802,9 @@
             ]
           },
           "might": {
-            "total": 12,
-            "fighters": 10,
-            "fighters_sum": 10.0,
+            "total": 36,
+            "fighters": 30,
+            "fighters_sum": 30.0,
             "units": [],
             "loyalty": 1,
             "loyalty_pct": 10,
@@ -1480,7 +1815,7 @@
             "tag_list": [],
             "sum_pct": 20,
             "mult": 1.2,
-            "fighters_src": "ополчение ~2% от 500",
+            "fighters_src": "ополч. 30",
             "neutral": true
           },
           "buildings": []
@@ -1621,7 +1956,78 @@
             "to": "Кремневая Гряда-Нижняя"
           }
         ],
-        "tiles": []
+        "tiles": [
+          {
+            "x": 0,
+            "y": 0,
+            "col": 1,
+            "row": 4,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 0,
+            "y": 1,
+            "col": 1,
+            "row": 3,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 0,
+            "y": 2,
+            "col": 1,
+            "row": 2,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 1,
+            "y": 1,
+            "col": 2,
+            "row": 3,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 1,
+            "y": 3,
+            "col": 2,
+            "row": 1,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 2,
+            "y": 0,
+            "col": 3,
+            "row": 4,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 2,
+            "y": 1,
+            "col": 3,
+            "row": 3,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 2,
+            "y": 3,
+            "col": 3,
+            "row": 1,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 3,
+            "y": 0,
+            "col": 4,
+            "row": 4,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 3,
+            "y": 3,
+            "col": 4,
+            "row": 1,
+            "terrain": "t-mountain"
+          }
+        ]
       },
       "settlements": [
         {
@@ -1681,9 +2087,9 @@
             "reasons": []
           },
           "might": {
-            "total": 10,
-            "fighters": 8,
-            "fighters_sum": 8.0,
+            "total": 20,
+            "fighters": 16,
+            "fighters_sum": 16.0,
             "units": [],
             "loyalty": 2,
             "loyalty_pct": 20,
@@ -1694,7 +2100,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополчение ~2% от 400",
+            "fighters_src": "ополч. 16",
             "neutral": true
           },
           "buildings": []
@@ -1756,9 +2162,9 @@
             "reasons": []
           },
           "might": {
-            "total": 3,
-            "fighters": 3,
-            "fighters_sum": 3.0,
+            "total": 7,
+            "fighters": 6,
+            "fighters_sum": 6.0,
             "units": [],
             "loyalty": 2,
             "loyalty_pct": 20,
@@ -1769,7 +2175,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополчение ~2% от 150",
+            "fighters_src": "ополч. 6",
             "neutral": true
           },
           "buildings": []
@@ -1831,9 +2237,9 @@
             "reasons": []
           },
           "might": {
-            "total": 6,
-            "fighters": 5,
-            "fighters_sum": 5.0,
+            "total": 13,
+            "fighters": 10,
+            "fighters_sum": 10.0,
             "units": [],
             "loyalty": 2,
             "loyalty_pct": 20,
@@ -1844,7 +2250,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополчение ~2% от 250",
+            "fighters_src": "ополч. 10",
             "neutral": true
           },
           "buildings": []
@@ -1959,7 +2365,92 @@
             "to": "Междолесье-Ясенево"
           }
         ],
-        "tiles": []
+        "tiles": [
+          {
+            "x": 0,
+            "y": 0,
+            "col": 1,
+            "row": 4,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 0,
+            "y": 1,
+            "col": 1,
+            "row": 3,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 0,
+            "y": 3,
+            "col": 1,
+            "row": 1,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 1,
+            "y": 0,
+            "col": 2,
+            "row": 4,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 1,
+            "y": 1,
+            "col": 2,
+            "row": 3,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 1,
+            "y": 3,
+            "col": 2,
+            "row": 1,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 2,
+            "y": 0,
+            "col": 3,
+            "row": 4,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 2,
+            "y": 2,
+            "col": 3,
+            "row": 2,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 2,
+            "y": 3,
+            "col": 3,
+            "row": 1,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 3,
+            "y": 0,
+            "col": 4,
+            "row": 4,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 3,
+            "y": 2,
+            "col": 4,
+            "row": 2,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 3,
+            "y": 3,
+            "col": 4,
+            "row": 1,
+            "terrain": "t-forest-thicket"
+          }
+        ]
       },
       "settlements": [
         {
@@ -2011,9 +2502,9 @@
             "reasons": []
           },
           "might": {
-            "total": 13,
-            "fighters": 10,
-            "fighters_sum": 10.0,
+            "total": 39,
+            "fighters": 30,
+            "fighters_sum": 30.0,
             "units": [],
             "loyalty": 2,
             "loyalty_pct": 20,
@@ -2024,7 +2515,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополчение ~2% от 500",
+            "fighters_src": "ополч. 30",
             "neutral": true
           },
           "buildings": []
@@ -2078,9 +2569,9 @@
             "reasons": []
           },
           "might": {
-            "total": 7,
-            "fighters": 6,
-            "fighters_sum": 6.0,
+            "total": 23,
+            "fighters": 18,
+            "fighters_sum": 18.0,
             "units": [],
             "loyalty": 2,
             "loyalty_pct": 20,
@@ -2091,7 +2582,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополчение ~2% от 300",
+            "fighters_src": "ополч. 18",
             "neutral": true
           },
           "buildings": []
@@ -2180,7 +2671,71 @@
             "to": "Мшары-Мшистое"
           }
         ],
-        "tiles": []
+        "tiles": [
+          {
+            "x": 0,
+            "y": 0,
+            "col": 1,
+            "row": 4,
+            "terrain": "t-swamp"
+          },
+          {
+            "x": 0,
+            "y": 1,
+            "col": 1,
+            "row": 3,
+            "terrain": "t-swamp"
+          },
+          {
+            "x": 0,
+            "y": 3,
+            "col": 1,
+            "row": 1,
+            "terrain": "t-swamp"
+          },
+          {
+            "x": 1,
+            "y": 0,
+            "col": 2,
+            "row": 4,
+            "terrain": "t-swamp"
+          },
+          {
+            "x": 1,
+            "y": 1,
+            "col": 2,
+            "row": 3,
+            "terrain": "t-swamp"
+          },
+          {
+            "x": 2,
+            "y": 0,
+            "col": 3,
+            "row": 4,
+            "terrain": "t-swamp"
+          },
+          {
+            "x": 2,
+            "y": 2,
+            "col": 3,
+            "row": 2,
+            "terrain": "t-swamp"
+          },
+          {
+            "x": 3,
+            "y": 0,
+            "col": 4,
+            "row": 4,
+            "terrain": "t-swamp"
+          },
+          {
+            "x": 3,
+            "y": 3,
+            "col": 4,
+            "row": 1,
+            "terrain": "t-swamp"
+          }
+        ]
       },
       "settlements": [
         {
@@ -2249,7 +2804,7 @@
             "tag_list": [],
             "sum_pct": 20,
             "mult": 1.2,
-            "fighters_src": "ополчение ~2% от 100",
+            "fighters_src": "ополч. 2",
             "neutral": true
           },
           "buildings": []
@@ -2320,7 +2875,7 @@
             "tag_list": [],
             "sum_pct": 20,
             "mult": 1.2,
-            "fighters_src": "ополчение ~2% от 100",
+            "fighters_src": "ополч. 2",
             "neutral": true
           },
           "buildings": []
@@ -2409,7 +2964,92 @@
             ]
           }
         ],
-        "tiles": []
+        "tiles": [
+          {
+            "x": 0,
+            "y": 0,
+            "col": 1,
+            "row": 4,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 0,
+            "y": 1,
+            "col": 1,
+            "row": 3,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 0,
+            "y": 2,
+            "col": 1,
+            "row": 2,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 0,
+            "y": 3,
+            "col": 1,
+            "row": 1,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 1,
+            "y": 0,
+            "col": 2,
+            "row": 4,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 1,
+            "y": 3,
+            "col": 2,
+            "row": 1,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 2,
+            "y": 0,
+            "col": 3,
+            "row": 4,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 2,
+            "y": 3,
+            "col": 3,
+            "row": 1,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 3,
+            "y": 0,
+            "col": 4,
+            "row": 4,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 3,
+            "y": 1,
+            "col": 4,
+            "row": 3,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 3,
+            "y": 2,
+            "col": 4,
+            "row": 2,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 3,
+            "y": 3,
+            "col": 4,
+            "row": 1,
+            "terrain": "t-forest-thicket"
+          }
+        ]
       },
       "settlements": [
         {
@@ -2469,9 +3109,9 @@
             "reasons": []
           },
           "might": {
-            "total": 20,
-            "fighters": 16,
-            "fighters_sum": 16.0,
+            "total": 62,
+            "fighters": 48,
+            "fighters_sum": 48.0,
             "units": [],
             "loyalty": 2,
             "loyalty_pct": 20,
@@ -2482,7 +3122,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополчение ~2% от 800",
+            "fighters_src": "ополч. 48",
             "neutral": true
           },
           "buildings": []
@@ -2584,7 +3224,71 @@
             ]
           }
         ],
-        "tiles": []
+        "tiles": [
+          {
+            "x": 0,
+            "y": 2,
+            "col": 1,
+            "row": 2,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 0,
+            "y": 3,
+            "col": 1,
+            "row": 1,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 1,
+            "y": 0,
+            "col": 2,
+            "row": 4,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 1,
+            "y": 3,
+            "col": 2,
+            "row": 1,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 2,
+            "y": 0,
+            "col": 3,
+            "row": 4,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 2,
+            "y": 3,
+            "col": 3,
+            "row": 1,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 3,
+            "y": 0,
+            "col": 4,
+            "row": 4,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 3,
+            "y": 2,
+            "col": 4,
+            "row": 2,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 3,
+            "y": 3,
+            "col": 4,
+            "row": 1,
+            "terrain": "t-mountain"
+          }
+        ]
       },
       "settlements": [
         {
@@ -2661,7 +3365,7 @@
             "tag_list": [],
             "sum_pct": 20,
             "mult": 1.2,
-            "fighters_src": "ополчение ~2% от 50",
+            "fighters_src": "ополч. 1",
             "neutral": true
           },
           "buildings": []
@@ -2740,7 +3444,7 @@
             "tag_list": [],
             "sum_pct": 20,
             "mult": 1.2,
-            "fighters_src": "ополчение ~2% от 150",
+            "fighters_src": "ополч. 3",
             "neutral": true
           },
           "buildings": []
@@ -2816,7 +3520,78 @@
             "to": "Восточная полоса (роды малых родов)"
           }
         ],
-        "tiles": []
+        "tiles": [
+          {
+            "x": 0,
+            "y": 0,
+            "col": 1,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 0,
+            "y": 1,
+            "col": 1,
+            "row": 3,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 0,
+            "y": 2,
+            "col": 1,
+            "row": 2,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 1,
+            "y": 1,
+            "col": 2,
+            "row": 3,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 1,
+            "y": 3,
+            "col": 2,
+            "row": 1,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 2,
+            "y": 0,
+            "col": 3,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 2,
+            "y": 1,
+            "col": 3,
+            "row": 3,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 2,
+            "y": 3,
+            "col": 3,
+            "row": 1,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 3,
+            "y": 0,
+            "col": 4,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 3,
+            "y": 3,
+            "col": 4,
+            "row": 1,
+            "terrain": "t-meadow"
+          }
+        ]
       },
       "settlements": [
         {
@@ -2882,9 +3657,9 @@
             "reasons": []
           },
           "might": {
-            "total": 13,
-            "fighters": 10,
-            "fighters_sum": 10.0,
+            "total": 32,
+            "fighters": 25,
+            "fighters_sum": 25.0,
             "units": [],
             "loyalty": 2,
             "loyalty_pct": 20,
@@ -2895,7 +3670,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополчение ~2% от 500",
+            "fighters_src": "ополч. 25",
             "neutral": true
           },
           "buildings": []
@@ -2963,9 +3738,9 @@
             "reasons": []
           },
           "might": {
-            "total": 18,
-            "fighters": 14,
-            "fighters_sum": 14.0,
+            "total": 54,
+            "fighters": 42,
+            "fighters_sum": 42.0,
             "units": [],
             "loyalty": 2,
             "loyalty_pct": 20,
@@ -2976,7 +3751,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополчение ~2% от 700",
+            "fighters_src": "ополч. 42",
             "neutral": true
           },
           "buildings": []
@@ -3038,9 +3813,9 @@
             "reasons": []
           },
           "might": {
-            "total": 20,
-            "fighters": 16,
-            "fighters_sum": 16.0,
+            "total": 62,
+            "fighters": 48,
+            "fighters_sum": 48.0,
             "units": [],
             "loyalty": 2,
             "loyalty_pct": 20,
@@ -3051,7 +3826,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополчение ~2% от 800",
+            "fighters_src": "ополч. 48",
             "neutral": true
           },
           "buildings": []
@@ -3144,7 +3919,57 @@
             ]
           }
         ],
-        "tiles": []
+        "tiles": [
+          {
+            "x": 0,
+            "y": 0,
+            "col": 1,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 0,
+            "y": 1,
+            "col": 1,
+            "row": 3,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 0,
+            "y": 2,
+            "col": 1,
+            "row": 2,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 0,
+            "y": 3,
+            "col": 1,
+            "row": 1,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 1,
+            "y": 0,
+            "col": 2,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 1,
+            "y": 1,
+            "col": 2,
+            "row": 3,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 1,
+            "y": 3,
+            "col": 2,
+            "row": 1,
+            "terrain": "t-meadow"
+          }
+        ]
       },
       "settlements": [
         {
@@ -3208,9 +4033,9 @@
             "reasons": []
           },
           "might": {
-            "total": 18,
-            "fighters": 14,
-            "fighters_sum": 14.0,
+            "total": 36,
+            "fighters": 28,
+            "fighters_sum": 28.0,
             "units": [],
             "loyalty": 2,
             "loyalty_pct": 20,
@@ -3221,7 +4046,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополчение ~2% от 700",
+            "fighters_src": "ополч. 28",
             "neutral": true
           },
           "buildings": []
@@ -3275,9 +4100,9 @@
             "reasons": []
           },
           "might": {
-            "total": 13,
-            "fighters": 10,
-            "fighters_sum": 10.0,
+            "total": 26,
+            "fighters": 20,
+            "fighters_sum": 20.0,
             "units": [],
             "loyalty": 2,
             "loyalty_pct": 20,
@@ -3288,7 +4113,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополчение ~2% от 500",
+            "fighters_src": "ополч. 20",
             "neutral": true
           },
           "buildings": []
@@ -3371,7 +4196,57 @@
             "sea": true
           }
         ],
-        "tiles": []
+        "tiles": [
+          {
+            "x": 0,
+            "y": 0,
+            "col": 1,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 0,
+            "y": 1,
+            "col": 1,
+            "row": 3,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 0,
+            "y": 2,
+            "col": 1,
+            "row": 2,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 0,
+            "y": 3,
+            "col": 1,
+            "row": 1,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 1,
+            "y": 0,
+            "col": 2,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 1,
+            "y": 3,
+            "col": 2,
+            "row": 1,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 2,
+            "y": 0,
+            "col": 3,
+            "row": 4,
+            "terrain": "t-meadow"
+          }
+        ]
       },
       "settlements": [
         {
@@ -3435,9 +4310,9 @@
             "reasons": []
           },
           "might": {
-            "total": 33,
-            "fighters": 26,
-            "fighters_sum": 26.0,
+            "total": 52,
+            "fighters": 40,
+            "fighters_sum": 40.0,
             "units": [],
             "loyalty": 2,
             "loyalty_pct": 20,
@@ -3448,7 +4323,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополчение ~2% от 1300",
+            "fighters_src": "ополч. 40",
             "neutral": true
           },
           "buildings": []
@@ -3508,9 +4383,9 @@
             "reasons": []
           },
           "might": {
-            "total": 18,
-            "fighters": 14,
-            "fighters_sum": 14.0,
+            "total": 39,
+            "fighters": 30,
+            "fighters_sum": 30.0,
             "units": [],
             "loyalty": 2,
             "loyalty_pct": 20,
@@ -3521,7 +4396,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополчение ~2% от 700",
+            "fighters_src": "ополч. 30",
             "neutral": true
           },
           "buildings": []
@@ -3610,7 +4485,64 @@
             ]
           }
         ],
-        "tiles": []
+        "tiles": [
+          {
+            "x": 0,
+            "y": 0,
+            "col": 1,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 0,
+            "y": 3,
+            "col": 1,
+            "row": 1,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 1,
+            "y": 0,
+            "col": 2,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 1,
+            "y": 1,
+            "col": 2,
+            "row": 3,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 2,
+            "y": 0,
+            "col": 3,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 2,
+            "y": 2,
+            "col": 3,
+            "row": 2,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 3,
+            "y": 0,
+            "col": 4,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 3,
+            "y": 3,
+            "col": 4,
+            "row": 1,
+            "terrain": "t-meadow"
+          }
+        ]
       },
       "settlements": [
         {
@@ -3670,9 +4602,9 @@
             "reasons": []
           },
           "might": {
-            "total": 5,
-            "fighters": 4,
-            "fighters_sum": 4.0,
+            "total": 10,
+            "fighters": 8,
+            "fighters_sum": 8.0,
             "units": [],
             "loyalty": 2,
             "loyalty_pct": 20,
@@ -3683,7 +4615,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополчение ~2% от 200",
+            "fighters_src": "ополч. 8",
             "neutral": true
           },
           "buildings": []
@@ -3745,9 +4677,9 @@
             "reasons": []
           },
           "might": {
-            "total": 7,
-            "fighters": 6,
-            "fighters_sum": 6.0,
+            "total": 15,
+            "fighters": 12,
+            "fighters_sum": 12.0,
             "units": [],
             "loyalty": 2,
             "loyalty_pct": 20,
@@ -3758,7 +4690,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополчение ~2% от 300",
+            "fighters_src": "ополч. 12",
             "neutral": true
           },
           "buildings": []
@@ -3873,7 +4805,64 @@
             "to": "Кочевая полоса Ахьяр-иле"
           }
         ],
-        "tiles": []
+        "tiles": [
+          {
+            "x": 0,
+            "y": 0,
+            "col": 1,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 0,
+            "y": 3,
+            "col": 1,
+            "row": 1,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 1,
+            "y": 0,
+            "col": 2,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 1,
+            "y": 1,
+            "col": 2,
+            "row": 3,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 2,
+            "y": 0,
+            "col": 3,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 2,
+            "y": 2,
+            "col": 3,
+            "row": 2,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 3,
+            "y": 0,
+            "col": 4,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 3,
+            "y": 3,
+            "col": 4,
+            "row": 1,
+            "terrain": "t-meadow"
+          }
+        ]
       },
       "settlements": [
         {
@@ -3939,9 +4928,9 @@
             "reasons": []
           },
           "might": {
-            "total": 13,
-            "fighters": 10,
-            "fighters_sum": 10.0,
+            "total": 39,
+            "fighters": 30,
+            "fighters_sum": 30.0,
             "units": [],
             "loyalty": 2,
             "loyalty_pct": 20,
@@ -3952,7 +4941,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополчение ~2% от 500",
+            "fighters_src": "ополч. 30",
             "neutral": true
           },
           "buildings": []
@@ -4020,9 +5009,9 @@
             "reasons": []
           },
           "might": {
-            "total": 10,
-            "fighters": 8,
-            "fighters_sum": 8.0,
+            "total": 31,
+            "fighters": 24,
+            "fighters_sum": 24.0,
             "units": [],
             "loyalty": 2,
             "loyalty_pct": 20,
@@ -4033,7 +5022,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополчение ~2% от 400",
+            "fighters_src": "ополч. 24",
             "neutral": true
           },
           "buildings": []
@@ -4122,7 +5111,64 @@
             ]
           }
         ],
-        "tiles": []
+        "tiles": [
+          {
+            "x": 0,
+            "y": 0,
+            "col": 1,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 0,
+            "y": 3,
+            "col": 1,
+            "row": 1,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 1,
+            "y": 0,
+            "col": 2,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 1,
+            "y": 1,
+            "col": 2,
+            "row": 3,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 2,
+            "y": 0,
+            "col": 3,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 2,
+            "y": 2,
+            "col": 3,
+            "row": 2,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 3,
+            "y": 0,
+            "col": 4,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 3,
+            "y": 3,
+            "col": 4,
+            "row": 1,
+            "terrain": "t-meadow"
+          }
+        ]
       },
       "settlements": [
         {
@@ -4182,9 +5228,9 @@
             "reasons": []
           },
           "might": {
-            "total": 11,
-            "fighters": 8,
-            "fighters_sum": 8.0,
+            "total": 28,
+            "fighters": 20,
+            "fighters_sum": 20.0,
             "units": [],
             "loyalty": 2,
             "loyalty_pct": 20,
@@ -4195,7 +5241,7 @@
             "tag_list": [],
             "sum_pct": 40,
             "mult": 1.4,
-            "fighters_src": "ополчение ~2% от 400",
+            "fighters_src": "ополч. 20",
             "neutral": true
           },
           "buildings": []
@@ -4263,9 +5309,9 @@
             "reasons": []
           },
           "might": {
-            "total": 22,
-            "fighters": 16,
-            "fighters_sum": 16.0,
+            "total": 67,
+            "fighters": 48,
+            "fighters_sum": 48.0,
             "units": [],
             "loyalty": 2,
             "loyalty_pct": 20,
@@ -4276,7 +5322,7 @@
             "tag_list": [],
             "sum_pct": 40,
             "mult": 1.4,
-            "fighters_src": "ополчение ~2% от 800",
+            "fighters_src": "ополч. 48",
             "neutral": true
           },
           "buildings": []
@@ -4352,7 +5398,92 @@
             ]
           }
         ],
-        "tiles": []
+        "tiles": [
+          {
+            "x": 0,
+            "y": 0,
+            "col": 1,
+            "row": 4,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 0,
+            "y": 1,
+            "col": 1,
+            "row": 3,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 0,
+            "y": 2,
+            "col": 1,
+            "row": 2,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 0,
+            "y": 3,
+            "col": 1,
+            "row": 1,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 1,
+            "y": 0,
+            "col": 2,
+            "row": 4,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 1,
+            "y": 3,
+            "col": 2,
+            "row": 1,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 2,
+            "y": 0,
+            "col": 3,
+            "row": 4,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 2,
+            "y": 3,
+            "col": 3,
+            "row": 1,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 3,
+            "y": 0,
+            "col": 4,
+            "row": 4,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 3,
+            "y": 1,
+            "col": 4,
+            "row": 3,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 3,
+            "y": 2,
+            "col": 4,
+            "row": 2,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 3,
+            "y": 3,
+            "col": 4,
+            "row": 1,
+            "terrain": "t-forest-thicket"
+          }
+        ]
       },
       "settlements": [
         {
@@ -4408,9 +5539,9 @@
             ]
           },
           "might": {
-            "total": 19,
-            "fighters": 16,
-            "fighters_sum": 16.0,
+            "total": 57,
+            "fighters": 48,
+            "fighters_sum": 48.0,
             "units": [],
             "loyalty": 1,
             "loyalty_pct": 10,
@@ -4421,7 +5552,7 @@
             "tag_list": [],
             "sum_pct": 20,
             "mult": 1.2,
-            "fighters_src": "ополчение ~2% от 800",
+            "fighters_src": "ополч. 48",
             "neutral": true
           },
           "buildings": []
@@ -4471,7 +5602,78 @@
             ]
           }
         ],
-        "tiles": []
+        "tiles": [
+          {
+            "x": 0,
+            "y": 0,
+            "col": 1,
+            "row": 4,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 0,
+            "y": 1,
+            "col": 1,
+            "row": 3,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 0,
+            "y": 3,
+            "col": 1,
+            "row": 1,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 1,
+            "y": 0,
+            "col": 2,
+            "row": 4,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 1,
+            "y": 3,
+            "col": 2,
+            "row": 1,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 2,
+            "y": 0,
+            "col": 3,
+            "row": 4,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 2,
+            "y": 3,
+            "col": 3,
+            "row": 1,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 3,
+            "y": 0,
+            "col": 4,
+            "row": 4,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 3,
+            "y": 1,
+            "col": 4,
+            "row": 3,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 3,
+            "y": 3,
+            "col": 4,
+            "row": 1,
+            "terrain": "t-mountain"
+          }
+        ]
       },
       "settlements": [
         {
@@ -4540,7 +5742,7 @@
             "tag_list": [],
             "sum_pct": 20,
             "mult": 1.2,
-            "fighters_src": "ополчение ~2% от 150",
+            "fighters_src": "ополч. 3",
             "neutral": true
           },
           "buildings": []
@@ -4616,7 +5818,57 @@
             ]
           }
         ],
-        "tiles": []
+        "tiles": [
+          {
+            "x": 0,
+            "y": 0,
+            "col": 1,
+            "row": 4,
+            "terrain": "t-evil"
+          },
+          {
+            "x": 0,
+            "y": 3,
+            "col": 1,
+            "row": 1,
+            "terrain": "t-evil"
+          },
+          {
+            "x": 1,
+            "y": 0,
+            "col": 2,
+            "row": 4,
+            "terrain": "t-evil"
+          },
+          {
+            "x": 2,
+            "y": 0,
+            "col": 3,
+            "row": 4,
+            "terrain": "t-evil"
+          },
+          {
+            "x": 3,
+            "y": 0,
+            "col": 4,
+            "row": 4,
+            "terrain": "t-evil"
+          },
+          {
+            "x": 3,
+            "y": 3,
+            "col": 4,
+            "row": 1,
+            "terrain": "t-evil"
+          },
+          {
+            "x": 3,
+            "y": 2,
+            "col": 4,
+            "row": 2,
+            "terrain": "t-meadow"
+          }
+        ]
       },
       "settlements": [
         {
@@ -4688,7 +5940,7 @@
             ],
             "sum_pct": 10,
             "mult": 1.1,
-            "fighters_src": "ополчение ~2% от 150",
+            "fighters_src": "ополч. 3",
             "neutral": true
           },
           "buildings": []
@@ -4751,7 +6003,85 @@
             ]
           }
         ],
-        "tiles": []
+        "tiles": [
+          {
+            "x": 0,
+            "y": 0,
+            "col": 1,
+            "row": 4,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 0,
+            "y": 1,
+            "col": 1,
+            "row": 3,
+            "terrain": "t-evil"
+          },
+          {
+            "x": 0,
+            "y": 3,
+            "col": 1,
+            "row": 1,
+            "terrain": "t-evil"
+          },
+          {
+            "x": 1,
+            "y": 0,
+            "col": 2,
+            "row": 4,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 1,
+            "y": 3,
+            "col": 2,
+            "row": 1,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 2,
+            "y": 0,
+            "col": 3,
+            "row": 4,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 2,
+            "y": 1,
+            "col": 3,
+            "row": 3,
+            "terrain": "t-evil"
+          },
+          {
+            "x": 2,
+            "y": 3,
+            "col": 3,
+            "row": 1,
+            "terrain": "t-evil"
+          },
+          {
+            "x": 3,
+            "y": 0,
+            "col": 4,
+            "row": 4,
+            "terrain": "t-evil"
+          },
+          {
+            "x": 3,
+            "y": 2,
+            "col": 4,
+            "row": 2,
+            "terrain": "t-evil"
+          },
+          {
+            "x": 3,
+            "y": 3,
+            "col": 4,
+            "row": 1,
+            "terrain": "t-mountain"
+          }
+        ]
       },
       "settlements": [
         {
@@ -4809,9 +6139,9 @@
             "reasons": []
           },
           "might": {
-            "total": 22,
-            "fighters": 16,
-            "fighters_sum": 16.0,
+            "total": 67,
+            "fighters": 48,
+            "fighters_sum": 48.0,
             "units": [],
             "loyalty": 2,
             "loyalty_pct": 20,
@@ -4822,7 +6152,7 @@
             "tag_list": [],
             "sum_pct": 40,
             "mult": 1.4,
-            "fighters_src": "ополчение ~2% от 800",
+            "fighters_src": "ополч. 48",
             "neutral": true
           },
           "buildings": []
@@ -4950,7 +6280,78 @@
             ]
           }
         ],
-        "tiles": []
+        "tiles": [
+          {
+            "x": 0,
+            "y": 0,
+            "col": 1,
+            "row": 4,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 0,
+            "y": 1,
+            "col": 1,
+            "row": 3,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 0,
+            "y": 2,
+            "col": 1,
+            "row": 2,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 0,
+            "y": 3,
+            "col": 1,
+            "row": 1,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 1,
+            "y": 0,
+            "col": 2,
+            "row": 4,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 1,
+            "y": 3,
+            "col": 2,
+            "row": 1,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 2,
+            "y": 0,
+            "col": 3,
+            "row": 4,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 2,
+            "y": 1,
+            "col": 3,
+            "row": 3,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 2,
+            "y": 3,
+            "col": 3,
+            "row": 1,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 3,
+            "y": 0,
+            "col": 4,
+            "row": 4,
+            "terrain": "t-mountain"
+          }
+        ]
       },
       "settlements": [
         {
@@ -5019,7 +6420,7 @@
             "tag_list": [],
             "sum_pct": 20,
             "mult": 1.2,
-            "fighters_src": "ополчение ~2% от 150",
+            "fighters_src": "ополч. 3",
             "neutral": true
           },
           "buildings": []
@@ -5086,7 +6487,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополчение ~2% от 50",
+            "fighters_src": "ополч. 1",
             "neutral": true
           },
           "buildings": []
@@ -5157,7 +6558,7 @@
             "tag_list": [],
             "sum_pct": 20,
             "mult": 1.2,
-            "fighters_src": "ополчение ~2% от 100",
+            "fighters_src": "ополч. 2",
             "neutral": true
           },
           "buildings": []
@@ -5223,7 +6624,78 @@
             "to": "Южные Предгорья-Северное"
           }
         ],
-        "tiles": []
+        "tiles": [
+          {
+            "x": 0,
+            "y": 0,
+            "col": 1,
+            "row": 4,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 0,
+            "y": 1,
+            "col": 1,
+            "row": 3,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 0,
+            "y": 3,
+            "col": 1,
+            "row": 1,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 1,
+            "y": 0,
+            "col": 2,
+            "row": 4,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 1,
+            "y": 3,
+            "col": 2,
+            "row": 1,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 2,
+            "y": 0,
+            "col": 3,
+            "row": 4,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 2,
+            "y": 2,
+            "col": 3,
+            "row": 2,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 2,
+            "y": 3,
+            "col": 3,
+            "row": 1,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 3,
+            "y": 0,
+            "col": 4,
+            "row": 4,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 3,
+            "y": 3,
+            "col": 4,
+            "row": 1,
+            "terrain": "t-mountain"
+          }
+        ]
       },
       "settlements": [
         {
@@ -5292,7 +6764,7 @@
             "tag_list": [],
             "sum_pct": 20,
             "mult": 1.2,
-            "fighters_src": "ополчение ~2% от 100",
+            "fighters_src": "ополч. 2",
             "neutral": true
           },
           "buildings": []
@@ -5363,7 +6835,7 @@
             "tag_list": [],
             "sum_pct": 20,
             "mult": 1.2,
-            "fighters_src": "ополчение ~2% от 300",
+            "fighters_src": "ополч. 6",
             "neutral": true
           },
           "buildings": []
@@ -5413,7 +6885,85 @@
             ]
           }
         ],
-        "tiles": []
+        "tiles": [
+          {
+            "x": 0,
+            "y": 0,
+            "col": 1,
+            "row": 4,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 0,
+            "y": 3,
+            "col": 1,
+            "row": 1,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 1,
+            "y": 0,
+            "col": 2,
+            "row": 4,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 1,
+            "y": 3,
+            "col": 2,
+            "row": 1,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 2,
+            "y": 0,
+            "col": 3,
+            "row": 4,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 2,
+            "y": 3,
+            "col": 3,
+            "row": 1,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 3,
+            "y": 0,
+            "col": 4,
+            "row": 4,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 3,
+            "y": 3,
+            "col": 4,
+            "row": 1,
+            "terrain": "t-mountain"
+          },
+          {
+            "x": 0,
+            "y": 1,
+            "col": 1,
+            "row": 3,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 3,
+            "y": 1,
+            "col": 4,
+            "row": 3,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 3,
+            "y": 2,
+            "col": 4,
+            "row": 2,
+            "terrain": "t-meadow"
+          }
+        ]
       },
       "settlements": [
         {
@@ -5482,7 +7032,7 @@
             "tag_list": [],
             "sum_pct": 20,
             "mult": 1.2,
-            "fighters_src": "ополчение ~2% от 300",
+            "fighters_src": "ополч. 6",
             "neutral": true
           },
           "buildings": []
