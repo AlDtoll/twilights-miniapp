@@ -425,7 +425,7 @@
       },
       "willpower": {
         "total": 2,
-        "left": 2
+        "left": 1
       }
     },
     "incidents": [
@@ -707,7 +707,7 @@
             "kind": "приём"
           }
         ],
-        "bank": 15,
+        "bank": 17,
         "ups": 1,
         "next_threshold": 12
       }
