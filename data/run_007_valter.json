@@ -62,6 +62,13 @@
         "player": "valter"
       },
       {
+        "type": "internal",
+        "from": "Рудный двор",
+        "to": "Мыс Стража",
+        "own": true,
+        "player": "valter"
+      },
+      {
         "type": "edge",
         "from": "Утёсная гавань",
         "to": "Гостиный Порт-Пристань",
