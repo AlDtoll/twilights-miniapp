@@ -90,7 +90,8 @@ function nextWave(){
   S.idx=0; S.accept=false; hud();
   document.getElementById('g-hint').textContent='Запомни…';
   document.getElementById('flash').textContent=S.seq.join(' ');
-  setTimeout(()=>{ document.getElementById('flash').textContent='?'; document.getElementById('g-hint').textContent='Повтори'; S.accept=true; },900+S.seq.length*200);
+  const showBase=+gameData.showBaseMs||2250, showStep=+gameData.showStepMs||500;
+  setTimeout(()=>{ document.getElementById('flash').textContent='?'; document.getElementById('g-hint').textContent='Повтори'; S.accept=true; },showBase+S.seq.length*showStep);
 }
 function tap(d){ if(!S.accept||S.done)return;
   if(d===S.seq[S.idx]){ S.idx++; document.getElementById('flash').textContent='✔'.repeat(S.idx);
