@@ -545,7 +545,21 @@
             "y": 2,
             "col": 3,
             "row": 2,
-            "terrain": "t-forest"
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 1,
+            "y": 1,
+            "col": 2,
+            "row": 3,
+            "terrain": "t-forest-thicket"
+          },
+          {
+            "x": 0,
+            "y": 2,
+            "col": 1,
+            "row": 2,
+            "terrain": "t-forest-thicket"
           }
         ]
       },
