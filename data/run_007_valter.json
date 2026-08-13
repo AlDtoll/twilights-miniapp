@@ -141,7 +141,7 @@
   "telegram": "@ValterTasadar",
   "season": "5",
   "season_name": "весна",
-  "active_phase": "adventure",
+  "active_phase": "adventure_done",
   "finance": {
     "start": 11444,
     "income": [
@@ -726,14 +726,14 @@
       {
         "name": "Стрелок (пороховое) (I)",
         "techniques": [],
-        "bank": 11,
+        "bank": 15,
         "ups": 0,
         "next_threshold": 10
       },
       {
         "name": "Адепт Фортуны (II)",
         "techniques": [],
-        "bank": 3,
+        "bank": 7,
         "ups": 1,
         "next_threshold": 12
       },
@@ -745,7 +745,7 @@
             "kind": "приём"
           }
         ],
-        "bank": 2,
+        "bank": 4,
         "ups": 2,
         "next_threshold": 14
       },
@@ -757,7 +757,7 @@
             "kind": "приём"
           }
         ],
-        "bank": 2,
+        "bank": 6,
         "ups": 1,
         "next_threshold": 12
       },
@@ -769,7 +769,7 @@
             "kind": "приём"
           }
         ],
-        "bank": 7,
+        "bank": 9,
         "ups": 2,
         "next_threshold": 14
       }
