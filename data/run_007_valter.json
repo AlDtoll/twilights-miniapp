@@ -200,8 +200,8 @@
         "amount": 1980
       },
       {
-        "label": "Стража (7 × 20 × 90)",
-        "amount": 12600
+        "label": "Стража (8 × 20 × 90)",
+        "amount": 14400
       },
       {
         "label": "Клерки (2 × 20 × 90)",
@@ -353,8 +353,8 @@
       ],
       "Утёсная гавань": [
         {
-          "label": "Стража (7 × 20 × 90)",
-          "amount": 12600
+          "label": "Стража (8 × 20 × 90)",
+          "amount": 14400
         },
         {
           "label": "Клерки (2 × 20 × 90)",
@@ -411,8 +411,8 @@
       ]
     },
     "total_income": 51664,
-    "total_expenses": 43610,
-    "balance": 2425
+    "total_expenses": 45410,
+    "balance": 625
   },
   "buildings": {
     "slots": {
@@ -835,9 +835,9 @@
   "staff": [
     {
       "category": "Стража (бойцы)",
-      "fact": "7",
+      "fact": "8",
       "norm": "8",
-      "status": "⚠️ нехватка −1 (+1d2 П&О)",
+      "status": "✅",
       "np": "Утёсная гавань"
     },
     {
@@ -973,9 +973,9 @@
       "staff": [
         {
           "category": "Стража (бойцы)",
-          "fact": "7",
+          "fact": "8",
           "norm": "8",
-          "status": "⚠️ нехватка −1 (+1d2 П&О)",
+          "status": "✅",
           "np": "Утёсная гавань"
         },
         {
@@ -1064,8 +1064,8 @@
       ],
       "expenses_np": [
         {
-          "label": "Стража (7 × 20 × 90)",
-          "amount": 12600
+          "label": "Стража (8 × 20 × 90)",
+          "amount": 14400
         },
         {
           "label": "Клерки (2 × 20 × 90)",
@@ -1111,11 +1111,10 @@
           }
         ],
         "Тип": "стартовая",
-        "mod": -1,
+        "mod": 0,
         "reasons": [
           "+1 Управа",
           "+1 Больница",
-          "−1 нехватка стражи (7/8)",
           "+1 Брох принял слово князя (С3) (×1)",
           "-1 мод.НП",
           "-1 мод.НП",
@@ -1154,27 +1153,27 @@
         "reasons": []
       },
       "might": {
-        "total": 39,
-        "total_min": 8,
-        "total_max": 39,
-        "total_avg": 23,
-        "core_sum": 7.0,
-        "core_src": "стража 7",
+        "total": 44,
+        "total_min": 9,
+        "total_max": 44,
+        "total_avg": 26,
+        "core_sum": 8.0,
+        "core_src": "стража 8",
         "militia": 32,
         "militia_src": "1d32",
-        "fighters": 39,
-        "fighters_sum": 39.0,
+        "fighters": 40,
+        "fighters_sum": 40.0,
         "units": [],
-        "loyalty": -1,
-        "loyalty_pct": -10,
+        "loyalty": 0,
+        "loyalty_pct": 0,
         "defense_pct": 10,
         "cult_war_pct": 0,
         "tags_pct": 0,
         "tag_sum": 0,
         "tag_list": [],
-        "sum_pct": 0,
-        "mult": 1.0,
-        "fighters_src": "стража 7 + ополч. 32",
+        "sum_pct": 10,
+        "mult": 1.1,
+        "fighters_src": "стража 8 + ополч. 32",
         "neutral": false
       },
       "eff_breakdown": {
