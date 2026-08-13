@@ -405,7 +405,7 @@
         "amount": 5400
       },
       {
-        "label": "Дом князя #жильё содержание",
+        "label": "Дом князя содержание",
         "amount": 250
       },
       {
@@ -552,7 +552,7 @@
           "amount": 5400
         },
         {
-          "label": "Дом князя #жильё содержание",
+          "label": "Дом князя содержание",
           "amount": 250
         },
         {
@@ -624,15 +624,17 @@
         "status": "✅ (С1)",
         "maint": 0,
         "rate": 0,
-        "hands": 4
+        "hands": 4,
+        "is_housing": false
       },
       {
-        "name": "Дом князя #жильё",
+        "name": "Дом князя",
         "cost": 5000,
         "status": "✅ готова (С2)",
         "maint": 250,
         "rate": 5,
-        "hands": 0
+        "hands": 0,
+        "is_housing": true
       },
       {
         "name": "Управа",
@@ -640,7 +642,8 @@
         "status": "✅ готова (С4)",
         "maint": 250,
         "rate": 5,
-        "hands": 0
+        "hands": 0,
+        "is_housing": false
       },
       {
         "name": "Караулка (сторожевая вышка)",
@@ -648,7 +651,8 @@
         "status": "✅ готова (С1)",
         "maint": 250,
         "rate": 5,
-        "hands": 0
+        "hands": 0,
+        "is_housing": false
       }
     ]
   },
@@ -1261,15 +1265,17 @@
           "status": "✅ (С1)",
           "maint": 0,
           "rate": 0,
-          "hands": 4
+          "hands": 4,
+          "is_housing": false
         },
         {
-          "name": "Дом князя #жильё",
+          "name": "Дом князя",
           "cost": 5000,
           "status": "✅ готова (С2)",
           "maint": 250,
           "rate": 5,
-          "hands": 0
+          "hands": 0,
+          "is_housing": true
         },
         {
           "name": "Управа",
@@ -1277,7 +1283,8 @@
           "status": "✅ готова (С4)",
           "maint": 250,
           "rate": 5,
-          "hands": 0
+          "hands": 0,
+          "is_housing": false
         }
       ],
       "promysly": [
@@ -1592,7 +1599,8 @@
           "status": "✅ готова (С1)",
           "maint": 250,
           "rate": 5,
-          "hands": 0
+          "hands": 0,
+          "is_housing": false
         }
       ],
       "promysly": [

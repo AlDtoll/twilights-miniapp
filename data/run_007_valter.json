@@ -141,7 +141,7 @@
   "telegram": "@ValterTasadar",
   "season": "5",
   "season_name": "весна",
-  "active_phase": "hearth",
+  "active_phase": "leader",
   "finance": {
     "start": 11444,
     "income": [
@@ -417,7 +417,8 @@
         "status": "✅ готова (С1)",
         "maint": 250,
         "rate": 5,
-        "hands": 0
+        "hands": 0,
+        "is_housing": false
       },
       {
         "name": "Рыбацкая артель",
@@ -425,7 +426,8 @@
         "status": "✅ готова (С2)",
         "maint": 250,
         "rate": 5,
-        "hands": 0
+        "hands": 0,
+        "is_housing": false
       },
       {
         "name": "Коптильня",
@@ -433,7 +435,8 @@
         "status": "✅ готова (С2)",
         "maint": 250,
         "rate": 5,
-        "hands": 0
+        "hands": 0,
+        "is_housing": false
       },
       {
         "name": "Больница",
@@ -441,7 +444,8 @@
         "status": "✅ готова (С4)",
         "maint": 500,
         "rate": 5,
-        "hands": 2
+        "hands": 2,
+        "is_housing": false
       },
       {
         "name": "Алтарь (Фортуна)",
@@ -449,7 +453,8 @@
         "status": "✅ готова (С4)",
         "maint": 150,
         "rate": 3,
-        "hands": 0
+        "hands": 0,
+        "is_housing": false
       }
     ]
   },
@@ -639,7 +644,14 @@
         "mon": 0
       }
     ],
-    "custom": [],
+    "custom": [
+      {
+        "text": "Отпуск пленных ватаги Талгара к Кен-Беку «Чёрной Скуле» с посланием о переговорах о союзе (С5 очаг, админ-действие через пул очага = 1 очко лидера, canon hearth-admin-action). 17 пленных рядовых варваров ватаги Талгара + послание. Талгар «Чёрный» остаётся в княжеском подвале Валтера как виновник. Обоз с эскортом наумовых стрелков + флаг посланника.",
+        "done": false,
+        "tags": [],
+        "mon": 0
+      }
+    ],
     "po_title": "Преступления и опасности (— — П&О)",
     "po": [
       {
@@ -722,16 +734,16 @@
         "next_threshold": 12
       },
       {
-        "name": "Лидерство (II)",
+        "name": "Лидерство (III)",
         "techniques": [
           {
             "name": "«Учитель стрелков»",
             "kind": "приём"
           }
         ],
-        "bank": 12,
-        "ups": 1,
-        "next_threshold": 12
+        "bank": 2,
+        "ups": 2,
+        "next_threshold": 14
       },
       {
         "name": "Инженер (II)",
@@ -746,16 +758,16 @@
         "next_threshold": 12
       },
       {
-        "name": "Наблюдательность (I)",
+        "name": "Наблюдательность (II)",
         "techniques": [
           {
-            "name": "None",
+            "name": "Уловить сбой",
             "kind": "приём"
           }
         ],
-        "bank": 17,
-        "ups": 1,
-        "next_threshold": 12
+        "bank": 7,
+        "ups": 2,
+        "next_threshold": 14
       }
     ],
     "features": [
@@ -775,7 +787,7 @@
         "housing": 0.0,
         "housing_tier": null,
         "leadership": 0.5,
-        "leadership_level": "II",
+        "leadership_level": "III",
         "artifacts": 0.0
       }
     },
@@ -953,7 +965,8 @@
           "status": "✅ готова (С1)",
           "maint": 250,
           "rate": 5,
-          "hands": 0
+          "hands": 0,
+          "is_housing": false
         },
         {
           "name": "Рыбацкая артель",
@@ -961,7 +974,8 @@
           "status": "✅ готова (С2)",
           "maint": 250,
           "rate": 5,
-          "hands": 0
+          "hands": 0,
+          "is_housing": false
         },
         {
           "name": "Коптильня",
@@ -969,7 +983,8 @@
           "status": "✅ готова (С2)",
           "maint": 250,
           "rate": 5,
-          "hands": 0
+          "hands": 0,
+          "is_housing": false
         },
         {
           "name": "Больница",
@@ -977,7 +992,8 @@
           "status": "✅ готова (С4)",
           "maint": 500,
           "rate": 5,
-          "hands": 2
+          "hands": 2,
+          "is_housing": false
         }
       ],
       "promysly": [
@@ -1298,7 +1314,8 @@
           "status": "✅ готова (С4)",
           "maint": 150,
           "rate": 3,
-          "hands": 0
+          "hands": 0,
+          "is_housing": false
         }
       ],
       "promysly": [
