@@ -873,6 +873,7 @@ python3 twilights/minigames/send_miniapp.py <chat_id> \
 
 ### clash — столкновение (очки)
 `--config '{"waves":7}'` → score/ok/total/level
+Темп показа стрелок: `showBaseMs` (база, дефолт 2250) + `showStepMs` (на каждую стрелку, дефолт 500) мс. Меньше `showStepMs` → быстрее показ → сложнее (исход «Средний»): `--config '{"waves":7,"showStepMs":350}'`.
 
 ### summon-hold — круг (очки)
 `--time-limit 12` → score/holdSec/hits/miss/level
