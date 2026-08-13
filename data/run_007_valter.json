@@ -469,7 +469,7 @@
     "points": {
       "player": {
         "total": 4,
-        "left": 4
+        "left": 3
       },
       "chancellor": {
         "name": "Тром «Соляной»",
@@ -499,7 +499,7 @@
       },
       {
         "text": "На Мысе Стражи неопознанное тело выбросило на камни — не наш, не варяг, из южной кожи; староста ждёт слова, куда и как",
-        "done": false,
+        "done": true,
         "tags": [
           "#вред",
           "#нп:Мыс_Стражи",
@@ -1107,6 +1107,13 @@
       },
       "might": {
         "total": 39,
+        "total_min": 8,
+        "total_max": 39,
+        "total_avg": 23,
+        "core_sum": 7.0,
+        "core_src": "стража 7",
+        "militia": 32,
+        "militia_src": "1d32",
         "fighters": 39,
         "fighters_sum": 39.0,
         "units": [],
@@ -1232,6 +1239,13 @@
       },
       "might": {
         "total": 26,
+        "total_min": 5,
+        "total_max": 26,
+        "total_avg": 15,
+        "core_sum": 4.0,
+        "core_src": "стража 4",
+        "militia": 22,
+        "militia_src": "1d22",
         "fighters": 26,
         "fighters_sum": 26.0,
         "units": [],
@@ -1368,6 +1382,13 @@
       },
       "might": {
         "total": 22,
+        "total_min": 4,
+        "total_max": 22,
+        "total_avg": 13,
+        "core_sum": 3.0,
+        "core_src": "стража 3",
+        "militia": 19,
+        "militia_src": "1d19",
         "fighters": 22,
         "fighters_sum": 22.0,
         "units": [],
