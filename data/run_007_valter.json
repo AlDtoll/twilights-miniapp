@@ -874,9 +874,9 @@
     },
     {
       "category": "Рабочие руки",
-      "fact": "4",
+      "fact": "13",
       "norm": "7",
-      "status": "✅",
+      "status": "⚠️ перегруз +6",
       "np": "Рудный двор"
     },
     {
@@ -1216,9 +1216,9 @@
         },
         {
           "category": "Рабочие руки",
-          "fact": "4",
+          "fact": "13",
           "norm": "7",
-          "status": "✅",
+          "status": "⚠️ перегруз +6",
           "np": "Рудный двор"
         }
       ],
@@ -1271,9 +1271,10 @@
         "Н": 8,
         "НЛ": 0,
         "Тип": "стартовая",
-        "mod": -1,
+        "mod": -2,
         "reasons": [
-          "−1 нехватка стражи (4/5)"
+          "−1 нехватка стражи (4/5)",
+          "−1 перегруз рабочих рук (13>7)"
         ]
       },
       "faith": {
@@ -1299,10 +1300,10 @@
         "reasons": []
       },
       "might": {
-        "total": 26,
-        "total_min": 5,
-        "total_max": 26,
-        "total_avg": 15,
+        "total": 23,
+        "total_min": 4,
+        "total_max": 23,
+        "total_avg": 13,
         "core_sum": 4.0,
         "core_src": "стража 4",
         "militia": 22,
@@ -1310,15 +1311,15 @@
         "fighters": 26,
         "fighters_sum": 26.0,
         "units": [],
-        "loyalty": -1,
-        "loyalty_pct": -10,
+        "loyalty": -2,
+        "loyalty_pct": -20,
         "defense_pct": 10,
         "cult_war_pct": 0,
         "tags_pct": 0,
         "tag_sum": 0,
         "tag_list": [],
-        "sum_pct": 0,
-        "mult": 1.0,
+        "sum_pct": -10,
+        "mult": 0.9,
         "fighters_src": "стража 4 + ополч. 22",
         "neutral": false
       },
