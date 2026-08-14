@@ -54,8 +54,10 @@
   /* Дороги между клетками — SVG-оверлей поверх грида, клики проходят сквозь. */
   .world-roads { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 1; overflow: visible; }
   .wr-line { stroke: #9a8548; stroke-width: 1.4; stroke-linecap: round; opacity: 0.4; }
-  /* Тележки торговцев, катящиеся по дорогам (позицию двигает rAF) */
+  .wr-line-sea { stroke: #3a8ec8; stroke-width: 1.8; stroke-linecap: round; stroke-dasharray: 5 4; opacity: 0.7; }
+  /* Тележки торговцев / кораблики на морском пути (позицию двигает rAF) */
   .wr-cart { opacity: 0.85; }
+  .wr-ship { opacity: 0.9; }
   /* Лёгкое «дыхание» бейджей поселений (фазы разведены inline animation-delay) */
   .cell-city { animation: cityBob 3.2s ease-in-out infinite; }
   @keyframes cityBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-1.5px); } }
@@ -181,6 +183,21 @@
   .t-player-6 { background: linear-gradient(135deg, #1a2e2c, #0f1f1d); border-color: #2a8a7a; }
   .t-player-6 .cell-code { color: #5ad0c0; }
 
+  /* Присоединённые клетки игроков (t-owned-N): заливка = цвет игрока N, но клик
+     нейтральный (клетка сохраняет своё имя/НП, не открывает область игрока). */
+  .t-owned-1 { background: linear-gradient(135deg, #1a2a3a, #0f1f30); border-color: #2a5a8a; }
+  .t-owned-1 .cell-code { color: #5aade0; }
+  .t-owned-2 { background: linear-gradient(135deg, #2a1a0f, #1f1008); border-color: #8a5a2a; }
+  .t-owned-2 .cell-code { color: #e0a05a; }
+  .t-owned-3 { background: linear-gradient(135deg, #1a2a1a, #0f1f0f); border-color: #3a7a3a; }
+  .t-owned-3 .cell-code { color: #6acf6a; }
+  .t-owned-4 { background: linear-gradient(135deg, #261a2e, #160f1f); border-color: #6a3a8a; }
+  .t-owned-4 .cell-code { color: #b07ad0; }
+  .t-owned-5 { background: linear-gradient(135deg, #2e1a1a, #1f0f0f); border-color: #8a3a3a; }
+  .t-owned-5 .cell-code { color: #e07a7a; }
+  .t-owned-6 { background: linear-gradient(135deg, #1a2e2c, #0f1f1d); border-color: #2a8a7a; }
+  .t-owned-6 .cell-code { color: #5ad0c0; }
+
   .t-mountain { background: linear-gradient(135deg, #252320, #1a1816); border-color: #4a4540; }
   .t-mountain .cell-code { color: #7a7060; }
 
@@ -303,21 +320,25 @@
 
   /* Внутренняя карта области (drill-down 4×4) — синхр. с player.html .am-* */
   .am-wrap { display:flex; justify-content:center; padding:6px 4px 2px; max-height:70vh; overflow:auto; }
-  .am-svg { width:100%; max-width:340px; height:auto; max-height:70vh; }
+  .am-svg { width:100%; max-width:360px; height:auto; max-height:70vh; overflow:visible; }
   .am-block { fill:none; stroke:#8a7a4a; stroke-width:1.5; opacity:.55; }
   .am-block-hole { fill:#0d0b07; stroke:#241f16; stroke-width:1; opacity:.5; }
   .am-grid { stroke:#241f16; stroke-width:1; }
   .am-road { stroke:#8a7a4a; stroke-width:2.4; stroke-linecap:round; }
   .am-road-edge { stroke-dasharray:5 4; opacity:.8; }
+  .am-road-sea { stroke:#3a8ec8; stroke-width:2.6; stroke-dasharray:5 4; stroke-linecap:round; opacity:.85; }
+  .am-arrow-sea { fill:#3a8ec8; opacity:.9; }
+  .am-edge-label-sea { fill:#5aa8d0; }
   .am-cart { opacity:.9; pointer-events:none; }
   @keyframes am-house-breathe { 0%,100%{opacity:.82; transform:scale(1)} 50%{opacity:1; transform:scale(1.09)} }
   .am-node { fill:#c8a84a; stroke:#000; stroke-width:1; cursor:pointer; transform-box:fill-box; transform-origin:center; animation:am-house-breathe 3.4s ease-in-out infinite; }
   .am-node-sel { stroke:#fff; stroke-width:2; }
   .am-road-hi { stroke:#f0dc8e !important; stroke-width:3.6 !important; opacity:1 !important; }
   .am-arrow { fill:#8a7a4a; opacity:.9; }
-  .am-label { fill:#c8bfa8; font-size:11px; }
+  .am-label { fill:#c8bfa8; font-size:10px; }
   .am-pop { fill:#8a7e64; font-size:8.5px; }
-  .am-edge-label { fill:#7a6e5a; font-size:10px; }
+  .am-edge-label { fill:#7a6e5a; font-size:10px; cursor:pointer; }
+  .am-edge-label-go { text-decoration: underline; text-decoration-style: dotted; }
   .am-note { color:#7a6e5a; font-size:11px; text-align:center; padding:2px 8px 8px; }
 
   /* neutral NP card blocks */
@@ -692,6 +713,12 @@ function rebuildMap() {
           if (isPinching) return;
           const pm = data.type.match(/^t-player-(\w+)$/);
           if (pm) { openCell(data, pm[1], x, y); e.stopPropagation(); return; }
+          // Присоединённая клетка игрока (t-owned-N) — маршрутируем в дашборд владельца.
+          const om = data.type.match(/^t-owned-(\w+)$/);
+          if (om && data.player) {
+            const ownerKey = Object.keys(PLAYER_META).find(k => PLAYER_META[k].key === data.player);
+            if (ownerKey) { openCell(data, ownerKey, x, y); e.stopPropagation(); return; }
+          }
           // Любая не-игрока клетка (нейтрал/горы/море/опасная/шхеры/туман) —
           // единый оверлей: описание + НП, если они заведены. Тип клетки НЕ
           // влияет на клик: значок — визуальная подсказка, а не гейт данных.
@@ -737,6 +764,13 @@ const _CART_SHAPES_WORLD = [
   ['circle', { cx: -4.6, cy: 3.4, r: 2.8, fill: '#2e2214', stroke: '#5a4428', 'stroke-width': 1 }],
   ['circle', { cx: 4.6, cy: 3.4, r: 2.8, fill: '#2e2214', stroke: '#5a4428', 'stroke-width': 1 }],
 ];
+// Кораблик для #морской_путь (корпус + парус)
+const _SHIP_SHAPES_WORLD = [
+  ['ellipse', { cx: 0, cy: 3.2, rx: 9.5, ry: 3.4, fill: '#6a4a2e', stroke: '#3a2818', 'stroke-width': 1 }],
+  ['path', { d: 'M -7 2.5 Q 0 -1 7 2.5', fill: 'none', stroke: '#8a6a42', 'stroke-width': 1.2 }],
+  ['line', { x1: 0, y1: 2, x2: 0, y2: -10, stroke: '#4a3820', 'stroke-width': 1.3 }],
+  ['path', { d: 'M 0 -10 L 8 -2 L 0 1 Z', fill: '#d8e6f2', stroke: '#6a8aaa', 'stroke-width': 0.8 }],
+];
 const _CART_SHAPES_AREA = [
   ['rect', { x: -7, y: -5, width: 14, height: 7, rx: 1.6, fill: '#7a5a34', stroke: '#4a3820', 'stroke-width': 0.9 }],
   ['rect', { x: -7, y: -8, width: 10, height: 3.4, rx: 1.1, fill: '#9a7648', opacity: 0.9 }],
@@ -773,53 +807,117 @@ function drawWorldRoads(cellDivs) {
   svg.setAttribute('width', W);
   svg.setAttribute('height', H);
   const cen = d => [d.offsetLeft + d.offsetWidth / 2, d.offsetTop + d.offsetHeight / 2];
-  const segs = [];
+  const landSegs = [], seaSegs = [];
   for (const edge of edges) {
     const a = edge.a, b = edge.b;
     const da = cellDivs[a[0] + ',' + a[1]], db = cellDivs[b[0] + ',' + b[1]];
     if (!da || !db) continue;
     const [ax, ay] = cen(da), [bx, by] = cen(db);
     const ln = document.createElementNS(SVGNS, 'line');
-    ln.setAttribute('class', 'wr-line');
+    const isSea = !!edge.sea;
+    ln.setAttribute('class', isSea ? 'wr-line wr-line-sea' : 'wr-line');
     ln.setAttribute('x1', ax); ln.setAttribute('y1', ay);
     ln.setAttribute('x2', bx); ln.setAttribute('y2', by);
-    // Своя дорога → цвет владельца поверх дефолтного тёмно-песочного (.wr-line).
-    // ⚠ WKWebView: стиль ставим через setAttribute, НЕ через innerHTML.
-    const oc = (edge.color != null) ? OWNER_ROAD_COLORS[edge.color] : null;
-    if (oc) {
-      ln.setAttribute('stroke', oc);
-      ln.setAttribute('stroke-opacity', '0.75');
-      ln.setAttribute('stroke-width', '1.8');
+    if (!isSea) {
+      const oc = (edge.color != null) ? OWNER_ROAD_COLORS[edge.color] : null;
+      if (oc) {
+        // style=, не presentation-attribute: CSS .wr-line { stroke } иначе перебивает
+        ln.setAttribute('style', `stroke:${oc};stroke-opacity:0.85;stroke-width:2.2`);
+        ln.classList.add('wr-line-own');
+      }
     }
     svg.appendChild(ln);
-    segs.push({ ax, ay, bx, by, len: Math.hypot(bx - ax, by - ay) });
+    const ak = a[0] + ',' + a[1], bk = b[0] + ',' + b[1];
+    const seg = { ax, ay, bx, by, len: Math.hypot(bx - ax, by - ay), ak, bk };
+    (isSea ? seaSegs : landSegs).push(seg);
   }
-  // Тележки торговцев — не более MAX_CARTS (самые длинные дороги), едут в одну
-  // сторону и зацикливаются. Двигаем через requestAnimationFrame: SMIL
-  // <animateMotion>, вставленный через innerHTML, не заводит таймлайн в
-  // WKWebView (iOS) — телеги стояли бы. rAF-цикл один на все телеги.
-  const MAX_CARTS = 8, SPEED = 26; // px/сек — заметно, но не суетливо
-  const chosen = segs.slice().sort((p, q) => q.len - p.len).slice(0, MAX_CARTS);
-  const carts = chosen.map((s, i) => {
+  // Телеги / корабли: в каждой точке случайно выбирают следующую дорогу и едут.
+  const MAX_CARTS = 8, CART_SPEED = 22;
+  const MAX_SHIPS = 4, SHIP_SPEED = 16;
+  const landAdj = _worldRoadAdj(landSegs);
+  const seaAdj = _worldRoadAdj(seaSegs);
+  const landKeys = Object.keys(landAdj);
+  const seaKeys = Object.keys(seaAdj);
+  const movers = [];
+  for (let i = 0; i < Math.min(MAX_CARTS, Math.max(landKeys.length, landSegs.length)); i++) {
+    if (!landKeys.length) break;
     const g = _buildCartG(SVGNS, 'wr-cart', _CART_SHAPES_WORLD);
     svg.appendChild(g);
-    return { g, s, phase: i / chosen.length };
-  });
+    const at = landKeys[(Math.random() * landKeys.length) | 0];
+    movers.push({ g, adj: landAdj, at, from: null, leg: null, progress: 0, speed: CART_SPEED, ship: false });
+  }
+  for (let i = 0; i < Math.min(MAX_SHIPS, Math.max(seaKeys.length, seaSegs.length)); i++) {
+    if (!seaKeys.length && !seaSegs.length) break;
+    const g = _buildCartG(SVGNS, 'wr-ship', _SHIP_SHAPES_WORLD);
+    svg.appendChild(g);
+    // если граф моря связный — тот же random-walk; иначе катаемся по одному ребру туда-сюда
+    if (seaKeys.length) {
+      const at = seaKeys[(Math.random() * seaKeys.length) | 0];
+      movers.push({ g, adj: seaAdj, at, from: null, leg: null, progress: 0, speed: SHIP_SPEED, ship: true });
+    } else {
+      const s = seaSegs[i % seaSegs.length];
+      const adj = _worldRoadAdj([s]);
+      movers.push({ g, adj, at: s.ak, from: null, leg: null, progress: 0, speed: SHIP_SPEED, ship: true });
+    }
+  }
   mapEl.insertBefore(svg, mapEl.firstChild);
-  if (!carts.length) return;
-  let t0 = null;
+  if (!movers.length) return;
+  // Сразу выбрать первый отрезок
+  movers.forEach(c => _worldWalkerPickLeg(c));
+  let lastTs = null;
   const frame = ts => {
-    if (t0 === null) t0 = ts;
-    const el = (ts - t0) / 1000;
-    for (const c of carts) {
-      const s = c.s, period = Math.max(3, s.len / SPEED);
-      const u = ((el / period) + c.phase) % 1;
-      const x = s.ax + (s.bx - s.ax) * u, y = s.ay + (s.by - s.ay) * u;
-      c.g.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
+    if (lastTs === null) lastTs = ts;
+    const dt = Math.min(0.05, (ts - lastTs) / 1000);
+    lastTs = ts;
+    for (const c of movers) {
+      if (!c.leg) _worldWalkerPickLeg(c);
+      if (!c.leg) continue;
+      c.progress += c.speed * dt;
+      if (c.progress >= c.leg.len) {
+        c.from = c.leg.from;
+        c.at = c.leg.to;
+        c.leg = null;
+        c.progress = 0;
+        _worldWalkerPickLeg(c);
+        if (!c.leg) continue;
+      }
+      const u = c.leg.len ? Math.min(1, c.progress / c.leg.len) : 0;
+      const x = c.leg.ax + (c.leg.bx - c.leg.ax) * u;
+      const y = c.leg.ay + (c.leg.by - c.leg.ay) * u;
+      let tf = `translate(${x.toFixed(1)} ${y.toFixed(1)})`;
+      if (c.ship) {
+        const ang = Math.atan2(c.leg.by - c.leg.ay, c.leg.bx - c.leg.ax) * 180 / Math.PI;
+        tf += ` rotate(${ang.toFixed(1)})`;
+      }
+      c.g.setAttribute('transform', tf);
     }
     _cartRAF = requestAnimationFrame(frame);
   };
   _cartRAF = requestAnimationFrame(frame);
+}
+
+/** Граф дорог: key клетки → [{to, seg, flip}]. */
+function _worldRoadAdj(segs) {
+  const adj = {};
+  for (const s of segs) {
+    if (!s.ak || !s.bk || s.len < 2) continue;
+    (adj[s.ak] = adj[s.ak] || []).push({ to: s.bk, seg: s, flip: false });
+    (adj[s.bk] = adj[s.bk] || []).push({ to: s.ak, seg: s, flip: true });
+  }
+  return adj;
+}
+
+/** В текущей точке — случайный выбор следующей дороги (без немедленного разворота, если есть выбор). */
+function _worldWalkerPickLeg(c) {
+  let opts = (c.adj[c.at] || []).filter(e => e.to !== c.from);
+  if (!opts.length) opts = c.adj[c.at] || [];
+  if (!opts.length) { c.leg = null; return; }
+  const pick = opts[(Math.random() * opts.length) | 0];
+  const s = pick.seg;
+  c.leg = pick.flip
+    ? { ax: s.bx, ay: s.by, bx: s.ax, by: s.ay, len: s.len, from: s.bk, to: s.ak }
+    : { ax: s.ax, ay: s.ay, bx: s.bx, by: s.by, len: s.len, from: s.ak, to: s.bk };
+  c.progress = 0;
 }
 
 // Click outside → deselect
@@ -950,9 +1048,8 @@ function parseToon(text) {
   return root;
 }
 
-// Блок roads из toon: { e0: "x1,y1 x2,y2 [color]", ... } →
-//   [ { a:[x1,y1], b:[x2,y2], color: N|null }, ... ].
-// 3-й токен (индекс цвета игрока) — только у своих дорог; необязателен.
+// Блок roads из toon: { e0: "x1,y1 x2,y2 [color|sea]", ... } →
+//   [ { a:[x1,y1], b:[x2,y2], color: N|null, sea: bool }, ... ].
 function parseRoadEdges(obj) {
   const out = [];
   if (!obj || typeof obj !== 'object') return out;
@@ -962,12 +1059,15 @@ function parseRoadEdges(obj) {
     if (parts.length < 2) continue;
     const a = parts[0].split(',').map(Number);
     const b = parts[1].split(',').map(Number);
-    let color = null;
+    let color = null, sea = false;
     if (parts.length >= 3) {
-      const n = parseInt(parts[2], 10);
-      if (!isNaN(n)) color = n;
+      if (parts[2].toLowerCase() === 'sea') sea = true;
+      else {
+        const n = parseInt(parts[2], 10);
+        if (!isNaN(n)) color = n;
+      }
     }
-    out.push({ a, b, color });
+    out.push({ a, b, color, sea });
   }
   return out;
 }
@@ -1027,6 +1127,12 @@ async function initMap() {
     return;
   }
   rebuildMap();
+  // Deep-link: map.html?run=…&cx=4&cy=-2 → сразу открыть клетку (с подписи дороги).
+  const _spOpen = new URLSearchParams(location.search);
+  const _ocx = _spOpen.get('cx'), _ocy = _spOpen.get('cy');
+  if (_ocx != null && _ocy != null && !Number.isNaN(+_ocx) && !Number.isNaN(+_ocy)) {
+    setTimeout(() => openCellAt(+_ocx, +_ocy), 0);
+  }
 }
 window.addEventListener('load', initMap);
 
@@ -1122,7 +1228,7 @@ async function openCellDetails(cellData, x, y) {
   areaTitle.textContent = cellData.pop ? `${cellData.name} (~${cellData.pop} чел.)` : cellData.name;
   areaDash.style.display = 'none';
   areaOverlay.classList.add('open');
-  const label = TYPE_LABELS[cellData.type] || '';
+  const label = TYPE_LABELS[cellData.type] || (/^t-owned-/.test(cellData.type) ? 'Присоединённая клетка' : '');
   const coord = `(${x > 0 ? '+' : ''}${x}, ${y > 0 ? '+' : ''}${y})`;
   const headHtml = `<div class="area-desc" style="opacity:.7">${label ? label + ' · ' : ''}${coord}</div>`;
   const descHtml = cellData.note ? `<div class="area-desc">${cellData.note}</div>` : '';
@@ -1157,7 +1263,29 @@ async function openCellDetails(cellData, x, y) {
     currentPanoSeasonName = (anyC && anyC.season_name) || null;
     areaNps.innerHTML = headHtml + descHtml + mapHtml + agg + cell.settlements.map(renderNeutralNPCard).join('');
     animateAreaCarts(areaNps);
+  } else if (cellData.type === 't-ocean' && !(cell && cell.settlements && cell.settlements.length)) {
+    // Морская клетка без НП — рисуем пустую сетку-плейсхолдер (на будущее).
+    areaNps.innerHTML = headHtml + descHtml + renderEmptyAreaMap('Море');
   }
+}
+
+// Тап по подписи «→ Сосед» на миникарте области → открыть клетку назначения.
+function openCellAt(x, y) {
+  const key = x + ',' + y;
+  const data = (CELLS && CELLS[key]) || null;
+  if (!data) return false;
+  const pm = (data.type || '').match(/^t-player-(\w+)$/);
+  if (pm) { openCell(data, pm[1], x, y); return true; }
+  const om = (data.type || '').match(/^t-owned-(\w+)$/);
+  if (om && data.player) {
+    const ownerKey = Object.keys(PLAYER_META).find(k => PLAYER_META[k].key === data.player);
+    if (ownerKey) { openCell(data, ownerKey, x, y); return true; }
+  }
+  openCellDetails(data, x, y);
+  return true;
+}
+function amGo(cx, cy) {
+  openCellAt(+cx, +cy);
 }
 
 // Словарь имя НП → объект settlement для панорамы (заполняется в openCell/openCellDetails)
@@ -1237,20 +1365,62 @@ function cellAreaMap(am, cx, cy) {
   (am.roads || []).forEach(rd => {
     if (rd.type === 'internal') {
       const fIn = names.has(rd.from), tIn = names.has(rd.to);
-      if (fIn && tIn) { roads.push({ type: 'internal', from: rd.from, to: rd.to }); return; }
+      if (fIn && tIn) {
+        const e = { type: 'internal', from: rd.from, to: rd.to };
+        if (rd.sea) e.sea = true;
+        if (rd.own) e.own = true;
+        if (rd.player) e.player = rd.player;
+        roads.push(e);
+        return;
+      }
       if (!fIn && !tIn) return;
       const inN = fIn ? rd.from : rd.to, outN = fIn ? rd.to : rd.from;
       const oc = nodeCoord[outN];
       if (!oc) return;
-      const dx = Math.sign(oc[0] - cx), dy = Math.sign(oc[1] - cy);
-      if (dx || dy) roads.push({ type: 'edge', from: inN, to: outN, dir: { dx, dy } });
+      // Угол по реальным позициям НП на сшитой карте (не только знак клеток).
+      const inNode = am.nodes.find(n => n.name === inN);
+      const outNode = am.nodes.find(n => n.name === outN);
+      let dx, dy;
+      if (inNode && outNode) {
+        dx = outNode.col - inNode.col;           // восток+
+        dy = inNode.row - outNode.row;           // север+ (ряд растёт вниз)
+      } else {
+        dx = Math.sign(oc[0] - cx);
+        dy = Math.sign(oc[1] - cy);
+      }
+      if (dx || dy) {
+        const e = { type: 'edge', from: inN, to: outN, dir: { dx, dy } };
+        if (rd.sea) e.sea = true;
+        if (rd.own) e.own = true;
+        if (rd.player) e.player = rd.player;
+        if (rd.to_coord) e.to_coord = rd.to_coord;
+        else if (oc) e.to_coord = oc;
+        roads.push(e);
+      }
     } else if (names.has(rd.from)) {
       roads.push(rd);
     }
   });
   const blk = { coord: [cx, cy], col0: 1, row0: 1, owned: true };
   if ((b.water || []).length) blk.water = b.water;   // водные края переносим в кроп клетки
-  return { area: am.area, cols: G, rows: G, blocks: [blk], nodes, roads };
+  // Метки местности этого блока (глобальные col/row → локальные 1..4)
+  const tiles = (am.tiles || [])
+    .filter(t => {
+      const tc = t.col != null ? t.col : (1 + (t.x || 0));
+      const tr = t.row != null ? t.row : (G - (t.y || 0));
+      return tc >= c0 && tc < c0 + G && tr >= r0 && tr < r0 + G;
+    })
+    .map(t => {
+      const tc = t.col != null ? t.col : (1 + (t.x || 0));
+      const tr = t.row != null ? t.row : (G - (t.y || 0));
+      return {
+        x: t.x, y: t.y,
+        col: tc - c0 + 1,
+        row: tr - r0 + 1,
+        terrain: t.terrain || '',
+      };
+    });
+  return { area: am.area, cols: G, rows: G, blocks: [blk], nodes, roads, tiles };
 }
 
 // Тап по домику НП: подсветить дороги + открыть панораму поселения.
@@ -1312,12 +1482,13 @@ function panoTerrainFor(name, real){
   const r=(real||'').toLowerCase();
   if(r.match(/t-mountain|гор|▲|предгор/)) return 't-mountain';
   if(r.match(/t-swamp|болот|🌿/)) return 't-swamp';
+  if(r.match(/t-forest-thicket|чаща/)) return 't-forest-thicket';
   if(r.match(/t-forest|лес|🌲/)) return 't-forest';
   if(r.match(/t-ocean|t-skerry|мор|〰|шхер/)) return 't-ocean';
   if(r.match(/t-evil|опас|☠/)) return 't-evil';
   return 't-meadow';
 }
-function terrainTileColor(t){ return {'t-mountain':'#9a8f78','t-forest':'#3f7a34','t-swamp':'#5f7040','t-ocean':'#4a86c0','t-evil':'#7a5a5a','t-meadow':'#7fae54'}[t]||'#7fae54'; }
+function terrainTileColor(t){ return {'t-mountain':'#9a8f78','t-forest':'#3f7a34','t-forest-thicket':'#2f6a28','t-swamp':'#5f7040','t-ocean':'#4a86c0','t-skerry':'#4a86c0','t-evil':'#7a5a5a','t-meadow':'#7fae54'}[t]||'#7fae54'; }
 
 // Категория постройки по ключевым словам имени
 function buildingArchetype(name) {
@@ -1388,11 +1559,12 @@ let _panoBlds = [];
 
 function openPano(npName, settlement, terrainHint) {
   document.getElementById('pano-title').textContent = npName;
-  // Шапка НП: население, тип terrain, количество построек
+  // Шапка НП: население, terrain, дворы (houses), стратегические постройки
   const bldCount=(settlement&&settlement.buildings)?settlement.buildings.length:0;
+  const housesMeta=parseInt(String((settlement&&settlement.houses)||'').replace(/[^\d]/g,''),10)||0;
   const pop=(settlement&&settlement.population)?settlement.population:null;
   const tLabel={'t-mountain':'Горы','t-forest':'Лес','t-swamp':'Болото','t-ocean':'Море','t-skerry':'Шхеры','t-evil':'Опасная зона'}[terrainHint]||'';
-  const meta=[pop?`👥 ${pop}`:null,tLabel||null,bldCount?`🏠 ${bldCount}`:null].filter(Boolean).join(' · ');
+  const meta=[pop?`👥 ${pop}`:null,tLabel||null,housesMeta?`🏠 ${housesMeta}`:null,bldCount?`🏛 ${bldCount}`:null].filter(Boolean).join(' · ');
   const mEl=document.getElementById('pano-np-meta'); if(mEl) mEl.textContent=meta;
   document.getElementById('pano-overlay').classList.add('open');
   renderPano(npName, settlement, terrainHint, currentPanoSeasonName);
@@ -1425,14 +1597,38 @@ function renderPano(npName, settlement, terrainHint, seasonName) {
   let _vseed=0; { const _s=(npName||'')+'|'+terrain; for(let k=0;k<_s.length;k++){ _vseed=(_vseed*31+_s.charCodeAt(k))>>>0; } }
   const rng=()=>{ _vseed=(_vseed+0x6D2B79F5)>>>0; let t=_vseed; t=Math.imul(t^(t>>>15),t|1); t^=t+Math.imul(t^(t>>>7),t|61); return ((t^(t>>>14))>>>0)/4294967296; };
   const popNum=parseInt(String((settlement&&settlement.population)||'').replace(/[^\d]/g,''),10)||0;
-  const hutCount=Math.max(4, Math.min(26, Math.round(popNum/40)+3));
-  const roofPal = terrain.match(/t-mountain|гор|предгор/) ? ['#7a7266','#8a8276','#6a6258']
-    : terrain.match(/t-forest|лес/) ? ['#5a3d24','#6f4a2a','#4a3620']
-    : terrain.match(/t-swamp|болот/) ? ['#5f6a3a','#6a5a34','#556036']
-    : ['#b5532e','#9c6a3c','#c0703a','#a85432'];
-  const wallPal=['#e6d6b2','#dcd0b0','#cfc6b2','#e0d2ac'];
-  function miniHut(x,y,sc){ const bw=16*sc, bh=14*sc, L=x-bw/2,R=x+bw/2, wt=y-bh*0.55, peak=y-bh; const wall=wallPal[Math.floor(rng()*wallPal.length)], roof=roofPal[Math.floor(rng()*roofPal.length)]; let s='<g pointer-events="none">'; s+=`<rect x="${L}" y="${wt}" width="${bw}" height="${y-wt}" fill="${wall}"/>`; s+=`<rect x="${x}" y="${wt}" width="${bw/2}" height="${y-wt}" fill="${shade(wall,0.9)}"/>`; s+=`<path d="M ${L-bw*0.14} ${wt} L ${x} ${peak} L ${R+bw*0.14} ${wt} Z" fill="${roof}"/>`; s+=`<path d="M ${L-bw*0.14} ${wt} L ${x} ${peak} L ${x} ${wt} Z" fill="${shade(roof,1.12)}"/>`; s+=`<rect x="${x-bw*0.13}" y="${y-bh*0.32}" width="${bw*0.26}" height="${bh*0.32}" fill="#3a2414"/>`; s+='</g>'; return s; }
-  const _huts=[]; for(let k=0;k<hutCount;k++){ const depth=rng(); const hx=40+rng()*(VW-80); const hy=groundY-4+depth*80; const hsc=0.55+depth*0.9; _huts.push({hx,hy,hsc}); }
+  // Точное число дворов из settlements.houses (не градация по населению).
+  // Fallback на старую шкалу pop→домики, только если Домов в данных нет.
+  const housesNum=parseInt(String((settlement&&settlement.houses)||'').replace(/[^\d]/g,''),10)||0;
+  const hutCount=housesNum>0 ? housesNum : Math.max(4, Math.min(26, Math.round(popNum/40)+3));
+  // Деревенские дворы: случайный спрайт из assets/houses/01..08.png (seeded rng).
+  const HOUSE_SPRITES=['assets/houses/01.png','assets/houses/02.png','assets/houses/03.png','assets/houses/04.png','assets/houses/05.png','assets/houses/06.png','assets/houses/07.png','assets/houses/08.png'];
+  function miniHut(x,y,sc){
+    const bw=30*sc, bh=bw*1.22;
+    const src=HOUSE_SPRITES[Math.floor(rng()*HOUSE_SPRITES.length)];
+    return `<image href="${src}" x="${x-bw/2}" y="${y-bh}" width="${bw}" height="${bh}" preserveAspectRatio="xMidYMax meet" pointer-events="none"/>`;
+  }
+  // Сетка с джиттером: при большом числе дворов мельчаем масштаб, чтобы все влезли.
+  const _huts=[];
+  {
+    const n=hutCount;
+    const cols=Math.max(1, Math.ceil(Math.sqrt(n*1.7)));
+    const rows=Math.max(1, Math.ceil(n/cols));
+    const marginX=22, usableW=VW-2*marginX;
+    const bandH=n>60?110:(n>30?95:80);
+    // Чуть меньше scMul, чем у старых SVG-домиков: спрайты шире (bw=30 vs 16).
+    const scMul=Math.max(0.45, Math.min(2.0, 18/Math.sqrt(n+6)));
+    for(let k=0;k<n;k++){
+      const col=k%cols, row=Math.floor(k/cols);
+      const jx=(rng()-0.5)*(usableW/cols)*0.55;
+      const jy=(rng()-0.5)*(bandH/rows)*0.45;
+      const hx=marginX+(col+0.5)/cols*usableW+jx;
+      const depth=(row+0.35+rng()*0.3)/rows;
+      const hy=groundY-4+depth*bandH+jy;
+      const hsc=scMul*(0.7+depth*0.55);
+      _huts.push({hx,hy,hsc});
+    }
+  }
   _huts.sort((a,b)=>a.hy-b.hy);
   let village=''; _huts.forEach(h=>{ village+=miniHut(h.hx,h.hy,h.hsc); });
   const water = terrain.match(/t-ocean|t-skerry|мор|〰|шхер/) ? `<rect x="0" y="${groundY-8}" width="${VW}" height="30" fill="#3f7fb8" opacity="0.85" pointer-events="none"/><path d="M 0 ${groundY+8} q 40 -5 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0" fill="none" stroke="#cfe6f2" stroke-width="1.5" opacity="0.6" pointer-events="none"/>` : '';
@@ -1576,13 +1772,22 @@ function renderAreaMap(am) {
   // Сохраняем ноды глобально — для terrain-хинта при открытии панорамы
   _panoNodes = am.nodes;
   const cols = am.cols || 4, rows = am.rows || 4;
-  const P = 26, S = 62;
+  const P = 44, S = 62;  // больший отступ — длинные подписи НП/краёв не режутся viewBox
   const W = P * 2 + S * cols, H = P * 2 + S * rows;
   const cx = (c) => P + (c - 0.5) * S;
   const cy = (r) => P + (r - 0.5) * S;
   const pos = {};
   am.nodes.forEach(n => { pos[n.name] = [cx(n.col), cy(n.row)]; });
   const idxOf = {}; am.nodes.forEach((n, i) => { idxOf[n.name] = i; });
+  const amSplitName = (name) => {
+    const s = String(name || '');
+    if (s.length <= 14) return [s];
+    const dash = s.indexOf('-');
+    if (dash > 0 && dash < s.length - 1) return [s.slice(0, dash), s.slice(dash + 1)];
+    const sp = s.lastIndexOf(' ', Math.min(14, s.length - 1));
+    if (sp > 3) return [s.slice(0, sp), s.slice(sp + 1)];
+    return [s.slice(0, 12) + '…', s.slice(12)];
+  };
   let g = "";
   // Водные края: полоса-градиент вдоль стороны блока, у которой сосед-клетка — море.
   // Не заливаем квадраты целиком — только «плещет» у края (bl.water: n/e/s/w).
@@ -1605,6 +1810,125 @@ function renderAreaMap(am) {
       g += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#wg-${side})" class="amb-water" style="animation-delay:${(side === 'n' ? 0 : side === 's' ? 1.5 : side === 'e' ? 3 : 4.5)}s"/>`;
     });
   });
+  // Метки местности: компактный значок в центре мини-клетки (не заливка всей клетки)
+  (am.tiles || []).forEach(tile => {
+    const col = tile.col != null ? tile.col : (1 + (tile.x || 0));
+    const row = tile.row != null ? tile.row : ((am.rows || 4) - (tile.y || 0));
+    const bx = P + (col - 1) * S, by = P + (row - 1) * S;
+    const tt = (tile.terrain || '').toLowerCase();
+    const mx = bx + S / 2, my = by + S / 2;
+    if (tt === 't-forest-thicket' || tt === 't-forest') {
+      // #лес_чаща — плотная чаща; #лес — реже. Раскладка стабильно-рандомная по (x,y).
+      const thick = (tt === 't-forest-thicket');
+      let seed = (((tile.x | 0) + 1) * 73856093) ^ (((tile.y | 0) + 1) * 19349663) ^ (thick ? 0xC4A5 : 0x7E55);
+      seed >>>= 0;
+      const rnd = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
+      const n = thick ? (11 + (rnd() * 4) | 0) : (3 + (rnd() * 3) | 0);
+      const trees = [];
+      for (let i = 0; i < n; i++) {
+        const ang = rnd() * Math.PI * 2;
+        const dist = (thick ? 6 : 3) + rnd() * (thick ? 18 : 10);
+        trees.push([
+          mx + Math.cos(ang) * dist * 0.85,
+          my + Math.sin(ang) * dist * 0.7,
+          (thick ? 3.8 : 3.4) + rnd() * 2.4,
+        ]);
+      }
+      trees.sort((a, b) => a[1] - b[1]);
+      trees.forEach(([tx, ty, r]) => {
+        const tw = Math.max(3.2, r * 0.55);
+        const th = Math.max(9, r * 1.35);
+        g += `<rect x="${tx - tw / 2}" y="${ty + r * 0.25}" width="${tw}" height="${th}" rx="0.8" fill="#5a3a22" pointer-events="none"/>`;
+        g += `<circle cx="${tx - r * 0.55}" cy="${ty + r * 0.2}" r="${r * 0.78}" fill="#2a5524" opacity="0.95" pointer-events="none"/>`;
+        g += `<circle cx="${tx + r * 0.55}" cy="${ty + r * 0.15}" r="${r * 0.75}" fill="#356a2e" opacity="0.95" pointer-events="none"/>`;
+        g += `<circle cx="${tx}" cy="${ty - r * 0.55}" r="${r * 0.85}" fill="#3f7a34" opacity="0.95" pointer-events="none"/>`;
+      });
+    } else if (tt === 't-mountain') {
+      // Горы: 3–5 пиков, раскладка стабильно-рандомная по клетке.
+      let seed = (((tile.x | 0) + 1) * 83492791) ^ (((tile.y | 0) + 1) * 2971215073) ^ 0xA11E;
+      seed >>>= 0;
+      const rnd = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
+      const peaks = [];
+      const n = 3 + (rnd() * 3) | 0;
+      for (let i = 0; i < n; i++) {
+        const ang = -0.2 + rnd() * (Math.PI + 0.4);
+        const dist = 3 + rnd() * 12;
+        peaks.push({
+          x: mx + Math.cos(ang) * dist * 0.7,
+          y: my + Math.sin(ang) * dist * 0.35 + 2,
+          h: 8 + rnd() * 10,
+          w: 5 + rnd() * 5,
+          col: ['#9a9080', '#b0a690', '#a89e8c', '#8e8680'][(rnd() * 4) | 0],
+        });
+      }
+      peaks.sort((a, b) => a.y - b.y);
+      g += `<ellipse cx="${mx + (rnd() - 0.5) * 4}" cy="${my + 11}" rx="${12 + rnd() * 4}" ry="3.8" fill="#8a8070" opacity="0.4" pointer-events="none"/>`;
+      peaks.forEach(p => {
+        g += `<path d="M ${p.x - p.w} ${p.y + 4} L ${p.x} ${p.y - p.h} L ${p.x + p.w} ${p.y + 4} Z" fill="${p.col}" opacity="0.95" pointer-events="none"/>`;
+        if (rnd() > 0.45) {
+          g += `<path d="M ${p.x - 1.2} ${p.y - p.h} L ${p.x} ${p.y - p.h + 4} L ${p.x + 1.8} ${p.y - p.h}" fill="#e8e4dc" opacity="0.85" pointer-events="none"/>`;
+        }
+      });
+    } else if (tt === 't-swamp') {
+      // Болото: лужи + кочки + камыши, раскладка по клетке.
+      let seed = (((tile.x | 0) + 1) * 50331653) ^ (((tile.y | 0) + 1) * 196613) ^ 0xB007;
+      seed >>>= 0;
+      const rnd = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
+      const pools = 1 + (rnd() * 2) | 0;
+      for (let i = 0; i < pools; i++) {
+        const px = mx + (rnd() - 0.5) * 14;
+        const py = my + 2 + rnd() * 6;
+        g += `<ellipse cx="${px}" cy="${py}" rx="${7 + rnd() * 6}" ry="${3 + rnd() * 2.5}" fill="#4a6a78" opacity="${0.4 + rnd() * 0.2}" pointer-events="none"/>`;
+      }
+      const humps = 2 + (rnd() * 3) | 0;
+      for (let i = 0; i < humps; i++) {
+        const hx = mx + (rnd() - 0.5) * 16;
+        const hy = my + (rnd() - 0.5) * 8;
+        g += `<ellipse cx="${hx}" cy="${hy}" rx="${2.5 + rnd() * 2.5}" ry="${1.4 + rnd()}" fill="#4a5e35" opacity="0.85" pointer-events="none"/>`;
+      }
+      const reeds = 4 + (rnd() * 4) | 0;
+      for (let i = 0; i < reeds; i++) {
+        const rx = mx + (rnd() - 0.5) * 20;
+        const ry = my - 2 - rnd() * 5;
+        const h = 6 + rnd() * 5;
+        g += `<line x1="${rx}" y1="${ry + h}" x2="${rx + (rnd() - 0.5)}" y2="${ry}" stroke="#3a5230" stroke-width="1.3" stroke-linecap="round" opacity="0.85" pointer-events="none"/>`;
+        g += `<path d="M ${rx} ${ry} q -2.2 -2.5 -3.5 -0.2" fill="none" stroke="#4a6238" stroke-width="1.1" opacity="0.8" pointer-events="none"/>`;
+        g += `<path d="M ${rx} ${ry} q 2.2 -2.5 3.5 -0.2" fill="none" stroke="#4a6238" stroke-width="1.1" opacity="0.8" pointer-events="none"/>`;
+      }
+    } else if (tt === 't-ocean' || tt === 't-skerry') {
+      // Волны; у шхер — маленький камень.
+      g += `<path d="M ${mx - 13} ${my + 1} q 4.5 -3.2 9 0 t 9 0 t 9 0" fill="none" stroke="#5a9cc8" stroke-width="2" stroke-linecap="round" opacity="0.9" pointer-events="none"/>`;
+      g += `<path d="M ${mx - 11} ${my + 6} q 4 -2.6 8 0 t 8 0 t 6 0" fill="none" stroke="#7ab8dc" stroke-width="1.6" stroke-linecap="round" opacity="0.8" pointer-events="none"/>`;
+      g += `<path d="M ${mx - 9} ${my + 10} q 3.5 -2.2 7 0 t 7 0" fill="none" stroke="#9ad0ec" stroke-width="1.3" stroke-linecap="round" opacity="0.7" pointer-events="none"/>`;
+      if (tt === 't-skerry') {
+        g += `<path d="M ${mx - 3} ${my + 2} L ${mx - 5} ${my - 3} L ${mx - 1} ${my - 7} L ${mx + 3} ${my - 4} L ${mx + 4} ${my + 2} Z" fill="#7a7870" opacity="0.95" pointer-events="none"/>`;
+        g += `<path d="M ${mx - 2} ${my - 1} L ${mx - 1} ${my - 7} L ${mx + 1.5} ${my - 3}" fill="#9a9890" opacity="0.85" pointer-events="none"/>`;
+      }
+    } else if (tt === 't-meadow') {
+      // Луг: пятна + трава + цветы, раскладка по клетке.
+      let seed = (((tile.x | 0) + 1) * 2654435761) ^ (((tile.y | 0) + 1) * 2246822519) ^ 0x1EAD;
+      seed >>>= 0;
+      const rnd = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
+      const patches = 2 + (rnd() * 2) | 0;
+      for (let i = 0; i < patches; i++) {
+        g += `<ellipse cx="${mx + (rnd() - 0.5) * 12}" cy="${my + 3 + rnd() * 5}" rx="${5 + rnd() * 8}" ry="${2.5 + rnd() * 2.5}" fill="${rnd() > 0.5 ? '#c6d86a' : '#d4e878'}" opacity="${0.3 + rnd() * 0.15}" pointer-events="none"/>`;
+      }
+      const blades = 6 + (rnd() * 5) | 0;
+      for (let i = 0; i < blades; i++) {
+        const gx = mx + (rnd() - 0.5) * 22;
+        const gy = my + 3 + rnd() * 5;
+        const h = 3 + rnd() * 3.5;
+        g += `<line x1="${gx}" y1="${gy}" x2="${gx + (rnd() - 0.5) * 1.5}" y2="${gy - h}" stroke="#8aaa3a" stroke-width="1.2" stroke-linecap="round" opacity="0.9" pointer-events="none"/>`;
+      }
+      const flowerCols = ['#e8c84a', '#e8a0b8', '#d0e8a0', '#e8c84a', '#c8e090'];
+      const flowers = 3 + (rnd() * 4) | 0;
+      for (let i = 0; i < flowers; i++) {
+        const fx = mx + (rnd() - 0.5) * 18;
+        const fy = my + (rnd() - 0.5) * 10;
+        g += `<circle cx="${fx}" cy="${fy}" r="${1.3 + rnd() * 0.6}" fill="${flowerCols[(rnd() * flowerCols.length) | 0]}" opacity="0.9" pointer-events="none"/>`;
+      }
+    }
+  });
   for (let i = 0; i <= cols; i++) {
     const o = P + i * S;
     g += `<line x1="${o}" y1="${P}" x2="${o}" y2="${P + S * rows}" class="am-grid"/>`;
@@ -1613,11 +1937,23 @@ function renderAreaMap(am) {
     const o = P + j * S;
     g += `<line x1="${P}" y1="${o}" x2="${P + S * cols}" y2="${o}" class="am-grid"/>`;
   }
+  const OWN_COLORS = { danil: "#6ba9e6", misha: "#e0894a", valter: "#7bc96f" };
+  const nodeOwner = {};
+  (am.nodes || []).forEach(n => { if (n.name) nodeOwner[n.name] = n.owner || ''; });
   (am.roads || []).forEach(rd => {
     const a = pos[rd.from]; if (!a) return;
     if (rd.type === "internal") {
       const b = pos[rd.to]; if (!b) return;
-      g += `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" class="am-road" data-i="${idxOf[rd.from]} ${idxOf[rd.to]}"/>`;
+      if (rd.sea) {
+        g += `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" class="am-road am-road-sea" style="stroke:#3a8ec8;stroke-opacity:0.9;stroke-width:2.8" data-i="${idxOf[rd.from]} ${idxOf[rd.to]}"/>`;
+        return;
+      }
+      // #своя / оба конца одного игрока → цвет владельца (как домики)
+      const pl = rd.player || (rd.own && (nodeOwner[rd.from] || nodeOwner[rd.to]))
+        || ((nodeOwner[rd.from] && nodeOwner[rd.from] === nodeOwner[rd.to]) ? nodeOwner[rd.from] : '');
+      const oc = pl && OWN_COLORS[pl];
+      const st = oc ? ` style="stroke:${oc};stroke-opacity:0.95;stroke-width:3.2"` : '';
+      g += `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" class="am-road am-road-own" data-i="${idxOf[rd.from]} ${idxOf[rd.to]}"${st}/>`;
     } else {
       const dx = rd.dir?.dx || 0, dy = rd.dir?.dy || 0;
       if (!dx && !dy) return;
@@ -1625,24 +1961,41 @@ function renderAreaMap(am) {
       // границу области. На экране x вправо=+dx, y вниз=−dy (dy>0=север=верх). Каждая
       // дорога выходит в СВОЕЙ точке границы (не в общий угол) → подписи не слипаются.
       const vx = dx, vy = -dy;
+      const margin = 10;  // не упираться в край viewBox — место под подпись
+      const len = Math.hypot(vx, vy) || 1;
+      const ux0 = vx / len, uy0 = vy / len;  // единичный вектор для пересечения с краем
       let t = Infinity;
-      if (vx > 0) t = Math.min(t, (W - a[0]) / vx);
-      else if (vx < 0) t = Math.min(t, (0 - a[0]) / vx);
-      if (vy > 0) t = Math.min(t, (H - a[1]) / vy);
-      else if (vy < 0) t = Math.min(t, (0 - a[1]) / vy);
+      if (ux0 > 0) t = Math.min(t, (W - margin - a[0]) / ux0);
+      else if (ux0 < 0) t = Math.min(t, (margin - a[0]) / ux0);
+      if (uy0 > 0) t = Math.min(t, (H - margin - a[1]) / uy0);
+      else if (uy0 < 0) t = Math.min(t, (margin - a[1]) / uy0);
       if (!isFinite(t) || t <= 0) return;
-      const ex = a[0] + vx * t, ey = a[1] + vy * t;
-      g += `<line x1="${a[0]}" y1="${a[1]}" x2="${ex}" y2="${ey}" class="am-road am-road-edge" data-i="${idxOf[rd.from]}"/>`;
+      const ex = a[0] + ux0 * t, ey = a[1] + uy0 * t;
+      const pl = rd.player || (rd.own && (nodeOwner[rd.from] || '')) || '';
+      const oc = (!rd.sea && pl && OWN_COLORS[pl]) || null;
+      const seaCls = rd.sea ? ' am-road-sea' : (oc ? ' am-road-own' : '');
+      let lineStyle = '';
+      if (rd.sea) lineStyle = ' style="stroke:#3a8ec8;stroke-opacity:0.9;stroke-width:2.8"';
+      else if (oc) lineStyle = ` style="stroke:${oc};stroke-opacity:0.95;stroke-width:3.0"`;
+      g += `<line x1="${a[0]}" y1="${a[1]}" x2="${ex}" y2="${ey}" class="am-road am-road-edge${seaCls}" data-i="${idxOf[rd.from]}"${lineStyle}/>`;
       const al = Math.hypot(vx, vy) || 1, ux = vx / al, uy = vy / al;   // стрелка-наконечник у выхода
       const tx = ex - ux * 2, ty = ey - uy * 2, bkx = tx - ux * 8, bky = ty - uy * 8;
-      g += `<polygon points="${tx},${ty} ${bkx - uy * 4.2},${bky + ux * 4.2} ${bkx + uy * 4.2},${bky - ux * 4.2}" class="am-arrow"/>`;
+      const arrCls = rd.sea ? 'am-arrow am-arrow-sea' : 'am-arrow';
+      const arrStyle = oc ? ` style="fill:${oc}"` : '';
+      g += `<polygon points="${tx},${ty} ${bkx - uy * 4.2},${bky + ux * 4.2} ${bkx + uy * 4.2},${bky - ux * 4.2}" class="${arrCls}"${arrStyle}/>`;
       const anchor = vx > 0 ? "end" : vx < 0 ? "start" : "middle";  // подпись внутрь холста
-      const lx = Math.max(4, Math.min(W - 4, ex + (vx > 0 ? -4 : vx < 0 ? 4 : 0)));
-      const ly = Math.max(12, Math.min(H - 5, ey + (vy > 0 ? -6 : 14)));
-      g += `<text x="${lx}" y="${ly}" class="am-edge-label" text-anchor="${anchor}">→ ${esc(rd.to)}</text>`;
+      const inset = 16;
+      const lx = Math.max(inset, Math.min(W - inset, ex + (vx > 0 ? -6 : vx < 0 ? 6 : 0)));
+      const ly = Math.max(14, Math.min(H - 8, ey + (vy > 0 ? -8 : 16)));
+      const lblCls = rd.sea ? 'am-edge-label am-edge-label-sea' : 'am-edge-label';
+      const seaMark = rd.sea ? '〰 ' : '';
+      const tc = rd.to_coord;
+      const goAttr = (tc && tc.length === 2)
+        ? ` onclick="amGo(${+tc[0]},${+tc[1]});event.stopPropagation()" class="${lblCls} am-edge-label-go"`
+        : ` class="${lblCls}"`;
+      g += `<text x="${lx}" y="${ly}" text-anchor="${anchor}"${goAttr}>→ ${seaMark}${esc(rd.to)}</text>`;
     }
   });
-  const OWN_COLORS = { danil: "#6ba9e6", misha: "#e0894a", valter: "#7bc96f" };
   am.nodes.forEach((n, i) => {
     const [x, y] = pos[n.name];
     const _tt = panoTerrainFor(n.name, n.terrain||''); const _tc = terrainTileColor(_tt);
@@ -1662,11 +2015,40 @@ function renderAreaMap(am) {
       + `<circle cx="${x - 1.2}" cy="${y - 1 - rh - 3}" r="1.3" fill="#cfc8bd" style="animation:amb-smoke 4s ease-out ${smokeDelay1}s infinite"/>`
       + `<circle cx="${x + 1.5}" cy="${y - 1 - rh - 5}" r="1.8" fill="#cfc8bd" style="animation:amb-smoke 4s ease-out ${smokeDelay2}s infinite"/>`
       + `</g>`;
-    g += `<text x="${x}" y="${y - rh - 5}" class="am-label" text-anchor="middle">${esc(n.name)}</text>`;
+    const nameParts = amSplitName(n.name);
+    const labelY0 = y - rh - 5 - (nameParts.length - 1) * 10;
+    nameParts.forEach((part, pi) => {
+      g += `<text x="${x}" y="${labelY0 + pi * 10}" class="am-label" text-anchor="middle">${esc(part)}</text>`;
+    });
     if (n.pop) g += `<text x="${x}" y="${y + bh + 11}" class="am-pop" text-anchor="middle">~${n.pop}</text>`;
   });
+  return `<div class="am-wrap"><svg viewBox="0 0 ${W} ${H}" class="am-svg" preserveAspectRatio="xMidYMid meet" overflow="visible">${g}</svg></div>` +
+    `<div class="am-note">Иллюстративная карта — клетки ориентир; заливка — метки местности. Пунктир — дорога к соседней области.</div>`;
+}
+
+// Пустая мини-карта-плейсхолдер для морских клеток (t-ocean) без НП.
+// Повторяет каркас renderAreaMap (те же классы, размеры, viewBox), но без узлов и дорог.
+// Параметр label — подпись по центру (напр. «Море»).
+function renderEmptyAreaMap(label) {
+  const cols = 4, rows = 4;
+  const P = 26, S = 62;
+  const W = P * 2 + S * cols, H = P * 2 + S * rows;
+  let g = '';
+  // Сетка 4×4 — те же классы, что в renderAreaMap
+  for (let i = 0; i <= cols; i++) {
+    const o = P + i * S;
+    g += `<line x1="${o}" y1="${P}" x2="${o}" y2="${P + S * rows}" class="am-grid"/>`;
+  }
+  for (let j = 0; j <= rows; j++) {
+    const o = P + j * S;
+    g += `<line x1="${P}" y1="${o}" x2="${P + S * cols}" y2="${o}" class="am-grid"/>`;
+  }
+  // Центральная подпись
+  const cx = P + (S * cols) / 2, cy = H / 2 - 6;
+  g += `<text x="${cx}" y="${cy}" text-anchor="middle" style="fill:#7a6e5a;font-size:18px;font-weight:600">${esc(label)}</text>`;
+  g += `<text x="${cx}" y="${cy + 18}" text-anchor="middle" style="fill:#5a5040;font-size:11px">пока пусто</text>`;
   return `<div class="am-wrap"><svg viewBox="0 0 ${W} ${H}" class="am-svg" preserveAspectRatio="xMidYMid meet">${g}</svg></div>` +
-    `<div class="am-note">Иллюстративная карта — клетки лишь ориентир. Пунктир — дорога к соседней области.</div>`;
+    `<div class="am-note">Морская клетка — данных нет. Карта появится, когда здесь что-то появится.</div>`;
 }
 
 // Телеги на карте области: едут по ВСЕМ дорогам (am-road — и внутренним между НП,
@@ -1681,27 +2063,34 @@ function animateAreaCarts(root) {
   const svg = root.querySelector('.am-svg');
   if (!svg) return;
   const SVGNS = 'http://www.w3.org/2000/svg';
-  const segs = Array.from(svg.querySelectorAll('.am-road'))
-    .map(l => {
-      const ax = +l.getAttribute('x1'), ay = +l.getAttribute('y1');
-      const bx = +l.getAttribute('x2'), by = +l.getAttribute('y2');
-      return { ax, ay, bx, by, len: Math.hypot(bx - ax, by - ay) };
-    })
-    .filter(s => s.len > 4);
-  if (!segs.length) return;
+  const landSegs = [], seaSegs = [];
+  svg.querySelectorAll('.am-road').forEach(l => {
+    const ax = +l.getAttribute('x1'), ay = +l.getAttribute('y1');
+    const bx = +l.getAttribute('x2'), by = +l.getAttribute('y2');
+    const len = Math.hypot(bx - ax, by - ay);
+    if (len <= 4) return;
+    const seg = { ax, ay, bx, by, len };
+    (l.classList.contains('am-road-sea') ? seaSegs : landSegs).push(seg);
+  });
+  if (!landSegs.length && !seaSegs.length) return;
   const MAX_CARTS = 6, SPEED = 20; // единицы viewBox/сек
-  const chosen = segs.slice().sort((p, q) => q.len - p.len).slice(0, MAX_CARTS);
-  const carts = chosen.map((s, i) => {
+  const MAX_SHIPS = 3, SHIP_SPEED = 16;
+  const carts = landSegs.slice().sort((p, q) => q.len - p.len).slice(0, MAX_CARTS).map((s, i, arr) => {
     const gEl = _buildCartG(SVGNS, 'am-cart', _CART_SHAPES_AREA);
     svg.appendChild(gEl);
-    return { g: gEl, s, phase: i / chosen.length };
+    return { g: gEl, s, phase: i / Math.max(1, arr.length), speed: SPEED };
+  });
+  seaSegs.slice().sort((p, q) => q.len - p.len).slice(0, MAX_SHIPS).forEach((s, i, arr) => {
+    const gEl = _buildCartG(SVGNS, 'am-cart am-ship', _SHIP_SHAPES_WORLD);
+    svg.appendChild(gEl);
+    carts.push({ g: gEl, s, phase: i / Math.max(1, arr.length), speed: SHIP_SPEED });
   });
   let t0 = null;
   const frame = ts => {
     if (t0 === null) t0 = ts;
     const el = (ts - t0) / 1000;
     for (const c of carts) {
-      const s = c.s, period = Math.max(3, s.len / SPEED);
+      const s = c.s, period = Math.max(3, s.len / c.speed);
       const u = ((el / period) + c.phase) % 1;
       const x = s.ax + (s.bx - s.ax) * u, y = s.ay + (s.by - s.ay) * u;
       c.g.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
@@ -1735,23 +2124,30 @@ function mightBlock(m) {
   const cls = m.total > 0 ? 'pos' : m.total < 0 ? 'neg' : 'zero';
   const fmtN = x => Number.isInteger(x) ? x : x.toFixed(1);
   const pct = v => (v >= 0 ? '+' : '') + v + '%';
-  // Тултип: компактная разбивка Σ% (лоял/база/культ/теги)
+  // Диапазон: показываем min–max если есть ополчение, иначе одно число
+  const hasRange = (m.militia || 0) > 0;
+  const rangeStr = hasRange ? `${m.total_min}–${m.total_max}` : String(m.total);
+  // Тултип: ядро + бросок ополчения + множитель
   const sumParts = [`лоял. ${pct(m.loyalty_pct)}`, `база +${m.defense_pct}%`];
   if (m.cult_war_pct > 0) sumParts.push(`культ войны +${m.cult_war_pct}%`);
   if (m.tags_pct) sumParts.push(`теги ${pct(m.tags_pct)}`);
-  const tip = `Боевая мощь (оборона) ${m.total}\n= ${fmtN(m.fighters_sum)} × ${fmtN(m.mult)}\nΣ% (${sumParts.join(', ')})\n(${m.fighters_src})`;
-  // Видимая строка разбивки (тултип на мобиле недоступен)
+  const coreDesc = `ядро (${m.core_src || m.fighters_src}) = ${fmtN(m.core_sum != null ? m.core_sum : m.fighters_sum)}`;
+  const militiaDesc = hasRange ? ` + ополч. ${m.militia_src}` : '';
+  const tip = `Боевая мощь (оборона) ${rangeStr}\n${coreDesc}${militiaDesc}\n× ${fmtN(m.mult)}\nΣ% (${sumParts.join(', ')})`;
+  // Видимая строка разбивки
+  const coreVal = m.core_sum != null ? m.core_sum : m.fighters_sum;
   const parts = [
-    `<span class="np-might-part"><b>${fmtN(m.fighters_sum)}</b> бойц.</span>`,
-    `<span class="np-might-part">лоял. <b>${pct(m.loyalty_pct)}</b></span>`,
-    `<span class="np-might-part">оборона <b>+${m.defense_pct}%</b></span>`,
+    `<span class="np-might-part"><b>${fmtN(coreVal)}</b> ядро <span style="color:var(--muted);font-size:0.75em">(${m.core_src || m.fighters_src})</span></span>`,
   ];
+  if (hasRange) parts.push(`<span class="np-might-part">ополч. <b>${m.militia_src}</b></span>`);
+  parts.push(`<span class="np-might-part">лоял. <b>${pct(m.loyalty_pct)}</b></span>`);
+  parts.push(`<span class="np-might-part">оборона <b>+${m.defense_pct}%</b></span>`);
   if (m.cult_war_pct > 0) parts.push(`<span class="np-might-part">культ войны <b>+${m.cult_war_pct}%</b></span>`);
   const tl = m.tag_list || [];
   if (tl.length) parts.push(`<span class="np-might-part">теги <b>${pct(m.tags_pct)}</b></span>`);
-  parts.push(`<span class="np-might-part">= ${fmtN(m.fighters_sum)} × ${fmtN(m.mult)} = <b>${m.total}</b></span>`);
+  parts.push(`<span class="np-might-part">× ${fmtN(m.mult)} = <b>${rangeStr}</b></span>`);
   return `<div class="np-stat"><span class="np-stat-label">Боевая мощь (оборона):</span> `
-    + `<span class="np-might ${cls}" title="${esc(tip)}">⚔ ${m.total}</span></div>`
+    + `<span class="np-might ${cls}" title="${esc(tip)}">⚔ ${rangeStr}</span></div>`
     + `<div class="np-might-breakdown">${parts.join(' · ')}</div>`;
 }
 
