@@ -141,7 +141,7 @@
   "telegram": "@ValterTasadar",
   "season": "5",
   "season_name": "весна",
-  "active_phase": "",
+  "active_phase": "hearth",
   "finance": {
     "start": 11444,
     "income": [
