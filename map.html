@@ -1557,14 +1557,28 @@ let _panoNodes = [];
 // Здания текущей открытой панорамы — для openBldCard
 let _panoBlds = [];
 
+function panoEcoCount(settlement, needles){
+  if(!settlement) return 0;
+  const hit=s=>needles.some(n=>String(s).toLowerCase().includes(n));
+  if(hit('лавк') && settlement.shops!=null){ const v=parseInt(String(settlement.shops).replace(/[^\d]/g,''),10); if(v) return v; }
+  if(hit('торгов') && settlement.traders!=null){ const v=parseInt(String(settlement.traders).replace(/[^\d]/g,''),10); if(v) return v; }
+  for(const row of (settlement.economy||[])){ if(hit(row.type||'')) return parseInt(row.count,10)||0; }
+  for(const row of (settlement.income||[])){
+    if(hit(row.label||'')){ const m=String(row.label).match(/(\d+)/); if(m) return parseInt(m[1],10)||0; }
+  }
+  return 0;
+}
+
 function openPano(npName, settlement, terrainHint) {
   document.getElementById('pano-title').textContent = npName;
-  // Шапка НП: население, terrain, дворы (houses), стратегические постройки
+  // Шапка НП: население, terrain, дворы, лавки, торговцы, стратегические постройки
   const bldCount=(settlement&&settlement.buildings)?settlement.buildings.length:0;
   const housesMeta=parseInt(String((settlement&&settlement.houses)||'').replace(/[^\d]/g,''),10)||0;
+  const shopsMeta=panoEcoCount(settlement, ['лавк']);
+  const tradersMeta=panoEcoCount(settlement, ['торговц']);
   const pop=(settlement&&settlement.population)?settlement.population:null;
   const tLabel={'t-mountain':'Горы','t-forest':'Лес','t-swamp':'Болото','t-ocean':'Море','t-skerry':'Шхеры','t-evil':'Опасная зона'}[terrainHint]||'';
-  const meta=[pop?`👥 ${pop}`:null,tLabel||null,housesMeta?`🏠 ${housesMeta}`:null,bldCount?`🏛 ${bldCount}`:null].filter(Boolean).join(' · ');
+  const meta=[pop?`👥 ${pop}`:null,tLabel||null,housesMeta?`🏠 ${housesMeta}`:null,shopsMeta?`🏪 ${shopsMeta}`:null,tradersMeta?`🧳 ${tradersMeta}`:null,bldCount?`🏛 ${bldCount}`:null].filter(Boolean).join(' · ');
   const mEl=document.getElementById('pano-np-meta'); if(mEl) mEl.textContent=meta;
   document.getElementById('pano-overlay').classList.add('open');
   renderPano(npName, settlement, terrainHint, currentPanoSeasonName);
@@ -1603,9 +1617,15 @@ function renderPano(npName, settlement, terrainHint, seasonName) {
   const hutCount=housesNum>0 ? housesNum : Math.max(4, Math.min(26, Math.round(popNum/40)+3));
   // Деревенские дворы: случайный спрайт из assets/houses/01..08.png (seeded rng).
   const HOUSE_SPRITES=['assets/houses/01.png','assets/houses/02.png','assets/houses/03.png','assets/houses/04.png','assets/houses/05.png','assets/houses/06.png','assets/houses/07.png','assets/houses/08.png'];
+  const SHOP_SPRITES=['assets/shops/01.png','assets/shops/02.png','assets/shops/03.png','assets/shops/04.png','assets/shops/05.png','assets/shops/06.png','assets/shops/07.png','assets/shops/08.png'];
   function miniHut(x,y,sc){
     const bw=30*sc, bh=bw*1.22;
     const src=HOUSE_SPRITES[Math.floor(rng()*HOUSE_SPRITES.length)];
+    return `<image href="${src}" x="${x-bw/2}" y="${y-bh}" width="${bw}" height="${bh}" preserveAspectRatio="xMidYMax meet" pointer-events="none"/>`;
+  }
+  function miniShop(x,y,sc){
+    const bw=34*sc, bh=bw*1.18;
+    const src=SHOP_SPRITES[Math.floor(rng()*SHOP_SPRITES.length)];
     return `<image href="${src}" x="${x-bw/2}" y="${y-bh}" width="${bw}" height="${bh}" preserveAspectRatio="xMidYMax meet" pointer-events="none"/>`;
   }
   // Сетка с джиттером: при большом числе дворов мельчаем масштаб, чтобы все влезли.
@@ -1626,11 +1646,33 @@ function renderPano(npName, settlement, terrainHint, seasonName) {
       const depth=(row+0.35+rng()*0.3)/rows;
       const hy=groundY-4+depth*bandH+jy;
       const hsc=scMul*(0.7+depth*0.55);
-      _huts.push({hx,hy,hsc});
+      _huts.push({hx,hy,hsc,kind:'hut'});
+    }
+  }
+  // Лавки: столько спрайтов, сколько лавок в экономике НП. Ряд-улица чуть ближе, чем дворы.
+  const shopCount=panoEcoCount(settlement, ['лавк']);
+  {
+    const n=shopCount;
+    if(n>0){
+      const cols=Math.max(1, Math.ceil(Math.sqrt(n*2.4)));
+      const rows=Math.max(1, Math.ceil(n/cols));
+      const marginX=36, usableW=VW-2*marginX;
+      const bandH=n>24?56:(n>10?44:32);
+      const scMul=Math.max(0.5, Math.min(1.7, 12/Math.sqrt(n+3)));
+      for(let k=0;k<n;k++){
+        const col=k%cols, row=Math.floor(k/cols);
+        const jx=(rng()-0.5)*(usableW/cols)*0.4;
+        const jy=(rng()-0.5)*(bandH/rows)*0.4;
+        const hx=marginX+(col+0.5)/cols*usableW+jx;
+        const depth=(row+0.25+rng()*0.35)/rows;
+        const hy=groundY+22+depth*bandH+jy;
+        const hsc=scMul*(0.85+depth*0.4);
+        _huts.push({hx,hy,hsc,kind:'shop'});
+      }
     }
   }
   _huts.sort((a,b)=>a.hy-b.hy);
-  let village=''; _huts.forEach(h=>{ village+=miniHut(h.hx,h.hy,h.hsc); });
+  let village=''; _huts.forEach(h=>{ village+=h.kind==='shop'?miniShop(h.hx,h.hy,h.hsc):miniHut(h.hx,h.hy,h.hsc); });
   const water = terrain.match(/t-ocean|t-skerry|мор|〰|шхер/) ? `<rect x="0" y="${groundY-8}" width="${VW}" height="30" fill="#3f7fb8" opacity="0.85" pointer-events="none"/><path d="M 0 ${groundY+8} q 40 -5 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0" fill="none" stroke="#cfe6f2" stroke-width="1.5" opacity="0.6" pointer-events="none"/>` : '';
 
   function rowPositions(n, baseY, marginX){ const arr=[]; if(!n) return arr; const usable=VW-2*marginX; for(let k=0;k<n;k++){ const cx = n===1? VW/2 : marginX + usable*k/(n-1); arr.push({cx, baseY}); } return arr; }
@@ -2051,12 +2093,29 @@ function renderEmptyAreaMap(label) {
     `<div class="am-note">Морская клетка — данных нет. Карта появится, когда здесь что-то появится.</div>`;
 }
 
-// Телеги на карте области: едут по ВСЕМ дорогам (am-road — и внутренним между НП,
-// и пунктирным выходящим к соседним областям). Координаты берём в единицах
-// viewBox из уже отрисованных <line>. rAF один на все телеги; отменяем при
-// перерисовке/закрытии. На карте одной клетки внутренних дорог часто нет —
-// только выходы к соседям, поэтому пунктирные тоже анимируем.
+// Телеги на карте области: random-walk по графу дорог (как на мировой карте) —
+// в узле НП выбирают следующую дорогу, не телепортятся и не «пропадают» в НП.
+// Координаты — viewBox из уже отрисованных <line> (internal + edge).
 let _amCartRAF = null;
+function _areaRoadAdj(segs) {
+  const adj = {};
+  for (const s of segs) {
+    if (!s.ak || !s.bk || s.len < 2) continue;
+    (adj[s.ak] = adj[s.ak] || []).push({ to: s.bk, seg: s, flip: false });
+    (adj[s.bk] = adj[s.bk] || []).push({ to: s.ak, seg: s, flip: true });
+  }
+  return adj;
+}
+function _areaWalkerPickLeg(c) {
+  let opts = (c.adj[c.at] || []).filter(e => e.to !== c.from);
+  if (!opts.length) opts = c.adj[c.at] || [];
+  if (!opts.length) { c.leg = null; return; }
+  const pick = opts[(Math.random() * opts.length) | 0];
+  const s = pick.seg;
+  c.leg = pick.flip
+    ? { ax: s.bx, ay: s.by, bx: s.ax, by: s.ay, len: s.len, from: s.bk, to: s.ak }
+    : { ax: s.ax, ay: s.ay, bx: s.bx, by: s.by, len: s.len, from: s.ak, to: s.bk };
+}
 function animateAreaCarts(root) {
   if (_amCartRAF) { cancelAnimationFrame(_amCartRAF); _amCartRAF = null; }
   if (!root) return;
@@ -2069,31 +2128,66 @@ function animateAreaCarts(root) {
     const bx = +l.getAttribute('x2'), by = +l.getAttribute('y2');
     const len = Math.hypot(bx - ax, by - ay);
     if (len <= 4) return;
-    const seg = { ax, ay, bx, by, len };
+    const ak = Math.round(ax) + ',' + Math.round(ay);
+    const bk = Math.round(bx) + ',' + Math.round(by);
+    const seg = { ax, ay, bx, by, len, ak, bk };
     (l.classList.contains('am-road-sea') ? seaSegs : landSegs).push(seg);
   });
   if (!landSegs.length && !seaSegs.length) return;
-  const MAX_CARTS = 6, SPEED = 20; // единицы viewBox/сек
+  const MAX_CARTS = 6, CART_SPEED = 20;
   const MAX_SHIPS = 3, SHIP_SPEED = 16;
-  const carts = landSegs.slice().sort((p, q) => q.len - p.len).slice(0, MAX_CARTS).map((s, i, arr) => {
-    const gEl = _buildCartG(SVGNS, 'am-cart', _CART_SHAPES_AREA);
-    svg.appendChild(gEl);
-    return { g: gEl, s, phase: i / Math.max(1, arr.length), speed: SPEED };
-  });
-  seaSegs.slice().sort((p, q) => q.len - p.len).slice(0, MAX_SHIPS).forEach((s, i, arr) => {
-    const gEl = _buildCartG(SVGNS, 'am-cart am-ship', _SHIP_SHAPES_WORLD);
-    svg.appendChild(gEl);
-    carts.push({ g: gEl, s, phase: i / Math.max(1, arr.length), speed: SHIP_SPEED });
-  });
-  let t0 = null;
+  const landAdj = _areaRoadAdj(landSegs);
+  const seaAdj = _areaRoadAdj(seaSegs);
+  const landKeys = Object.keys(landAdj);
+  const seaKeys = Object.keys(seaAdj);
+  const movers = [];
+  for (let i = 0; i < Math.min(MAX_CARTS, Math.max(landKeys.length, landSegs.length)); i++) {
+    if (!landKeys.length) break;
+    const g = _buildCartG(SVGNS, 'am-cart', _CART_SHAPES_AREA);
+    svg.appendChild(g);
+    const at = landKeys[(Math.random() * landKeys.length) | 0];
+    movers.push({ g, adj: landAdj, at, from: null, leg: null, progress: 0, speed: CART_SPEED, ship: false });
+  }
+  for (let i = 0; i < Math.min(MAX_SHIPS, Math.max(seaKeys.length, seaSegs.length)); i++) {
+    if (!seaKeys.length && !seaSegs.length) break;
+    const g = _buildCartG(SVGNS, 'am-cart am-ship', _SHIP_SHAPES_WORLD);
+    svg.appendChild(g);
+    if (seaKeys.length) {
+      const at = seaKeys[(Math.random() * seaKeys.length) | 0];
+      movers.push({ g, adj: seaAdj, at, from: null, leg: null, progress: 0, speed: SHIP_SPEED, ship: true });
+    } else {
+      const s = seaSegs[i % seaSegs.length];
+      movers.push({ g, adj: _areaRoadAdj([s]), at: s.ak, from: null, leg: null, progress: 0, speed: SHIP_SPEED, ship: true });
+    }
+  }
+  if (!movers.length) return;
+  movers.forEach(c => _areaWalkerPickLeg(c));
+  let lastTs = null;
   const frame = ts => {
-    if (t0 === null) t0 = ts;
-    const el = (ts - t0) / 1000;
-    for (const c of carts) {
-      const s = c.s, period = Math.max(3, s.len / c.speed);
-      const u = ((el / period) + c.phase) % 1;
-      const x = s.ax + (s.bx - s.ax) * u, y = s.ay + (s.by - s.ay) * u;
-      c.g.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
+    if (lastTs === null) lastTs = ts;
+    const dt = Math.min(0.05, (ts - lastTs) / 1000);
+    lastTs = ts;
+    for (const c of movers) {
+      if (!c.leg) _areaWalkerPickLeg(c);
+      if (!c.leg) continue;
+      c.progress += c.speed * dt;
+      if (c.progress >= c.leg.len) {
+        c.from = c.leg.from;
+        c.at = c.leg.to;
+        c.leg = null;
+        c.progress = 0;
+        _areaWalkerPickLeg(c);
+        if (!c.leg) continue;
+      }
+      const u = c.leg.len ? Math.min(1, c.progress / c.leg.len) : 0;
+      const x = c.leg.ax + (c.leg.bx - c.leg.ax) * u;
+      const y = c.leg.ay + (c.leg.by - c.leg.ay) * u;
+      let tf = `translate(${x.toFixed(1)} ${y.toFixed(1)})`;
+      if (c.ship) {
+        const ang = Math.atan2(c.leg.by - c.leg.ay, c.leg.bx - c.leg.ax) * 180 / Math.PI;
+        tf += ` rotate(${ang.toFixed(1)})`;
+      }
+      c.g.setAttribute('transform', tf);
     }
     _amCartRAF = requestAnimationFrame(frame);
   };
