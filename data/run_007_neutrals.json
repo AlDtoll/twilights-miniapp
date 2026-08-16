@@ -200,17 +200,23 @@
             "reasons": []
           },
           "might": {
-            "total": 13,
-            "total_min": 1,
-            "total_max": 13,
-            "total_avg": 7,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 18,
+            "total_min": 6,
+            "total_max": 18,
+            "total_avg": 12,
+            "core_sum": 4.0,
+            "core_src": "гарн. 4",
             "militia": 10,
             "militia_src": "1d10",
-            "fighters": 10,
-            "fighters_sum": 10.0,
-            "units": [],
+            "fighters": 14,
+            "fighters_sum": 14.0,
+            "units": [
+              {
+                "cls": "Охотники-сторожа",
+                "count": 4,
+                "str": 1.0
+              }
+            ],
             "loyalty": 2,
             "loyalty_pct": 20,
             "defense_pct": 10,
@@ -220,7 +226,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополч. 10",
+            "fighters_src": "гарн. 4 + ополч. 10",
             "neutral": true
           },
           "buildings": []
@@ -413,17 +419,23 @@
             "reasons": []
           },
           "might": {
-            "total": 44,
-            "total_min": 1,
-            "total_max": 44,
-            "total_avg": 22,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 49,
+            "total_min": 6,
+            "total_max": 49,
+            "total_avg": 27,
+            "core_sum": 4.0,
+            "core_src": "гарн. 4",
             "militia": 34,
             "militia_src": "1d34",
-            "fighters": 34,
-            "fighters_sum": 34.0,
-            "units": [],
+            "fighters": 38,
+            "fighters_sum": 38.0,
+            "units": [
+              {
+                "cls": "Дозор",
+                "count": 4,
+                "str": 1.0
+              }
+            ],
             "loyalty": 2,
             "loyalty_pct": 20,
             "defense_pct": 10,
@@ -433,7 +445,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополч. 34",
+            "fighters_src": "гарн. 4 + ополч. 34",
             "neutral": true
           },
           "buildings": []
@@ -499,17 +511,23 @@
             "reasons": []
           },
           "might": {
-            "total": 26,
-            "total_min": 1,
-            "total_max": 26,
-            "total_avg": 13,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 31,
+            "total_min": 6,
+            "total_max": 31,
+            "total_avg": 18,
+            "core_sum": 4.0,
+            "core_src": "гарн. 4",
             "militia": 20,
             "militia_src": "1d20",
-            "fighters": 20,
-            "fighters_sum": 20.0,
-            "units": [],
+            "fighters": 24,
+            "fighters_sum": 24.0,
+            "units": [
+              {
+                "cls": "Дозор",
+                "count": 4,
+                "str": 1.0
+              }
+            ],
             "loyalty": 2,
             "loyalty_pct": 20,
             "defense_pct": 10,
@@ -519,7 +537,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополч. 20",
+            "fighters_src": "гарн. 4 + ополч. 20",
             "neutral": true
           },
           "buildings": []
@@ -585,17 +603,23 @@
             "reasons": []
           },
           "might": {
-            "total": 33,
-            "total_min": 1,
-            "total_max": 33,
-            "total_avg": 17,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 39,
+            "total_min": 6,
+            "total_max": 39,
+            "total_avg": 22,
+            "core_sum": 4.0,
+            "core_src": "гарн. 4",
             "militia": 26,
             "militia_src": "1d26",
-            "fighters": 26,
-            "fighters_sum": 26.0,
-            "units": [],
+            "fighters": 30,
+            "fighters_sum": 30.0,
+            "units": [
+              {
+                "cls": "Дозор",
+                "count": 4,
+                "str": 1.0
+              }
+            ],
             "loyalty": 2,
             "loyalty_pct": 20,
             "defense_pct": 10,
@@ -605,7 +629,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополч. 26",
+            "fighters_src": "гарн. 4 + ополч. 26",
             "neutral": true
           },
           "buildings": []
@@ -822,17 +846,23 @@
             ]
           },
           "might": {
-            "total": 43,
-            "total_min": 1,
-            "total_max": 43,
-            "total_avg": 22,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 51,
+            "total_min": 9,
+            "total_max": 51,
+            "total_avg": 30,
+            "core_sum": 7.0,
+            "core_src": "гарн. 7",
             "militia": 36,
             "militia_src": "1d36",
-            "fighters": 36,
-            "fighters_sum": 36.0,
-            "units": [],
+            "fighters": 43,
+            "fighters_sum": 43.0,
+            "units": [
+              {
+                "cls": "Дружина",
+                "count": 7,
+                "str": 1.0
+              }
+            ],
             "loyalty": 1,
             "loyalty_pct": 10,
             "defense_pct": 10,
@@ -842,7 +872,7 @@
             "tag_list": [],
             "sum_pct": 20,
             "mult": 1.2,
-            "fighters_src": "ополч. 36",
+            "fighters_src": "гарн. 7 + ополч. 36",
             "neutral": true
           },
           "buildings": []
@@ -900,17 +930,23 @@
             ]
           },
           "might": {
-            "total": 14,
-            "total_min": 1,
-            "total_max": 14,
-            "total_avg": 7,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 20,
+            "total_min": 7,
+            "total_max": 20,
+            "total_avg": 13,
+            "core_sum": 5.0,
+            "core_src": "гарн. 5",
             "militia": 12,
             "militia_src": "1d12",
-            "fighters": 12,
-            "fighters_sum": 12.0,
-            "units": [],
+            "fighters": 17,
+            "fighters_sum": 17.0,
+            "units": [
+              {
+                "cls": "Дружина",
+                "count": 5,
+                "str": 1.0
+              }
+            ],
             "loyalty": 1,
             "loyalty_pct": 10,
             "defense_pct": 10,
@@ -920,7 +956,7 @@
             "tag_list": [],
             "sum_pct": 20,
             "mult": 1.2,
-            "fighters_src": "ополч. 12",
+            "fighters_src": "гарн. 5 + ополч. 12",
             "neutral": true
           },
           "buildings": []
@@ -1110,27 +1146,43 @@
             ]
           },
           "might": {
-            "total": 19,
-            "total_min": 1,
-            "total_max": 19,
-            "total_avg": 10,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 29,
+            "total_min": 10,
+            "total_max": 29,
+            "total_avg": 19,
+            "core_sum": 6.2,
+            "core_src": "гарн. 6",
             "militia": 15,
             "militia_src": "1d15",
-            "fighters": 15,
-            "fighters_sum": 15.0,
-            "units": [],
+            "fighters": 21,
+            "fighters_sum": 21.2,
+            "units": [
+              {
+                "cls": "Лихие",
+                "count": 5,
+                "str": 1.0
+              },
+              {
+                "cls": "Главарь",
+                "count": 1,
+                "str": 1.2
+              }
+            ],
             "loyalty": 1,
             "loyalty_pct": 10,
             "defense_pct": 10,
             "cult_war_pct": 10,
-            "tags_pct": 0,
-            "tag_sum": 0,
-            "tag_list": [],
-            "sum_pct": 30,
-            "mult": 1.3,
-            "fighters_src": "ополч. 15",
+            "tags_pct": 10,
+            "tag_sum": 1,
+            "tag_list": [
+              {
+                "value": 1,
+                "reason": "гнилой"
+              }
+            ],
+            "sum_pct": 40,
+            "mult": 1.4,
+            "fighters_src": "гарн. 6 + ополч. 15",
             "neutral": true
           },
           "buildings": []
@@ -1324,17 +1376,23 @@
             ]
           },
           "might": {
-            "total": 10,
-            "total_min": 1,
-            "total_max": 10,
-            "total_avg": 5,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 15,
+            "total_min": 6,
+            "total_max": 15,
+            "total_avg": 11,
+            "core_sum": 4.0,
+            "core_src": "гарн. 4",
             "militia": 8,
             "militia_src": "1d8",
-            "fighters": 8,
-            "fighters_sum": 8.0,
-            "units": [],
+            "fighters": 12,
+            "fighters_sum": 12.0,
+            "units": [
+              {
+                "cls": "Охотники-сторожа",
+                "count": 4,
+                "str": 1.0
+              }
+            ],
             "loyalty": 2,
             "loyalty_pct": 20,
             "defense_pct": 10,
@@ -1344,7 +1402,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополч. 8",
+            "fighters_src": "гарн. 4 + ополч. 8",
             "neutral": true
           },
           "buildings": []
@@ -1615,17 +1673,23 @@
             "reasons": []
           },
           "might": {
-            "total": 91,
-            "total_min": 1,
-            "total_max": 91,
-            "total_avg": 46,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 98,
+            "total_min": 9,
+            "total_max": 98,
+            "total_avg": 53,
+            "core_sum": 6.0,
+            "core_src": "гарн. 6",
             "militia": 70,
             "militia_src": "1d70",
-            "fighters": 70,
-            "fighters_sum": 70.0,
-            "units": [],
+            "fighters": 76,
+            "fighters_sum": 76.0,
+            "units": [
+              {
+                "cls": "Дружина властителя",
+                "count": 6,
+                "str": 1.0
+              }
+            ],
             "loyalty": 2,
             "loyalty_pct": 20,
             "defense_pct": 10,
@@ -1635,7 +1699,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополч. 70",
+            "fighters_src": "гарн. 6 + ополч. 70",
             "neutral": true
           },
           "buildings": []
@@ -1697,17 +1761,23 @@
             "reasons": []
           },
           "might": {
-            "total": 45,
-            "total_min": 1,
-            "total_max": 45,
-            "total_avg": 23,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 55,
+            "total_min": 11,
+            "total_max": 55,
+            "total_avg": 33,
+            "core_sum": 8.0,
+            "core_src": "гарн. 8",
             "militia": 35,
             "militia_src": "1d35",
-            "fighters": 35,
-            "fighters_sum": 35.0,
-            "units": [],
+            "fighters": 43,
+            "fighters_sum": 43.0,
+            "units": [
+              {
+                "cls": "Дружина властителя",
+                "count": 8,
+                "str": 1.0
+              }
+            ],
             "loyalty": 2,
             "loyalty_pct": 20,
             "defense_pct": 10,
@@ -1717,7 +1787,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополч. 35",
+            "fighters_src": "гарн. 8 + ополч. 35",
             "neutral": true
           },
           "buildings": []
@@ -1872,17 +1942,23 @@
             ]
           },
           "might": {
-            "total": 36,
-            "total_min": 1,
-            "total_max": 36,
-            "total_avg": 18,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 44,
+            "total_min": 9,
+            "total_max": 44,
+            "total_avg": 27,
+            "core_sum": 7.0,
+            "core_src": "гарн. 7",
             "militia": 30,
             "militia_src": "1d30",
-            "fighters": 30,
-            "fighters_sum": 30.0,
-            "units": [],
+            "fighters": 37,
+            "fighters_sum": 37.0,
+            "units": [
+              {
+                "cls": "Дружина",
+                "count": 7,
+                "str": 1.0
+              }
+            ],
             "loyalty": 1,
             "loyalty_pct": 10,
             "defense_pct": 10,
@@ -1892,7 +1968,7 @@
             "tag_list": [],
             "sum_pct": 20,
             "mult": 1.2,
-            "fighters_src": "ополч. 30",
+            "fighters_src": "гарн. 7 + ополч. 30",
             "neutral": true
           },
           "buildings": []
@@ -2164,17 +2240,23 @@
             "reasons": []
           },
           "might": {
-            "total": 20,
-            "total_min": 1,
-            "total_max": 20,
-            "total_avg": 11,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 26,
+            "total_min": 6,
+            "total_max": 26,
+            "total_avg": 16,
+            "core_sum": 4.0,
+            "core_src": "гарн. 4",
             "militia": 16,
             "militia_src": "1d16",
-            "fighters": 16,
-            "fighters_sum": 16.0,
-            "units": [],
+            "fighters": 20,
+            "fighters_sum": 20.0,
+            "units": [
+              {
+                "cls": "Дозор",
+                "count": 4,
+                "str": 1.0
+              }
+            ],
             "loyalty": 2,
             "loyalty_pct": 20,
             "defense_pct": 10,
@@ -2184,7 +2266,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополч. 16",
+            "fighters_src": "гарн. 4 + ополч. 16",
             "neutral": true
           },
           "buildings": []
@@ -2246,17 +2328,23 @@
             "reasons": []
           },
           "might": {
-            "total": 7,
-            "total_min": 1,
-            "total_max": 7,
-            "total_avg": 4,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 14,
+            "total_min": 7,
+            "total_max": 14,
+            "total_avg": 11,
+            "core_sum": 5.0,
+            "core_src": "гарн. 5",
             "militia": 6,
             "militia_src": "1d6",
-            "fighters": 6,
-            "fighters_sum": 6.0,
-            "units": [],
+            "fighters": 11,
+            "fighters_sum": 11.0,
+            "units": [
+              {
+                "cls": "Дозор",
+                "count": 5,
+                "str": 1.0
+              }
+            ],
             "loyalty": 2,
             "loyalty_pct": 20,
             "defense_pct": 10,
@@ -2266,7 +2354,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополч. 6",
+            "fighters_src": "гарн. 5 + ополч. 6",
             "neutral": true
           },
           "buildings": []
@@ -2328,17 +2416,23 @@
             "reasons": []
           },
           "might": {
-            "total": 13,
-            "total_min": 1,
-            "total_max": 13,
-            "total_avg": 7,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 18,
+            "total_min": 6,
+            "total_max": 18,
+            "total_avg": 12,
+            "core_sum": 4.0,
+            "core_src": "гарн. 4",
             "militia": 10,
             "militia_src": "1d10",
-            "fighters": 10,
-            "fighters_sum": 10.0,
-            "units": [],
+            "fighters": 14,
+            "fighters_sum": 14.0,
+            "units": [
+              {
+                "cls": "Дозор",
+                "count": 4,
+                "str": 1.0
+              }
+            ],
             "loyalty": 2,
             "loyalty_pct": 20,
             "defense_pct": 10,
@@ -2348,7 +2442,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополч. 10",
+            "fighters_src": "гарн. 4 + ополч. 10",
             "neutral": true
           },
           "buildings": []
@@ -2600,17 +2694,23 @@
             "reasons": []
           },
           "might": {
-            "total": 39,
-            "total_min": 1,
-            "total_max": 39,
-            "total_avg": 20,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 46,
+            "total_min": 9,
+            "total_max": 46,
+            "total_avg": 27,
+            "core_sum": 6.0,
+            "core_src": "гарн. 6",
             "militia": 30,
             "militia_src": "1d30",
-            "fighters": 30,
-            "fighters_sum": 30.0,
-            "units": [],
+            "fighters": 36,
+            "fighters_sum": 36.0,
+            "units": [
+              {
+                "cls": "Дружина",
+                "count": 6,
+                "str": 1.0
+              }
+            ],
             "loyalty": 2,
             "loyalty_pct": 20,
             "defense_pct": 10,
@@ -2620,7 +2720,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополч. 30",
+            "fighters_src": "гарн. 6 + ополч. 30",
             "neutral": true
           },
           "buildings": []
@@ -2674,17 +2774,23 @@
             "reasons": []
           },
           "might": {
-            "total": 23,
-            "total_min": 1,
-            "total_max": 23,
-            "total_avg": 12,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 29,
+            "total_min": 7,
+            "total_max": 29,
+            "total_avg": 18,
+            "core_sum": 5.0,
+            "core_src": "гарн. 5",
             "militia": 18,
             "militia_src": "1d18",
-            "fighters": 18,
-            "fighters_sum": 18.0,
-            "units": [],
+            "fighters": 23,
+            "fighters_sum": 23.0,
+            "units": [
+              {
+                "cls": "Дружина",
+                "count": 5,
+                "str": 1.0
+              }
+            ],
             "loyalty": 2,
             "loyalty_pct": 20,
             "defense_pct": 10,
@@ -2694,7 +2800,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополч. 18",
+            "fighters_src": "гарн. 5 + ополч. 18",
             "neutral": true
           },
           "buildings": []
@@ -2903,17 +3009,23 @@
             ]
           },
           "might": {
-            "total": 2,
-            "total_min": 1,
-            "total_max": 2,
-            "total_avg": 1,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 4,
+            "total_min": 3,
+            "total_max": 4,
+            "total_avg": 4,
+            "core_sum": 2.0,
+            "core_src": "гарн. 2",
             "militia": 2,
             "militia_src": "1d2",
-            "fighters": 2,
-            "fighters_sum": 2.0,
-            "units": [],
+            "fighters": 4,
+            "fighters_sum": 4.0,
+            "units": [
+              {
+                "cls": "Охотники-сторожа",
+                "count": 2,
+                "str": 1.0
+              }
+            ],
             "loyalty": 1,
             "loyalty_pct": 10,
             "defense_pct": 10,
@@ -2923,7 +3035,7 @@
             "tag_list": [],
             "sum_pct": 20,
             "mult": 1.2,
-            "fighters_src": "ополч. 2",
+            "fighters_src": "гарн. 2 + ополч. 2",
             "neutral": true
           },
           "buildings": []
@@ -2981,17 +3093,23 @@
             ]
           },
           "might": {
-            "total": 2,
-            "total_min": 1,
-            "total_max": 2,
-            "total_avg": 1,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 4,
+            "total_min": 3,
+            "total_max": 4,
+            "total_avg": 4,
+            "core_sum": 2.0,
+            "core_src": "гарн. 2",
             "militia": 2,
             "militia_src": "1d2",
-            "fighters": 2,
-            "fighters_sum": 2.0,
-            "units": [],
+            "fighters": 4,
+            "fighters_sum": 4.0,
+            "units": [
+              {
+                "cls": "Охотники-сторожа",
+                "count": 2,
+                "str": 1.0
+              }
+            ],
             "loyalty": 1,
             "loyalty_pct": 10,
             "defense_pct": 10,
@@ -3001,7 +3119,7 @@
             "tag_list": [],
             "sum_pct": 20,
             "mult": 1.2,
-            "fighters_src": "ополч. 2",
+            "fighters_src": "гарн. 2 + ополч. 2",
             "neutral": true
           },
           "buildings": []
@@ -3235,17 +3353,23 @@
             "reasons": []
           },
           "might": {
-            "total": 62,
-            "total_min": 1,
-            "total_max": 62,
-            "total_avg": 31,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 68,
+            "total_min": 7,
+            "total_max": 68,
+            "total_avg": 38,
+            "core_sum": 5.0,
+            "core_src": "гарн. 5",
             "militia": 48,
             "militia_src": "1d48",
-            "fighters": 48,
-            "fighters_sum": 48.0,
-            "units": [],
+            "fighters": 53,
+            "fighters_sum": 53.0,
+            "units": [
+              {
+                "cls": "Дружина",
+                "count": 5,
+                "str": 1.0
+              }
+            ],
             "loyalty": 2,
             "loyalty_pct": 20,
             "defense_pct": 10,
@@ -3255,7 +3379,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополч. 48",
+            "fighters_src": "гарн. 5 + ополч. 48",
             "neutral": true
           },
           "buildings": []
@@ -3485,17 +3609,23 @@
             ]
           },
           "might": {
-            "total": 1,
-            "total_min": 1,
-            "total_max": 1,
-            "total_avg": 1,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 3,
+            "total_min": 3,
+            "total_max": 3,
+            "total_avg": 3,
+            "core_sum": 2.0,
+            "core_src": "гарн. 2",
             "militia": 1,
             "militia_src": "1d1",
-            "fighters": 1,
-            "fighters_sum": 1.0,
-            "units": [],
+            "fighters": 3,
+            "fighters_sum": 3.0,
+            "units": [
+              {
+                "cls": "Охотники-сторожа",
+                "count": 2,
+                "str": 1.0
+              }
+            ],
             "loyalty": 1,
             "loyalty_pct": 10,
             "defense_pct": 10,
@@ -3505,7 +3635,7 @@
             "tag_list": [],
             "sum_pct": 20,
             "mult": 1.2,
-            "fighters_src": "ополч. 1",
+            "fighters_src": "гарн. 2 + ополч. 1",
             "neutral": true
           },
           "buildings": []
@@ -3571,17 +3701,23 @@
             ]
           },
           "might": {
-            "total": 3,
-            "total_min": 1,
-            "total_max": 3,
-            "total_avg": 2,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 8,
+            "total_min": 6,
+            "total_max": 8,
+            "total_avg": 7,
+            "core_sum": 4.0,
+            "core_src": "гарн. 4",
             "militia": 3,
             "militia_src": "1d3",
-            "fighters": 3,
-            "fighters_sum": 3.0,
-            "units": [],
+            "fighters": 7,
+            "fighters_sum": 7.0,
+            "units": [
+              {
+                "cls": "Охотники-сторожа",
+                "count": 4,
+                "str": 1.0
+              }
+            ],
             "loyalty": 1,
             "loyalty_pct": 10,
             "defense_pct": 10,
@@ -3591,7 +3727,7 @@
             "tag_list": [],
             "sum_pct": 20,
             "mult": 1.2,
-            "fighters_src": "ополч. 3",
+            "fighters_src": "гарн. 4 + ополч. 3",
             "neutral": true
           },
           "buildings": []
@@ -3665,6 +3801,19 @@
             "type": "internal",
             "from": "Собрание Юксек-иле",
             "to": "Восточная полоса (роды малых родов)"
+          },
+          {
+            "type": "edge",
+            "from": "Собрание Юксек-иле",
+            "to": "Солонцы",
+            "dir": {
+              "dx": 0,
+              "dy": 1
+            },
+            "to_coord": [
+              -1,
+              -2
+            ]
           }
         ],
         "tiles": [
@@ -3804,17 +3953,23 @@
             "reasons": []
           },
           "might": {
-            "total": 32,
-            "total_min": 1,
-            "total_max": 32,
-            "total_avg": 16,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 39,
+            "total_min": 7,
+            "total_max": 39,
+            "total_avg": 23,
+            "core_sum": 5.0,
+            "core_src": "гарн. 5",
             "militia": 25,
             "militia_src": "1d25",
-            "fighters": 25,
-            "fighters_sum": 25.0,
-            "units": [],
+            "fighters": 30,
+            "fighters_sum": 30.0,
+            "units": [
+              {
+                "cls": "Дружина",
+                "count": 5,
+                "str": 1.0
+              }
+            ],
             "loyalty": 2,
             "loyalty_pct": 20,
             "defense_pct": 10,
@@ -3824,7 +3979,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополч. 25",
+            "fighters_src": "гарн. 5 + ополч. 25",
             "neutral": true
           },
           "buildings": []
@@ -3892,17 +4047,23 @@
             "reasons": []
           },
           "might": {
-            "total": 54,
-            "total_min": 1,
-            "total_max": 54,
-            "total_avg": 27,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 61,
+            "total_min": 7,
+            "total_max": 61,
+            "total_avg": 34,
+            "core_sum": 5.0,
+            "core_src": "гарн. 5",
             "militia": 42,
             "militia_src": "1d42",
-            "fighters": 42,
-            "fighters_sum": 42.0,
-            "units": [],
+            "fighters": 47,
+            "fighters_sum": 47.0,
+            "units": [
+              {
+                "cls": "Дружина",
+                "count": 5,
+                "str": 1.0
+              }
+            ],
             "loyalty": 2,
             "loyalty_pct": 20,
             "defense_pct": 10,
@@ -3912,7 +4073,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополч. 42",
+            "fighters_src": "гарн. 5 + ополч. 42",
             "neutral": true
           },
           "buildings": []
@@ -3974,17 +4135,23 @@
             "reasons": []
           },
           "might": {
-            "total": 62,
-            "total_min": 1,
-            "total_max": 62,
-            "total_avg": 31,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 67,
+            "total_min": 6,
+            "total_max": 67,
+            "total_avg": 37,
+            "core_sum": 4.0,
+            "core_src": "гарн. 4",
             "militia": 48,
             "militia_src": "1d48",
-            "fighters": 48,
-            "fighters_sum": 48.0,
-            "units": [],
+            "fighters": 52,
+            "fighters_sum": 52.0,
+            "units": [
+              {
+                "cls": "Дружина",
+                "count": 4,
+                "str": 1.0
+              }
+            ],
             "loyalty": 2,
             "loyalty_pct": 20,
             "defense_pct": 10,
@@ -3994,7 +4161,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополч. 48",
+            "fighters_src": "гарн. 4 + ополч. 48",
             "neutral": true
           },
           "buildings": []
@@ -4201,17 +4368,23 @@
             "reasons": []
           },
           "might": {
-            "total": 36,
-            "total_min": 1,
-            "total_max": 36,
-            "total_avg": 18,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 42,
+            "total_min": 7,
+            "total_max": 42,
+            "total_avg": 25,
+            "core_sum": 5.0,
+            "core_src": "гарн. 5",
             "militia": 28,
             "militia_src": "1d28",
-            "fighters": 28,
-            "fighters_sum": 28.0,
-            "units": [],
+            "fighters": 33,
+            "fighters_sum": 33.0,
+            "units": [
+              {
+                "cls": "Дозор",
+                "count": 5,
+                "str": 1.0
+              }
+            ],
             "loyalty": 2,
             "loyalty_pct": 20,
             "defense_pct": 10,
@@ -4221,7 +4394,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополч. 28",
+            "fighters_src": "гарн. 5 + ополч. 28",
             "neutral": true
           },
           "buildings": []
@@ -4275,17 +4448,23 @@
             "reasons": []
           },
           "might": {
-            "total": 26,
-            "total_min": 1,
-            "total_max": 26,
-            "total_avg": 13,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 32,
+            "total_min": 7,
+            "total_max": 32,
+            "total_avg": 20,
+            "core_sum": 5.0,
+            "core_src": "гарн. 5",
             "militia": 20,
             "militia_src": "1d20",
-            "fighters": 20,
-            "fighters_sum": 20.0,
-            "units": [],
+            "fighters": 25,
+            "fighters_sum": 25.0,
+            "units": [
+              {
+                "cls": "Дозор",
+                "count": 5,
+                "str": 1.0
+              }
+            ],
             "loyalty": 2,
             "loyalty_pct": 20,
             "defense_pct": 10,
@@ -4295,7 +4474,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополч. 20",
+            "fighters_src": "гарн. 5 + ополч. 20",
             "neutral": true
           },
           "buildings": []
@@ -4492,17 +4671,23 @@
             "reasons": []
           },
           "might": {
-            "total": 52,
-            "total_min": 1,
-            "total_max": 52,
-            "total_avg": 26,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 57,
+            "total_min": 6,
+            "total_max": 57,
+            "total_avg": 31,
+            "core_sum": 4.0,
+            "core_src": "гарн. 4",
             "militia": 40,
             "militia_src": "1d40",
-            "fighters": 40,
-            "fighters_sum": 40.0,
-            "units": [],
+            "fighters": 44,
+            "fighters_sum": 44.0,
+            "units": [
+              {
+                "cls": "Дружина",
+                "count": 4,
+                "str": 1.0
+              }
+            ],
             "loyalty": 2,
             "loyalty_pct": 20,
             "defense_pct": 10,
@@ -4512,7 +4697,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополч. 40",
+            "fighters_src": "гарн. 4 + ополч. 40",
             "neutral": true
           },
           "buildings": []
@@ -4572,17 +4757,23 @@
             "reasons": []
           },
           "might": {
-            "total": 39,
-            "total_min": 1,
-            "total_max": 39,
-            "total_avg": 20,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 48,
+            "total_min": 10,
+            "total_max": 48,
+            "total_avg": 29,
+            "core_sum": 7.0,
+            "core_src": "гарн. 7",
             "militia": 30,
             "militia_src": "1d30",
-            "fighters": 30,
-            "fighters_sum": 30.0,
-            "units": [],
+            "fighters": 37,
+            "fighters_sum": 37.0,
+            "units": [
+              {
+                "cls": "Дружина",
+                "count": 7,
+                "str": 1.0
+              }
+            ],
             "loyalty": 2,
             "loyalty_pct": 20,
             "defense_pct": 10,
@@ -4592,7 +4783,337 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополч. 30",
+            "fighters_src": "гарн. 7 + ополч. 30",
+            "neutral": true
+          },
+          "buildings": []
+        }
+      ]
+    },
+    {
+      "area": "Солонцы — нейтральная клетка (-1, -2)",
+      "file": "solontsy",
+      "area_map": {
+        "area": "Солонцы — нейтральная клетка (-1, -2)",
+        "cols": 4,
+        "rows": 4,
+        "blocks": [
+          {
+            "coord": [
+              -1,
+              -2
+            ],
+            "col0": 1,
+            "row0": 1,
+            "owned": true
+          }
+        ],
+        "nodes": [
+          {
+            "name": "Солонцы",
+            "col": 1,
+            "row": 2,
+            "terrain": "t-meadow",
+            "owner": "",
+            "pop": 300
+          },
+          {
+            "name": "Солонцы-Увал",
+            "col": 4,
+            "row": 3,
+            "terrain": "t-meadow",
+            "owner": "",
+            "pop": 400
+          }
+        ],
+        "roads": [
+          {
+            "type": "internal",
+            "from": "Солонцы",
+            "to": "Солонцы-Увал"
+          },
+          {
+            "type": "edge",
+            "from": "Солонцы",
+            "to": "Ковыльные Стойбища",
+            "dir": {
+              "dx": 1,
+              "dy": 1
+            },
+            "to_coord": [
+              0,
+              -1
+            ]
+          },
+          {
+            "type": "edge",
+            "from": "Солонцы",
+            "to": "Ставка Ахьяр-иле",
+            "dir": {
+              "dx": 1,
+              "dy": 0
+            },
+            "to_coord": [
+              0,
+              -2
+            ]
+          },
+          {
+            "type": "edge",
+            "from": "Солонцы",
+            "to": "Волчьи Пустоши",
+            "dir": {
+              "dx": 0,
+              "dy": 1
+            },
+            "to_coord": [
+              -1,
+              -1
+            ]
+          },
+          {
+            "type": "edge",
+            "from": "Солонцы",
+            "to": "Собрание Юксек-иле",
+            "dir": {
+              "dx": 0,
+              "dy": -1
+            },
+            "to_coord": [
+              -1,
+              -3
+            ]
+          }
+        ],
+        "tiles": [
+          {
+            "x": 0,
+            "y": 0,
+            "col": 1,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 0,
+            "y": 2,
+            "col": 1,
+            "row": 2,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 1,
+            "y": 1,
+            "col": 2,
+            "row": 3,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 1,
+            "y": 3,
+            "col": 2,
+            "row": 1,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 2,
+            "y": 0,
+            "col": 3,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 2,
+            "y": 2,
+            "col": 3,
+            "row": 2,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 3,
+            "y": 1,
+            "col": 4,
+            "row": 3,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 3,
+            "y": 3,
+            "col": 4,
+            "row": 1,
+            "terrain": "t-meadow"
+          }
+        ]
+      },
+      "settlements": [
+        {
+          "name": "Солонцы",
+          "population": "~300",
+          "houses": "30",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
+          "promysly": [
+            {
+              "name": "Скотоводство (овца-конь)",
+              "tier": "1",
+              "chain": "скот→кожа→изделия",
+              "owner": "местные роды"
+            },
+            {
+              "name": "Соль (солончак)",
+              "tier": "1",
+              "chain": "соль→обмен",
+              "owner": "местные роды"
+            }
+          ],
+          "loyalty": {
+            "уклад": "крепкий",
+            "Тип": "нейтральная",
+            "Л": 18,
+            "Н": 6,
+            "НЛ": 6,
+            "supporters": {
+              "Пало": 0
+            },
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Авиценна",
+                "count": 3,
+                "pct": 10
+              },
+              {
+                "name": "Тенета",
+                "count": 2,
+                "pct": 7
+              },
+              {
+                "name": "Местный культ",
+                "count": 1,
+                "pct": 3
+              }
+            ],
+            "neutral": 24,
+            "neutral_pct": 80,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 32,
+            "total_min": 10,
+            "total_max": 32,
+            "total_avg": 21,
+            "core_sum": 7.0,
+            "core_src": "гарн. 7",
+            "militia": 18,
+            "militia_src": "1d18",
+            "fighters": 25,
+            "fighters_sum": 25.0,
+            "units": [
+              {
+                "cls": "Дружина",
+                "count": 7,
+                "str": 1.0
+              }
+            ],
+            "loyalty": 2,
+            "loyalty_pct": 20,
+            "defense_pct": 10,
+            "cult_war_pct": 0,
+            "tags_pct": 0,
+            "tag_sum": 0,
+            "tag_list": [],
+            "sum_pct": 30,
+            "mult": 1.3,
+            "fighters_src": "гарн. 7 + ополч. 18",
+            "neutral": true
+          },
+          "buildings": []
+        },
+        {
+          "name": "Солонцы-Увал",
+          "population": "~400",
+          "houses": "40",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
+          "promysly": [
+            {
+              "name": "Скотоводство",
+              "tier": "1",
+              "chain": "скот→кожа→изделия",
+              "owner": "местные роды"
+            },
+            {
+              "name": "Кожевенное сырьё",
+              "tier": "1",
+              "chain": "← скот",
+              "owner": "местные роды"
+            }
+          ],
+          "loyalty": {
+            "уклад": "крепкий",
+            "Тип": "нейтральная",
+            "Л": 24,
+            "Н": 8,
+            "НЛ": 8,
+            "supporters": {
+              "Пало": 0
+            },
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Культ войны",
+                "count": 2,
+                "pct": 5
+              },
+              {
+                "name": "Айдан «Кот»",
+                "count": 2,
+                "pct": 5
+              }
+            ],
+            "neutral": 36,
+            "neutral_pct": 90,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 37,
+            "total_min": 7,
+            "total_max": 37,
+            "total_avg": 22,
+            "core_sum": 5.0,
+            "core_src": "гарн. 5",
+            "militia": 24,
+            "militia_src": "1d24",
+            "fighters": 29,
+            "fighters_sum": 29.0,
+            "units": [
+              {
+                "cls": "Дружина",
+                "count": 5,
+                "str": 1.0
+              }
+            ],
+            "loyalty": 2,
+            "loyalty_pct": 20,
+            "defense_pct": 10,
+            "cult_war_pct": 0,
+            "tags_pct": 0,
+            "tag_sum": 0,
+            "tag_list": [],
+            "sum_pct": 30,
+            "mult": 1.3,
+            "fighters_src": "гарн. 5 + ополч. 24",
             "neutral": true
           },
           "buildings": []
@@ -4798,17 +5319,23 @@
             "reasons": []
           },
           "might": {
-            "total": 10,
-            "total_min": 1,
-            "total_max": 10,
-            "total_avg": 5,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 16,
+            "total_min": 7,
+            "total_max": 16,
+            "total_avg": 12,
+            "core_sum": 5.0,
+            "core_src": "гарн. 5",
             "militia": 8,
             "militia_src": "1d8",
-            "fighters": 8,
-            "fighters_sum": 8.0,
-            "units": [],
+            "fighters": 13,
+            "fighters_sum": 13.0,
+            "units": [
+              {
+                "cls": "Дозор",
+                "count": 5,
+                "str": 1.0
+              }
+            ],
             "loyalty": 2,
             "loyalty_pct": 20,
             "defense_pct": 10,
@@ -4818,7 +5345,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополч. 8",
+            "fighters_src": "гарн. 5 + ополч. 8",
             "neutral": true
           },
           "buildings": []
@@ -4880,17 +5407,23 @@
             "reasons": []
           },
           "might": {
-            "total": 15,
-            "total_min": 1,
-            "total_max": 15,
-            "total_avg": 8,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 19,
+            "total_min": 5,
+            "total_max": 19,
+            "total_avg": 12,
+            "core_sum": 3.0,
+            "core_src": "гарн. 3",
             "militia": 12,
             "militia_src": "1d12",
-            "fighters": 12,
-            "fighters_sum": 12.0,
-            "units": [],
+            "fighters": 15,
+            "fighters_sum": 15.0,
+            "units": [
+              {
+                "cls": "Дозор",
+                "count": 3,
+                "str": 1.0
+              }
+            ],
             "loyalty": 2,
             "loyalty_pct": 20,
             "defense_pct": 10,
@@ -4900,7 +5433,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополч. 12",
+            "fighters_src": "гарн. 3 + ополч. 12",
             "neutral": true
           },
           "buildings": []
@@ -5013,6 +5546,19 @@
             "type": "internal",
             "from": "Ставка Ахьяр-иле",
             "to": "Кочевая полоса Ахьяр-иле"
+          },
+          {
+            "type": "edge",
+            "from": "Ставка Ахьяр-иле",
+            "to": "Солонцы",
+            "dir": {
+              "dx": -1,
+              "dy": 0
+            },
+            "to_coord": [
+              -1,
+              -2
+            ]
           }
         ],
         "tiles": [
@@ -5138,17 +5684,23 @@
             "reasons": []
           },
           "might": {
-            "total": 39,
-            "total_min": 1,
-            "total_max": 39,
-            "total_avg": 20,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 46,
+            "total_min": 9,
+            "total_max": 46,
+            "total_avg": 27,
+            "core_sum": 6.0,
+            "core_src": "гарн. 6",
             "militia": 30,
             "militia_src": "1d30",
-            "fighters": 30,
-            "fighters_sum": 30.0,
-            "units": [],
+            "fighters": 36,
+            "fighters_sum": 36.0,
+            "units": [
+              {
+                "cls": "Дружина",
+                "count": 6,
+                "str": 1.0
+              }
+            ],
             "loyalty": 2,
             "loyalty_pct": 20,
             "defense_pct": 10,
@@ -5158,7 +5710,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополч. 30",
+            "fighters_src": "гарн. 6 + ополч. 30",
             "neutral": true
           },
           "buildings": []
@@ -5226,17 +5778,23 @@
             "reasons": []
           },
           "might": {
-            "total": 31,
-            "total_min": 1,
-            "total_max": 31,
-            "total_avg": 16,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 36,
+            "total_min": 6,
+            "total_max": 36,
+            "total_avg": 21,
+            "core_sum": 4.0,
+            "core_src": "гарн. 4",
             "militia": 24,
             "militia_src": "1d24",
-            "fighters": 24,
-            "fighters_sum": 24.0,
-            "units": [],
+            "fighters": 28,
+            "fighters_sum": 28.0,
+            "units": [
+              {
+                "cls": "Дружина",
+                "count": 4,
+                "str": 1.0
+              }
+            ],
             "loyalty": 2,
             "loyalty_pct": 20,
             "defense_pct": 10,
@@ -5246,7 +5804,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополч. 24",
+            "fighters_src": "гарн. 4 + ополч. 24",
             "neutral": true
           },
           "buildings": []
@@ -5452,17 +6010,23 @@
             "reasons": []
           },
           "might": {
-            "total": 28,
-            "total_min": 1,
-            "total_max": 28,
-            "total_avg": 14,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 33,
+            "total_min": 7,
+            "total_max": 33,
+            "total_avg": 20,
+            "core_sum": 4.0,
+            "core_src": "гарн. 4",
             "militia": 20,
             "militia_src": "1d20",
-            "fighters": 20,
-            "fighters_sum": 20.0,
-            "units": [],
+            "fighters": 24,
+            "fighters_sum": 24.0,
+            "units": [
+              {
+                "cls": "Дружина",
+                "count": 4,
+                "str": 1.0
+              }
+            ],
             "loyalty": 2,
             "loyalty_pct": 20,
             "defense_pct": 10,
@@ -5472,7 +6036,7 @@
             "tag_list": [],
             "sum_pct": 40,
             "mult": 1.4,
-            "fighters_src": "ополч. 20",
+            "fighters_src": "гарн. 4 + ополч. 20",
             "neutral": true
           },
           "buildings": []
@@ -5540,17 +6104,23 @@
             "reasons": []
           },
           "might": {
-            "total": 67,
-            "total_min": 1,
-            "total_max": 67,
-            "total_avg": 34,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 75,
+            "total_min": 9,
+            "total_max": 75,
+            "total_avg": 42,
+            "core_sum": 6.0,
+            "core_src": "гарн. 6",
             "militia": 48,
             "militia_src": "1d48",
-            "fighters": 48,
-            "fighters_sum": 48.0,
-            "units": [],
+            "fighters": 54,
+            "fighters_sum": 54.0,
+            "units": [
+              {
+                "cls": "Дружина",
+                "count": 6,
+                "str": 1.0
+              }
+            ],
             "loyalty": 2,
             "loyalty_pct": 20,
             "defense_pct": 10,
@@ -5560,7 +6130,7 @@
             "tag_list": [],
             "sum_pct": 40,
             "mult": 1.4,
-            "fighters_src": "ополч. 48",
+            "fighters_src": "гарн. 6 + ополч. 48",
             "neutral": true
           },
           "buildings": []
@@ -5777,17 +6347,23 @@
             ]
           },
           "might": {
-            "total": 57,
-            "total_min": 1,
-            "total_max": 57,
-            "total_avg": 29,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 63,
+            "total_min": 7,
+            "total_max": 63,
+            "total_avg": 35,
+            "core_sum": 5.0,
+            "core_src": "гарн. 5",
             "militia": 48,
             "militia_src": "1d48",
-            "fighters": 48,
-            "fighters_sum": 48.0,
-            "units": [],
+            "fighters": 53,
+            "fighters_sum": 53.0,
+            "units": [
+              {
+                "cls": "Дружина",
+                "count": 5,
+                "str": 1.0
+              }
+            ],
             "loyalty": 1,
             "loyalty_pct": 10,
             "defense_pct": 10,
@@ -5797,7 +6373,7 @@
             "tag_list": [],
             "sum_pct": 20,
             "mult": 1.2,
-            "fighters_src": "ополч. 48",
+            "fighters_src": "гарн. 5 + ополч. 48",
             "neutral": true
           },
           "buildings": []
@@ -5974,17 +6550,23 @@
             ]
           },
           "might": {
-            "total": 3,
-            "total_min": 1,
-            "total_max": 3,
-            "total_avg": 2,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 7,
+            "total_min": 4,
+            "total_max": 7,
+            "total_avg": 6,
+            "core_sum": 3.0,
+            "core_src": "гарн. 3",
             "militia": 3,
             "militia_src": "1d3",
-            "fighters": 3,
-            "fighters_sum": 3.0,
-            "units": [],
+            "fighters": 6,
+            "fighters_sum": 6.0,
+            "units": [
+              {
+                "cls": "Охотники-сторожа",
+                "count": 3,
+                "str": 1.0
+              }
+            ],
             "loyalty": 1,
             "loyalty_pct": 10,
             "defense_pct": 10,
@@ -5994,7 +6576,7 @@
             "tag_list": [],
             "sum_pct": 20,
             "mult": 1.2,
-            "fighters_src": "ополч. 3",
+            "fighters_src": "гарн. 3 + ополч. 3",
             "neutral": true
           },
           "buildings": []
@@ -6067,6 +6649,19 @@
             "to_coord": [
               0,
               0
+            ]
+          },
+          {
+            "type": "edge",
+            "from": "Волчьи Пустоши",
+            "to": "Солонцы",
+            "dir": {
+              "dx": 0,
+              "dy": -1
+            },
+            "to_coord": [
+              -1,
+              -2
             ]
           }
         ],
@@ -6170,24 +6765,39 @@
             "reasons": []
           },
           "might": {
-            "total": 3,
-            "total_min": 1,
-            "total_max": 3,
-            "total_avg": 2,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 13,
+            "total_min": 11,
+            "total_max": 13,
+            "total_avg": 12,
+            "core_sum": 8.2,
+            "core_src": "гарн. 8",
             "militia": 3,
             "militia_src": "1d3",
-            "fighters": 3,
-            "fighters_sum": 3.0,
-            "units": [],
+            "fighters": 11,
+            "fighters_sum": 11.2,
+            "units": [
+              {
+                "cls": "Лихие",
+                "count": 7,
+                "str": 1.0
+              },
+              {
+                "cls": "Главарь",
+                "count": 1,
+                "str": 1.2
+              }
+            ],
             "loyalty": 2,
             "loyalty_pct": 20,
             "defense_pct": 10,
             "cult_war_pct": 0,
-            "tags_pct": -20,
-            "tag_sum": -2,
+            "tags_pct": -10,
+            "tag_sum": -1,
             "tag_list": [
+              {
+                "value": 1,
+                "reason": "гнилой"
+              },
               {
                 "value": -1,
                 "reason": "разведка пало С1"
@@ -6197,9 +6807,9 @@
                 "reason": "ватага бек батыра пало С1"
               }
             ],
-            "sum_pct": 10,
-            "mult": 1.1,
-            "fighters_src": "ополч. 3",
+            "sum_pct": 20,
+            "mult": 1.2,
+            "fighters_src": "гарн. 8 + ополч. 3",
             "neutral": true
           },
           "buildings": []
@@ -6398,27 +7008,38 @@
             "reasons": []
           },
           "might": {
-            "total": 67,
-            "total_min": 1,
-            "total_max": 67,
-            "total_avg": 34,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 88,
+            "total_min": 12,
+            "total_max": 88,
+            "total_avg": 50,
+            "core_sum": 7.0,
+            "core_src": "гарн. 7",
             "militia": 48,
             "militia_src": "1d48",
-            "fighters": 48,
-            "fighters_sum": 48.0,
-            "units": [],
+            "fighters": 55,
+            "fighters_sum": 55.0,
+            "units": [
+              {
+                "cls": "Дружина",
+                "count": 7,
+                "str": 1.0
+              }
+            ],
             "loyalty": 2,
             "loyalty_pct": 20,
             "defense_pct": 10,
             "cult_war_pct": 10,
-            "tags_pct": 0,
-            "tag_sum": 0,
-            "tag_list": [],
-            "sum_pct": 40,
-            "mult": 1.4,
-            "fighters_src": "ополч. 48",
+            "tags_pct": 20,
+            "tag_sum": 2,
+            "tag_list": [
+              {
+                "value": 2,
+                "reason": "варвары"
+              }
+            ],
+            "sum_pct": 60,
+            "mult": 1.6,
+            "fighters_src": "гарн. 7 + ополч. 48",
             "neutral": true
           },
           "buildings": []
@@ -6673,17 +7294,23 @@
             ]
           },
           "might": {
-            "total": 3,
-            "total_min": 1,
-            "total_max": 3,
-            "total_avg": 2,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 7,
+            "total_min": 4,
+            "total_max": 7,
+            "total_avg": 6,
+            "core_sum": 3.0,
+            "core_src": "гарн. 3",
             "militia": 3,
             "militia_src": "1d3",
-            "fighters": 3,
-            "fighters_sum": 3.0,
-            "units": [],
+            "fighters": 6,
+            "fighters_sum": 6.0,
+            "units": [
+              {
+                "cls": "Охотники-сторожа",
+                "count": 3,
+                "str": 1.0
+              }
+            ],
             "loyalty": 1,
             "loyalty_pct": 10,
             "defense_pct": 10,
@@ -6693,7 +7320,7 @@
             "tag_list": [],
             "sum_pct": 20,
             "mult": 1.2,
-            "fighters_src": "ополч. 3",
+            "fighters_src": "гарн. 3 + ополч. 3",
             "neutral": true
           },
           "buildings": []
@@ -6747,17 +7374,23 @@
             "reasons": []
           },
           "might": {
-            "total": 1,
-            "total_min": 1,
-            "total_max": 1,
-            "total_avg": 1,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 6,
+            "total_min": 6,
+            "total_max": 6,
+            "total_avg": 6,
+            "core_sum": 4.0,
+            "core_src": "гарн. 4",
             "militia": 1,
             "militia_src": "1d1",
-            "fighters": 1,
-            "fighters_sum": 1.0,
-            "units": [],
+            "fighters": 5,
+            "fighters_sum": 5.0,
+            "units": [
+              {
+                "cls": "Охотники-сторожа",
+                "count": 4,
+                "str": 1.0
+              }
+            ],
             "loyalty": 2,
             "loyalty_pct": 20,
             "defense_pct": 10,
@@ -6767,7 +7400,7 @@
             "tag_list": [],
             "sum_pct": 30,
             "mult": 1.3,
-            "fighters_src": "ополч. 1",
+            "fighters_src": "гарн. 4 + ополч. 1",
             "neutral": true
           },
           "buildings": []
@@ -6825,17 +7458,23 @@
             ]
           },
           "might": {
-            "total": 2,
-            "total_min": 1,
-            "total_max": 2,
-            "total_avg": 1,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 4,
+            "total_min": 3,
+            "total_max": 4,
+            "total_avg": 4,
+            "core_sum": 2.0,
+            "core_src": "гарн. 2",
             "militia": 2,
             "militia_src": "1d2",
-            "fighters": 2,
-            "fighters_sum": 2.0,
-            "units": [],
+            "fighters": 4,
+            "fighters_sum": 4.0,
+            "units": [
+              {
+                "cls": "Охотники-сторожа",
+                "count": 2,
+                "str": 1.0
+              }
+            ],
             "loyalty": 1,
             "loyalty_pct": 10,
             "defense_pct": 10,
@@ -6845,7 +7484,7 @@
             "tag_list": [],
             "sum_pct": 20,
             "mult": 1.2,
-            "fighters_src": "ополч. 2",
+            "fighters_src": "гарн. 2 + ополч. 2",
             "neutral": true
           },
           "buildings": []
@@ -7038,17 +7677,23 @@
             ]
           },
           "might": {
-            "total": 2,
-            "total_min": 1,
-            "total_max": 2,
-            "total_avg": 1,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 4,
+            "total_min": 3,
+            "total_max": 4,
+            "total_avg": 4,
+            "core_sum": 2.0,
+            "core_src": "гарн. 2",
             "militia": 2,
             "militia_src": "1d2",
-            "fighters": 2,
-            "fighters_sum": 2.0,
-            "units": [],
+            "fighters": 4,
+            "fighters_sum": 4.0,
+            "units": [
+              {
+                "cls": "Охотники-сторожа",
+                "count": 2,
+                "str": 1.0
+              }
+            ],
             "loyalty": 1,
             "loyalty_pct": 10,
             "defense_pct": 10,
@@ -7058,7 +7703,7 @@
             "tag_list": [],
             "sum_pct": 20,
             "mult": 1.2,
-            "fighters_src": "ополч. 2",
+            "fighters_src": "гарн. 2 + ополч. 2",
             "neutral": true
           },
           "buildings": []
@@ -7116,17 +7761,23 @@
             ]
           },
           "might": {
-            "total": 7,
-            "total_min": 1,
-            "total_max": 7,
-            "total_avg": 4,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 12,
+            "total_min": 6,
+            "total_max": 12,
+            "total_avg": 9,
+            "core_sum": 4.0,
+            "core_src": "гарн. 4",
             "militia": 6,
             "militia_src": "1d6",
-            "fighters": 6,
-            "fighters_sum": 6.0,
-            "units": [],
+            "fighters": 10,
+            "fighters_sum": 10.0,
+            "units": [
+              {
+                "cls": "Охотники-сторожа",
+                "count": 4,
+                "str": 1.0
+              }
+            ],
             "loyalty": 1,
             "loyalty_pct": 10,
             "defense_pct": 10,
@@ -7136,7 +7787,7 @@
             "tag_list": [],
             "sum_pct": 20,
             "mult": 1.2,
-            "fighters_src": "ополч. 6",
+            "fighters_src": "гарн. 4 + ополч. 6",
             "neutral": true
           },
           "buildings": []
@@ -7320,17 +7971,23 @@
             ]
           },
           "might": {
-            "total": 7,
-            "total_min": 1,
-            "total_max": 7,
-            "total_avg": 4,
-            "core_sum": 0.0,
-            "core_src": "нет ядра",
+            "total": 12,
+            "total_min": 6,
+            "total_max": 12,
+            "total_avg": 9,
+            "core_sum": 4.0,
+            "core_src": "гарн. 4",
             "militia": 6,
             "militia_src": "1d6",
-            "fighters": 6,
-            "fighters_sum": 6.0,
-            "units": [],
+            "fighters": 10,
+            "fighters_sum": 10.0,
+            "units": [
+              {
+                "cls": "Охотники-сторожа",
+                "count": 4,
+                "str": 1.0
+              }
+            ],
             "loyalty": 1,
             "loyalty_pct": 10,
             "defense_pct": 10,
@@ -7340,7 +7997,7 @@
             "tag_list": [],
             "sum_pct": 20,
             "mult": 1.2,
-            "fighters_src": "ополч. 6",
+            "fighters_src": "гарн. 4 + ополч. 6",
             "neutral": true
           },
           "buildings": []
