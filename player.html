@@ -1130,6 +1130,7 @@ function terrainTileColor(t){ return {'t-mountain':'#9a8f78','t-forest':'#3f7a34
 function buildingPanoType(name) {
   const n = (name || '').toLowerCase();
   if (n.includes('аванпост') || n.includes('avanpost')) return 'avanpost';
+  if (n.includes('посольств') || n.includes('posol')) return 'posolstvo';
   if (n.includes('faktor') || n.includes('фактор')) return 'faktoria';
   if (n.includes('управ')) return 'uprava';
   if (n.includes('караул') || n.includes('стража') || n.includes('казарм')) return 'karaulka';
@@ -1146,7 +1147,7 @@ function buildingPanoLabel(name) {
   const labels = {
     uprava: 'Управа', karaulka: 'Караулка', tavern: 'Таверна', lekarnya: 'Лекарня',
     chasovnya: 'Часовня', masterskaya: 'Мастерская', psarnya: 'Псарня', konushnya: 'Конюшня',
-    avanpost: 'Аванпост', faktoria: 'Фактория',
+    avanpost: 'Аванпост', faktoria: 'Фактория', posolstvo: 'Посольство',
   };
   return labels[buildingPanoType(name)] || 'Мастерская';
 }
@@ -1162,6 +1163,7 @@ const BLD_SPRITES = {
   konushnya: 'assets/buildings/konushnya.png',
   avanpost: 'assets/buildings/karaulka.png',
   faktoria: 'assets/buildings/tavern.png',
+  posolstvo: 'assets/buildings/uprava.png',
 };
 
 // Устаревший алиас — для совместимости emoji/эффектов
