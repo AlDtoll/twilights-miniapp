@@ -475,8 +475,10 @@
         "hands": 0,
         "is_housing": false
       }
-    ]
+    ],
+    "external": []
   },
+  "external_buildings": [],
   "events": {
     "points": {
       "player": {
@@ -712,6 +714,10 @@
           {
             "name": "«Учитель стрелков»",
             "kind": "приём"
+          },
+          {
+            "name": "«Харизма»",
+            "kind": "техника"
           }
         ],
         "bank": 4,

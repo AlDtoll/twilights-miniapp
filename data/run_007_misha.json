@@ -598,8 +598,10 @@
         "hands": 4,
         "is_housing": false
       }
-    ]
+    ],
+    "external": []
   },
+  "external_buildings": [],
   "events": {
     "points": {
       "player": {

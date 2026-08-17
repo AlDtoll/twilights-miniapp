@@ -1145,6 +1145,7 @@ let PLAYER_META = {
   dun: { key: 'misha',  name: 'Область Дунара' },
 };
 const areaCache = {};
+let currentExternals = [];
 const areaOverlay = document.getElementById('area-overlay');
 const areaNps     = document.getElementById('area-nps');
 const areaTitle   = document.getElementById('area-title');
@@ -1197,6 +1198,7 @@ async function openCell(cellData, playerType, cx, cy) {
   panoSetts = {};
   settlements.forEach(s => { panoSetts[s.name] = s; });
   currentPanoSeasonName = (areaCache[cacheKey] && areaCache[cacheKey].season_name) || null;
+  currentExternals = (areaCache[cacheKey] && areaCache[cacheKey].external_buildings) || [];
   const npHtml = settlements.length
     ? settlements.map(renderNPCard).join('')
     : '<div class="area-loading">НП не найдены в данных</div>';
@@ -1311,6 +1313,10 @@ function npRoadsLine(name) {
 
 function renderNPCard(s) {
   const blds = (s.buildings || []).map(b => b.name).join(', ');
+  const extHere = (currentExternals || []).filter(e => e.host === s.name);
+  const extLine = extHere.length
+    ? `<div class="np-buildings">Ваши в этом НП: ${extHere.map(e => esc(e.name)).join(', ')}</div>`
+    : '';
   const staff = (s.staff || []).map(st =>
     `<div class="np-stat"><span class="np-stat-label">${st.category}:</span> ${st.fact}/${st.norm} ${st.status}</div>`
   ).join('');
@@ -1324,6 +1330,7 @@ function renderNPCard(s) {
     ${mightBlock(s.might)}
     ${staff}
     ${blds ? `<div class="np-buildings">Постройки: ${blds}</div>` : ''}
+    ${extLine}
     ${npRoadsLine(s.name)}
     ${loyaltyBlock(s.loyalty, houses, s.might)}
     ${faithBlock(s.faith)}
@@ -1490,15 +1497,53 @@ function panoTerrainFor(name, real){
 }
 function terrainTileColor(t){ return {'t-mountain':'#9a8f78','t-forest':'#3f7a34','t-forest-thicket':'#2f6a28','t-swamp':'#5f7040','t-ocean':'#4a86c0','t-skerry':'#4a86c0','t-evil':'#7a5a5a','t-meadow':'#7fae54'}[t]||'#7fae54'; }
 
-// Категория постройки по ключевым словам имени
-function buildingArchetype(name) {
+// Канонический тип здания на панораме (8 типов каталога + внешние)
+function buildingPanoType(name) {
   const n = (name || '').toLowerCase();
-  if (n.includes('управ')) return 'admin';
-  if (n.match(/казарм|цитадел|форт|крепост|карауль|стража|вышк|башн|тренир|плац/)) return 'military';
-  if (n.match(/часовн|алтарь|святилищ|храм|монастыр/)) return 'religious';
-  if (n.match(/мельниц|пекарн|кожевн|столярн|сапож|пивовар|рыбац|коптильн|коопер|конюшн|псарн/)) return 'production';
-  if (n.match(/склад|амбар|рынок|торгов/)) return 'storage';
-  return 'residential';
+  if (n.includes('аванпост') || n.includes('avanpost')) return 'avanpost';
+  if (n.includes('faktor') || n.includes('фактор')) return 'faktoria';
+  if (n.includes('управ')) return 'uprava';
+  if (n.includes('караул') || n.includes('стража') || n.includes('казарм')) return 'karaulka';
+  if (n.includes('таверн') || n.includes('пивовар')) return 'tavern';
+  if (n.includes('лечеб') || n.includes('больниц')) return 'lekarnya';
+  if (n.match(/часовн|алтар|храм|монаст|святилищ/)) return 'chasovnya';
+  if (n.includes('псарн')) return 'psarnya';
+  if (n.includes('конюшн')) return 'konushnya';
+  if (n.match(/мастер|кожев|столяр|сапож|мельниц|пекар|рыбац|коптиль|коопер|артель|кузн|кожевн/)) return 'masterskaya';
+  return 'masterskaya';
+}
+
+function buildingPanoLabel(name) {
+  const labels = {
+    uprava: 'Управа', karaulka: 'Караулка', tavern: 'Таверна', lekarnya: 'Лекарня',
+    chasovnya: 'Часовня', masterskaya: 'Мастерская', psarnya: 'Псарня', konushnya: 'Конюшня',
+    avanpost: 'Аванпост', faktoria: 'Фактория',
+  };
+  return labels[buildingPanoType(name)] || 'Мастерская';
+}
+
+const BLD_SPRITES = {
+  uprava: 'assets/buildings/uprava.png',
+  karaulka: 'assets/buildings/karaulka.png',
+  tavern: 'assets/buildings/tavern.png',
+  lekarnya: 'assets/buildings/lekarnya.png',
+  chasovnya: 'assets/buildings/chasovnya.png',
+  masterskaya: 'assets/buildings/masterskaya.png',
+  psarnya: 'assets/buildings/psarnya.png',
+  konushnya: 'assets/buildings/konushnya.png',
+  avanpost: 'assets/buildings/karaulka.png',
+  faktoria: 'assets/buildings/tavern.png',
+};
+
+// Устаревший алиас — для совместимости emoji/эффектов
+function buildingArchetype(name) {
+  const t = buildingPanoType(name);
+  if (t === 'uprava') return 'admin';
+  if (t === 'karaulka') return 'military';
+  if (t === 'chasovnya') return 'religious';
+  if (t === 'masterskaya' || t === 'tavern' || t === 'psarnya' || t === 'konushnya') return 'production';
+  if (t === 'lekarnya') return 'residential';
+  return 'production';
 }
 
 // Каталог эффектов построек (ключ = подстрока нижнего регистра имени)
@@ -1569,10 +1614,17 @@ function panoEcoCount(settlement, needles){
   return 0;
 }
 
+function panoBuildingsFor(npName, settlement) {
+  const local = (settlement && settlement.buildings) ? settlement.buildings : [];
+  const ext = (currentExternals || []).filter(e => e.host === npName);
+  return local.concat(ext.map(e => ({ ...e, external: true })));
+}
+
 function openPano(npName, settlement, terrainHint) {
   document.getElementById('pano-title').textContent = npName;
   // Шапка НП: население, terrain, дворы, лавки, торговцы, стратегические постройки
-  const bldCount=(settlement&&settlement.buildings)?settlement.buildings.length:0;
+  const merged = panoBuildingsFor(npName, settlement);
+  const bldCount = merged.length;
   const housesMeta=parseInt(String((settlement&&settlement.houses)||'').replace(/[^\d]/g,''),10)||0;
   const shopsMeta=panoEcoCount(settlement, ['лавк']);
   const tradersMeta=panoEcoCount(settlement, ['торговц']);
@@ -1591,7 +1643,7 @@ function closePano() {
 
 function renderPano(npName, settlement, terrainHint, seasonName) {
   const stage = document.getElementById('pano-stage');
-  const buildings = (settlement && settlement.buildings) ? settlement.buildings : [];
+  const buildings = panoBuildingsFor(npName, settlement);
   _panoBlds = buildings;
   const VW = 800, VH = 500;
   const E = (typeof esc === 'function') ? esc : (x => String(x));
@@ -1681,12 +1733,19 @@ function renderPano(npName, settlement, terrainHint, seasonName) {
   function gableRoof(L,R,wallTop,peak,roof){ const over=(R-L)*0.12, cx=(L+R)/2; let s=''; s+=`<path d="M ${L-over} ${wallTop} L ${cx} ${peak} L ${cx} ${wallTop} Z" fill="${shade(roof,1.12)}"/>`; s+=`<path d="M ${cx} ${peak} L ${R+over} ${wallTop} L ${cx} ${wallTop} Z" fill="${shade(roof,0.82)}"/>`; s+=`<path d="M ${L-over} ${wallTop} L ${cx} ${peak} L ${R+over} ${wallTop}" fill="none" stroke="${shade(roof,0.6)}" stroke-width="1"/>`; return s; }
   function bodyResidential(cx,baseY,bw,bh,wall,roof,timber,lit){ const wallTop=baseY-bh*0.6, L=cx-bw/2, R=cx+bw/2, peak=baseY-bh; let s=`<rect x="${L}" y="${wallTop}" width="${bw}" height="${baseY-wallTop}" fill="${wall}"/>`; s+=`<rect x="${cx}" y="${wallTop}" width="${bw/2}" height="${baseY-wallTop}" fill="${shade(wall,0.88)}"/>`; if(timber){ const bm='#5a3d24'; s+=`<line x1="${L}" y1="${wallTop}" x2="${R}" y2="${baseY}" stroke="${bm}" stroke-width="1.4"/><line x1="${R}" y1="${wallTop}" x2="${L}" y2="${baseY}" stroke="${bm}" stroke-width="1.4"/><line x1="${cx}" y1="${wallTop}" x2="${cx}" y2="${baseY}" stroke="${bm}" stroke-width="1.2"/><rect x="${L}" y="${wallTop}" width="${bw}" height="${baseY-wallTop}" fill="none" stroke="${bm}" stroke-width="1.6"/>`; } s+=gableRoof(L,R,wallTop,peak,roof); s+=win(cx-bw*0.32,wallTop+bh*0.12,bw*0.2,bh*0.18,lit); s+=win(cx+bw*0.12,wallTop+bh*0.12,bw*0.2,bh*0.18,lit); s+=`<rect x="${cx-bw*0.1}" y="${baseY-bh*0.3}" width="${bw*0.2}" height="${bh*0.3}" fill="#3a2414"/>`; return {svg:s, chimneyX:cx+bw*0.3, chimneyY:wallTop-bh*0.02}; }
 
-  function drawBuilding(b,i,cx,baseY,bw,bh,isBuilding){ const arch=buildingArchetype(b.name||''); const name=(b.name||'').toLowerCase(); const L=cx-bw/2,R=cx+bw/2; let inner='',flag='',smoke=''; if(arch==='military'){ const wall='#c3bdad', wtop=baseY-bh*0.82; inner+=`<rect x="${L}" y="${wtop}" width="${bw}" height="${baseY-wtop}" fill="${wall}"/>`; inner+=`<rect x="${cx}" y="${wtop}" width="${bw/2}" height="${baseY-wtop}" fill="${shade(wall,0.86)}"/>`; const cH=bh*0.1, cW=bw/7; for(let k=0;k<4;k++){ inner+=`<rect x="${L+cW*(k*1.7)}" y="${wtop-cH}" width="${cW}" height="${cH}" fill="${wall}"/>`; } for(let k=1;k<=3;k++){ const yy=wtop+(baseY-wtop)*k/4; inner+=`<line x1="${L}" y1="${yy}" x2="${R}" y2="${yy}" stroke="${shade(wall,0.75)}" stroke-width="0.6"/>`; } inner+=`<rect x="${cx-bw*0.28}" y="${wtop+bh*0.14}" width="${bw*0.05}" height="${bh*0.2}" fill="#2a2018"/>`; inner+=`<rect x="${cx+bw*0.23}" y="${wtop+bh*0.14}" width="${bw*0.05}" height="${bh*0.2}" fill="#2a2018"/>`; inner+=`<path d="M ${cx-bw*0.14} ${baseY} L ${cx-bw*0.14} ${baseY-bh*0.3} Q ${cx} ${baseY-bh*0.42} ${cx+bw*0.14} ${baseY-bh*0.3} L ${cx+bw*0.14} ${baseY} Z" fill="#3a2414" stroke="${shade(wall,0.7)}" stroke-width="1"/>`; if(!isBuilding) flag=drawFlag(cx, wtop-cH, bw*0.34, bh*0.16, true); } else if(arch==='admin'){ const sc=1.3, iw=bw*sc, ih=bw*1.205*sc; inner=`<image href="assets/uprava.svg" x="${cx-iw/2}" y="${baseY-ih*0.9285}" width="${iw}" height="${ih}" preserveAspectRatio="xMidYMax meet" pointer-events="all"/>`; flag=''; } else if(arch==='religious'){ const wall='#efe7d2', roof='#8a5a38', wtop=baseY-bh*0.56, peak=baseY-bh*0.76; inner+=`<rect x="${L}" y="${wtop}" width="${bw}" height="${baseY-wtop}" fill="${wall}"/>`; inner+=`<rect x="${cx}" y="${wtop}" width="${bw/2}" height="${baseY-wtop}" fill="${shade(wall,0.9)}"/>`; inner+=gableRoof(L,R,wtop,peak,roof); const spBase=wtop, spPeak=baseY-bh*1.3, spW=bw*0.16; inner+=`<polygon points="${cx-spW/2},${spBase} ${cx},${spPeak} ${cx+spW/2},${spBase}" fill="${shade(roof,0.85)}"/>`; inner+=`<polygon points="${cx-spW/2},${spBase} ${cx},${spPeak} ${cx},${spBase}" fill="${shade(roof,1.05)}"/>`; inner+=`<circle cx="${cx}" cy="${spPeak}" r="${spW*0.5}" fill="#e8c84a" stroke="#a8863a" stroke-width="0.6"/>`; inner+=`<path d="M ${cx-bw*0.12} ${baseY-bh*0.06} L ${cx-bw*0.12} ${wtop+bh*0.16} Q ${cx} ${wtop+bh*0.02} ${cx+bw*0.12} ${wtop+bh*0.16} L ${cx+bw*0.12} ${baseY-bh*0.06} Z" fill="#7fa8c8" stroke="${shade(roof,0.7)}" stroke-width="1.2"/>`; inner+=`<line x1="${cx}" y1="${wtop+bh*0.06}" x2="${cx}" y2="${baseY-bh*0.06}" stroke="${shade(roof,0.7)}" stroke-width="0.8"/>`; if(!isBuilding) flag=drawFlag(cx+bw*0.4, wtop-bh*0.02, bw*0.2, bh*0.14, true); } else if(arch==='storage'){ if(name.match(/рынок|торгов/)){ const tTop=baseY-bh*0.5; const stripes=5; const sw=bw/stripes; for(let k=0;k<stripes;k++){ inner+=`<rect x="${L+sw*k}" y="${tTop}" width="${sw}" height="${baseY-tTop}" fill="${k%2?'#d84a3a':'#f0ead8'}"/>`; } inner+=`<path d="M ${L-bw*0.08} ${tTop} L ${cx} ${tTop-bh*0.28} L ${R+bw*0.08} ${tTop} Z" fill="#c23a2c"/>`; inner+=`<rect x="${L}" y="${baseY-bh*0.14}" width="${bw}" height="${bh*0.14}" fill="#7d5730"/>`; } else { const wall='#a9713f', roof='#6f4a2a', wtop=baseY-bh*0.5; inner+=`<rect x="${L}" y="${wtop}" width="${bw}" height="${baseY-wtop}" fill="${wall}"/>`; inner+=`<rect x="${cx}" y="${wtop}" width="${bw/2}" height="${baseY-wtop}" fill="${shade(wall,0.86)}"/>`; inner+=`<path d="M ${L-bw*0.08} ${wtop} L ${cx} ${wtop-bh*0.24} L ${R+bw*0.08} ${wtop} Z" fill="${roof}"/>`; for(let k=1;k<4;k++){ inner+=`<line x1="${L}" y1="${wtop+(baseY-wtop)*k/4}" x2="${R}" y2="${wtop+(baseY-wtop)*k/4}" stroke="${shade(wall,0.8)}" stroke-width="0.6"/>`; } inner+=`<rect x="${cx-bw*0.18}" y="${baseY-bh*0.34}" width="${bw*0.36}" height="${bh*0.34}" fill="#5a3d24" stroke="${shade(wall,0.7)}" stroke-width="1"/>`; inner+=`<line x1="${cx}" y1="${baseY-bh*0.34}" x2="${cx}" y2="${baseY}" stroke="${shade(wall,0.6)}" stroke-width="1"/>`; } } else { const timber=(arch==='production'); const wall=timber?'#e3d3ac':'#e8d6b0'; const roof=timber?'#9c6a3c':'#b5532e'; const r=bodyResidential(cx,baseY,bw,bh,wall,roof,timber,true); inner+=r.svg; if(!isBuilding){ const cxh=r.chimneyX, cyh=r.chimneyY; inner+=`<rect x="${cxh-bw*0.04}" y="${cyh-bh*0.14}" width="${bw*0.08}" height="${bh*0.2}" fill="${shade(wall,0.7)}"/>`; const sd1=((i*1.7)%4).toFixed(1), sd2=((i*1.7+2.3)%4).toFixed(1); smoke=`<g pointer-events="none"><circle cx="${cxh-1}" cy="${cyh-bh*0.18}" r="2.4" fill="#e8e4dc" style="animation:amb-smoke 4s ease-out ${sd1}s infinite" opacity="0"/><circle cx="${cxh+1.5}" cy="${cyh-bh*0.24}" r="3" fill="#e8e4dc" style="animation:amb-smoke 4s ease-out ${sd2}s infinite" opacity="0"/></g>`; } if(name.includes('мельниц')){ const wr=bh*0.17, wx=R-wr*0.2, wy=baseY-wr*0.7; inner+=`<circle cx="${wx}" cy="${wy}" r="${wr}" fill="#6b4a2c" stroke="#3f2a18" stroke-width="1.5"/><circle cx="${wx}" cy="${wy}" r="${wr*0.62}" fill="none" stroke="#3f2a18" stroke-width="1"/>`; for(let k=0;k<8;k++){ const a=k*Math.PI/4; inner+=`<line x1="${wx}" y1="${wy}" x2="${wx+Math.cos(a)*wr}" y2="${wy+Math.sin(a)*wr}" stroke="#3f2a18" stroke-width="1"/>`; } inner+=`<circle cx="${wx}" cy="${wy}" r="${wr*0.14}" fill="#3f2a18"/>`; } } return {inner, flag, smoke}; }
+  function drawBuilding(b,i,cx,baseY,bw,bh,isBuilding){
+    const type=buildingPanoType(b.name||'');
+    const src=BLD_SPRITES[type]||BLD_SPRITES.masterskaya;
+    const sc=1.22, iw=bw*sc, ih=bh*1.38;
+    const inner=`<image href="${src}" x="${cx-iw/2}" y="${baseY-ih}" width="${iw}" height="${ih}" preserveAspectRatio="xMidYMax meet" pointer-events="all"/>`;
+    return {inner, flag:'', smoke:''};
+  }
+
+  function bldLabel(item,cx,baseY){ const nm=buildingPanoLabel(item.b.name||''); const w=nm.length*5.6+10; return `<g pointer-events="none"><rect x="${cx-w/2}" y="${baseY+5}" width="${w}" height="13" rx="6" fill="#1a1206" opacity="0.55"/><text x="${cx}" y="${baseY+14}" font-size="9" fill="#f0e4c8" text-anchor="middle">${E(nm)}</text></g>`; }
 
   function bldGroup(item, cx, baseY, bw, bh){ const {b,i}=item; const st=(b.status||'').toLowerCase(); const isBuilding=st.includes('🔨')||st.includes('строит')||st.includes('в работе'); const d=drawBuilding(b,i,cx,baseY,bw,bh,isBuilding); const shadow=`<ellipse cx="${cx}" cy="${baseY+2}" rx="${bw*0.66}" ry="${bw*0.12}" fill="#000000" opacity="0.18" pointer-events="none"/>`; let scaffold=''; if(isBuilding){ const L=cx-bw/2,R=cx+bw/2,T=baseY-bh*0.7; scaffold=`<g pointer-events="none" stroke="#caa24a" stroke-width="1" opacity="0.8"><line x1="${L}" y1="${T}" x2="${R}" y2="${baseY}" stroke-dasharray="3 2"/><line x1="${R}" y1="${T}" x2="${L}" y2="${baseY}" stroke-dasharray="3 2"/><line x1="${L}" y1="${baseY-bh*0.4}" x2="${R}" y2="${baseY-bh*0.4}" stroke-dasharray="3 2"/></g>`; } const op=isBuilding?0.6:1; return `${shadow}<g class="pano-bld" opacity="${op}" onclick="openBldCard(${i});event.stopPropagation()" cursor="pointer">${d.inner}${scaffold}${d.flag}${d.smoke}</g>`; }
-  function bldLabel(item,cx,baseY){ const nm=(item.b.name||''); const short=nm.length>14?nm.slice(0,13)+'…':nm; const w=short.length*5.6+10; return `<g pointer-events="none"><rect x="${cx-w/2}" y="${baseY+5}" width="${w}" height="13" rx="6" fill="#1a1206" opacity="0.55"/><text x="${cx}" y="${baseY+14}" font-size="9" fill="#f0e4c8" text-anchor="middle">${E(short)}</text></g>`; }
 
-  const monumental = n => ['admin','military','religious'].includes(buildingArchetype(n));
+  const monumental = n => ['uprava','karaulka','chasovnya','lekarnya'].includes(buildingPanoType(n));
   const back=[], front=[];
   buildings.forEach((b,i)=>{ (monumental(b.name||'')?back:front).push({b,i}); });
   if(!front.length && back.length>3){ while(back.length>3 && front.length<back.length){ front.unshift(back.pop()); } }

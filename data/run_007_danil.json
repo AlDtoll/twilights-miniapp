@@ -239,6 +239,19 @@
           -1,
           -2
         ]
+      },
+      {
+        "type": "edge",
+        "from": "Ковыльные Стойбища-Ближнее",
+        "to": "Соляной Тракт",
+        "dir": {
+          "dx": 1,
+          "dy": 0
+        },
+        "to_coord": [
+          1,
+          -1
+        ]
       }
     ],
     "tiles": [
@@ -690,8 +703,10 @@
         "hands": 0,
         "is_housing": false
       }
-    ]
+    ],
+    "external": []
   },
+  "external_buildings": [],
   "events": {
     "points": {
       "player": {
