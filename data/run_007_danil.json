@@ -340,7 +340,7 @@
   "telegram": "@aldtoll",
   "season": "5",
   "season_name": "весна",
-  "active_phase": "adventure",
+  "active_phase": "hearth",
   "finance": {
     "start": -7530,
     "income": [
@@ -1089,7 +1089,7 @@
       {
         "name": "Экономика (0)",
         "techniques": [],
-        "bank": 4,
+        "bank": 5,
         "ups": 0,
         "next_threshold": 10
       }
@@ -1276,8 +1276,8 @@
     "threshold_pct": 15
   },
   "hearth": {
-    "remaining": null,
-    "total": null
+    "remaining": 2,
+    "total": 2
   },
   "loot": {
     "sold": 0,
