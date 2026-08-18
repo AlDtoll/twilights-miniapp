@@ -919,6 +919,8 @@
         ]
       },
       "houses": "56",
+      "shops": 11,
+      "traders": 6,
       "staff": [
         {
           "category": "Стража (бойцы)",
@@ -1144,6 +1146,8 @@
         ]
       },
       "houses": "33",
+      "shops": 7,
+      "traders": 3,
       "staff": [
         {
           "category": "Стража (бойцы)",
@@ -1287,6 +1291,8 @@
         ]
       },
       "houses": "22",
+      "shops": 4,
+      "traders": 2,
       "staff": [
         {
           "category": "Стража (бойцы)",

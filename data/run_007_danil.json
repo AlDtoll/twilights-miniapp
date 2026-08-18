@@ -427,6 +427,10 @@
         "amount": 1980
       },
       {
+        "label": "Содержание пленников (2 × 6 × 90)",
+        "amount": 1080
+      },
+      {
         "label": "Стража (11 × 20 × 90)",
         "amount": 19800
       },
@@ -479,7 +483,12 @@
         "amount": 5400
       }
     ],
-    "receipts": [],
+    "receipts": [
+      {
+        "label": "Заём братчина Гостиного Порта (20000 под 28%/год)",
+        "amount": 20000
+      }
+    ],
     "spendings": [
       {
         "label": "Кони купцу (тракт, разбор Мокея С5)",
@@ -492,6 +501,10 @@
       {
         "label": "Починка амбара + зерно (Мокей С5)",
         "amount": 236
+      },
+      {
+        "label": "Возврат займа братчина Гостиного Порта (20000 под 28%/год) (×4)",
+        "amount": 6400
       }
     ],
     "income_by": {
@@ -589,6 +602,10 @@
         {
           "label": "Жалование капитана гарнизона (Сотник Драча, 22 × 90)",
           "amount": 1980
+        },
+        {
+          "label": "Содержание пленников (2 × 6 × 90)",
+          "amount": 1080
         }
       ],
       "Былицы": [
@@ -655,8 +672,8 @@
       ]
     },
     "total_income": 90399,
-    "total_expenses": 82110,
-    "balance": -51
+    "total_expenses": 83190,
+    "balance": 12469
   },
   "buildings": {
     "slots": {
@@ -956,14 +973,14 @@
             "kind": "приём"
           }
         ],
-        "bank": 4,
+        "bank": 6,
         "ups": 1,
         "next_threshold": 12
       },
       {
         "name": "Адепт Хереца (I)",
         "techniques": [],
-        "bank": 2,
+        "bank": 3,
         "ups": 0,
         "next_threshold": 10
       },
@@ -998,14 +1015,14 @@
             "kind": "техника"
           }
         ],
-        "bank": 12,
+        "bank": 15,
         "ups": 1,
         "next_threshold": 12
       },
       {
         "name": "Наблюдательность (0)",
         "techniques": [],
-        "bank": 16,
+        "bank": 18,
         "ups": 0,
         "next_threshold": 10
       },
@@ -1033,7 +1050,7 @@
       {
         "name": "Лидерство (0)",
         "techniques": [],
-        "bank": 12,
+        "bank": 14,
         "ups": 0,
         "next_threshold": 10
       },
@@ -1062,6 +1079,13 @@
         "name": "Путник (0)",
         "techniques": [],
         "bank": 2,
+        "ups": 0,
+        "next_threshold": 10
+      },
+      {
+        "name": "Экономика (0)",
+        "techniques": [],
+        "bank": 4,
         "ups": 0,
         "next_threshold": 10
       }
@@ -1306,6 +1330,8 @@
       "growth": null,
       "med_growth": null,
       "houses": "84",
+      "shops": 17,
+      "traders": 8,
       "staff": [
         {
           "category": "Стража (бойцы)",
@@ -1500,6 +1526,8 @@
       "growth": null,
       "med_growth": null,
       "houses": "28",
+      "shops": 6,
+      "traders": 3,
       "staff": [
         {
           "category": "Стража (бойцы)",
@@ -1646,6 +1674,8 @@
       "growth": null,
       "med_growth": null,
       "houses": "23",
+      "shops": 5,
+      "traders": 2,
       "staff": [
         {
           "category": "Стража (бойцы)",
@@ -1801,6 +1831,8 @@
       "growth": null,
       "med_growth": null,
       "houses": "22",
+      "shops": 4,
+      "traders": 2,
       "staff": [
         {
           "category": "Стража (бойцы)",
@@ -1950,6 +1982,8 @@
       "growth": null,
       "med_growth": null,
       "houses": "88",
+      "shops": 18,
+      "traders": 9,
       "staff": [
         {
           "category": "Стража (бойцы)",
@@ -2100,6 +2134,8 @@
       "growth": null,
       "med_growth": null,
       "houses": null,
+      "shops": 0,
+      "traders": 0,
       "staff": [],
       "buildings": [],
       "promysly": [],

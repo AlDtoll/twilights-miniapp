@@ -1094,6 +1094,8 @@
       "growth": null,
       "med_growth": null,
       "houses": "77",
+      "shops": 15,
+      "traders": 8,
       "staff": [
         {
           "category": "Стража (бойцы)",
@@ -1327,6 +1329,8 @@
       "growth": null,
       "med_growth": null,
       "houses": "33",
+      "shops": 7,
+      "traders": 3,
       "staff": [
         {
           "category": "Стража (бойцы)",
