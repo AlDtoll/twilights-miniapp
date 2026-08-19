@@ -733,14 +733,14 @@
     "cults": [
       {
         "name": "Кипона",
-        "count": 33,
-        "pct": 30,
+        "count": 34,
+        "pct": 31,
         "events": true
       },
       {
         "name": "Айдан «Кот»",
-        "count": 12,
-        "pct": 11,
+        "count": 13,
+        "pct": 12,
         "events": false
       },
       {
@@ -756,8 +756,8 @@
         "events": false
       }
     ],
-    "neutral": 46,
-    "neutral_pct": 41,
+    "neutral": 44,
+    "neutral_pct": 40,
     "threshold_pct": 15
   },
   "hearth": {
@@ -937,8 +937,8 @@
           },
           {
             "name": "Айдан «Кот»",
-            "count": 12,
-            "pct": 21,
+            "count": 13,
+            "pct": 23,
             "rel_mod": 0,
             "rel_reasons": []
           },
@@ -950,10 +950,13 @@
             "rel_reasons": []
           }
         ],
-        "neutral": 23,
-        "neutral_pct": 41,
+        "neutral": 22,
+        "neutral_pct": 39,
         "mod": 0,
-        "reasons": []
+        "reasons": [],
+        "delta": {
+          "Айдан «Кот»": 1
+        }
       },
       "might": {
         "total": 52,
@@ -1102,7 +1105,8 @@
         "neutral": 16,
         "neutral_pct": 48,
         "mod": 0,
-        "reasons": []
+        "reasons": [],
+        "delta": {}
       },
       "might": {
         "total": 24,
@@ -1234,8 +1238,8 @@
         "cults": [
           {
             "name": "Кипона",
-            "count": 11,
-            "pct": 50,
+            "count": 12,
+            "pct": 55,
             "rel_mod": 0,
             "rel_reasons": []
           },
@@ -1247,12 +1251,15 @@
             "rel_reasons": []
           }
         ],
-        "neutral": 7,
-        "neutral_pct": 32,
+        "neutral": 6,
+        "neutral_pct": 27,
         "mod": -1,
         "reasons": [
-          "−1 Кипона преобладает (50%), герой Фортуна"
-        ]
+          "−1 Кипона преобладает (55%), герой Фортуна"
+        ],
+        "delta": {
+          "Кипона": 1
+        }
       },
       "might": {
         "total": 23,
