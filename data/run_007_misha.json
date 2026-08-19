@@ -820,14 +820,14 @@
     "cults": [
       {
         "name": "Айдан «Кот»",
-        "count": 32,
-        "pct": 29,
+        "count": 33,
+        "pct": 30,
         "events": true
       },
       {
         "name": "Бурий",
-        "count": 20,
-        "pct": 18,
+        "count": 21,
+        "pct": 19,
         "events": true
       },
       {
@@ -837,8 +837,8 @@
         "events": false
       }
     ],
-    "neutral": 48,
-    "neutral_pct": 44,
+    "neutral": 46,
+    "neutral_pct": 42,
     "threshold_pct": 15
   },
   "hearth": {
@@ -1033,8 +1033,8 @@
         "cults": [
           {
             "name": "Айдан «Кот»",
-            "count": 22,
-            "pct": 29,
+            "count": 23,
+            "pct": 30,
             "rel_mod": 1,
             "rel_reasons": [
               "+1 герой культа Айдан «Кот»"
@@ -1055,10 +1055,13 @@
             "rel_reasons": []
           }
         ],
-        "neutral": 37,
-        "neutral_pct": 48,
+        "neutral": 36,
+        "neutral_pct": 47,
         "mod": 0,
-        "reasons": []
+        "reasons": [],
+        "delta": {
+          "Айдан «Кот»": 1
+        }
       },
       "might": {
         "total": 89,
@@ -1219,8 +1222,8 @@
         "cults": [
           {
             "name": "Бурий",
-            "count": 12,
-            "pct": 36,
+            "count": 13,
+            "pct": 39,
             "rel_mod": 0,
             "rel_reasons": []
           },
@@ -1234,12 +1237,15 @@
             ]
           }
         ],
-        "neutral": 11,
-        "neutral_pct": 33,
+        "neutral": 10,
+        "neutral_pct": 30,
         "mod": -1,
         "reasons": [
           "−1 религиозный раскол (2 культа ≥25%)"
-        ]
+        ],
+        "delta": {
+          "Бурий": 1
+        }
       },
       "might": {
         "total": 24,
