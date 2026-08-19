@@ -6762,7 +6762,7 @@
           "population": "~150",
           "houses": "15",
           "treasury": {
-            "pct": 25,
+            "pct": 31,
             "razoreno": true
           },
           "promysly": [
