@@ -340,7 +340,7 @@
   "telegram": "@aldtoll",
   "season": "5",
   "season_name": "весна",
-  "active_phase": "hearth",
+  "active_phase": "",
   "finance": {
     "start": -7530,
     "income": [
@@ -984,7 +984,7 @@
       {
         "name": "Адепт Хереца (I)",
         "techniques": [],
-        "bank": 3,
+        "bank": 5,
         "ups": 0,
         "next_threshold": 10
       },
@@ -1000,7 +1000,7 @@
             "kind": "техника"
           }
         ],
-        "bank": 10,
+        "bank": 11,
         "ups": 1,
         "next_threshold": 12
       },
@@ -1052,11 +1052,11 @@
         "next_threshold": 10
       },
       {
-        "name": "Лидерство (0)",
+        "name": "Лидерство (I)",
         "techniques": [],
-        "bank": 14,
-        "ups": 0,
-        "next_threshold": 10
+        "bank": 4,
+        "ups": 1,
+        "next_threshold": 12
       },
       {
         "name": "Грамотность (0)",
@@ -1092,6 +1092,13 @@
         "bank": 5,
         "ups": 0,
         "next_threshold": 10
+      },
+      {
+        "name": "Щит (0)",
+        "techniques": [],
+        "bank": 1,
+        "ups": 0,
+        "next_threshold": 10
       }
     ],
     "features": [
@@ -1102,14 +1109,14 @@
     },
     "retinue": [],
     "retinue_slots": {
-      "total": 1.0,
+      "total": 1.5,
       "used": 0.0,
       "breakdown": {
         "base": 0.5,
         "housing": 0.5,
         "housing_tier": "дом",
-        "leadership": 0.0,
-        "leadership_level": "0",
+        "leadership": 0.5,
+        "leadership_level": "I",
         "artifacts": 0.0
       }
     },
@@ -1276,7 +1283,7 @@
     "threshold_pct": 15
   },
   "hearth": {
-    "remaining": 2,
+    "remaining": 0,
     "total": 2
   },
   "loot": {
@@ -2047,8 +2054,8 @@
       "stash": [],
       "loyalty": {
         "Л": 39,
-        "Н": 7,
-        "НЛ": 34,
+        "Н": 8,
+        "НЛ": 33,
         "inline_mod": -4,
         "inline_mods": [
           {
