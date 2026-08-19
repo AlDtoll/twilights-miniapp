@@ -918,43 +918,13 @@
         "Л": 32,
         "Н": 14,
         "НЛ": 4,
-        "inline_mod": -2,
-        "inline_mods": [
-          {
-            "val": 1,
-            "desc": "Брох принял слово князя (С3)",
-            "vis_cnt": 1
-          },
-          {
-            "val": -1
-          },
-          {
-            "val": -1
-          },
-          {
-            "val": 1,
-            "desc": "Слово князя Броху сдержано (Лидерство идеал spot-diff, техника Харизма +15%)",
-            "vis_cnt": 1
-          },
-          {
-            "val": -1
-          },
-          {
-            "val": -1
-          }
-        ],
         "Тип": "стартовая",
-        "mod": 0,
+        "mod": 2,
         "reasons": [
           "+1 Управа",
-          "+1 Больница",
-          "+1 Брох принял слово князя (С3) (×1)",
-          "-1 мод.НП",
-          "-1 мод.НП",
-          "+1 Слово князя Броху сдержано (Лидерство идеал spot-diff, техника Харизма +15%) (×1)",
-          "-1 мод.НП",
-          "-1 мод.НП"
-        ]
+          "+1 Больница"
+        ],
+        "delta": {}
       },
       "faith": {
         "cults": [
@@ -986,10 +956,10 @@
         "reasons": []
       },
       "might": {
-        "total": 44,
-        "total_min": 9,
-        "total_max": 44,
-        "total_avg": 26,
+        "total": 52,
+        "total_min": 11,
+        "total_max": 52,
+        "total_avg": 31,
         "core_sum": 8.0,
         "core_src": "стража 8",
         "militia": 32,
@@ -997,15 +967,15 @@
         "fighters": 40,
         "fighters_sum": 40.0,
         "units": [],
-        "loyalty": 0,
-        "loyalty_pct": 0,
+        "loyalty": 2,
+        "loyalty_pct": 20,
         "defense_pct": 10,
         "cult_war_pct": 0,
         "tags_pct": 0,
         "tag_sum": 0,
         "tag_list": [],
-        "sum_pct": 10,
-        "mult": 1.1,
+        "sum_pct": 30,
+        "mult": 1.3,
         "fighters_src": "стража 8 + ополч. 32",
         "neutral": false
       },
@@ -1098,15 +1068,19 @@
       ],
       "stash": [],
       "loyalty": {
-        "Л": 22,
-        "Н": 8,
+        "Л": 23,
+        "Н": 7,
         "НЛ": 0,
         "Тип": "стартовая",
         "mod": -2,
         "reasons": [
           "−1 нехватка стражи (4/5)",
           "−1 перегруз рабочих рук (13>7)"
-        ]
+        ],
+        "delta": {
+          "Л": 1,
+          "Н": -1
+        }
       },
       "faith": {
         "cults": [
@@ -1131,16 +1105,16 @@
         "reasons": []
       },
       "might": {
-        "total": 23,
+        "total": 24,
         "total_min": 4,
-        "total_max": 23,
-        "total_avg": 13,
+        "total_max": 24,
+        "total_avg": 14,
         "core_sum": 4.0,
         "core_src": "стража 4",
-        "militia": 22,
-        "militia_src": "1d22",
-        "fighters": 26,
-        "fighters_sum": 26.0,
+        "militia": 23,
+        "militia_src": "1d23",
+        "fighters": 27,
+        "fighters_sum": 27.0,
         "units": [],
         "loyalty": -2,
         "loyalty_pct": -20,
@@ -1151,7 +1125,7 @@
         "tag_list": [],
         "sum_pct": -10,
         "mult": 0.9,
-        "fighters_src": "стража 4 + ополч. 22",
+        "fighters_src": "стража 4 + ополч. 23",
         "neutral": false
       },
       "eff_breakdown": {
@@ -1243,14 +1217,18 @@
       ],
       "stash": [],
       "loyalty": {
-        "Л": 19,
-        "Н": 1,
+        "Л": 20,
+        "Н": 0,
         "НЛ": 0,
         "Тип": "стартовая",
         "mod": -1,
         "reasons": [
           "-1 вера (религия)"
-        ]
+        ],
+        "delta": {
+          "Л": 1,
+          "Н": -1
+        }
       },
       "faith": {
         "cults": [
@@ -1277,16 +1255,16 @@
         ]
       },
       "might": {
-        "total": 22,
+        "total": 23,
         "total_min": 4,
-        "total_max": 22,
+        "total_max": 23,
         "total_avg": 13,
         "core_sum": 3.0,
         "core_src": "стража 3",
-        "militia": 19,
-        "militia_src": "1d19",
-        "fighters": 22,
-        "fighters_sum": 22.0,
+        "militia": 20,
+        "militia_src": "1d20",
+        "fighters": 23,
+        "fighters_sum": 23.0,
         "units": [],
         "loyalty": -1,
         "loyalty_pct": -10,
@@ -1297,7 +1275,7 @@
         "tag_list": [],
         "sum_pct": 0,
         "mult": 1.0,
-        "fighters_src": "стража 3 + ополч. 19",
+        "fighters_src": "стража 3 + ополч. 20",
         "neutral": false
       },
       "eff_breakdown": {
