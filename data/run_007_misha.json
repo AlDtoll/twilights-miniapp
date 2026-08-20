@@ -240,7 +240,7 @@
   "telegram": "@Мишачья",
   "season": "6",
   "season_name": "лето",
-  "active_phase": "idle",
+  "active_phase": "leader",
   "finance": {
     "start": 22395,
     "income": [
