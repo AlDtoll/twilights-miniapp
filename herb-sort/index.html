@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Twilights — Травы</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<link rel="stylesheet" href="../shared/styles.css">
+<link rel="stylesheet" href="../shared/styles.css?v=55584ae7">
 <style>
 
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--tg-theme-bg-color,#1a1a2e);color:var(--tg-theme-text-color,#eee);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;user-select:none;-webkit-user-select:none;}
@@ -41,7 +41,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="result" id="g-result"><div class="result-t" id="g-rt"></div><div class="result-s" id="g-rs"></div></div>
   </div>
 </div>
-<script src="../shared/core.js"></script>
+<script src="../shared/core.js?v=23c01f45"></script>
 <script>
 
 function tierBy(pct){
@@ -85,6 +85,7 @@ function gStart(){
   S={items:filtered,bins,place:{},sel:null,start:Date.now(),done:false};
   render(); hud();
   document.getElementById('g-hint').textContent='Тапни предмет, затем корзину';
+  startGameTimer({ seconds: gameData.timeLimit || 60, onExpire: submit, warnAt: 15 });
 }
 function render(){
   const pool=document.getElementById('pool'); pool.innerHTML='';
@@ -105,7 +106,7 @@ function render(){
   });
 }
 function hud(){document.getElementById('g-hud').innerHTML=`<div class="hud-item"><div class="hud-l">Разложено</div><div class="hud-v">${Object.keys(S.place).length}/${S.items.length}</div></div>`;}
-function submit(){ if(S.done)return; S.done=true;
+function submit(){ if(S.done)return; S.done=true; stopGameTimer();
   let ok=0; S.items.forEach(it=>{ const k=S.place[it.id]; if(k===it.color+it.shape)ok++; });
   const pct=ok/S.items.length; const t=tierBy(pct);
   finish('herb-sort',{correct:ok,total:S.items.length,outcome:t.outcome,level:t.level,timeSpent:Math.round((Date.now()-S.start)/1000)},t.outcome,ok+'/'+S.items.length);

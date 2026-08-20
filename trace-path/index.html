@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Twilights — Тропа</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<link rel="stylesheet" href="../shared/styles.css">
+<link rel="stylesheet" href="../shared/styles.css?v=55584ae7">
 <style>
 
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--tg-theme-bg-color,#1a1a2e);color:var(--tg-theme-text-color,#eee);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;user-select:none;-webkit-user-select:none;}
@@ -52,7 +52,7 @@ canvas{width:100%;border-radius:16px;background:#12121f;border:2px solid rgba(25
     </div>
   </div>
 </div>
-<script src="../shared/core.js"></script>
+<script src="../shared/core.js?v=23c01f45"></script>
 <script>
 
 function tierBy(pct){
@@ -93,6 +93,7 @@ function gStart(){
   cv.ontouchstart=cv.onmousedown=e=>{e.preventDefault();S.drawing=true;S.drawn=[pos(e)];};
   cv.ontouchmove=cv.onmousemove=e=>{if(!S.drawing||S.done)return;e.preventDefault();const p=pos(e);S.drawn.push(p);check(p);draw();};
   cv.ontouchend=cv.onmouseup=()=>{if(S.done)return;S.drawing=false;end();};
+  startGameTimer({ seconds: gameData.timeLimit || 45, onExpire: end, warnAt: 15 });
 }
 function distToPath(p){
   let best=1e9;
@@ -105,7 +106,7 @@ function distToPath(p){
   }
   return best;
 }
-function check(p){const d=distToPath(p); if(d>22){S.hits++;S.ok=false;}}
+function check(p){const tolerance=gameData.tolerance||22; const d=distToPath(p); if(d>tolerance){S.hits++;S.ok=false;}}
 function draw(){
   ctx.clearRect(0,0,320,320);
   ctx.lineWidth=28; ctx.strokeStyle='rgba(108,92,231,0.25)'; ctx.lineCap='round'; ctx.beginPath();
@@ -118,7 +119,7 @@ function draw(){
   ctx.fillStyle='#e74c3c'; const last=S.path[S.path.length-1]; ctx.beginPath();ctx.arc(last.x,last.y,8,0,7);ctx.fill();
 }
 function end(){
-  if(S.done)return; S.done=true;
+  if(S.done)return; S.done=true; stopGameTimer();
   const nearEnd=S.drawn.length && Math.hypot(S.drawn[S.drawn.length-1].x-S.path[S.path.length-1].x,S.drawn[S.drawn.length-1].y-S.path[S.path.length-1].y)<30;
   const pct=nearEnd?Math.max(0,1-S.hits/12):0;
   const t=tierBy(pct);

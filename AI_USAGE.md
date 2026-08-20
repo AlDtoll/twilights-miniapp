@@ -827,7 +827,20 @@ python3 twilights/minigames/send_miniapp.py <chat_id> \
 `--time-limit 12` → okMs/fell/level
 
 ### trace-path — тропа
-→ hits/finished/level
+
+Провести палец по тропе, не касаясь стен. Каждое касание за пределами допуска — штрафной хит.
+
+```bash
+python3 twilights/minigames/send_miniapp.py <chat_id> "🛤️ Пройди тропу" trace-path \
+  --time-limit 45 --tolerance 22 --prompt "Лес полон опасностей."
+```
+
+- `--time-limit N` — лимит времени, сек (по умолч. 45; больше = легче). Диапазон: 20–120.
+- `--tolerance N` — допуск касания тропы в пикселях (по умолч. 22; больше = шире тропа = легче). Диапазон: 10–40.
+- `--prompt "…"` — нарративный текст перед стартом.
+
+Результат: `{"game":"trace-path","hits":N,"finished":true|false,"outcome":"…","level":0-4,"timeSpent":N}`.
+Исход по `1 - hits/12`: ≥0.9→Идеально, ≥0.75→Отлично, ≥0.55→Хорошо, ≥0.35→Неплохо, иначе Слабо.
 
 ### rhythm — ритм
 `--config '{"beats":10,"bpm":100}'` → hits/total/level
@@ -857,13 +870,40 @@ python3 twilights/minigames/send_miniapp.py <chat_id> \
 `--config '{"size":6}'` → steps/ideal/level
 
 ### bargain — торг
-→ offer/ceiling/accepted/error/level
+
+Угадать потолок цены NPC, двигая ползунок и наблюдая реакцию лица. Чем ближе предложение к потолку — тем выше результат.
+
+```bash
+python3 twilights/minigames/send_miniapp.py <chat_id> "💬 Торг" bargain \
+  --time-limit 60 --margin 40 --prompt "Торговец ждёт твоего предложения."
+```
+
+- `--time-limit N` — лимит времени, сек (по умолч. 60; больше = легче). Диапазон: 20–120.
+- `--margin N` — допустимый разброс ошибки (по умолч. 40; больше = легче угадать). Диапазон: 20–80.
+- `--prompt "…"` — нарративный текст перед стартом.
+
+Результат: `{"game":"bargain","offer":N,"ceiling":N,"accepted":true|false,"error":N,"outcome":"…","level":0-4,"timeSpent":N}`.
+Исход по `1 - error/margin`: ≥0.9→Идеально, ≥0.75→Отлично, ≥0.55→Хорошо, ≥0.35→Неплохо, иначе Слабо.
 
 ### track — след
 `--config '{"rounds":5,"perImage":2.3}'` (rounds — целое 3–8; perImage — секунд на образец, дефолт 2.3, макс 10, истёк = промах) → correct/total/outcome/level/timeSpent
 
 ### herb-sort — травы
-→ correct/total/level
+
+Разложить предметы по корзинам по двум признакам: цвет и форма. 4 предмета, 4 корзины (2×2 сочетания).
+
+```bash
+python3 twilights/minigames/send_miniapp.py <chat_id> "🌿 Травы" herb-sort \
+  --time-limit 60 --prompt "Разложи травы по виду."
+```
+
+- `--time-limit N` — лимит времени, сек (по умолч. 60; больше = легче). Диапазон: 20–120.
+- `--prompt "…"` — нарративный текст перед стартом.
+
+Примечание: вторая ручка сложности (число предметов) не вводится — генератор жёстко завязан на 4 корзины (2 цвета × 2 формы), безопасная параметризация потребует переписывания генератора bins.
+
+Результат: `{"game":"herb-sort","correct":N,"total":N,"outcome":"…","level":0-4,"timeSpent":N}`.
+Исход по `correct/total`: ≥0.9→Идеально, ≥0.75→Отлично, ≥0.55→Хорошо, ≥0.35→Неплохо, иначе Слабо.
 
 ### duel-parry — парирование (очки)
 `--config '{"rounds":12}'` → score/ok/total/level

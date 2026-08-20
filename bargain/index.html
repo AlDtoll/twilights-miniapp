@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Twilights — Торг</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<link rel="stylesheet" href="../shared/styles.css">
+<link rel="stylesheet" href="../shared/styles.css?v=55584ae7">
 <style>
 
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--tg-theme-bg-color,#1a1a2e);color:var(--tg-theme-text-color,#eee);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;user-select:none;-webkit-user-select:none;}
@@ -41,7 +41,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="result" id="g-result"><div class="result-t" id="g-rt"></div><div class="result-s" id="g-rs"></div></div>
   </div>
 </div>
-<script src="../shared/core.js"></script>
+<script src="../shared/core.js?v=23c01f45"></script>
 <script>
 
 function tierBy(pct){
@@ -74,6 +74,7 @@ function gStart(){
   const sl=document.getElementById('sl');
   sl.oninput=()=>{document.getElementById('val').textContent=sl.value; react(+sl.value);};
   hud();
+  startGameTimer({ seconds: gameData.timeLimit || 60, onExpire: offer, warnAt: 15 });
 }
 function react(v){
   const d=v-S.ceiling; let face='😐',sig='Смотрит спокойно';
@@ -85,9 +86,9 @@ function react(v){
   document.getElementById('face').textContent=face;
   document.getElementById('sig').textContent=sig;
 }
-function offer(){ if(S.done)return; S.done=true; S.tries++;
+function offer(){ if(S.done)return; S.done=true; stopGameTimer(); S.tries++;
   const v=+document.getElementById('sl').value;
-  const err=Math.abs(v-S.ceiling); const pct=Math.max(0,1-err/40); const t=tierBy(pct);
+  const margin=gameData.margin||40; const err=Math.abs(v-S.ceiling); const pct=Math.max(0,1-err/margin); const t=tierBy(pct);
   const ok=v<=S.ceiling;
   finish('bargain',{offer:v,ceiling:S.ceiling,accepted:ok,error:err,outcome:t.outcome,level:t.level,timeSpent:Math.round((Date.now()-S.start)/1000)},t.outcome,(ok?'принято':'отказано')+' · потолок '+S.ceiling);
 }
