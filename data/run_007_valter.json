@@ -141,7 +141,7 @@
   "telegram": "@ValterTasadar",
   "season": "6",
   "season_name": "лето",
-  "active_phase": "idle",
+  "active_phase": "defense",
   "finance": {
     "start": 19276,
     "income": [
