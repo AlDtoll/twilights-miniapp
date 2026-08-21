@@ -141,7 +141,7 @@
   "telegram": "@ValterTasadar",
   "season": "6",
   "season_name": "лето",
-  "active_phase": "defense",
+  "active_phase": "idle",
   "finance": {
     "start": 19276,
     "income": [
@@ -791,7 +791,7 @@
             "kind": "техника"
           }
         ],
-        "bank": 4,
+        "bank": 6,
         "ups": 2,
         "next_threshold": 14
       },
@@ -815,7 +815,7 @@
             "kind": "приём"
           }
         ],
-        "bank": 14,
+        "bank": 15,
         "ups": 2,
         "next_threshold": 14
       }
