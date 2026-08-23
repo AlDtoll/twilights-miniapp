@@ -3400,6 +3400,217 @@
       ]
     },
     {
+      "area": "Рындеваль — нейтральная клетка (2, -1) #луг #виноград",
+      "file": "ryndevalye",
+      "area_map": {
+        "area": "Рындеваль — нейтральная клетка (2, -1) #луг #виноград",
+        "cols": 4,
+        "rows": 4,
+        "blocks": [
+          {
+            "coord": [
+              2,
+              -1
+            ],
+            "col0": 1,
+            "row0": 1,
+            "owned": true
+          }
+        ],
+        "nodes": [
+          {
+            "name": "Рындеваль",
+            "col": 2,
+            "row": 2,
+            "terrain": "t-meadow",
+            "owner": "",
+            "pop": 200
+          }
+        ],
+        "roads": [
+          {
+            "type": "edge",
+            "from": "Рындеваль",
+            "to": "Юго-Западные Предгорья",
+            "dir": {
+              "dx": 0,
+              "dy": 1
+            },
+            "to_coord": [
+              2,
+              0
+            ]
+          },
+          {
+            "type": "edge",
+            "from": "Рындеваль",
+            "to": "Южные Предгорья",
+            "dir": {
+              "dx": 1,
+              "dy": 1
+            },
+            "to_coord": [
+              3,
+              0
+            ]
+          },
+          {
+            "type": "edge",
+            "from": "Рындеваль",
+            "to": "Соляной Тракт",
+            "dir": {
+              "dx": -1,
+              "dy": 0
+            },
+            "to_coord": [
+              1,
+              -1
+            ]
+          }
+        ],
+        "tiles": [
+          {
+            "x": 0,
+            "y": 0,
+            "col": 1,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 0,
+            "y": 2,
+            "col": 1,
+            "row": 2,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 1,
+            "y": 1,
+            "col": 2,
+            "row": 3,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 1,
+            "y": 3,
+            "col": 2,
+            "row": 1,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 2,
+            "y": 0,
+            "col": 3,
+            "row": 4,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 2,
+            "y": 2,
+            "col": 3,
+            "row": 2,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 3,
+            "y": 1,
+            "col": 4,
+            "row": 3,
+            "terrain": "t-meadow"
+          },
+          {
+            "x": 3,
+            "y": 3,
+            "col": 4,
+            "row": 1,
+            "terrain": "t-meadow"
+          }
+        ]
+      },
+      "settlements": [
+        {
+          "name": "Рындеваль",
+          "population": "~200",
+          "houses": "20",
+          "treasury": {
+            "pct": 100,
+            "razoreno": false
+          },
+          "promysly": [
+            {
+              "name": "Виноделие",
+              "tier": "1",
+              "chain": "виноград→вино",
+              "owner": "местные"
+            }
+          ],
+          "loyalty": {
+            "уклад": "смута",
+            "Тип": "нейтральная",
+            "Л": 8,
+            "Н": 8,
+            "НЛ": 4,
+            "mod": 0,
+            "reasons": []
+          },
+          "faith": {
+            "cults": [
+              {
+                "name": "Дюрса",
+                "count": 14,
+                "pct": 70
+              },
+              {
+                "name": "Бурий",
+                "count": 4,
+                "pct": 20
+              },
+              {
+                "name": "Местный культ (Геннадий)",
+                "count": 2,
+                "pct": 10
+              }
+            ],
+            "neutral": 0,
+            "neutral_pct": 0,
+            "mod": 0,
+            "reasons": []
+          },
+          "might": {
+            "total": 14,
+            "total_min": 5,
+            "total_max": 14,
+            "total_avg": 9,
+            "core_sum": 3.0,
+            "core_src": "гарн. 3",
+            "militia": 8,
+            "militia_src": "1d8",
+            "fighters": 11,
+            "fighters_sum": 11.0,
+            "units": [
+              {
+                "cls": "Дозор",
+                "count": 3,
+                "str": 1.0
+              }
+            ],
+            "loyalty": 2,
+            "loyalty_pct": 20,
+            "defense_pct": 10,
+            "cult_war_pct": 0,
+            "tags_pct": 0,
+            "tag_sum": 0,
+            "tag_list": [],
+            "sum_pct": 30,
+            "mult": 1.3,
+            "fighters_src": "гарн. 3 + ополч. 8",
+            "neutral": true
+          },
+          "buildings": []
+        }
+      ]
+    },
+    {
       "area": "Северный Перевал — нейтральная клетка (-1, 1) #предгорье",
       "file": "severnyy_pereval",
       "area_map": {
@@ -5238,6 +5449,19 @@
             "to_coord": [
               1,
               -2
+            ]
+          },
+          {
+            "type": "edge",
+            "from": "Соляной Тракт",
+            "to": "Рындеваль",
+            "dir": {
+              "dx": 1,
+              "dy": 0
+            },
+            "to_coord": [
+              2,
+              -1
             ]
           }
         ],
@@ -7204,6 +7428,19 @@
               3,
               0
             ]
+          },
+          {
+            "type": "edge",
+            "from": "Юго-Западные Предгорья",
+            "to": "Рындеваль",
+            "dir": {
+              "dx": 0,
+              "dy": -1
+            },
+            "to_coord": [
+              2,
+              -1
+            ]
           }
         ],
         "tiles": [
@@ -7587,6 +7824,19 @@
             "type": "internal",
             "from": "Южные Предгорья",
             "to": "Южные Предгорья-Северное"
+          },
+          {
+            "type": "edge",
+            "from": "Южные Предгорья",
+            "to": "Рындеваль",
+            "dir": {
+              "dx": -1,
+              "dy": -1
+            },
+            "to_coord": [
+              2,
+              -1
+            ]
           }
         ],
         "tiles": [
