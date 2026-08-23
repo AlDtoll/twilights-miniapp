@@ -371,6 +371,8 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" compare \
 
 Результат: `{"game":"compare","correct":4,"total":5,"timeSpent":9.2,"outcome":"Отлично","level":3}`
 
+**Сложность (scene_modifiers → contest_catalog.yaml):** `--answer-time 3–15` сек/пару — больше = легче.
+
 ---
 
 ### estimate — оцени число точек
@@ -387,6 +389,8 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" estimate \
 - Слайдер всегда 1–20, старт с 1.
 
 Результат: `{"game":"estimate","guesses":[7,15,18],"actuals":[7,14,19],"avgAccuracy":91,"outcome":"Отлично","level":3}`
+
+**Сложность (scene_modifiers → contest_catalog.yaml):** `--show-time 500–3000` ms — больше = легче; `--dot-count 5–30` шт — больше = сложнее.
 
 ---
 
@@ -421,6 +425,8 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" oddone \
 
 Результат: `{"game":"oddone","correct":5,"total":6,"timeSpent":11.4,"outcome":"Отлично","level":3}`
 
+**Сложность (scene_modifiers → contest_catalog.yaml):** `--num-rounds 1–8` раундов — больше = сложнее.
+
 ---
 
 ### reaction — поймай мишень
@@ -436,6 +442,8 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" reaction \
 - Тапать нужно по области экрана в момент когда видна мишень.
 
 Результат: `{"game":"reaction","hits":5,"total":6,"falseAlarms":1,"timeSpent":8.1,"outcome":"Отлично","level":3}`
+
+**Сложность (scene_modifiers → contest_catalog.yaml):** `--interval 400–3000` мс между символами — больше = легче.
 
 ---
 
@@ -456,6 +464,8 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" sorting \
 ⚠️ **Ограничение содержимого:** `items` должны располагаться в **объективно очевидном порядке общего знания** (времена суток, месяцы, размер планет, ступени лестницы вкусов от сладкого к солёному, историческая хронология). Игрок должен уметь расставить их правильно, **не зная мастерской карты сцены**. Нельзя ставить сюжетные/скрытые последовательности из адвенчур-драфта (места маршрута по «нарастанию ощущения», порядок Теней у разлома) — игрок играет втёмную, это угадайка, а не проверка навыка.
 
 Результат: `{"game":"sorting","correct":3,"total":4,"timeSpent":24,"outcome":"Хорошо","level":2}`
+
+**Сложность (scene_modifiers → contest_catalog.yaml):** `--num-rounds 1–6` раундов — больше = сложнее; `--items-per-round 3–6` элементов — больше = сложнее.
 
 ---
 
@@ -481,6 +491,8 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "<текст>" findall \
 ⚠️ **Ограничение содержимого:** `grid` — сетка символов для проверки внимания/различения, не сюжетная. `target` = **общеизвестный визуально выделяемый символ** (★ ● ■ ▲ ♦). Сюжетные ярлыки не рисуются — там только символ.
 
 Результат: `{"game":"findall","effectiveFound":7,"total":8,"wrongTaps":1,"timeSpent":18,"outcome":"Отлично","level":3}`
+
+**Сложность (scene_modifiers → contest_catalog.yaml):** `--time-penalty 1–10` сек штрафа — больше = сложнее.
 
 ---
 
@@ -823,8 +835,12 @@ python3 twilights/minigames/send_miniapp.py <chat_id> \
 ### lockpick — отмычка
 `--config '{"pins":3,"speed":1}'` → ok/total/level
 
+**Сложность (scene_modifiers → contest_catalog.yaml):** `--pins 2–6` штифтов — больше = сложнее.
+
 ### balance — баланс
 `--time-limit 12` → okMs/fell/level
+
+**Сложность (scene_modifiers → contest_catalog.yaml):** `--gravity 0.8–4` — больше = сложнее.
 
 ### trace-path — тропа
 
@@ -845,14 +861,22 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "🛤️ Пройди тр
 ### rhythm — ритм
 `--config '{"beats":10,"bpm":100}'` → hits/total/level
 
+**Сложность (scene_modifiers → contest_catalog.yaml):** `--rhy-bpm 60–200` BPM — больше = сложнее; `--rhy-beats 6–16` тактов — больше = сложнее.
+
 ### whisper — шёпот
 `--time-limit 10` → inZone/level
+
+**Сложность (scene_modifiers → contest_catalog.yaml):** `--wh-zone-width 10–40` % ширины зоны — больше = легче.
 
 ### spot-diff — отличия
 `--config '{"diffs":4}'` → found/total/wrong/level
 
+**Сложность (scene_modifiers → contest_catalog.yaml):** `--spot-diffs 2–6` отличий — больше = легче.
+
 ### stack — башня
 `--config '{"goal":8}'` → floors/goal/win/level
+
+**Сложность (scene_modifiers → contest_catalog.yaml):** `--goal 5–15` — больше = сложнее.
 
 ### pour — налей
 `--speed 1` → value/target/error/level
@@ -860,11 +884,17 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "🛤️ Пройди тр
 ### knot — узел
 `--config '{"pairs":4}'` → crossings/moves/level
 
+**Сложность (scene_modifiers → contest_catalog.yaml):** `--pairs 3–6` пар — больше = сложнее; `--hint-show 0–1` (0/1) — больше = легче.
+
 ### cipher — шифр
 `--config '{"word":"МЕЧ"}'` → word/guess/correct/level
 
+**Сложность (scene_modifiers → contest_catalog.yaml):** `--hint-letters 0–3` букв открыто — больше = легче; `--word-length 3–7` символов — больше = сложнее.
+
 ### weights — весы
 `--config '{"count":6}'` → fake/guess/correct/weighs/level
+
+**Сложность (scene_modifiers → contest_catalog.yaml):** `--count 4–9` — больше = сложнее.
 
 ### route — маршрут
 `--config '{"size":6}'` → steps/ideal/level
@@ -888,6 +918,8 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "💬 Торг" bargain \
 ### track — след
 `--config '{"rounds":5,"perImage":2.3}'` (rounds — целое 3–8; perImage — секунд на образец, дефолт 2.3, макс 10, истёк = промах) → correct/total/outcome/level/timeSpent
 
+**Сложность (scene_modifiers → contest_catalog.yaml):** `--trk-rounds 3–8` раундов — больше = сложнее; `--trk-per-image 1–6` сек/образец — больше = легче.
+
 ### herb-sort — травы
 
 Разложить предметы по корзинам по двум признакам: цвет и форма. 4 предмета, 4 корзины (2×2 сочетания).
@@ -908,18 +940,28 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "🌿 Травы" herb-sor
 ### duel-parry — парирование (очки)
 `--config '{"rounds":12}'` → score/ok/total/level
 
+**Сложность (scene_modifiers → contest_catalog.yaml):** `--parry-window 500–1800` мс окна парирования — больше = легче.
+
 ### volley — залп (очки)
 `--config '{"shots":6}'` → score/hits/total/level
+
+**Сложность (scene_modifiers → contest_catalog.yaml):** `--vly-shots 4–10` выстрелов — больше = легче; `--vly-hit-radius 12–34` px радиус цели — больше = легче.
 
 ### clash — столкновение (очки)
 `--config '{"waves":7}'` → score/ok/total/level
 Темп показа стрелок: `showBaseMs` (база, дефолт 2250) + `showStepMs` (на каждую стрелку, дефолт 500) мс. Меньше `showStepMs` → быстрее показ → сложнее (исход «Средний»): `--config '{"waves":7,"showStepMs":350}'`.
 
+**Сложность (scene_modifiers → contest_catalog.yaml):** `--waves 5–10` волн — больше = сложнее; `--show-base-ms 800–3000` мс — больше = легче; `--show-step-ms 200–800` мс/симв — больше = легче.
+
 ### summon-hold — круг (очки)
 `--time-limit 12` → score/holdSec/hits/miss/level
 
+**Сложность (scene_modifiers → contest_catalog.yaml):** `--sh-spawn-ms 400–1200` мс интервал вспышек — больше = легче.
+
 ### shield-wall — щитовая (очки)
 `--config '{"rounds":6}'` → score/blocked/threats/perfect/level
+
+**Сложность (scene_modifiers → contest_catalog.yaml):** `--sw-rounds 5–10` раундов — больше = сложнее.
 
 ### sigil-draw — сигил
 `--config '{"points":5}'` → hit/total/level
@@ -927,8 +969,14 @@ python3 twilights/minigames/send_miniapp.py <chat_id> "🌿 Травы" herb-sor
 ### focus-orb — сфера
 `--time-limit 10` → inCenter/level
 
+**Сложность (scene_modifiers → contest_catalog.yaml):** `--orb-wind 20–120` — больше = сложнее; `--orb-zone 20–60` px — больше = легче.
+
 ### mirror-cast — зеркало
 `--config '{"rounds":8}'` → correct/total/level
 
+**Сложность (scene_modifiers → contest_catalog.yaml):** `--mc-rounds 5–12` раундов — больше = сложнее.
+
 ### alchemy-boil — варево
 `--time-limit 12` → stable/level
+
+**Сложность (scene_modifiers → contest_catalog.yaml):** `--drift 4–20` — больше = сложнее.
