@@ -1382,7 +1382,17 @@
       "name": "Былицы",
       "area": "Полынье",
       "population": "~840",
-      "growth": null,
+      "growth": "+10%",
+      "growth_breakdown": {
+        "total": 10,
+        "items": [
+          {
+            "name": "База",
+            "pct": 10,
+            "kind": "factor"
+          }
+        ]
+      },
       "med_growth": null,
       "houses": "84",
       "shops": 17,
@@ -1565,7 +1575,17 @@
       "name": "Кочевье",
       "area": "Полынье",
       "population": "~280",
-      "growth": null,
+      "growth": "+10%",
+      "growth_breakdown": {
+        "total": 10,
+        "items": [
+          {
+            "name": "База",
+            "pct": 10,
+            "kind": "factor"
+          }
+        ]
+      },
       "med_growth": null,
       "houses": "28",
       "shops": 6,
@@ -1713,7 +1733,17 @@
       "name": "Каменка",
       "area": "Полынье",
       "population": "~230",
-      "growth": null,
+      "growth": "+10%",
+      "growth_breakdown": {
+        "total": 10,
+        "items": [
+          {
+            "name": "База",
+            "pct": 10,
+            "kind": "factor"
+          }
+        ]
+      },
       "med_growth": null,
       "houses": "23",
       "shops": 5,
@@ -1863,7 +1893,17 @@
       "name": "Ковыльные Стойбища",
       "area": "Полынье",
       "population": "~220",
-      "growth": null,
+      "growth": "+10%",
+      "growth_breakdown": {
+        "total": 10,
+        "items": [
+          {
+            "name": "База",
+            "pct": 10,
+            "kind": "factor"
+          }
+        ]
+      },
       "med_growth": null,
       "houses": "22",
       "shops": 4,
@@ -2014,7 +2054,17 @@
       "name": "Ковыльные Стойбища-Ближнее",
       "area": "Ковыльные Стойбища",
       "population": "~880",
-      "growth": null,
+      "growth": "+10%",
+      "growth_breakdown": {
+        "total": 10,
+        "items": [
+          {
+            "name": "База",
+            "pct": 10,
+            "kind": "factor"
+          }
+        ]
+      },
       "med_growth": null,
       "houses": "88",
       "shops": 18,
@@ -2162,54 +2212,6 @@
         "loyalty_penalty": 55,
         "loyalty_bonus": 7,
         "total": 42
-      }
-    },
-    {
-      "name": "Уровень угрозы",
-      "area": "Уровень угрозы",
-      "population": null,
-      "growth": null,
-      "med_growth": null,
-      "houses": null,
-      "shops": 0,
-      "traders": 0,
-      "staff": [],
-      "buildings": [],
-      "promysly": [],
-      "income": [],
-      "expenses_np": [],
-      "stash": [],
-      "loyalty": null,
-      "faith": null,
-      "might": {
-        "total": 0,
-        "total_min": 0,
-        "total_max": 0,
-        "total_avg": 0,
-        "core_sum": 0.0,
-        "core_src": "нет ядра",
-        "militia": 0,
-        "militia_src": "",
-        "fighters": 0,
-        "fighters_sum": 0.0,
-        "units": [],
-        "loyalty": 0,
-        "loyalty_pct": 0,
-        "defense_pct": 10,
-        "cult_war_pct": 0,
-        "tags_pct": 0,
-        "tag_sum": 0,
-        "tag_list": [],
-        "sum_pct": 10,
-        "mult": 1.1,
-        "fighters_src": "нет бойцов",
-        "neutral": false
-      },
-      "eff_breakdown": {
-        "base": 90,
-        "loyalty_penalty": 0,
-        "loyalty_bonus": 0,
-        "total": 90
       }
     }
   ]

@@ -984,7 +984,22 @@
       "name": "Утёсная гавань",
       "area": "Утёсный край",
       "population": "~572",
-      "growth": null,
+      "growth": "+12%",
+      "growth_breakdown": {
+        "total": 12,
+        "items": [
+          {
+            "name": "База",
+            "pct": 10,
+            "kind": "factor"
+          },
+          {
+            "name": "больница (свой НП)",
+            "pct": 2,
+            "kind": "medical"
+          }
+        ]
+      },
       "med_growth": {
         "bonus": 2,
         "sources": [
@@ -1214,7 +1229,22 @@
       "name": "Рудный двор",
       "area": "Утёсный край",
       "population": "~330",
-      "growth": null,
+      "growth": "+11%",
+      "growth_breakdown": {
+        "total": 11,
+        "items": [
+          {
+            "name": "База",
+            "pct": 10,
+            "kind": "factor"
+          },
+          {
+            "name": "больница (Утёсная гавань)",
+            "pct": 1,
+            "kind": "medical"
+          }
+        ]
+      },
       "med_growth": {
         "bonus": 1,
         "sources": [
@@ -1368,7 +1398,22 @@
       "name": "Мыс Стража",
       "area": "Утёсный край",
       "population": "~220",
-      "growth": null,
+      "growth": "+11%",
+      "growth_breakdown": {
+        "total": 11,
+        "items": [
+          {
+            "name": "База",
+            "pct": 10,
+            "kind": "factor"
+          },
+          {
+            "name": "больница (Утёсная гавань)",
+            "pct": 1,
+            "kind": "medical"
+          }
+        ]
+      },
       "med_growth": {
         "bonus": 1,
         "sources": [

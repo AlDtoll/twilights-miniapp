@@ -1070,7 +1070,17 @@
       "name": "Чистозерье",
       "area": "Озёрный Край",
       "population": "~770",
-      "growth": null,
+      "growth": "+10%",
+      "growth_breakdown": {
+        "total": 10,
+        "items": [
+          {
+            "name": "База",
+            "pct": 10,
+            "kind": "factor"
+          }
+        ]
+      },
       "med_growth": null,
       "houses": "77",
       "shops": 15,
@@ -1298,7 +1308,17 @@
       "name": "Чистолесье",
       "area": "Озёрный Край",
       "population": "~330",
-      "growth": null,
+      "growth": "+10%",
+      "growth_breakdown": {
+        "total": 10,
+        "items": [
+          {
+            "name": "База",
+            "pct": 10,
+            "kind": "factor"
+          }
+        ]
+      },
       "med_growth": null,
       "houses": "33",
       "shops": 7,
