@@ -1199,12 +1199,15 @@ function buildingPanoType(name) {
 }
 
 function buildingPanoLabel(name) {
+  // На панораме — реальное имя здания, не архетип («Мастерская» для всех промыслов).
+  const raw = String(name || '').replace(/\s+/g, ' ').trim();
+  if (raw) return raw.length <= 20 ? raw : raw.slice(0, 18) + '…';
   const labels = {
     uprava: 'Управа', karaulka: 'Караулка', tavern: 'Таверна', lekarnya: 'Лекарня',
     chasovnya: 'Часовня', masterskaya: 'Мастерская', psarnya: 'Псарня', konushnya: 'Конюшня',
     avanpost: 'Аванпост', faktoria: 'Фактория', posolstvo: 'Посольство',
   };
-  return labels[buildingPanoType(name)] || 'Мастерская';
+  return labels[buildingPanoType(name)] || 'Здание';
 }
 
 const BLD_SPRITES = {
