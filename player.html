@@ -1374,7 +1374,7 @@ function renderPano(npName, settlement, terrainHint, seasonName) {
   // Деревенские дворы: случайный спрайт из assets/houses/01..08.png (seeded rng).
   const HOUSE_SPRITES=['assets/houses/01.png','assets/houses/02.png','assets/houses/03.png','assets/houses/04.png','assets/houses/05.png','assets/houses/06.png','assets/houses/07.png','assets/houses/08.png'];
   const SHOP_SPRITES=['assets/shops/01.png','assets/shops/02.png','assets/shops/03.png','assets/shops/04.png','assets/shops/05.png','assets/shops/06.png','assets/shops/07.png','assets/shops/08.png'];
-  const GUARD_SPRITES=['assets/guards/01.png?v=4','assets/guards/02.png?v=4','assets/guards/03.png?v=4','assets/guards/04.png?v=4','assets/guards/05.png?v=4','assets/guards/06.png?v=4','assets/guards/07.png?v=4','assets/guards/08.png?v=4','assets/guards/09.png?v=4','assets/guards/10.png?v=4','assets/guards/11.png?v=4','assets/guards/12.png?v=4','assets/guards/13.png?v=4','assets/guards/14.png?v=4','assets/guards/15.png?v=4','assets/guards/16.png?v=4'];
+  const GUARD_SPRITES=['assets/guards/01.png?v=5','assets/guards/02.png?v=5','assets/guards/03.png?v=5','assets/guards/04.png?v=5','assets/guards/05.png?v=5','assets/guards/06.png?v=5','assets/guards/07.png?v=5','assets/guards/08.png?v=5','assets/guards/09.png?v=5','assets/guards/10.png?v=5','assets/guards/11.png?v=5','assets/guards/12.png?v=5','assets/guards/13.png?v=5','assets/guards/14.png?v=5','assets/guards/15.png?v=5','assets/guards/16.png?v=5'];
   function miniHut(x,y,sc){
     const bw=15*sc, bh=bw*1.22;
     const src=HOUSE_SPRITES[Math.floor(rng()*HOUSE_SPRITES.length)];
@@ -1386,8 +1386,8 @@ function renderPano(npName, settlement, terrainHint, seasonName) {
     return `<image href="${src}" x="${x-bw/2}" y="${y-bh}" width="${bw}" height="${bh}" preserveAspectRatio="xMidYMax meet" pointer-events="none"/>`;
   }
   function miniGuard(x,y,sc){
-    // Фикс. высота фигуры: широкий бокс → meet всегда упирается в высоту (иначе широкие спрайты мельчают).
-    const bh=52*sc, bw=bh*1.35;
+    // Ассеты нормализованы 220×400 (одинаковый торс) — фикс. высота + тот же аспект.
+    const bh=52*sc, bw=bh*0.55;
     const src=GUARD_SPRITES[Math.floor(rng()*GUARD_SPRITES.length)];
     return `<image href="${src}" x="${x-bw/2}" y="${y-bh}" width="${bw}" height="${bh}" preserveAspectRatio="xMidYMax meet" pointer-events="none"/>`;
   }
