@@ -1765,20 +1765,19 @@ function renderPano(npName, settlement, terrainHint, seasonName) {
   const SHOP_SPRITES=['assets/shops/01.png','assets/shops/02.png','assets/shops/03.png','assets/shops/04.png','assets/shops/05.png','assets/shops/06.png','assets/shops/07.png','assets/shops/08.png'];
   const GUARD_SPRITES=['assets/guards/01.png?v=4','assets/guards/02.png?v=4','assets/guards/03.png?v=4','assets/guards/04.png?v=4','assets/guards/05.png?v=4','assets/guards/06.png?v=4','assets/guards/07.png?v=4','assets/guards/08.png?v=4','assets/guards/09.png?v=4','assets/guards/10.png?v=4','assets/guards/11.png?v=4','assets/guards/12.png?v=4','assets/guards/13.png?v=4','assets/guards/14.png?v=4','assets/guards/15.png?v=4','assets/guards/16.png?v=4'];
   function miniHut(x,y,sc){
-    const bw=30*sc, bh=bw*1.22;
+    const bw=15*sc, bh=bw*1.22;
     const src=HOUSE_SPRITES[Math.floor(rng()*HOUSE_SPRITES.length)];
     return `<image href="${src}" x="${x-bw/2}" y="${y-bh}" width="${bw}" height="${bh}" preserveAspectRatio="xMidYMax meet" pointer-events="none"/>`;
   }
   function miniShop(x,y,sc){
-    const bw=34*sc, bh=bw*1.18;
+    const bw=17*sc, bh=bw*1.18;
     const src=SHOP_SPRITES[Math.floor(rng()*SHOP_SPRITES.length)];
     return `<image href="${src}" x="${x-bw/2}" y="${y-bh}" width="${bw}" height="${bh}" preserveAspectRatio="xMidYMax meet" pointer-events="none"/>`;
   }
   function miniGuard(x,y,sc){
-    const bw=46*sc, bh=bw*1.9;
+    const bw=32*sc, bh=bw*1.9;
     const src=GUARD_SPRITES[Math.floor(rng()*GUARD_SPRITES.length)];
-    const shadow=`<ellipse cx="${x}" cy="${y+1}" rx="${bw*0.38}" ry="${bw*0.1}" fill="#000" opacity="0.35" pointer-events="none"/>`;
-    return `${shadow}<image href="${src}" x="${x-bw/2}" y="${y-bh}" width="${bw}" height="${bh}" preserveAspectRatio="xMidYMax meet" pointer-events="none"/>`;
+    return `<image href="${src}" x="${x-bw/2}" y="${y-bh}" width="${bw}" height="${bh}" preserveAspectRatio="xMidYMax meet" pointer-events="none"/>`;
   }
   // Сетка с джиттером: при большом числе дворов мельчаем масштаб, чтобы все влезли.
   const _huts=[];
@@ -1865,7 +1864,7 @@ function renderPano(npName, settlement, terrainHint, seasonName) {
 
   function bldLabel(item,cx,baseY){ const nm=buildingPanoLabel(item.b.name||''); const w=nm.length*5.6+10; return `<g pointer-events="none"><rect x="${cx-w/2}" y="${baseY+5}" width="${w}" height="13" rx="6" fill="#1a1206" opacity="0.55"/><text x="${cx}" y="${baseY+14}" font-size="9" fill="#f0e4c8" text-anchor="middle">${E(nm)}</text></g>`; }
 
-  function bldGroup(item, cx, baseY, bw, bh){ const {b,i}=item; const st=(b.status||'').toLowerCase(); const isBuilding=st.includes('🔨')||st.includes('строит')||st.includes('в работе'); const d=drawBuilding(b,i,cx,baseY,bw,bh,isBuilding); const shadow=`<ellipse cx="${cx}" cy="${baseY+2}" rx="${bw*0.66}" ry="${bw*0.12}" fill="#000000" opacity="0.18" pointer-events="none"/>`; let scaffold=''; if(isBuilding){ const L=cx-bw/2,R=cx+bw/2,T=baseY-bh*0.7; scaffold=`<g pointer-events="none" stroke="#caa24a" stroke-width="1" opacity="0.8"><line x1="${L}" y1="${T}" x2="${R}" y2="${baseY}" stroke-dasharray="3 2"/><line x1="${R}" y1="${T}" x2="${L}" y2="${baseY}" stroke-dasharray="3 2"/><line x1="${L}" y1="${baseY-bh*0.4}" x2="${R}" y2="${baseY-bh*0.4}" stroke-dasharray="3 2"/></g>`; } const op=isBuilding?0.6:1; return `${shadow}<g class="pano-bld" opacity="${op}" onclick="openBldCard(${i});event.stopPropagation()" cursor="pointer">${d.inner}${scaffold}${d.flag}${d.smoke}</g>`; }
+  function bldGroup(item, cx, baseY, bw, bh){ const {b,i}=item; const st=(b.status||'').toLowerCase(); const isBuilding=st.includes('🔨')||st.includes('строит')||st.includes('в работе'); const d=drawBuilding(b,i,cx,baseY,bw,bh,isBuilding); let scaffold=''; if(isBuilding){ const L=cx-bw/2,R=cx+bw/2,T=baseY-bh*0.7; scaffold=`<g pointer-events="none" stroke="#caa24a" stroke-width="1" opacity="0.8"><line x1="${L}" y1="${T}" x2="${R}" y2="${baseY}" stroke-dasharray="3 2"/><line x1="${R}" y1="${T}" x2="${L}" y2="${baseY}" stroke-dasharray="3 2"/><line x1="${L}" y1="${baseY-bh*0.4}" x2="${R}" y2="${baseY-bh*0.4}" stroke-dasharray="3 2"/></g>`; } const op=isBuilding?0.6:1; return `<g class="pano-bld" opacity="${op}" onclick="openBldCard(${i});event.stopPropagation()" cursor="pointer">${d.inner}${scaffold}${d.flag}${d.smoke}</g>`; }
 
   const monumental = n => ['uprava','karaulka','chasovnya','lekarnya'].includes(buildingPanoType(n));
   const back=[], front=[];
