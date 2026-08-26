@@ -1775,7 +1775,8 @@ function renderPano(npName, settlement, terrainHint, seasonName) {
     return `<image href="${src}" x="${x-bw/2}" y="${y-bh}" width="${bw}" height="${bh}" preserveAspectRatio="xMidYMax meet" pointer-events="none"/>`;
   }
   function miniGuard(x,y,sc){
-    const bw=32*sc, bh=bw*1.9;
+    // Фикс. высота фигуры: широкий бокс → meet всегда упирается в высоту (иначе широкие спрайты мельчают).
+    const bh=52*sc, bw=bh*1.35;
     const src=GUARD_SPRITES[Math.floor(rng()*GUARD_SPRITES.length)];
     return `<image href="${src}" x="${x-bw/2}" y="${y-bh}" width="${bw}" height="${bh}" preserveAspectRatio="xMidYMax meet" pointer-events="none"/>`;
   }
@@ -1833,12 +1834,10 @@ function renderPano(npName, settlement, terrainHint, seasonName) {
       const scMul=Math.max(1.05, Math.min(1.55, 11/Math.sqrt(n+1)));
       for(let k=0;k<n;k++){
         const t=n===1?0.5:(k+0.5)/n;
-        const jx=(rng()-0.5)*Math.min(18, usableW/n*0.25);
-        const jy=(rng()-0.5)*6;
+        const jx=(rng()-0.5)*Math.min(14, usableW/n*0.2);
         const hx=marginX+t*usableW+jx;
-        const hy=guardFrontY+jy;
-        const hsc=scMul*(0.95+rng()*0.2);
-        _guards.push({hx,hy,hsc});
+        // Одна линия ног, один масштаб — без jy/hsc-джиттера.
+        _guards.push({hx,hy:guardFrontY,hsc:scMul});
       }
     }
   }
