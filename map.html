@@ -1776,7 +1776,7 @@ function renderPano(npName, settlement, terrainHint, seasonName) {
   }
   function miniGuard(x,y,sc){
     // Ассеты нормализованы 220×400 (одинаковый торс) — фикс. высота + тот же аспект.
-    const bh=52*sc, bw=bh*0.55;
+    const bh=104*sc, bw=bh*0.55;
     const src=GUARD_SPRITES[Math.floor(rng()*GUARD_SPRITES.length)];
     return `<image href="${src}" x="${x-bw/2}" y="${y-bh}" width="${bw}" height="${bh}" preserveAspectRatio="xMidYMax meet" pointer-events="none"/>`;
   }
@@ -1897,7 +1897,8 @@ function renderPano(npName, settlement, terrainHint, seasonName) {
     : terrain.match(/t-swamp|болот|🌿/) ? bog
     : softHills;
   const hills=`<path d="M 0 ${groundY-8} Q 160 ${groundY-64} 320 ${groundY-20} Q 470 ${groundY-58} 620 ${groundY-16} Q 720 ${groundY-40} 800 ${groundY-22} L 800 ${groundY} L 0 ${groundY} Z" fill="${hillBack}" pointer-events="none"/><path d="M 0 ${groundY+8} Q 140 ${groundY-30} 300 ${groundY+6} Q 460 ${groundY-24} 640 ${groundY+8} Q 730 ${groundY-14} 800 ${groundY+2} L 800 ${VH} L 0 ${VH} Z" fill="${hillFront}" pointer-events="none"/>`;
-  const midHill=`<path d="M 0 ${frontBaseY-40} Q 200 ${frontBaseY-64} 400 ${frontBaseY-44} Q 600 ${frontBaseY-24} 800 ${frontBaseY-46} L 800 ${VH} L 0 ${VH} Z" fill="${shade(hillFront,0.94)}" opacity="0.6" pointer-events="none"/>`;
+  // midHill убран: полупрозрачная «волна» налезала на дворы/лавки (opacity 0.6 поверх village).
+  const midHill='';
   const foreground=`<path d="M 0 ${VH*0.94} Q 60 ${VH*0.9} 140 ${VH*0.94} Q 220 ${VH*0.98} 320 ${VH*0.93} Q 440 ${VH*0.9} 560 ${VH*0.94} Q 680 ${VH*0.98} 800 ${VH*0.93} L 800 ${VH} L 0 ${VH} Z" fill="${grassBot}" opacity="0.85" pointer-events="none"/>`;
   const tree=(x,y,s)=>`<g pointer-events="none"><rect x="${x-2*s}" y="${y-9*s}" width="${4*s}" height="${11*s}" fill="#6a4a2c"/><circle cx="${x}" cy="${y-14*s}" r="${10*s}" fill="#4a7a3a"/><circle cx="${x-7*s}" cy="${y-9*s}" r="${7*s}" fill="#3f6f32"/><circle cx="${x+7*s}" cy="${y-9*s}" r="${7*s}" fill="#568a44"/></g>`;
   const trees = tree(46,VH-8,1.3)+tree(766,VH-4,1.5);
