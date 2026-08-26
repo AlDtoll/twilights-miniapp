@@ -340,6 +340,36 @@
   .am-edge-label { fill:#7a6e5a; font-size:10px; cursor:pointer; }
   .am-edge-label-go { text-decoration: underline; text-decoration-style: dotted; }
   .am-note { color:#7a6e5a; font-size:11px; text-align:center; padding:2px 8px 8px; }
+  .am-frame { display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .am-nav {
+    display:grid;
+    grid-template-columns:repeat(3, 20px);
+    grid-template-rows:repeat(3, 20px);
+    gap:2px;
+    flex-shrink:0;
+  }
+  .am-nav-btn {
+    width:20px; height:20px; padding:0;
+    background:#1a1814; border:1px solid #3a3020; color:#c8a84a;
+    border-radius:3px; cursor:pointer; font-size:9px; line-height:1;
+    font-family:inherit;
+  }
+  .am-nav-btn:hover:not(:disabled) { background:#2a2418; border-color:#6a5820; color:#e0d090; }
+  .am-nav-btn:disabled { opacity:.28; cursor:default; }
+  .am-nav-n  { grid-column:2; grid-row:1; }
+  .am-nav-nw { grid-column:1; grid-row:1; }
+  .am-nav-ne { grid-column:3; grid-row:1; }
+  .am-nav-w  { grid-column:1; grid-row:2; }
+  .am-nav-c  {
+    grid-column:2; grid-row:2;
+    display:flex; align-items:center; justify-content:center;
+    font-size:6px; color:#6a5e4a; text-align:center; line-height:1.05;
+    pointer-events:none; user-select:none;
+  }
+  .am-nav-e  { grid-column:3; grid-row:2; }
+  .am-nav-sw { grid-column:1; grid-row:3; }
+  .am-nav-s  { grid-column:2; grid-row:3; }
+  .am-nav-se { grid-column:3; grid-row:3; }
 
   /* neutral NP card blocks */
   .np-might { font-weight: bold; white-space: nowrap; cursor: help; }
@@ -1152,6 +1182,8 @@ const areaTitle   = document.getElementById('area-title');
 const areaDash    = document.getElementById('area-dash');
 
 async function openCell(cellData, playerType, cx, cy) {
+  _amViewX = (cx == null ? null : +cx);
+  _amViewY = (cy == null ? null : +cy);
   const meta = PLAYER_META[playerType];
   if (!meta) return;
   areaTitle.textContent = cellData.pop ? `${cellData.name} (~${cellData.pop} чел.)` : cellData.name;
@@ -1172,7 +1204,7 @@ async function openCell(cellData, playerType, cx, cy) {
       const res = await fetch(`data/${cacheKey}.json?_=${Date.now()}`);
       areaCache[cacheKey] = await res.json();
     } catch {
-      areaNps.innerHTML = descHtml + '<div class="area-loading">Ошибка загрузки данных</div>';
+      areaNps.innerHTML = descHtml + amWithNav('') + '<div class="area-loading">Ошибка загрузки данных</div>';
       return;
     }
   }
@@ -1202,7 +1234,7 @@ async function openCell(cellData, playerType, cx, cy) {
   const npHtml = settlements.length
     ? settlements.map(renderNPCard).join('')
     : '<div class="area-loading">НП не найдены в данных</div>';
-  areaNps.innerHTML = descHtml + amHtml + agg + npHtml;
+  areaNps.innerHTML = descHtml + amWithNav(amHtml) + agg + npHtml;
   animateAreaCarts(areaNps);
 }
 
@@ -1227,6 +1259,8 @@ const TYPE_LABELS = {
 // один: значок клетки — визуальная подсказка, а не гейт данных. Некоторые
 // клетки будут БЕЗ НП — это нормально, просто раздел не отрисовывается.
 async function openCellDetails(cellData, x, y) {
+  _amViewX = (x == null ? null : +x);
+  _amViewY = (y == null ? null : +y);
   areaTitle.textContent = cellData.pop ? `${cellData.name} (~${cellData.pop} чел.)` : cellData.name;
   areaDash.style.display = 'none';
   areaOverlay.classList.add('open');
@@ -1234,7 +1268,7 @@ async function openCellDetails(cellData, x, y) {
   const coord = `(${x > 0 ? '+' : ''}${x}, ${y > 0 ? '+' : ''}${y})`;
   const headHtml = `<div class="area-desc" style="opacity:.7">${label ? label + ' · ' : ''}${coord}</div>`;
   const descHtml = cellData.note ? `<div class="area-desc">${cellData.note}</div>` : '';
-  areaNps.innerHTML = headHtml + descHtml;
+  areaNps.innerHTML = headHtml + descHtml + amWithNav('');
 
   // Пытаемся найти клетку в neutrals JSON забега — если есть, добавим блок НП.
   // Если файла нет / клетки нет / список НП пуст — блок не рисуем (некоторые
@@ -1263,11 +1297,13 @@ async function openCellDetails(cellData, x, y) {
     cell.settlements.forEach(s => { panoSetts[s.name] = s; });
     const anyC = Object.values(areaCache)[0];
     currentPanoSeasonName = (anyC && anyC.season_name) || null;
-    areaNps.innerHTML = headHtml + descHtml + mapHtml + agg + cell.settlements.map(renderNeutralNPCard).join('');
+    areaNps.innerHTML = headHtml + descHtml + amWithNav(mapHtml) + agg + cell.settlements.map(renderNeutralNPCard).join('');
     animateAreaCarts(areaNps);
   } else if (cellData.type === 't-ocean' && !(cell && cell.settlements && cell.settlements.length)) {
     // Морская клетка без НП — рисуем пустую сетку-плейсхолдер (на будущее).
-    areaNps.innerHTML = headHtml + descHtml + renderEmptyAreaMap('Море');
+    areaNps.innerHTML = headHtml + descHtml + amWithNav(renderEmptyAreaMap('Море'));
+  } else {
+    areaNps.innerHTML = headHtml + descHtml + amWithNav('');
   }
 }
 
@@ -1288,6 +1324,43 @@ function openCellAt(x, y) {
 }
 function amGo(cx, cy) {
   openCellAt(+cx, +cy);
+}
+
+let _amViewX = null, _amViewY = null;
+function amFmtXY(x, y) {
+  return ((x > 0 ? '+' : '') + x) + ', ' + ((y > 0 ? '+' : '') + y);
+}
+function amHasCell(x, y) {
+  return !!(CELLS && CELLS[x + ',' + y]);
+}
+function amNavHtml(x, y) {
+  if (x == null || y == null || Number.isNaN(+x) || Number.isNaN(+y)) return '';
+  x = +x; y = +y;
+  const mk = (dx, dy, cls, glyph, title) => {
+    const nx = x + dx, ny = y + dy;
+    const ok = amHasCell(nx, ny);
+    return `<button type="button" class="am-nav-btn ${cls}"${ok ? '' : ' disabled'} title="${ok ? title + ' · ' + amFmtXY(nx, ny) : title + ' — нет клетки'}" aria-label="${title}" onclick="amStep(${dx},${dy})">${glyph}</button>`;
+  };
+  return `<div class="am-nav" role="navigation" aria-label="Соседние клетки">`
+    + mk(-1, 1, 'am-nav-nw', '↖', 'СЗ')
+    + mk( 0, 1, 'am-nav-n',  '▲', 'Север')
+    + mk( 1, 1, 'am-nav-ne', '↗', 'СВ')
+    + mk(-1, 0, 'am-nav-w',  '◀', 'Запад')
+    + `<span class="am-nav-c" title="${amFmtXY(x, y)}">·</span>`
+    + mk( 1, 0, 'am-nav-e',  '▶', 'Восток')
+    + mk(-1,-1, 'am-nav-sw', '↙', 'ЮЗ')
+    + mk( 0,-1, 'am-nav-s',  '▼', 'Юг')
+    + mk( 1,-1, 'am-nav-se', '↘', 'ЮВ')
+    + `</div>`;
+}
+function amWithNav(mapHtml) {
+  const nav = amNavHtml(_amViewX, _amViewY);
+  if (!nav) return mapHtml || '';
+  return `<div class="am-frame">${nav}${mapHtml || ''}</div>`;
+}
+function amStep(dx, dy) {
+  if (_amViewX == null || _amViewY == null) return;
+  amGo(_amViewX + dx, _amViewY + dy);
 }
 
 // Словарь имя НП → объект settlement для панорамы (заполняется в openCell/openCellDetails)
@@ -1616,6 +1689,23 @@ function panoEcoCount(settlement, needles){
   return 0;
 }
 
+// Стража на панораме: staff «Стража» fact; иначе сумма might.units[].count (нейтралы); иначе 0.
+function panoGuardCount(settlement){
+  if(!settlement) return 0;
+  let staffSum=0, staffHit=false;
+  for(const row of (settlement.staff||[])){
+    if(!/страж/i.test(String(row.category||''))) continue;
+    staffHit=true;
+    staffSum+=parseInt(String(row.fact||'').replace(/[^\d]/g,''),10)||0;
+  }
+  if(staffHit) return staffSum;
+  let unitSum=0;
+  for(const u of ((settlement.might&&settlement.might.units)||[])){
+    unitSum+=parseInt(u.count,10)||0;
+  }
+  return unitSum||0;
+}
+
 function panoBuildingsFor(npName, settlement) {
   const local = (settlement && settlement.buildings) ? settlement.buildings : [];
   const ext = (currentExternals || []).filter(e => e.host === npName);
@@ -1630,9 +1720,10 @@ function openPano(npName, settlement, terrainHint) {
   const housesMeta=parseInt(String((settlement&&settlement.houses)||'').replace(/[^\d]/g,''),10)||0;
   const shopsMeta=panoEcoCount(settlement, ['лавк']);
   const tradersMeta=panoEcoCount(settlement, ['торговц']);
+  const guardsMeta=panoGuardCount(settlement);
   const pop=(settlement&&settlement.population)?settlement.population:null;
   const tLabel={'t-mountain':'Горы','t-forest':'Лес','t-swamp':'Болото','t-ocean':'Море','t-skerry':'Шхеры','t-evil':'Опасная зона'}[terrainHint]||'';
-  const meta=[pop?`👥 ${pop}`:null,tLabel||null,housesMeta?`🏠 ${housesMeta}`:null,shopsMeta?`🏪 ${shopsMeta}`:null,tradersMeta?`🧳 ${tradersMeta}`:null,bldCount?`🏛 ${bldCount}`:null].filter(Boolean).join(' · ');
+  const meta=[pop?`👥 ${pop}`:null,tLabel||null,housesMeta?`🏠 ${housesMeta}`:null,shopsMeta?`🏪 ${shopsMeta}`:null,tradersMeta?`🧳 ${tradersMeta}`:null,guardsMeta?`🛡 ${guardsMeta}`:null,bldCount?`🏛 ${bldCount}`:null].filter(Boolean).join(' · ');
   const mEl=document.getElementById('pano-np-meta'); if(mEl) mEl.textContent=meta;
   document.getElementById('pano-overlay').classList.add('open');
   renderPano(npName, settlement, terrainHint, currentPanoSeasonName);
@@ -1672,6 +1763,7 @@ function renderPano(npName, settlement, terrainHint, seasonName) {
   // Деревенские дворы: случайный спрайт из assets/houses/01..08.png (seeded rng).
   const HOUSE_SPRITES=['assets/houses/01.png','assets/houses/02.png','assets/houses/03.png','assets/houses/04.png','assets/houses/05.png','assets/houses/06.png','assets/houses/07.png','assets/houses/08.png'];
   const SHOP_SPRITES=['assets/shops/01.png','assets/shops/02.png','assets/shops/03.png','assets/shops/04.png','assets/shops/05.png','assets/shops/06.png','assets/shops/07.png','assets/shops/08.png'];
+  const GUARD_SPRITES=['assets/guards/01.png?v=3','assets/guards/02.png?v=3','assets/guards/03.png?v=3','assets/guards/04.png?v=3','assets/guards/05.png?v=3','assets/guards/06.png?v=3','assets/guards/07.png?v=3','assets/guards/08.png?v=3'];
   function miniHut(x,y,sc){
     const bw=30*sc, bh=bw*1.22;
     const src=HOUSE_SPRITES[Math.floor(rng()*HOUSE_SPRITES.length)];
@@ -1681,6 +1773,12 @@ function renderPano(npName, settlement, terrainHint, seasonName) {
     const bw=34*sc, bh=bw*1.18;
     const src=SHOP_SPRITES[Math.floor(rng()*SHOP_SPRITES.length)];
     return `<image href="${src}" x="${x-bw/2}" y="${y-bh}" width="${bw}" height="${bh}" preserveAspectRatio="xMidYMax meet" pointer-events="none"/>`;
+  }
+  function miniGuard(x,y,sc){
+    const bw=46*sc, bh=bw*1.9;
+    const src=GUARD_SPRITES[Math.floor(rng()*GUARD_SPRITES.length)];
+    const shadow=`<ellipse cx="${x}" cy="${y+1}" rx="${bw*0.38}" ry="${bw*0.1}" fill="#000" opacity="0.35" pointer-events="none"/>`;
+    return `${shadow}<image href="${src}" x="${x-bw/2}" y="${y-bh}" width="${bw}" height="${bh}" preserveAspectRatio="xMidYMax meet" pointer-events="none"/>`;
   }
   // Сетка с джиттером: при большом числе дворов мельчаем масштаб, чтобы все влезли.
   const _huts=[];
@@ -1725,8 +1823,30 @@ function renderPano(npName, settlement, terrainHint, seasonName) {
       }
     }
   }
+  // Стража: один ряд у самого низа кадра, поверх деревьев/травы; staff / might.units.
+  const _guards=[];
+  const guardCount=panoGuardCount(settlement);
+  {
+    const n=guardCount;
+    if(n>0){
+      const marginX=28, usableW=VW-2*marginX;
+      const guardFrontY=VH-10;
+      const scMul=Math.max(1.05, Math.min(1.55, 11/Math.sqrt(n+1)));
+      for(let k=0;k<n;k++){
+        const t=n===1?0.5:(k+0.5)/n;
+        const jx=(rng()-0.5)*Math.min(18, usableW/n*0.25);
+        const jy=(rng()-0.5)*6;
+        const hx=marginX+t*usableW+jx;
+        const hy=guardFrontY+jy;
+        const hsc=scMul*(0.95+rng()*0.2);
+        _guards.push({hx,hy,hsc});
+      }
+    }
+  }
   _huts.sort((a,b)=>a.hy-b.hy);
+  _guards.sort((a,b)=>a.hy-b.hy);
   let village=''; _huts.forEach(h=>{ village+=h.kind==='shop'?miniShop(h.hx,h.hy,h.hsc):miniHut(h.hx,h.hy,h.hsc); });
+  let guardsSvg=''; _guards.forEach(g=>{ guardsSvg+=miniGuard(g.hx,g.hy,g.hsc); });
   const water = terrain.match(/t-ocean|t-skerry|мор|〰|шхер/) ? `<rect x="0" y="${groundY-8}" width="${VW}" height="30" fill="#3f7fb8" opacity="0.85" pointer-events="none"/><path d="M 0 ${groundY+8} q 40 -5 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0" fill="none" stroke="#cfe6f2" stroke-width="1.5" opacity="0.6" pointer-events="none"/>` : '';
 
   function rowPositions(n, baseY, marginX){ const arr=[]; if(!n) return arr; const usable=VW-2*marginX; for(let k=0;k<n;k++){ const cx = n===1? VW/2 : marginX + usable*k/(n-1); arr.push({cx, baseY}); } return arr; }
@@ -1805,6 +1925,7 @@ function renderPano(npName, settlement, terrainHint, seasonName) {
   ${foreground}
   ${tufts}
   ${trees}
+  ${guardsSvg}
   ${labelSvg}
   ${emptyMsg}
 </svg>`;

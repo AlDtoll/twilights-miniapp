@@ -90,6 +90,36 @@ body {
 .am-edge-label { fill:var(--muted); font-family:var(--font); font-size:10px; cursor:pointer; }
 .am-edge-label-go { text-decoration: underline; text-decoration-style: dotted; }
 .am-note { color:var(--muted); font-size:11px; text-align:center; padding:2px 8px 8px; }
+.am-frame { display:flex; flex-direction:column; align-items:center; gap:4px; }
+.am-nav {
+  display:grid;
+  grid-template-columns:repeat(3, 20px);
+  grid-template-rows:repeat(3, 20px);
+  gap:2px;
+  flex-shrink:0;
+}
+.am-nav-btn {
+  width:20px; height:20px; padding:0;
+  background:var(--bg2); border:1px solid var(--border); color:var(--gold);
+  border-radius:3px; cursor:pointer; font-size:9px; line-height:1;
+  font-family:inherit;
+}
+.am-nav-btn:hover:not(:disabled) { background:var(--bg3); border-color:var(--gold-dim); color:var(--gold); }
+.am-nav-btn:disabled { opacity:.28; cursor:default; }
+.am-nav-n  { grid-column:2; grid-row:1; }
+.am-nav-nw { grid-column:1; grid-row:1; }
+.am-nav-ne { grid-column:3; grid-row:1; }
+.am-nav-w  { grid-column:1; grid-row:2; }
+.am-nav-c  {
+  grid-column:2; grid-row:2;
+  display:flex; align-items:center; justify-content:center;
+  font-size:6px; color:var(--muted); text-align:center; line-height:1.05;
+  pointer-events:none; user-select:none;
+}
+.am-nav-e  { grid-column:3; grid-row:2; }
+.am-nav-sw { grid-column:1; grid-row:3; }
+.am-nav-s  { grid-column:2; grid-row:3; }
+.am-nav-se { grid-column:3; grid-row:3; }
 
 /* ── Атмосферные анимации (amb-*) — только для карты области ── */
 @keyframes amb-smoke {
@@ -367,6 +397,9 @@ body {
   border-bottom: 1px solid var(--border);
 }
 .sett-table td { padding: 4px 6px 4px 0; border-bottom: 1px solid #1a1814; }
+.sett-table td.pos { color: var(--green); }
+.sett-table td.neg { color: var(--red); }
+.sett-table td.zero { color: var(--muted); }
 .sett-table tr:last-child td { border-bottom: none; }
 .sett-name { color: var(--text); }
 .loyalty-wrap { display: flex; flex-direction: column; gap: 2px; min-width: 120px; }
@@ -423,6 +456,15 @@ body {
 .ly-reasons li { font-size: 0.7rem; color: var(--muted); }
 .ly-reasons li.pos { color: var(--green); }
 .ly-reasons li.neg { color: var(--red); }
+.ly-history { margin-top: 6px; }
+.ly-history summary { font-size: 0.68rem; color: var(--muted); cursor: pointer; user-select: none; }
+.mh-table { width: 100%; border-collapse: collapse; font-size: 0.66rem; margin-top: 4px; }
+.mh-table th { color: var(--muted); font-weight: normal; text-align: left; padding: 1px 4px; border-bottom: 1px solid var(--border); }
+.mh-table td { padding: 1px 4px; color: var(--muted); }
+.mh-table td.pos { color: var(--green); }
+.mh-table td.neg { color: var(--red); }
+.mh-table td.mh-seas { color: var(--text); opacity: 0.6; }
+.mh-table td.mh-act { font-style: italic; }
 .ly-conseq { font-size: 0.7rem; line-height: 1.35; margin-top: 6px; padding: 5px 7px; border-radius: 4px; }
 .ly-conseq.warn { color: var(--amber, #c08a4a); background: rgba(192,138,74,0.10); }
 .ly-conseq.crit { color: var(--red); background: rgba(192,74,106,0.12); }
@@ -514,6 +556,10 @@ body {
 .np-type-badge.annex  { border-color: var(--red); color: #cc7a6a; background: transparent; }
 .np-block-pop { font-size: 0.7rem; color: var(--muted); white-space: nowrap; }
 .np-med-growth { font-size: 0.68rem; color: var(--green); margin-top: 2px; }
+.np-growth-list { list-style: none; padding: 0; margin: 4px 0 0; display: flex; flex-direction: column; gap: 1px; }
+.np-growth-list li { font-size: 0.68rem; color: var(--muted); }
+.np-growth-list li.pos { color: var(--green); }
+.np-growth-list li.neg { color: var(--red); }
 .np-block-bal { font-size: 0.72rem; white-space: nowrap; font-weight: bold; margin-right: 4px; }
 .np-chevron { font-size: 0.6rem; color: var(--muted); transition: transform 0.2s; flex-shrink: 0; }
 .np-block-body { padding-bottom: 12px; }
@@ -832,6 +878,14 @@ body:not(.season-winter):not(.season-spring):not(.season-summer):not(.season-aut
       <div class="card-body" id="body-faith"></div>
     </div>
 
+    <div class="card card-wide" id="card-growth">
+      <div class="card-title" onclick="toggleCard('card-growth')">
+        <span class="icon">📈</span> Рост населения
+        <em class="chevron">▼</em>
+      </div>
+      <div class="card-body" id="body-growth"></div>
+    </div>
+
     <!-- Threat / Уровень угрозы -->
     <div class="card card-wide" id="card-threat">
       <div class="card-title" onclick="toggleCard('card-threat')">
@@ -1032,6 +1086,7 @@ function render(d, npFilter) {
   renderMight(setts);
   renderLoyalty(setts);
   renderFaith(setts, d.religion);
+  renderGrowth(setts);
   renderThreat(d.threat);
   NP_ROADS = buildRoadsByNp((d.area_map || {}).roads);
   // Заполняем словарь имя→settlement для панорамы
@@ -1245,6 +1300,23 @@ function panoEcoCount(settlement, needles){
   return 0;
 }
 
+// Стража на панораме: staff «Стража» fact; иначе сумма might.units[].count (нейтралы); иначе 0.
+function panoGuardCount(settlement){
+  if(!settlement) return 0;
+  let staffSum=0, staffHit=false;
+  for(const row of (settlement.staff||[])){
+    if(!/страж/i.test(String(row.category||''))) continue;
+    staffHit=true;
+    staffSum+=parseInt(String(row.fact||'').replace(/[^\d]/g,''),10)||0;
+  }
+  if(staffHit) return staffSum;
+  let unitSum=0;
+  for(const u of ((settlement.might&&settlement.might.units)||[])){
+    unitSum+=parseInt(u.count,10)||0;
+  }
+  return unitSum||0;
+}
+
 function panoBuildingsFor(npName, settlement) {
   const local = (settlement && settlement.buildings) ? settlement.buildings : [];
   const ext = ((currentData && currentData.external_buildings) || []).filter(e => e.host === npName);
@@ -1259,9 +1331,10 @@ function openPano(npName, settlement, terrainHint) {
   const housesMeta=parseInt(String((settlement&&settlement.houses)||'').replace(/[^\d]/g,''),10)||0;
   const shopsMeta=panoEcoCount(settlement, ['лавк']);
   const tradersMeta=panoEcoCount(settlement, ['торговц']);
+  const guardsMeta=panoGuardCount(settlement);
   const pop=(settlement&&settlement.population)?settlement.population:null;
   const tLabel={'t-mountain':'Горы','t-forest':'Лес','t-swamp':'Болото','t-ocean':'Море','t-skerry':'Шхеры','t-evil':'Опасная зона'}[terrainHint]||'';
-  const meta=[pop?`👥 ${pop}`:null,tLabel||null,housesMeta?`🏠 ${housesMeta}`:null,shopsMeta?`🏪 ${shopsMeta}`:null,tradersMeta?`🧳 ${tradersMeta}`:null,bldCount?`🏛 ${bldCount}`:null].filter(Boolean).join(' · ');
+  const meta=[pop?`👥 ${pop}`:null,tLabel||null,housesMeta?`🏠 ${housesMeta}`:null,shopsMeta?`🏪 ${shopsMeta}`:null,tradersMeta?`🧳 ${tradersMeta}`:null,guardsMeta?`🛡 ${guardsMeta}`:null,bldCount?`🏛 ${bldCount}`:null].filter(Boolean).join(' · ');
   const mEl=document.getElementById('pano-np-meta'); if(mEl) mEl.textContent=meta;
   document.getElementById('pano-overlay').classList.add('open');
   renderPano(npName, settlement, terrainHint, currentPanoSeasonName);
@@ -1301,6 +1374,7 @@ function renderPano(npName, settlement, terrainHint, seasonName) {
   // Деревенские дворы: случайный спрайт из assets/houses/01..08.png (seeded rng).
   const HOUSE_SPRITES=['assets/houses/01.png','assets/houses/02.png','assets/houses/03.png','assets/houses/04.png','assets/houses/05.png','assets/houses/06.png','assets/houses/07.png','assets/houses/08.png'];
   const SHOP_SPRITES=['assets/shops/01.png','assets/shops/02.png','assets/shops/03.png','assets/shops/04.png','assets/shops/05.png','assets/shops/06.png','assets/shops/07.png','assets/shops/08.png'];
+  const GUARD_SPRITES=['assets/guards/01.png?v=3','assets/guards/02.png?v=3','assets/guards/03.png?v=3','assets/guards/04.png?v=3','assets/guards/05.png?v=3','assets/guards/06.png?v=3','assets/guards/07.png?v=3','assets/guards/08.png?v=3'];
   function miniHut(x,y,sc){
     const bw=30*sc, bh=bw*1.22;
     const src=HOUSE_SPRITES[Math.floor(rng()*HOUSE_SPRITES.length)];
@@ -1310,6 +1384,12 @@ function renderPano(npName, settlement, terrainHint, seasonName) {
     const bw=34*sc, bh=bw*1.18;
     const src=SHOP_SPRITES[Math.floor(rng()*SHOP_SPRITES.length)];
     return `<image href="${src}" x="${x-bw/2}" y="${y-bh}" width="${bw}" height="${bh}" preserveAspectRatio="xMidYMax meet" pointer-events="none"/>`;
+  }
+  function miniGuard(x,y,sc){
+    const bw=46*sc, bh=bw*1.9;
+    const src=GUARD_SPRITES[Math.floor(rng()*GUARD_SPRITES.length)];
+    const shadow=`<ellipse cx="${x}" cy="${y+1}" rx="${bw*0.38}" ry="${bw*0.1}" fill="#000" opacity="0.35" pointer-events="none"/>`;
+    return `${shadow}<image href="${src}" x="${x-bw/2}" y="${y-bh}" width="${bw}" height="${bh}" preserveAspectRatio="xMidYMax meet" pointer-events="none"/>`;
   }
   // Сетка с джиттером: при большом числе дворов мельчаем масштаб, чтобы все влезли.
   const _huts=[];
@@ -1354,8 +1434,30 @@ function renderPano(npName, settlement, terrainHint, seasonName) {
       }
     }
   }
+  // Стража: один ряд у самого низа кадра, поверх деревьев/травы; staff / might.units.
+  const _guards=[];
+  const guardCount=panoGuardCount(settlement);
+  {
+    const n=guardCount;
+    if(n>0){
+      const marginX=28, usableW=VW-2*marginX;
+      const guardFrontY=VH-10;
+      const scMul=Math.max(1.05, Math.min(1.55, 11/Math.sqrt(n+1)));
+      for(let k=0;k<n;k++){
+        const t=n===1?0.5:(k+0.5)/n;
+        const jx=(rng()-0.5)*Math.min(18, usableW/n*0.25);
+        const jy=(rng()-0.5)*6;
+        const hx=marginX+t*usableW+jx;
+        const hy=guardFrontY+jy;
+        const hsc=scMul*(0.95+rng()*0.2);
+        _guards.push({hx,hy,hsc});
+      }
+    }
+  }
   _huts.sort((a,b)=>a.hy-b.hy);
+  _guards.sort((a,b)=>a.hy-b.hy);
   let village=''; _huts.forEach(h=>{ village+=h.kind==='shop'?miniShop(h.hx,h.hy,h.hsc):miniHut(h.hx,h.hy,h.hsc); });
+  let guardsSvg=''; _guards.forEach(g=>{ guardsSvg+=miniGuard(g.hx,g.hy,g.hsc); });
   const water = terrain.match(/t-ocean|t-skerry|мор|〰|шхер/) ? `<rect x="0" y="${groundY-8}" width="${VW}" height="30" fill="#3f7fb8" opacity="0.85" pointer-events="none"/><path d="M 0 ${groundY+8} q 40 -5 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0" fill="none" stroke="#cfe6f2" stroke-width="1.5" opacity="0.6" pointer-events="none"/>` : '';
 
   function rowPositions(n, baseY, marginX){ const arr=[]; if(!n) return arr; const usable=VW-2*marginX; for(let k=0;k<n;k++){ const cx = n===1? VW/2 : marginX + usable*k/(n-1); arr.push({cx, baseY}); } return arr; }
@@ -1434,6 +1536,7 @@ function renderPano(npName, settlement, terrainHint, seasonName) {
   ${foreground}
   ${tufts}
   ${trees}
+  ${guardsSvg}
   ${labelSvg}
   ${emptyMsg}
 </svg>`;
@@ -1507,6 +1610,14 @@ function renderAreaMap(am) {
   nameEl.textContent = am.area ? " · " + am.area : "";
   // Сохраняем ноды глобально — для terrain-хинта при открытии панорамы
   _panoNodes = am.nodes;
+  const _blkCoords = [];
+  (am.blocks || []).forEach(b => {
+    const c = b && b.coord;
+    if (!c || c.length !== 2) return;
+    if (!_blkCoords.some(u => u[0] === c[0] && u[1] === c[1])) _blkCoords.push(c);
+  });
+  if (_blkCoords.length === 1) { _amViewX = +_blkCoords[0][0]; _amViewY = +_blkCoords[0][1]; }
+  else { _amViewX = null; _amViewY = null; }
 
   // Холст сшит из блоков клеток мира 4×4: cols мини-колонок × rows мини-рядов.
   const cols = am.cols || 4, rows = am.rows || 4;
@@ -1774,9 +1885,42 @@ function renderAreaMap(am) {
     if (n.pop) g += `<text x="${x}" y="${y + bh + 11}" class="am-pop" text-anchor="middle">~${n.pop}</text>`;
   });
   body.innerHTML =
-    `<div class="am-wrap"><svg viewBox="0 0 ${W} ${H}" class="am-svg" preserveAspectRatio="xMidYMid meet" overflow="visible">${g}</svg></div>` +
+    amWithNav(`<div class="am-wrap"><svg viewBox="0 0 ${W} ${H}" class="am-svg" preserveAspectRatio="xMidYMid meet" overflow="visible">${g}</svg></div>`) +
     `<div class="am-note">Иллюстративная карта — клетки лишь ориентир. Пунктир — дорога к соседней области.</div>`;
   animateAreaCarts(body);
+}
+
+let _amViewX = null, _amViewY = null;
+function amFmtXY(x, y) {
+  return ((x > 0 ? '+' : '') + x) + ', ' + ((y > 0 ? '+' : '') + y);
+}
+function amNavHtml(x, y) {
+  if (x == null || y == null || Number.isNaN(+x) || Number.isNaN(+y)) return '';
+  x = +x; y = +y;
+  const mk = (dx, dy, cls, glyph, title) => {
+    const nx = x + dx, ny = y + dy;
+    return `<button type="button" class="am-nav-btn ${cls}" title="${title} · ${amFmtXY(nx, ny)}" aria-label="${title}" onclick="amStep(${dx},${dy})">${glyph}</button>`;
+  };
+  return `<div class="am-nav" role="navigation" aria-label="Соседние клетки">`
+    + mk(-1, 1, 'am-nav-nw', '↖', 'СЗ')
+    + mk( 0, 1, 'am-nav-n',  '▲', 'Север')
+    + mk( 1, 1, 'am-nav-ne', '↗', 'СВ')
+    + mk(-1, 0, 'am-nav-w',  '◀', 'Запад')
+    + `<span class="am-nav-c" title="${amFmtXY(x, y)}">·</span>`
+    + mk( 1, 0, 'am-nav-e',  '▶', 'Восток')
+    + mk(-1,-1, 'am-nav-sw', '↙', 'ЮЗ')
+    + mk( 0,-1, 'am-nav-s',  '▼', 'Юг')
+    + mk( 1,-1, 'am-nav-se', '↘', 'ЮВ')
+    + `</div>`;
+}
+function amWithNav(mapHtml) {
+  const nav = amNavHtml(_amViewX, _amViewY);
+  if (!nav) return mapHtml || '';
+  return `<div class="am-frame">${nav}${mapHtml || ''}</div>`;
+}
+function amStep(dx, dy) {
+  if (_amViewX == null || _amViewY == null) return;
+  amGo(_amViewX + dx, _amViewY + dy);
 }
 
 // Тап по «→ Сосед» → карта мира с открытой клеткой назначения.
@@ -2480,7 +2624,7 @@ function renderTerritory(settlements) {
     html += `<tr>
       <td class="sett-name">${esc(s.name)}</td>
       <td>${esc(s.population || "—")}</td>
-      <td style="color:var(--green)">${esc(s.growth || "—")}</td>
+      <td class="${growthCls(s)}">${esc(growthLabel(s))}</td>
       <td style="text-align:right;color:var(--muted)">${esc(s.houses || "—")}</td>
       ${hasLoyalty ? `<td>${loyaltyBar(s.loyalty)}</td>` : ""}
     </tr>`;
@@ -2577,6 +2721,21 @@ function rollDeltaCaption(delta, label = "за ролл сезона (двор.)
 }
 
 // ── Loyalty ───────────────────────────────────────────────────────────────────
+function modHistoryHtml(history) {
+  if (!history || !history.length) return "";
+  const actionLabel = { add: "добавлен", delete: "удалён", consume: "тик" };
+  const rows = history.map(e => {
+    const val = e.mod_val != null ? (e.mod_val >= 0 ? `+${e.mod_val}` : String(e.mod_val)) : "—";
+    const valCls = e.mod_val > 0 ? "pos" : e.mod_val < 0 ? "neg" : "";
+    const act = actionLabel[e.action] || esc(e.action);
+    const seas = e.season ? `С${esc(e.season)}` : "";
+    const name = e.mod_name ? esc(e.mod_name) : "";
+    const reason = e.reason ? ` (${esc(e.reason)})` : "";
+    return `<tr><td class="mh-seas">${seas}</td><td class="${valCls}">${esc(val)}</td><td>${name}</td><td class="mh-act">${act}${reason}</td></tr>`;
+  }).join("");
+  return `<details class="ly-history"><summary>История модов (${history.length})</summary><table class="mh-table"><thead><tr><th>Сезон</th><th>Мод</th><th>Имя</th><th>Действие</th></tr></thead><tbody>${rows}</tbody></table></details>`;
+}
+
 function renderLoyalty(settlements) {
   const el = document.getElementById("body-loyalty");
   if (!settlements || !settlements.length) { el.innerHTML = "<div class='placeholder-body'>Нет данных</div>"; return; }
@@ -2629,11 +2788,12 @@ function renderLoyalty(settlements) {
       ${rollDeltaCaption(ly.action_delta, "за твои действия (двор.):", false)}
       ${supportersHtml(ly.supporters, ly.opponents, s.houses)}
       ${reasonsHtml ? `<ul class="ly-reasons">${reasonsHtml}</ul>` : ""}
+      ${modHistoryHtml(s.mod_history)}
       ${conseq}
     </div>`;
   });
 
-  html += `<div class="ly-legend">Пороги: <b>НЛ ≥ 25%</b> → +1 слот события #нелояльность в следующем сезоне · <b>НЛ &gt; 50%</b> → риск #бунт = (НЛ%−50)×5%. Мод лояльности за сезон складывается из строк-причин (нехватка стражи/клерков, перегруз рабочих рук — по −1 каждая).</div>`;
+  html += `<div class="ly-legend">Пороги: <b>НЛ ≥ 25%</b> → +1 слот события #нелояльность в следующем сезоне · <b>НЛ &gt; 50%</b> → риск #бунт = (НЛ%−50)×5%. Мод лояльности за сезон складывается из строк-причин (нехватка стражи/клерков, перегруз рабочих рук — по −1 каждой).</div>`;
 
   el.innerHTML = html;
 }
@@ -2756,6 +2916,65 @@ function renderFaith(settlements, religion) {
   el.innerHTML = html;
 }
 
+function growthBreakdown(s) {
+  if (s && s.growth_breakdown && Array.isArray(s.growth_breakdown.items)) return s.growth_breakdown;
+  return null;
+}
+
+function growthTotal(s) {
+  const gb = growthBreakdown(s);
+  if (gb && gb.total != null) return Number(gb.total);
+  const m = String(s && s.growth || "").match(/([+-]?\d+)/);
+  return m ? Number(m[1]) : 0;
+}
+
+function growthLabel(s) {
+  const gb = growthBreakdown(s);
+  if (gb && gb.total != null) {
+    const t = Number(gb.total);
+    return (t > 0 ? "+" : "") + t + "%";
+  }
+  return s && s.growth ? s.growth : "—";
+}
+
+function growthCls(s) {
+  const t = growthTotal(s);
+  if (t > 0) return "pos";
+  if (t < 0) return "neg";
+  return "zero";
+}
+
+function growthItemsHtml(s) {
+  const gb = growthBreakdown(s);
+  const items = (gb && gb.items) || [];
+  if (!items.length) return "";
+  return "<ul class='np-growth-list'>" + items.map(it => {
+    const pct = Number(it.pct) || 0;
+    const cls = pct > 0 ? "pos" : pct < 0 ? "neg" : "";
+    const sign = pct > 0 ? "+" : "";
+    return `<li class="${cls}">${esc(it.name || "фактор")}: ${sign}${pct}%</li>`;
+  }).join("") + "</ul>";
+}
+
+function renderGrowth(settlements) {
+  const el = document.getElementById("body-growth");
+  if (!el) return;
+  if (!settlements || !settlements.length) { el.innerHTML = "<div class='placeholder-body'>Нет данных</div>"; return; }
+  let html = "<div class='placeholder-body' style='margin-bottom:8px'>Ориентир на год = факторы из НП + лечебные бонусы (больница/лечебница по дорогам). В md больницу не дублировать.</div>";
+  settlements.forEach(s => {
+    const t = growthTotal(s);
+    const modStr = (t > 0 ? "+" : "") + t + "%";
+    html += `<div class="faith-card">
+      <div class="ly-card-header">
+        <span class="ly-card-name">${esc(s.name)}</span>
+        <span class="ly-card-mod ${growthCls(s)}">${modStr}</span>
+      </div>
+      ${growthItemsHtml(s)}
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
 // ── Threat (Уровень угрозы) ───────────────────────────────────────────────────
 function renderThreat(threat) {
   const el = document.getElementById("body-threat");
@@ -2857,10 +3076,10 @@ function renderSettlements(setts) {
             ${typBadge}
           </div>
           <div style="display:flex;align-items:center;gap:8px;margin-top:3px">
-            <span class="np-block-pop">${esc(s.population || "?")} · ${esc(s.growth || "")}</span>
+            <span class="np-block-pop">${esc(s.population || "?")} · ${esc(growthLabel(s))}</span>
             ${miniBar}
           </div>
-          ${s.med_growth ? `<div class="np-med-growth">🏥 +${s.med_growth.bonus}% к росту — ${esc((s.med_growth.sources || []).join(", "))}</div>` : ""}
+          ${growthItemsHtml(s)}
         </div>
         <span class="np-block-bal ${balCls}">${balSign}${fmt(bal)}</span>
         <em class="np-chevron">▼</em>
