@@ -1320,6 +1320,14 @@ function panoGuardCount(settlement){
   return unitSum||0;
 }
 
+// Ополчение на панораме: среднее 1d(Л) = (militia+1)/2. militia = число лояльных домов.
+function panoMilitiaCount(settlement){
+  if(!settlement||!settlement.might) return 0;
+  const mil=parseInt(settlement.might.militia,10)||0;
+  if(mil<=0) return 0;
+  return Math.max(1, Math.round((mil+1)/2));
+}
+
 function panoBuildingsFor(npName, settlement) {
   const local = (settlement && settlement.buildings) ? settlement.buildings : [];
   const ext = ((currentData && currentData.external_buildings) || []).filter(e => e.host === npName);
@@ -1335,9 +1343,10 @@ function openPano(npName, settlement, terrainHint) {
   const shopsMeta=panoEcoCount(settlement, ['лавк']);
   const tradersMeta=panoEcoCount(settlement, ['торговц']);
   const guardsMeta=panoGuardCount(settlement);
+  const militiaMeta=panoMilitiaCount(settlement);
   const pop=(settlement&&settlement.population)?settlement.population:null;
   const tLabel={'t-mountain':'Горы','t-forest':'Лес','t-swamp':'Болото','t-ocean':'Море','t-skerry':'Шхеры','t-evil':'Опасная зона'}[terrainHint]||'';
-  const meta=[pop?`👥 ${pop}`:null,tLabel||null,housesMeta?`🏠 ${housesMeta}`:null,shopsMeta?`🏪 ${shopsMeta}`:null,tradersMeta?`🧳 ${tradersMeta}`:null,guardsMeta?`🛡 ${guardsMeta}`:null,bldCount?`🏛 ${bldCount}`:null].filter(Boolean).join(' · ');
+  const meta=[pop?`👥 ${pop}`:null,tLabel||null,housesMeta?`🏠 ${housesMeta}`:null,shopsMeta?`🏪 ${shopsMeta}`:null,tradersMeta?`🧳 ${tradersMeta}`:null,guardsMeta?`🛡 ${guardsMeta}`:null,militiaMeta?`⚔ ~${militiaMeta}`:null,bldCount?`🏛 ${bldCount}`:null].filter(Boolean).join(' · ');
   const mEl=document.getElementById('pano-np-meta'); if(mEl) mEl.textContent=meta;
   document.getElementById('pano-overlay').classList.add('open');
   renderPano(npName, settlement, terrainHint, currentPanoSeasonName);
@@ -1378,6 +1387,7 @@ function renderPano(npName, settlement, terrainHint, seasonName) {
   const HOUSE_SPRITES=['assets/houses/01.png','assets/houses/02.png','assets/houses/03.png','assets/houses/04.png','assets/houses/05.png','assets/houses/06.png','assets/houses/07.png','assets/houses/08.png'];
   const SHOP_SPRITES=['assets/shops/01.png','assets/shops/02.png','assets/shops/03.png','assets/shops/04.png','assets/shops/05.png','assets/shops/06.png','assets/shops/07.png','assets/shops/08.png'];
   const GUARD_SPRITES=['assets/guards/01.png?v=5','assets/guards/02.png?v=5','assets/guards/03.png?v=5','assets/guards/04.png?v=5','assets/guards/05.png?v=5','assets/guards/06.png?v=5','assets/guards/07.png?v=5','assets/guards/08.png?v=5','assets/guards/09.png?v=5','assets/guards/10.png?v=5','assets/guards/11.png?v=5','assets/guards/12.png?v=5','assets/guards/13.png?v=5','assets/guards/14.png?v=5','assets/guards/15.png?v=5','assets/guards/16.png?v=5'];
+  const MILITIA_SPRITES=['assets/militia/01.png?v=1','assets/militia/02.png?v=1','assets/militia/03.png?v=1','assets/militia/04.png?v=1','assets/militia/05.png?v=1','assets/militia/06.png?v=1','assets/militia/07.png?v=1','assets/militia/08.png?v=1'];
   function miniHut(x,y,sc){
     const bw=15*sc, bh=bw*1.22;
     const src=HOUSE_SPRITES[Math.floor(rng()*HOUSE_SPRITES.length)];
@@ -1392,6 +1402,12 @@ function renderPano(npName, settlement, terrainHint, seasonName) {
     // Ассеты нормализованы 220×400 (одинаковый торс) — фикс. высота + тот же аспект.
     const bh=104*sc, bw=bh*0.55;
     const src=GUARD_SPRITES[Math.floor(rng()*GUARD_SPRITES.length)];
+    return `<image href="${src}" x="${x-bw/2}" y="${y-bh}" width="${bw}" height="${bh}" preserveAspectRatio="xMidYMax meet" pointer-events="none"/>`;
+  }
+  function miniMilitia(x,y,sc){
+    // Меньше стражи (~½), тот же аспект холста 220×400.
+    const bh=50*sc, bw=bh*0.55;
+    const src=MILITIA_SPRITES[Math.floor(rng()*MILITIA_SPRITES.length)];
     return `<image href="${src}" x="${x-bw/2}" y="${y-bh}" width="${bw}" height="${bh}" preserveAspectRatio="xMidYMax meet" pointer-events="none"/>`;
   }
   // Сетка с джиттером: при большом числе дворов мельчаем масштаб, чтобы все влезли.
@@ -1455,9 +1471,37 @@ function renderPano(npName, settlement, terrainHint, seasonName) {
       }
     }
   }
+  // Ополчение: среднее 1d(Л), позади стражи, мельче и кучнее (центр, 1–2 ряда).
+  const _militia=[];
+  const militiaCount=panoMilitiaCount(settlement);
+  {
+    const n=militiaCount;
+    if(n>0){
+      const rows=n>10?2:1;
+      const cols=Math.ceil(n/rows);
+      const gap=18;
+      const packW=Math.min(VW*0.62, Math.max(80, cols*gap));
+      const left=(VW-packW)/2;
+      const baseY=VH-38;
+      const scMul=1.0;
+      for(let k=0;k<n;k++){
+        const row=Math.floor(k/cols), col=k%cols;
+        const inRow=Math.min(cols, n-row*cols);
+        const rowW=Math.min(packW, Math.max(40, inRow*gap));
+        const rowLeft=(VW-rowW)/2;
+        const t=inRow===1?0.5:(col+0.5)/inRow;
+        const jx=(rng()-0.5)*4;
+        const hx=rowLeft+t*rowW+jx;
+        const hy=baseY-row*14;
+        _militia.push({hx,hy,hsc:scMul});
+      }
+    }
+  }
   _huts.sort((a,b)=>a.hy-b.hy);
   _guards.sort((a,b)=>a.hy-b.hy);
+  _militia.sort((a,b)=>a.hy-b.hy);
   let village=''; _huts.forEach(h=>{ village+=h.kind==='shop'?miniShop(h.hx,h.hy,h.hsc):miniHut(h.hx,h.hy,h.hsc); });
+  let militiaSvg=''; _militia.forEach(g=>{ militiaSvg+=miniMilitia(g.hx,g.hy,g.hsc); });
   let guardsSvg=''; _guards.forEach(g=>{ guardsSvg+=miniGuard(g.hx,g.hy,g.hsc); });
   const water = terrain.match(/t-ocean|t-skerry|мор|〰|шхер/) ? `<rect x="0" y="${groundY-8}" width="${VW}" height="30" fill="#3f7fb8" opacity="0.85" pointer-events="none"/><path d="M 0 ${groundY+8} q 40 -5 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0" fill="none" stroke="#cfe6f2" stroke-width="1.5" opacity="0.6" pointer-events="none"/>` : '';
 
@@ -1538,6 +1582,7 @@ function renderPano(npName, settlement, terrainHint, seasonName) {
   ${foreground}
   ${tufts}
   ${trees}
+  ${militiaSvg}
   ${guardsSvg}
   ${labelSvg}
   ${emptyMsg}
