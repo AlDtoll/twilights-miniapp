@@ -1151,14 +1151,16 @@
         "inline_mods": [
           {
             "val": 2,
-            "desc": "(Омовение соли С6 — идеал d6=6+1, князь лично, невольный жест смирения перед Кипоной — ковш подхватил, толпа охнула, к следующему броску лояльности через культ Кипоны)"
+            "desc": "Омовение соли С6 — идеал d6=6+1, князь лично, невольный жест смирения перед Кипоной — ковш подхватил, толпа охнула, к следующему броску лояльности через культ Кипоны",
+            "vis_cnt": 1
           }
         ],
-        "mod": 4,
+        "mod": 5,
         "reasons": [
+          "+1 стартовая",
           "+1 Управа",
           "+1 Больница",
-          "+2 (Омовение соли С6 — идеал d6=6+1, князь лично, невольный жест смирения перед Кипоной — ковш подхватил, толпа охнула, к следующему броску лояльности через культ Кипоны)"
+          "+2 Омовение соли С6 — идеал d6=6+1, князь лично, невольный жест смирения перед Кипоной — ковш подхватил, толпа охнула, к следующему броску лояльности через культ Кипоны (×1)"
         ],
         "delta": {}
       },
@@ -1195,10 +1197,10 @@
         }
       },
       "might": {
-        "total": 64,
-        "total_min": 18,
-        "total_max": 64,
-        "total_avg": 41,
+        "total": 68,
+        "total_min": 19,
+        "total_max": 68,
+        "total_avg": 44,
         "core_sum": 11.0,
         "core_src": "стража 11",
         "militia": 32,
@@ -1206,15 +1208,15 @@
         "fighters": 43,
         "fighters_sum": 43.0,
         "units": [],
-        "loyalty": 4,
-        "loyalty_pct": 40,
+        "loyalty": 5,
+        "loyalty_pct": 50,
         "defense_pct": 10,
         "cult_war_pct": 0,
         "tags_pct": 0,
         "tag_sum": 0,
         "tag_list": [],
-        "sum_pct": 50,
-        "mult": 1.5,
+        "sum_pct": 60,
+        "mult": 1.6,
         "fighters_src": "стража 11 + ополч. 32",
         "neutral": false
       },
@@ -1223,7 +1225,8 @@
         "loyalty_penalty": 10,
         "loyalty_bonus": 10,
         "total": 90
-      }
+      },
+      "mod_history": []
     },
     {
       "name": "Рудный двор",
@@ -1330,8 +1333,9 @@
         "Н": 7,
         "НЛ": 0,
         "Тип": "стартовая",
-        "mod": -2,
+        "mod": -1,
         "reasons": [
+          "+1 стартовая",
           "−1 нехватка стражи (4/5)",
           "−1 перегруз рабочих рук (17>7)"
         ],
@@ -1364,10 +1368,10 @@
         "delta": {}
       },
       "might": {
-        "total": 24,
-        "total_min": 4,
-        "total_max": 24,
-        "total_avg": 14,
+        "total": 27,
+        "total_min": 5,
+        "total_max": 27,
+        "total_avg": 16,
         "core_sum": 4.0,
         "core_src": "стража 4",
         "militia": 23,
@@ -1375,15 +1379,15 @@
         "fighters": 27,
         "fighters_sum": 27.0,
         "units": [],
-        "loyalty": -2,
-        "loyalty_pct": -20,
+        "loyalty": -1,
+        "loyalty_pct": -10,
         "defense_pct": 10,
         "cult_war_pct": 0,
         "tags_pct": 0,
         "tag_sum": 0,
         "tag_list": [],
-        "sum_pct": -10,
-        "mult": 0.9,
+        "sum_pct": 0,
+        "mult": 1.0,
         "fighters_src": "стража 4 + ополч. 23",
         "neutral": false
       },
@@ -1392,7 +1396,8 @@
         "loyalty_penalty": 0,
         "loyalty_bonus": 12,
         "total": 102
-      }
+      },
+      "mod_history": []
     },
     {
       "name": "Мыс Стража",
@@ -1495,8 +1500,9 @@
         "Н": 0,
         "НЛ": 0,
         "Тип": "стартовая",
-        "mod": -1,
+        "mod": 0,
         "reasons": [
+          "+1 стартовая",
           "-1 вера (религия)"
         ],
         "delta": {
@@ -1532,10 +1538,10 @@
         }
       },
       "might": {
-        "total": 23,
+        "total": 25,
         "total_min": 4,
-        "total_max": 23,
-        "total_avg": 13,
+        "total_max": 25,
+        "total_avg": 14,
         "core_sum": 3.0,
         "core_src": "стража 3",
         "militia": 20,
@@ -1543,15 +1549,15 @@
         "fighters": 23,
         "fighters_sum": 23.0,
         "units": [],
-        "loyalty": -1,
-        "loyalty_pct": -10,
+        "loyalty": 0,
+        "loyalty_pct": 0,
         "defense_pct": 10,
         "cult_war_pct": 0,
         "tags_pct": 0,
         "tag_sum": 0,
         "tag_list": [],
-        "sum_pct": 0,
-        "mult": 1.0,
+        "sum_pct": 10,
+        "mult": 1.1,
         "fighters_src": "стража 3 + ополч. 20",
         "neutral": false
       },
@@ -1560,7 +1566,8 @@
         "loyalty_penalty": 0,
         "loyalty_bonus": 15,
         "total": 105
-      }
+      },
+      "mod_history": []
     }
   ]
 }

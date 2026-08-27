@@ -439,7 +439,7 @@
         "amount": 5400
       },
       {
-        "label": "Дом князя содержание",
+        "label": "Дом содержание",
         "amount": 250
       },
       {
@@ -483,7 +483,12 @@
         "amount": 5400
       }
     ],
-    "receipts": [],
+    "receipts": [
+      {
+        "label": "Продажа трофеев (полосы рынка)",
+        "amount": 3920
+      }
+    ],
     "spendings": [
       {
         "label": "Возврат займа братчина Гостиного Порта (20000 под 28%/год) (×3)",
@@ -601,7 +606,7 @@
           "amount": 5400
         },
         {
-          "label": "Дом князя содержание",
+          "label": "Дом содержание",
           "amount": 250
         },
         {
@@ -656,7 +661,7 @@
     },
     "total_income": 89608,
     "total_expenses": 83190,
-    "balance": 18567
+    "balance": 22487
   },
   "buildings": {
     "slots": {
@@ -677,7 +682,7 @@
         "is_housing": false
       },
       {
-        "name": "Дом князя",
+        "name": "Дом",
         "cost": 5000,
         "status": "✅ готова (С2)",
         "maint": 250,
@@ -711,7 +716,7 @@
     "points": {
       "player": {
         "total": 3,
-        "left": 3
+        "left": 2
       },
       "chancellor": {
         "name": "Мокей «Прямой»",
@@ -725,7 +730,7 @@
       },
       "willpower": {
         "total": 2,
-        "left": 2
+        "left": 1
       }
     },
     "incidents": [
@@ -853,7 +858,7 @@
     "visitors": [
       {
         "text": "Жрец культа войны Былиц пришёл — по обычаю пора клятвы летнего меча (обряд обновления присяги стражи). Отсутствие князя два года подряд для культа знак слабости; присутствие даст +1 к лояльности Былиц через отца/культ",
-        "done": false,
+        "done": true,
         "tags": [
           "#возможность",
           "#нп:Былицы"
@@ -1112,7 +1117,7 @@
       {
         "name": "Адепт культа войны (0)",
         "techniques": [],
-        "bank": 2,
+        "bank": 4,
         "ups": 0,
         "next_threshold": 10
       },
@@ -1331,13 +1336,13 @@
     "total": null
   },
   "loot": {
-    "sold": 0,
-    "revenue": 0,
-    "eff_pct": null,
+    "sold": 4900,
+    "revenue": 3920,
+    "eff_pct": 80,
     "band": 4900,
-    "cur_rate": 80,
+    "cur_rate": 65,
     "left_in_band": 4900,
-    "stock": 6500
+    "stock": 1600
   },
   "threat": {
     "total": 13,
@@ -1431,7 +1436,7 @@
           "is_housing": false
         },
         {
-          "name": "Дом князя",
+          "name": "Дом",
           "cost": 5000,
           "status": "✅ готова (С2)",
           "maint": 250,
@@ -1497,11 +1502,21 @@
         "Н": 34,
         "НЛ": 7,
         "Тип": "стартовая",
-        "mod": 2,
+        "inline_mod": 2,
+        "inline_mods": [
+          {
+            "val": 2,
+            "desc": "Клятва летнего меча С6 — князь лично вышел на обряд у камня войны, идеал estimate 87%, культ признал князя своим неофитом",
+            "vis_cnt": 1
+          }
+        ],
+        "mod": 5,
         "reasons": [
+          "+1 стартовая",
           "+1 ставка героя (дом)",
           "+1 Управа",
           "−1 нехватка стражи (11/12)",
+          "+2 Клятва летнего меча С6 — князь лично вышел на обряд у камня войны, идеал estimate 87%, культ признал князя своим неофитом (×1)",
           "+1 вера (религия)"
         ],
         "delta": {}
@@ -1541,10 +1556,10 @@
         "delta": {}
       },
       "might": {
-        "total": 64,
-        "total_min": 16,
-        "total_max": 64,
-        "total_avg": 40,
+        "total": 78,
+        "total_min": 20,
+        "total_max": 78,
+        "total_avg": 49,
         "core_sum": 11.0,
         "core_src": "стража 11",
         "militia": 35,
@@ -1552,15 +1567,15 @@
         "fighters": 46,
         "fighters_sum": 46.0,
         "units": [],
-        "loyalty": 2,
-        "loyalty_pct": 20,
+        "loyalty": 5,
+        "loyalty_pct": 50,
         "defense_pct": 10,
         "cult_war_pct": 10,
         "tags_pct": 0,
         "tag_sum": 0,
         "tag_list": [],
-        "sum_pct": 40,
-        "mult": 1.4,
+        "sum_pct": 70,
+        "mult": 1.7,
         "fighters_src": "стража 11 + ополч. 35",
         "neutral": false
       },
@@ -1569,7 +1584,8 @@
         "loyalty_penalty": 12,
         "loyalty_bonus": 7,
         "total": 85
-      }
+      },
+      "mod_history": []
     },
     {
       "name": "Кочевье",
@@ -1652,8 +1668,9 @@
         "Н": 1,
         "НЛ": 0,
         "Тип": "стартовая",
-        "mod": 1,
+        "mod": 2,
         "reasons": [
+          "+1 стартовая",
           "+1 вера (религия)"
         ],
         "delta": {
@@ -1699,10 +1716,10 @@
         }
       },
       "might": {
-        "total": 36,
-        "total_min": 6,
-        "total_max": 36,
-        "total_avg": 21,
+        "total": 39,
+        "total_min": 7,
+        "total_max": 39,
+        "total_avg": 23,
         "core_sum": 4.0,
         "core_src": "стража 4",
         "militia": 24,
@@ -1710,15 +1727,15 @@
         "fighters": 28,
         "fighters_sum": 28.0,
         "units": [],
-        "loyalty": 1,
-        "loyalty_pct": 10,
+        "loyalty": 2,
+        "loyalty_pct": 20,
         "defense_pct": 10,
         "cult_war_pct": 10,
         "tags_pct": 0,
         "tag_sum": 0,
         "tag_list": [],
-        "sum_pct": 30,
-        "mult": 1.3,
+        "sum_pct": 40,
+        "mult": 1.4,
         "fighters_src": "стража 4 + ополч. 24",
         "neutral": false
       },
@@ -1727,7 +1744,8 @@
         "loyalty_penalty": 0,
         "loyalty_bonus": 14,
         "total": 104
-      }
+      },
+      "mod_history": []
     },
     {
       "name": "Каменка",
@@ -1815,15 +1833,17 @@
         }
       ],
       "stash": [
-        "Трофеи (на продажу): 6500 мон"
+        "Трофеи (на продажу): 1600 мон"
       ],
       "loyalty": {
         "Л": 7,
         "Н": 14,
         "НЛ": 0,
         "Тип": "стартовая",
-        "mod": 0,
-        "reasons": [],
+        "mod": 1,
+        "reasons": [
+          "+1 стартовая"
+        ],
         "delta": {}
       },
       "faith": {
@@ -1859,10 +1879,10 @@
         "delta": {}
       },
       "might": {
-        "total": 11,
+        "total": 12,
         "total_min": 4,
-        "total_max": 11,
-        "total_avg": 7,
+        "total_max": 12,
+        "total_avg": 8,
         "core_sum": 3.0,
         "core_src": "стража 3",
         "militia": 7,
@@ -1870,15 +1890,15 @@
         "fighters": 10,
         "fighters_sum": 10.0,
         "units": [],
-        "loyalty": 0,
-        "loyalty_pct": 0,
+        "loyalty": 1,
+        "loyalty_pct": 10,
         "defense_pct": 10,
         "cult_war_pct": 0,
         "tags_pct": 0,
         "tag_sum": 0,
         "tag_list": [],
-        "sum_pct": 10,
-        "mult": 1.1,
+        "sum_pct": 20,
+        "mult": 1.2,
         "fighters_src": "стража 3 + ополч. 7",
         "neutral": false
       },
@@ -1887,7 +1907,8 @@
         "loyalty_penalty": 0,
         "loyalty_bonus": 5,
         "total": 95
-      }
+      },
+      "mod_history": []
     },
     {
       "name": "Ковыльные Стойбища",
@@ -1970,17 +1991,9 @@
         "Н": 6,
         "НЛ": 5,
         "Тип": "присоединённая (вечина, С2 мета)",
-        "inline_mod": -1,
-        "inline_mods": [
-          {
-            "val": -1,
-            "desc": "Присоединённая"
-          }
-        ],
-        "mod": -2,
+        "mod": -1,
         "reasons": [
-          "−1 не своя",
-          "-1 Присоединённая"
+          "−1 не своя"
         ],
         "delta": {
           "Л": -1,
@@ -2020,10 +2033,10 @@
         "delta": {}
       },
       "might": {
-        "total": 10,
-        "total_min": 3,
-        "total_max": 10,
-        "total_avg": 7,
+        "total": 12,
+        "total_min": 4,
+        "total_max": 12,
+        "total_avg": 8,
         "core_sum": 3.0,
         "core_src": "стража 3",
         "militia": 9,
@@ -2031,15 +2044,15 @@
         "fighters": 12,
         "fighters_sum": 12.0,
         "units": [],
-        "loyalty": -2,
-        "loyalty_pct": -20,
+        "loyalty": -1,
+        "loyalty_pct": -10,
         "defense_pct": 10,
         "cult_war_pct": 0,
         "tags_pct": 0,
         "tag_sum": 0,
         "tag_list": [],
-        "sum_pct": -10,
-        "mult": 0.9,
+        "sum_pct": 0,
+        "mult": 1.0,
         "fighters_src": "стража 3 + ополч. 9",
         "neutral": false
       },
@@ -2048,7 +2061,8 @@
         "loyalty_penalty": 32,
         "loyalty_bonus": 7,
         "total": 65
-      }
+      },
+      "mod_history": []
     },
     {
       "name": "Ковыльные Стойбища-Ближнее",
@@ -2131,18 +2145,10 @@
         "Н": 8,
         "НЛ": 34,
         "Тип": "присоединённая (присяга, С4 приключение мета)",
-        "inline_mod": -1,
-        "inline_mods": [
-          {
-            "val": -1,
-            "desc": "Присоединённая"
-          }
-        ],
-        "mod": -3,
+        "mod": -2,
         "reasons": [
           "−1 не своя",
-          "−1 нехватка клерков (3/4)",
-          "-1 Присоединённая"
+          "−1 нехватка клерков (3/4)"
         ],
         "delta": {
           "Л": -1,
@@ -2184,10 +2190,10 @@
         }
       },
       "might": {
-        "total": 40,
-        "total_min": 10,
-        "total_max": 40,
-        "total_avg": 25,
+        "total": 45,
+        "total_min": 11,
+        "total_max": 45,
+        "total_avg": 28,
         "core_sum": 12.0,
         "core_src": "стража 12",
         "militia": 38,
@@ -2195,15 +2201,15 @@
         "fighters": 50,
         "fighters_sum": 50.0,
         "units": [],
-        "loyalty": -3,
-        "loyalty_pct": -30,
+        "loyalty": -2,
+        "loyalty_pct": -20,
         "defense_pct": 10,
         "cult_war_pct": 0,
         "tags_pct": 0,
         "tag_sum": 0,
         "tag_list": [],
-        "sum_pct": -20,
-        "mult": 0.8,
+        "sum_pct": -10,
+        "mult": 0.9,
         "fighters_src": "стража 12 + ополч. 38",
         "neutral": false
       },
@@ -2212,7 +2218,8 @@
         "loyalty_penalty": 55,
         "loyalty_bonus": 7,
         "total": 42
-      }
+      },
+      "mod_history": []
     }
   ]
 }
