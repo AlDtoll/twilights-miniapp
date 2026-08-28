@@ -340,7 +340,7 @@
   "telegram": "@aldtoll",
   "season": "6",
   "season_name": "лето",
-  "active_phase": "leader",
+  "active_phase": "idle",
   "finance": {
     "start": 18549,
     "income": [
