@@ -159,6 +159,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 5,
+          "traders": 1,
           "promysly": [
             {
               "name": "—",
@@ -366,6 +368,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 20,
+          "traders": 10,
           "promysly": [
             {
               "name": "Рыбная ловля",
@@ -458,6 +462,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 12,
+          "traders": 6,
           "promysly": [
             {
               "name": "Рыбная ловля",
@@ -550,6 +556,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 16,
+          "traders": 8,
           "promysly": [
             {
               "name": "Рыбная ловля",
@@ -801,6 +809,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 12,
+          "traders": 6,
           "promysly": [
             {
               "name": "Охота",
@@ -885,6 +895,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 4,
+          "traders": 2,
           "promysly": [
             {
               "name": "Охота",
@@ -1106,6 +1118,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 0,
+          "traders": 0,
           "promysly": [
             {
               "name": "—",
@@ -1327,6 +1341,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 4,
+          "traders": 1,
           "promysly": [
             {
               "name": "—",
@@ -1631,6 +1647,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 20,
+          "traders": 9,
           "promysly": [
             {
               "name": "Кузня",
@@ -1725,6 +1743,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 10,
+          "traders": 4,
           "promysly": [
             {
               "name": "Скотоводство",
@@ -1910,6 +1930,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 10,
+          "traders": 5,
           "promysly": [
             {
               "name": "—",
@@ -2204,6 +2226,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 10,
+          "traders": 5,
           "promysly": [
             {
               "name": "Каменотёсное",
@@ -2292,6 +2316,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 4,
+          "traders": 3,
           "promysly": [
             {
               "name": "Скотоводство",
@@ -2380,6 +2406,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 6,
+          "traders": 3,
           "promysly": [
             {
               "name": "Охота",
@@ -2666,6 +2694,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 10,
+          "traders": 5,
           "promysly": [
             {
               "name": "Вырубка",
@@ -2746,6 +2776,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 6,
+          "traders": 3,
           "promysly": [
             {
               "name": "Вырубка",
@@ -2977,6 +3009,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 1,
+          "traders": 0,
           "promysly": [
             {
               "name": "Охота",
@@ -3061,6 +3095,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 1,
+          "traders": 0,
           "promysly": [
             {
               "name": "Охота",
@@ -3317,6 +3353,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 16,
+          "traders": 8,
           "promysly": [
             {
               "name": "—",
@@ -3536,6 +3574,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 5,
+          "traders": 3,
           "promysly": [
             {
               "name": "Виноделие",
@@ -3780,6 +3820,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 0,
+          "traders": 0,
           "promysly": [
             {
               "name": "—",
@@ -3872,6 +3914,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 2,
+          "traders": 0,
           "promysly": [
             {
               "name": "—",
@@ -4122,6 +4166,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 10,
+          "traders": 5,
           "promysly": [
             {
               "name": "Табунщики (кони)",
@@ -4216,6 +4262,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 14,
+          "traders": 7,
           "promysly": [
             {
               "name": "Скотоводство",
@@ -4310,6 +4358,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 16,
+          "traders": 8,
           "promysly": [
             {
               "name": "Скотоводство",
@@ -4539,6 +4589,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 17,
+          "traders": 9,
           "promysly": [
             {
               "name": "Торговля пряностями",
@@ -4631,6 +4683,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 12,
+          "traders": 6,
           "promysly": [
             {
               "name": "Торговля пряностями",
@@ -4842,6 +4896,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 26,
+          "traders": 13,
           "promysly": [
             {
               "name": "Добыча и торговля солью",
@@ -4934,6 +4990,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 14,
+          "traders": 7,
           "promysly": [
             {
               "name": "Солеварни",
@@ -5177,6 +5235,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 6,
+          "traders": 3,
           "promysly": [
             {
               "name": "Скотоводство (овца-конь)",
@@ -5266,6 +5326,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 8,
+          "traders": 4,
           "promysly": [
             {
               "name": "Скотоводство",
@@ -5533,6 +5595,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 5,
+          "traders": 3,
           "promysly": [
             {
               "name": "—",
@@ -5621,6 +5685,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 7,
+          "traders": 4,
           "promysly": [
             {
               "name": "—",
@@ -5892,6 +5958,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 10,
+          "traders": 5,
           "promysly": [
             {
               "name": "Табунщики (кони)",
@@ -5986,6 +6054,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 8,
+          "traders": 4,
           "promysly": [
             {
               "name": "Скотоводство",
@@ -6224,6 +6294,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 8,
+          "traders": 4,
           "promysly": [
             {
               "name": "Табунщики (кони)",
@@ -6312,6 +6384,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 16,
+          "traders": 8,
           "promysly": [
             {
               "name": "Скотоводство",
@@ -6565,6 +6639,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 16,
+          "traders": 8,
           "promysly": [
             {
               "name": "—",
@@ -6768,6 +6844,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 2,
+          "traders": 0,
           "promysly": [
             {
               "name": "—",
@@ -6986,9 +7064,11 @@
           "population": "~150",
           "houses": "15",
           "treasury": {
-            "pct": 54,
+            "pct": 100,
             "razoreno": false
           },
+          "shops": 0,
+          "traders": 0,
           "promysly": [
             {
               "name": "—",
@@ -7224,6 +7304,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 16,
+          "traders": 8,
           "promysly": [
             {
               "name": "Охота и скотоводство",
@@ -7525,6 +7607,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 2,
+          "traders": 0,
           "promysly": [
             {
               "name": "Охота",
@@ -7609,6 +7693,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 0,
+          "traders": 0,
           "promysly": [
             {
               "name": "Охота",
@@ -7689,6 +7775,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 1,
+          "traders": 0,
           "promysly": [
             {
               "name": "Охота",
@@ -7921,6 +8009,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 1,
+          "traders": 0,
           "promysly": [
             {
               "name": "Охота",
@@ -8005,6 +8095,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 3,
+          "traders": 1,
           "promysly": [
             {
               "name": "Охота",
@@ -8215,6 +8307,8 @@
             "pct": 100,
             "razoreno": false
           },
+          "shops": 3,
+          "traders": 1,
           "promysly": [
             {
               "name": "Охота",

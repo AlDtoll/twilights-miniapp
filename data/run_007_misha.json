@@ -181,7 +181,14 @@
         "y": 1,
         "col": 2,
         "row": 3,
-        "terrain": "t-forest-thicket"
+        "terrain": "t-lake"
+      },
+      {
+        "x": 1,
+        "y": 2,
+        "col": 2,
+        "row": 2,
+        "terrain": "t-lake"
       },
       {
         "x": 1,
@@ -199,10 +206,17 @@
       },
       {
         "x": 2,
+        "y": 1,
+        "col": 3,
+        "row": 3,
+        "terrain": "t-lake"
+      },
+      {
+        "x": 2,
         "y": 2,
         "col": 3,
         "row": 2,
-        "terrain": "t-forest-thicket"
+        "terrain": "t-lake"
       },
       {
         "x": 2,
