@@ -1119,19 +1119,21 @@ function amHi(ev, idx) {
   ev.stopPropagation();
   const svg = ev.target.ownerSVGElement;
   if (!svg) return;
-  const already = ev.target.classList.contains("am-node-sel");
+  const nodeEl = ev.target.closest ? ev.target.closest('.am-node') : ev.target;
+  const already = nodeEl.classList.contains("am-node-sel");
   svg.querySelectorAll(".am-node-sel").forEach(el => el.classList.remove("am-node-sel"));
   svg.querySelectorAll(".am-road-hi").forEach(el => el.classList.remove("am-road-hi"));
   if (already) return;
-  ev.target.classList.add("am-node-sel");
+  nodeEl.classList.add("am-node-sel");
+  const i = parseInt(nodeEl.getAttribute('data-i'), 10);
+  const roadIdx = Number.isFinite(i) ? i : idx;
   svg.querySelectorAll(".am-road").forEach(r => {
-    if ((r.getAttribute("data-i") || "").split(" ").includes(String(idx))) r.classList.add("am-road-hi");
+    if ((r.getAttribute("data-i") || "").split(" ").includes(String(roadIdx))) r.classList.add("am-road-hi");
   });
-  const labels = svg.querySelectorAll(".am-label");
-  const nm = labels[idx] ? labels[idx].textContent.trim() : null;
+  const nm = (nodeEl.getAttribute('data-np') || '').trim() || null;
   if (nm) {
     const s = panoSetts[nm] || null;
-    const terrainHint = panoTerrainFor(nm, (_panoNodes[idx] && _panoNodes[idx].terrain) || '');
+    const terrainHint = panoTerrainFor(nm, (_panoNodes[roadIdx] && _panoNodes[roadIdx].terrain) || '');
     openPano(nm, s, terrainHint);
   }
 }
@@ -1306,18 +1308,18 @@ function panoEcoCount(settlement, needles){
 // Стража на панораме: staff «Стража» fact; иначе сумма might.units[].count (нейтралы); иначе 0.
 function panoGuardCount(settlement){
   if(!settlement) return 0;
-  let staffSum=0, staffHit=false;
+  let staffSum=0;
   for(const row of (settlement.staff||[])){
     if(!/страж/i.test(String(row.category||''))) continue;
-    staffHit=true;
     staffSum+=parseInt(String(row.fact||'').replace(/[^\d]/g,''),10)||0;
   }
-  if(staffHit) return staffSum;
   let unitSum=0;
   for(const u of ((settlement.might&&settlement.might.units)||[])){
     unitSum+=parseInt(u.count,10)||0;
   }
-  return unitSum||0;
+  if(staffSum>0) return staffSum;
+  if(unitSum>0) return unitSum;
+  return 0;
 }
 
 // Ополчение на панораме: среднее 1d(Л) = (militia+1)/2. militia = число лояльных домов.
@@ -1678,6 +1680,7 @@ function renderAreaMap(am) {
   const idxOf = {}; am.nodes.forEach((n, i) => { idxOf[n.name] = i; });
 
   const esc = (s) => String(s).replace(/[&<>"]/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+  const attrEsc = (s) => String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
   const amSplitName = (name) => {
     const s = String(name || '');
     if (s.length <= 14) return [s];
@@ -1916,7 +1919,7 @@ function renderAreaMap(am) {
     const fill = OWN_COLORS[n.owner] || "#c8a84a";
     const w = 6.5, bh = 6, rh = 5;   // домик = пятиугольник (крыша+корпус)
     const house = `M ${x - w} ${y - 1} L ${x} ${y - 1 - rh} L ${x + w} ${y - 1} L ${x + w} ${y + bh} L ${x - w} ${y + bh} Z`;
-    g += `<path d="${house}" class="am-node" data-i="${i}" style="fill:${fill};animation-delay:${((i * 0.41) % 3.4).toFixed(2)}s" onclick="amHi(event,${i})"/>`;
+    g += `<path d="${house}" class="am-node" data-i="${i}" data-np="${attrEsc(n.name)}" style="fill:${fill};animation-delay:${((i * 0.41) % 3.4).toFixed(2)}s" onclick="amHi(event,${i})"/>`;
     // Дымок над крышей домика: 2 кружка с разным delay, идут вверх
     const smokeDelay1 = ((i * 1.3) % 4).toFixed(1);
     const smokeDelay2 = ((i * 1.3 + 2.1) % 4).toFixed(1);
