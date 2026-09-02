@@ -335,3 +335,17 @@ function stopGameTimer() {
   const hud = document.getElementById('twi-timer-hud');
   if (hud) hud.style.opacity = '0';
 }
+
+/* ---- applyFail: общий хелпер «шанс проиграть» ----
+ * Вызывать из tierBy-логики игры перед возвратом тира:
+ *   const tier = applyFail(tierBy(pct, THRESHOLDS), pct);
+ * Если fail===false в gameData — хелпер отключён, tier возвращается как есть.
+ * Порог failPct берётся из gameData (дефолт 0.35).
+ * При pct < порога → явный провал {outcome: 'Провал', level: 0}.
+ */
+function applyFail(tier, pct) {
+  if (gameData.fail === false) return tier;
+  const threshold = (typeof gameData.failPct === 'number') ? gameData.failPct : 0.35;
+  if (pct < threshold) return { outcome: 'Провал', level: 0 };
+  return tier;
+}
