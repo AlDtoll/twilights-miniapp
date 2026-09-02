@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Комната — Twilights</title>
+  <link rel="stylesheet" href="room.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="rail" aria-label="Навигация">
+      <div class="rail-head">
+        <div class="brand">Twilights<span> комната</span></div>
+        <button type="button" id="btn-rail-toggle" class="ghost rail-toggle" aria-expanded="false" aria-controls="rail-body">Меню</button>
+      </div>
+      <div id="rail-body" class="rail-body">
+        <nav class="quick">
+          <a href="/map.html" target="_blank" rel="noopener">Карта</a>
+          <a id="link-dash" href="/player.html" target="_blank" rel="noopener">Дашборд</a>
+          <!-- P0: События вынесены в chip-ряд над чатом (не в Меню) -->
+          <button type="button" id="btn-events" class="rail-action" hidden aria-hidden="true">События</button>
+        </nav>
+        <div class="rail-foot" hidden aria-hidden="true"></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="top">
+        <div>
+          <h1>Игровая комната</h1>
+          <p id="seat-label" class="muted">войдите, чтобы продолжить</p>
+        </div>
+        <div id="status" class="status offline" role="status">офлайн</div>
+      </header>
+
+      <section id="login-panel" class="panel login">
+        <form id="login-form" autocomplete="off">
+          <label>Забег
+            <input name="run" id="inp-run" value="run_007" required />
+          </label>
+          <label>Игрок
+            <input name="player" id="inp-player" value="danil" required />
+          </label>
+          <label>Токен
+            <input name="token" id="inp-token" type="password" required placeholder="seat token" />
+          </label>
+          <p id="login-error" class="err" hidden></p>
+          <button type="submit">Войти</button>
+        </form>
+      </section>
+
+      <section id="chat-panel" class="panel chat" hidden>
+        <div id="qa-panel" class="qa-panel">
+          <div id="context-strip" class="context-strip" aria-live="polite">
+            <span id="ctx-seat" class="ctx-seat"></span>
+            <span id="ctx-phase" class="ctx-phase"></span>
+          </div>
+          <div class="chip-row" role="toolbar" aria-label="Быстрые действия">
+            <button type="button" id="chip-events" class="chip chip-has-badge">
+              События<span id="chip-events-badge" class="chip-badge" hidden aria-hidden="true"></span>
+            </button>
+            <button type="button" id="chip-treasury" class="chip">Казна</button>
+            <button type="button" id="chip-hero" class="chip">Герой</button>
+            <button type="button" id="chip-more" class="chip chip-more">Ещё</button>
+          </div>
+        </div>
+        <div id="messages" class="messages" aria-live="polite"></div>
+        <form id="send-form" class="composer">
+          <textarea id="inp-text" rows="2" placeholder="Написать мастеру…" maxlength="8000" required></textarea>
+          <button type="submit">Отправить</button>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <div id="events-overlay" class="events-overlay" hidden>
+    <div class="events-sheet" role="dialog" aria-modal="true" aria-labelledby="events-title">
+      <header class="events-head">
+        <h2 id="events-title">События</h2>
+        <div class="sheet-actions">
+          <button type="button" id="btn-events-refresh" class="ghost sheet-refresh" aria-label="Обновить">↻</button>
+          <button type="button" id="btn-events-close" class="ghost" aria-label="Закрыть">✕</button>
+        </div>
+      </header>
+      <div id="events-body" class="events-body">
+        <p class="muted">Загрузка…</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="money-overlay" class="events-overlay" hidden>
+    <div class="events-sheet" role="dialog" aria-modal="true" aria-labelledby="money-title">
+      <header class="events-head">
+        <h2 id="money-title">Казна</h2>
+        <div class="sheet-actions">
+          <button type="button" id="btn-money-refresh" class="ghost sheet-refresh" aria-label="Обновить">↻</button>
+          <button type="button" id="btn-money-close" class="ghost" aria-label="Закрыть">✕</button>
+        </div>
+      </header>
+      <div id="money-body" class="events-body">
+        <p class="muted">Загрузка…</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="hero-overlay" class="events-overlay" hidden>
+    <div class="events-sheet" role="dialog" aria-modal="true" aria-labelledby="hero-title">
+      <header class="events-head">
+        <h2 id="hero-title">Герой</h2>
+        <div class="sheet-actions">
+          <button type="button" id="btn-hero-refresh" class="ghost sheet-refresh" aria-label="Обновить">↻</button>
+          <button type="button" id="btn-hero-close" class="ghost" aria-label="Закрыть">✕</button>
+        </div>
+      </header>
+      <div id="hero-body" class="events-body">
+        <p class="muted">Загрузка…</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="more-overlay" class="more-overlay" hidden>
+    <div class="more-sheet" role="dialog" aria-modal="true" aria-labelledby="more-title">
+      <header class="more-head">
+        <h2 id="more-title">Ещё</h2>
+        <button type="button" id="btn-more-close" class="ghost" aria-label="Закрыть">✕</button>
+      </header>
+      <nav class="more-body">
+        <div class="more-grid" role="group" aria-label="Игровые панели">
+          <button type="button" class="more-tile" data-panel="economy">Экономика</button>
+          <button type="button" class="more-tile" data-panel="bag">Вещи</button>
+          <button type="button" class="more-tile" data-panel="loyalty">Лояльность</button>
+          <button type="button" class="more-tile" data-panel="religion">Вера</button>
+          <button type="button" class="more-tile" data-panel="growth">Рост населения</button>
+          <button type="button" class="more-tile" data-panel="threat">Угроза</button>
+          <button type="button" class="more-tile" data-panel="territory">Территория</button>
+          <button type="button" class="more-tile" data-panel="stash">Кладовая</button>
+          <button type="button" class="more-tile" data-panel="loot">Сбыт трофеев</button>
+          <button type="button" class="more-tile" data-panel="settlements">НП</button>
+        </div>
+        <div class="more-links">
+          <a href="/map.html" target="_blank" rel="noopener">Карта</a>
+          <a id="link-more-dash" href="/player.html" target="_blank" rel="noopener">Дашборд</a>
+          <button type="button" id="btn-more-logout" class="more-action more-action-danger" hidden>Выйти</button>
+        </div>
+      </nav>
+    </div>
+  </div>
+
+  <div id="panel-overlay" class="events-overlay" hidden>
+    <div class="events-sheet" role="dialog" aria-modal="true" aria-labelledby="panel-title">
+      <header class="events-head">
+        <h2 id="panel-title">Панель</h2>
+        <div class="sheet-actions">
+          <button type="button" id="btn-panel-back" class="ghost sheet-back" hidden aria-label="Назад">←</button>
+          <button type="button" id="btn-panel-refresh" class="ghost sheet-refresh" aria-label="Обновить">↻</button>
+          <button type="button" id="btn-panel-close" class="ghost" aria-label="Закрыть">✕</button>
+        </div>
+      </header>
+      <div id="panel-body" class="events-body">
+        <p class="muted">Загрузка…</p>
+      </div>
+    </div>
+  </div>
+  <script src="panels.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
