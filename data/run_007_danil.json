@@ -1397,8 +1397,14 @@
       "shops": 17,
       "traders": 8,
       "shops_mod": 0,
+      "shops_mod_note": "",
+      "shops_mod_turns": null,
       "traders_mod": 0,
+      "traders_mod_note": "",
+      "traders_mod_turns": null,
       "unpaying_mod": -9,
+      "unpaying_mod_note": "",
+      "unpaying_mod_turns": null,
       "staff": [
         {
           "category": "Стража (бойцы)",
@@ -1604,8 +1610,14 @@
       "shops": 6,
       "traders": 3,
       "shops_mod": 0,
+      "shops_mod_note": "",
+      "shops_mod_turns": null,
       "traders_mod": 0,
+      "traders_mod_note": "",
+      "traders_mod_turns": null,
       "unpaying_mod": -3,
+      "unpaying_mod_note": "бродячий уклад",
+      "unpaying_mod_turns": null,
       "staff": [
         {
           "category": "Стража (бойцы)",
@@ -1767,8 +1779,14 @@
       "shops": 5,
       "traders": 2,
       "shops_mod": 0,
+      "shops_mod_note": "",
+      "shops_mod_turns": null,
       "traders_mod": 0,
+      "traders_mod_note": "",
+      "traders_mod_turns": null,
       "unpaying_mod": -3,
+      "unpaying_mod_note": "",
+      "unpaying_mod_turns": null,
       "staff": [
         {
           "category": "Стража (бойцы)",
@@ -1933,8 +1951,14 @@
       "shops": 4,
       "traders": 2,
       "shops_mod": 0,
+      "shops_mod_note": "",
+      "shops_mod_turns": null,
       "traders_mod": 0,
+      "traders_mod_note": "",
+      "traders_mod_turns": null,
       "unpaying_mod": -2,
+      "unpaying_mod_note": "бродячий уклад",
+      "unpaying_mod_turns": null,
       "staff": [
         {
           "category": "Стража (бойцы)",
@@ -2099,8 +2123,14 @@
       "shops": 18,
       "traders": 9,
       "shops_mod": 0,
+      "shops_mod_note": "",
+      "shops_mod_turns": null,
       "traders_mod": 0,
+      "traders_mod_note": "",
+      "traders_mod_turns": null,
       "unpaying_mod": -16,
+      "unpaying_mod_note": "",
+      "unpaying_mod_turns": null,
       "staff": [
         {
           "category": "Стража (бойцы)",

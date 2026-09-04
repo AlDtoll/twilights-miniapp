@@ -1122,8 +1122,14 @@
       "shops": 15,
       "traders": 8,
       "shops_mod": 0,
+      "shops_mod_note": "",
+      "shops_mod_turns": null,
       "traders_mod": 0,
+      "traders_mod_note": "",
+      "traders_mod_turns": null,
       "unpaying_mod": -8,
+      "unpaying_mod_note": "бродячий уклад",
+      "unpaying_mod_turns": null,
       "staff": [
         {
           "category": "Стража (бойцы)",
@@ -1365,8 +1371,14 @@
       "shops": 7,
       "traders": 3,
       "shops_mod": 0,
+      "shops_mod_note": "",
+      "shops_mod_turns": null,
       "traders_mod": 0,
+      "traders_mod_note": "",
+      "traders_mod_turns": null,
       "unpaying_mod": -3,
+      "unpaying_mod_note": "бродячий уклад",
+      "unpaying_mod_turns": null,
       "staff": [
         {
           "category": "Стража (бойцы)",
