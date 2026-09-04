@@ -1020,7 +1020,7 @@
             "kind": "приём"
           }
         ],
-        "bank": 6,
+        "bank": 9,
         "ups": 1,
         "next_threshold": 12
       },
@@ -1043,7 +1043,7 @@
             "kind": "техника"
           }
         ],
-        "bank": 11,
+        "bank": 13,
         "ups": 1,
         "next_threshold": 12
       },
@@ -1062,14 +1062,14 @@
             "kind": "техника"
           }
         ],
-        "bank": 15,
+        "bank": 16,
         "ups": 1,
         "next_threshold": 12
       },
       {
         "name": "Наблюдательность (0)",
         "techniques": [],
-        "bank": 18,
+        "bank": 19,
         "ups": 0,
         "next_threshold": 10
       },
@@ -1097,7 +1097,7 @@
       {
         "name": "Лидерство (I)",
         "techniques": [],
-        "bank": 5,
+        "bank": 6,
         "ups": 1,
         "next_threshold": 12
       },
@@ -1148,7 +1148,7 @@
       "Звериная сила — наследственная богатырская стать от отца. Врождённое преимущество в сценах грубой силы (толкнуть, поднять, удержать, сломать). Материальный атрибут особенности слит с тонфами каменного дерева (Пример 4 phase0.md — прямое соединение), но врождённый эффект работает всегда."
     ],
     "status": {
-      "HP": "100%"
+      "HP": "95%"
     },
     "retinue": [],
     "retinue_slots": {
@@ -1396,6 +1396,9 @@
       "houses": "84",
       "shops": 17,
       "traders": 8,
+      "shops_mod": 0,
+      "traders_mod": 0,
+      "unpaying_mod": -9,
       "staff": [
         {
           "category": "Стража (бойцы)",
@@ -1600,6 +1603,9 @@
       "houses": "28",
       "shops": 6,
       "traders": 3,
+      "shops_mod": 0,
+      "traders_mod": 0,
+      "unpaying_mod": -3,
       "staff": [
         {
           "category": "Стража (бойцы)",
@@ -1760,6 +1766,9 @@
       "houses": "23",
       "shops": 5,
       "traders": 2,
+      "shops_mod": 0,
+      "traders_mod": 0,
+      "unpaying_mod": -3,
       "staff": [
         {
           "category": "Стража (бойцы)",
@@ -1923,6 +1932,9 @@
       "houses": "22",
       "shops": 4,
       "traders": 2,
+      "shops_mod": 0,
+      "traders_mod": 0,
+      "unpaying_mod": -2,
       "staff": [
         {
           "category": "Стража (бойцы)",
@@ -2086,6 +2098,9 @@
       "houses": "88",
       "shops": 18,
       "traders": 9,
+      "shops_mod": 0,
+      "traders_mod": 0,
+      "unpaying_mod": -16,
       "staff": [
         {
           "category": "Стража (бойцы)",
@@ -2145,12 +2160,21 @@
       "stash": [],
       "loyalty": {
         "Л": 38,
-        "Н": 8,
-        "НЛ": 34,
+        "Н": 9,
+        "НЛ": 33,
+        "inline_mod": 1,
+        "inline_mods": [
+          {
+            "val": 1,
+            "desc": "Идеал Т2 сход С6",
+            "vis_cnt": 1
+          }
+        ],
         "Тип": "присоединённая (присяга, С4 приключение мета)",
-        "mod": -1,
+        "mod": 0,
         "reasons": [
-          "−1 не своя"
+          "−1 не своя",
+          "+1 Идеал Т2 сход С6 (×1)"
         ],
         "delta": {
           "Л": -1,
@@ -2192,10 +2216,10 @@
         }
       },
       "might": {
-        "total": 50,
-        "total_min": 13,
-        "total_max": 50,
-        "total_avg": 31,
+        "total": 55,
+        "total_min": 14,
+        "total_max": 55,
+        "total_avg": 34,
         "core_sum": 12.0,
         "core_src": "стража 12",
         "militia": 38,
@@ -2203,15 +2227,15 @@
         "fighters": 50,
         "fighters_sum": 50.0,
         "units": [],
-        "loyalty": -1,
-        "loyalty_pct": -10,
+        "loyalty": 0,
+        "loyalty_pct": 0,
         "defense_pct": 10,
         "cult_war_pct": 0,
         "tags_pct": 0,
         "tag_sum": 0,
         "tag_list": [],
-        "sum_pct": 0,
-        "mult": 1.0,
+        "sum_pct": 10,
+        "mult": 1.1,
         "fighters_src": "стража 12 + ополч. 38",
         "neutral": false
       },
@@ -2221,7 +2245,16 @@
         "loyalty_bonus": 7,
         "total": 42
       },
-      "mod_history": []
+      "mod_history": [
+        {
+          "ts": "2026-09-01T10:37:58.498487+00:00",
+          "action": "add",
+          "mod_val": 1,
+          "mod_name": "Идеал Т2 сход С6",
+          "season": "6",
+          "reason": "ручная правка (CLI)"
+        }
+      ]
     }
   ]
 }

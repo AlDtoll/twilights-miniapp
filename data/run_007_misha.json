@@ -1121,6 +1121,9 @@
       "houses": "77",
       "shops": 15,
       "traders": 8,
+      "shops_mod": 0,
+      "traders_mod": 0,
+      "unpaying_mod": -8,
       "staff": [
         {
           "category": "Стража (бойцы)",
@@ -1361,6 +1364,9 @@
       "houses": "33",
       "shops": 7,
       "traders": 3,
+      "shops_mod": 0,
+      "traders_mod": 0,
+      "unpaying_mod": -3,
       "staff": [
         {
           "category": "Стража (бойцы)",
@@ -1468,20 +1474,26 @@
         "Л": 22,
         "Н": 8,
         "НЛ": 0,
-        "inline_mod": 1,
+        "inline_mod": 2,
         "inline_mods": [
           {
             "val": 1,
             "desc": "Князь защитил лес от Кабаньей Тропы",
             "vis_cnt": 2
+          },
+          {
+            "val": 1,
+            "desc": "Компенсация артели Бурия",
+            "vis_cnt": 2
           }
         ],
         "Тип": "стартовая",
-        "mod": 0,
+        "mod": 1,
         "reasons": [
           "+1 стартовая",
           "−1 перегруз рабочих рук (8>7)",
           "+1 Князь защитил лес от Кабаньей Тропы (×2)",
+          "+1 Компенсация артели Бурия (×2)",
           "-1 вера (религия)"
         ],
         "delta": {}
@@ -1516,10 +1528,10 @@
         }
       },
       "might": {
-        "total": 29,
-        "total_min": 6,
-        "total_max": 29,
-        "total_avg": 18,
+        "total": 32,
+        "total_min": 7,
+        "total_max": 32,
+        "total_avg": 19,
         "core_sum": 5.0,
         "core_src": "стража 5",
         "militia": 22,
@@ -1527,15 +1539,15 @@
         "fighters": 27,
         "fighters_sum": 27.0,
         "units": [],
-        "loyalty": 0,
-        "loyalty_pct": 0,
+        "loyalty": 1,
+        "loyalty_pct": 10,
         "defense_pct": 10,
         "cult_war_pct": 0,
         "tags_pct": 0,
         "tag_sum": 0,
         "tag_list": [],
-        "sum_pct": 10,
-        "mult": 1.1,
+        "sum_pct": 20,
+        "mult": 1.2,
         "fighters_src": "стража 5 + ополч. 22",
         "neutral": false
       },
@@ -1551,6 +1563,14 @@
           "action": "add",
           "mod_val": 1,
           "mod_name": "Князь защитил лес от Кабаньей Тропы",
+          "season": "6",
+          "reason": "ручная правка (CLI)"
+        },
+        {
+          "ts": "2026-08-30T15:28:50.678395+00:00",
+          "action": "add",
+          "mod_val": 1,
+          "mod_name": "Компенсация артели Бурия",
           "season": "6",
           "reason": "ручная правка (CLI)"
         }

@@ -1009,6 +1009,9 @@
       "houses": "57",
       "shops": 11,
       "traders": 6,
+      "shops_mod": 0,
+      "traders_mod": 0,
+      "unpaying_mod": -7,
       "staff": [
         {
           "category": "Стража (бойцы)",
@@ -1257,6 +1260,9 @@
       "houses": "33",
       "shops": 7,
       "traders": 3,
+      "shops_mod": 0,
+      "traders_mod": 0,
+      "unpaying_mod": -3,
       "staff": [
         {
           "category": "Стража (бойцы)",
@@ -1428,6 +1434,9 @@
       "houses": "22",
       "shops": 4,
       "traders": 2,
+      "shops_mod": 0,
+      "traders_mod": 0,
+      "unpaying_mod": -2,
       "staff": [
         {
           "category": "Стража (бойцы)",
