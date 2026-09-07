@@ -1069,7 +1069,7 @@
       {
         "name": "Наблюдательность (0)",
         "techniques": [],
-        "bank": 19,
+        "bank": 21,
         "ups": 0,
         "next_threshold": 10
       },
