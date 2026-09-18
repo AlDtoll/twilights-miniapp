@@ -1,0 +1,1968 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Twilights — FFT Tactical</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="../shared/styles.css">
+<style>
+  /* === FFT TACTICAL — Phase 3 === */
+  /* Полный сброс shared/styles.css: убираем padding, centering, min-height */
+  html, body {
+    margin: 0; padding: 0;
+    width: 100vw; height: 100dvh;
+    overflow: hidden;
+    touch-action: none;
+    background: #0f0f1a; color: #fff; font-family: system-ui, sans-serif;
+  }
+  body {
+    display: flex; flex-direction: column;
+    align-items: stretch !important;  /* override shared styles.css align-items: center */
+    justify-content: flex-start !important; /* override justify-content: center */
+    padding: 0 !important;  /* override shared padding: 20px */
+    max-width: none !important;
+    min-height: unset !important;
+  }
+  /* Скрываем h1 и subtitle — они занимают место */
+  h1, .subtitle { display: none !important; }
+
+  #fft-battle {
+    width: 100%; max-width: none;  /* убрать 440px ограничение */
+    flex: 1 1 auto;
+    display: flex; flex-direction: column;
+    min-height: 0;  /* важно для nested flex */
+    user-select: none; -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    padding: 4px 6px; box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  /* SKILL CHOICE SCREEN */
+  #fft-skill-screen {
+    display: none; position: fixed; inset: 0; z-index: 200;
+    background: rgba(10,10,20,0.97); overflow-y: auto;
+    padding: 12px 8px 20px; box-sizing: border-box;
+  }
+  #fft-skill-screen.show { display: block; }
+  #fft-skill-title { text-align: center; font-size: 1.1rem; font-weight: 900; color: #f39c12; margin-bottom: 4px; }
+  #fft-skill-subtitle { text-align: center; font-size: 0.75rem; color: rgba(255,255,255,0.5); margin-bottom: 12px; }
+  #fft-skill-cols { display: flex; gap: 8px; justify-content: center; }
+  .fft-skill-col {
+    flex: 1; max-width: 130px; background: rgba(255,255,255,0.04);
+    border-radius: 10px; padding: 8px 6px; border: 1px solid rgba(255,255,255,0.1);
+  }
+  .fft-skill-col-header {
+    text-align: center; padding: 4px 0 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 8px;
+  }
+  .fft-skill-col-icon { font-size: 1.5rem; display: block; }
+  .fft-skill-col-name { font-size: 0.7rem; font-weight: 700; color: rgba(255,255,255,0.8); }
+  .fft-skill-col-class { font-size: 0.62rem; color: rgba(255,255,255,0.4); }
+  .fft-skill-card {
+    background: rgba(255,255,255,0.06); border-radius: 8px;
+    border: 1.5px solid rgba(255,255,255,0.1);
+    padding: 6px 5px; margin-bottom: 5px; cursor: pointer;
+    transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+    position: relative;
+  }
+  .fft-skill-card:active { transform: scale(0.96); }
+  .fft-skill-card.selected { border-color: #f39c12; background: rgba(243,156,18,0.15); }
+  .fft-skill-card.basic { border-color: rgba(46,204,113,0.4); background: rgba(46,204,113,0.06); cursor: default; }
+  .fft-skill-card.basic::after { content: '✓'; position: absolute; top: 4px; right: 6px; color: #2ecc71; font-size: 0.75rem; font-weight: 900; }
+  .fft-skill-card-icon { font-size: 1.1rem; text-align: center; display: block; }
+  .fft-skill-card-name { font-size: 0.66rem; font-weight: 700; text-align: center; color: #fff; margin: 2px 0; }
+  .fft-skill-card-meta { font-size: 0.58rem; color: rgba(255,255,255,0.5); text-align: center; line-height: 1.5; }
+  .fft-skill-sel-badge {
+    position: absolute; top: 4px; left: 6px;
+    width: 14px; height: 14px; border-radius: 7px;
+    background: #f39c12; display: none;
+    align-items: center; justify-content: center;
+    font-size: 0.6rem; font-weight: 900; color: #000;
+  }
+  .fft-skill-card.selected .fft-skill-sel-badge { display: flex; }
+  #fft-skill-start-wrap { text-align: center; margin-top: 16px; }
+  #fft-start-battle {
+    padding: 12px 40px; background: #e74c3c; color: #fff;
+    border: none; border-radius: 12px; font-size: 1rem; font-weight: 900;
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+    transition: opacity 0.2s;
+  }
+  #fft-start-battle:disabled { opacity: 0.35; cursor: default; }
+  #fft-skill-hint { font-size: 0.72rem; color: rgba(255,255,255,0.4); margin-top: 6px; }
+
+  /* TURN QUEUE BAR */
+  #fft-turn-bar {
+    display: flex; align-items: center; gap: 6px;
+    min-height: 36px; padding: 4px 6px;
+    background: rgba(0,0,0,0.3); border-radius: 8px; margin-bottom: 4px;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    flex-shrink: 0; /* не сжимать */
+  }
+  #fft-turn-bar::-webkit-scrollbar { height: 2px; }
+  #fft-turn-bar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 1px; }
+
+  #fft-phase-label {
+    font-size: 0.78rem; font-weight: 700; white-space: nowrap;
+    padding: 3px 8px; border-radius: 6px; min-width: 80px; text-align: center;
+  }
+  #fft-phase-label.player-turn { background: rgba(46,204,113,0.25); color: #2ecc71; }
+  #fft-phase-label.enemy-turn  { background: rgba(231,76,60,0.25);  color: #e74c3c; }
+  #fft-phase-label.won  { background: rgba(46,204,113,0.4); color: #2ecc71; }
+  #fft-phase-label.lost { background: rgba(231,76,60,0.4);  color: #e74c3c; }
+
+  .fft-queue-unit {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 14px; font-size: 0.9rem;
+    border: 2px solid transparent; flex-shrink: 0; cursor: default;
+    transition: opacity 0.2s;
+  }
+  .fft-queue-unit.player { border-color: rgba(46,204,113,0.5); background: rgba(46,204,113,0.1); }
+  .fft-queue-unit.enemy  { border-color: rgba(231,76,60,0.5);  background: rgba(231,76,60,0.1); }
+  .fft-queue-unit.current { border-color: #f39c12; box-shadow: 0 0 6px rgba(243,156,18,0.5); }
+  .fft-queue-unit.done { opacity: 0.35; }
+
+  /* ENEMY TURN BANNER */
+  #fft-enemy-banner {
+    display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 150;
+    background: rgba(180,30,30,0.85); color: #fff;
+    text-align: center; font-size: 0.95rem; font-weight: 700;
+    padding: 10px 0; letter-spacing: 0.05em;
+    pointer-events: none;
+  }
+  #fft-enemy-banner.show { display: block; }
+
+  /* CAMERA CONTROLS */
+  #fft-camera-bar {
+    display: flex; align-items: center; justify-content: flex-end; gap: 5px;
+    padding: 2px 4px; margin-bottom: 2px;
+    flex-shrink: 0; /* не сжимать */
+  }
+  .fft-cam-btn {
+    width: 28px; height: 28px; border-radius: 8px; border: none;
+    background: rgba(255,255,255,0.12); color: #fff; font-size: 1rem;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    -webkit-tap-highlight-color: transparent; flex-shrink: 0;
+  }
+  .fft-cam-btn:active { background: rgba(255,255,255,0.22); }
+  #fft-zoom-label { font-size: 0.65rem; color: rgba(255,255,255,0.4); min-width: 28px; text-align: center; }
+
+  /* SVG GRID */
+  #fft-svg-wrap {
+    width: 100%;
+    flex: 1 1 auto;   /* занимает всё пространство между top-bar и bottom-controls */
+    min-height: 0;    /* важно для вложенного flex */
+    max-height: none; /* убрать 52vh ограничение */
+    overflow: hidden; border-radius: 8px;
+    background: rgba(0,0,0,0.2); cursor: grab; position: relative;
+  }
+  #fft-svg-wrap.dragging { cursor: grabbing; }
+  #fft-svg {
+    display: block; width: 100% !important; height: 100% !important; touch-action: none;
+    user-select: none; -webkit-user-select: none;
+  }
+  #fft-svg text { user-select: none; -webkit-user-select: none; pointer-events: none; }
+
+  /* INFO PANEL */
+  #fft-info {
+    min-height: 48px; background: rgba(255,255,255,0.06);
+    border-radius: 8px; padding: 6px 10px; font-size: 0.82rem; margin: 5px 0 4px;
+    position: relative;
+    flex-shrink: 0; /* не сжимать */
+  }
+  #fft-info-name { font-weight: 700; font-size: 0.88rem; }
+  #fft-info-stats { font-size: 0.74rem; color: rgba(255,255,255,0.65); margin-top: 2px; }
+  #fft-info-hint  { font-size: 0.7rem; color: rgba(162,155,254,0.75); margin-top: 2px; font-style: italic; }
+  #fft-info-desel {
+    position: absolute; top: 6px; right: 8px;
+    width: 22px; height: 22px; border-radius: 11px;
+    background: rgba(255,255,255,0.12); border: none; color: rgba(255,255,255,0.7);
+    font-size: 0.9rem; cursor: pointer; display: none;
+    align-items: center; justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #fft-info-desel.show { display: flex; }
+
+  /* FORECAST TOOLTIP */
+  #fft-forecast {
+    display: none; background: rgba(20,10,10,0.95); border: 1.5px solid rgba(231,76,60,0.6);
+    border-radius: 10px; padding: 8px 12px; margin: 4px 0; font-size: 0.82rem;
+    flex-shrink: 0; /* не сжимать */
+  }
+  #fft-forecast-title { font-weight: 700; color: #ff7675; margin-bottom: 4px; }
+  #fft-forecast-dmg   { color: #fdcb6e; margin-bottom: 2px; }
+  #fft-forecast-hit   { color: rgba(255,255,255,0.7); margin-bottom: 6px; }
+  #fft-forecast-btns  { display: flex; gap: 8px; }
+  .fft-fc-btn {
+    padding: 6px 14px; border-radius: 8px; border: none; font-size: 0.8rem; font-weight: 700;
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+  }
+  #fft-fc-confirm { background: #e74c3c; color: #fff; }
+  #fft-fc-cancel  { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
+
+  /* ACTION BUTTONS ROW */
+  #fft-action-row { display: flex; gap: 6px; margin-bottom: 4px; align-items: center; flex-wrap: wrap; flex-shrink: 0; }
+
+  .fft-action-btn {
+    padding: 7px 10px; border-radius: 10px; border: none;
+    font-size: 0.78rem; font-weight: 700; cursor: pointer;
+    -webkit-tap-highlight-color: transparent; transition: opacity 0.15s;
+    flex-shrink: 0;
+  }
+  .fft-action-btn:disabled { opacity: 0.35; cursor: default; }
+  .fft-action-btn:active:not(:disabled) { transform: scale(0.94); }
+
+  #fft-btn-move   { background: rgba(52,152,219,0.25); color: #74b9ff; border: 1.5px solid rgba(52,152,219,0.5); }
+  #fft-btn-skip   { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); border: 1.5px solid rgba(255,255,255,0.15); }
+  #fft-btn-cancel { background: rgba(255,165,0,0.15); color: #fdcb6e; border: 1.5px solid rgba(255,165,0,0.3); }
+  #fft-btn-end    { flex: 1; background: #e74c3c; color: #fff; border: none; }
+
+  #fft-btn-move.active { background: rgba(52,152,219,0.5); border-color: #3498db; }
+
+  /* ABILITY BUTTONS */
+  #fft-ability-row { display: flex; gap: 5px; margin-bottom: 4px; flex-wrap: nowrap; overflow-x: auto; flex-shrink: 0; }
+  #fft-ability-row::-webkit-scrollbar { height: 2px; }
+  .fft-ab-btn {
+    position: relative;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 5px 7px; border-radius: 9px;
+    border: 1.5px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.06); color: #fff;
+    font-size: 0.68rem; cursor: pointer; min-width: 58px; max-width: 75px;
+    text-align: center; gap: 1px; line-height: 1.2; flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.15s;
+  }
+  .fft-ab-btn:disabled { opacity: 0.35; cursor: default; }
+  .fft-ab-btn:active:not(:disabled) { transform: scale(0.93); }
+  .fft-ab-btn.active { border-color: #f39c12; background: rgba(243,156,18,0.2); }
+  .fft-ab-icon { font-size: 1rem; line-height: 1; }
+  .fft-ab-name { font-size: 0.6rem; color: rgba(255,255,255,0.8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+  .fft-ab-meta { font-size: 0.56rem; color: rgba(255,255,255,0.45); }
+  .fft-cd-badge {
+    position: absolute; top: -4px; right: -4px;
+    font-size: 10px; background: #e74c3c; border-radius: 8px;
+    padding: 0 3px; color: #fff; line-height: 1.4; pointer-events: none;
+  }
+
+  /* OVERLAY (win/lose) */
+  #fft-overlay {
+    display: none; position: fixed; inset: 0; z-index: 100;
+    background: rgba(0,0,0,0.75); align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px;
+  }
+  #fft-overlay.show { display: flex; }
+  #fft-overlay-title { font-size: 2rem; font-weight: 900; }
+  #fft-overlay-title.win  { color: #2ecc71; }
+  #fft-overlay-title.lose { color: #e74c3c; }
+  #fft-overlay-sub { font-size: 0.9rem; color: rgba(255,255,255,0.6); }
+  #fft-overlay-restart {
+    padding: 12px 32px; background: #3498db; color: #fff;
+    border: none; border-radius: 12px; font-size: 1rem; font-weight: 700;
+    cursor: pointer;
+  }
+
+  /* LOG */
+  #fft-log {
+    max-height: 60px; overflow-y: auto; font-size: 0.76rem;
+    padding: 4px 8px; background: rgba(0,0,0,0.3);
+    border-radius: 6px; margin-bottom: 5px; line-height: 1.6; scroll-behavior: smooth;
+    flex-shrink: 0; /* не сжимать */
+  }
+  #fft-log::-webkit-scrollbar { width: 3px; }
+  #fft-log::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+  .log-player { color: #74b9ff; }
+  .log-enemy  { color: #ff7675; }
+  .log-system { color: rgba(255,255,255,0.55); }
+  .log-win    { color: #2ecc71; font-weight: 700; }
+  .log-lose   { color: #e74c3c; font-weight: 700; }
+
+  /* FLOATING DAMAGE */
+  @keyframes fft-float-up {
+    0%   { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-32px); }
+  }
+  .fft-float-dmg {
+    position: absolute; pointer-events: none;
+    font-weight: 900; font-size: 1.1rem; color: #ff4444;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+    animation: fft-float-up 1.1s ease-out forwards;
+  }
+  .fft-float-heal {
+    color: #2ecc71;
+  }
+</style>
+</head>
+<body>
+<h1>⚔️ Twilights — FFT Tactical</h1>
+<p class="subtitle" id="fft-subtitle">Тактический бой</p>
+
+<!-- ENEMY TURN BANNER -->
+<div id="fft-enemy-banner">⚔ Ход врага...</div>
+
+<!-- SKILL CHOICE SCREEN -->
+<div id="fft-skill-screen">
+  <div id="fft-skill-title">⚔ Выбор умений</div>
+  <div id="fft-skill-subtitle">Выбери 2 умения для каждого героя (базовое уже выбрано)</div>
+  <div id="fft-skill-cols">
+    <!-- Заполняется JS -->
+  </div>
+  <div id="fft-skill-start-wrap">
+    <button id="fft-start-battle" disabled onclick="fftStartBattle()">В бой!</button>
+    <div id="fft-skill-hint">Нужно выбрать 2 умения для каждого героя</div>
+  </div>
+</div>
+
+<div id="fft-battle">
+
+  <!-- TURN QUEUE BAR -->
+  <div id="fft-turn-bar">
+    <div id="fft-phase-label" class="player-turn">Ход игрока</div>
+    <div id="fft-queue-icons" style="display:flex;gap:4px;align-items:center;overflow-x:auto;"></div>
+  </div>
+
+  <!-- CAMERA CONTROLS -->
+  <div id="fft-camera-bar">
+    <span style="font-size:0.65rem;color:rgba(255,255,255,0.4);">Камера:</span>
+    <button class="fft-cam-btn" onclick="fftZoom(-0.2)">−</button>
+    <span id="fft-zoom-label">1.0×</span>
+    <button class="fft-cam-btn" onclick="fftZoom(+0.2)">+</button>
+  </div>
+
+  <!-- SVG HEX GRID -->
+  <div id="fft-svg-wrap">
+    <svg id="fft-svg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice"></svg>
+  </div>
+
+  <!-- INFO PANEL -->
+  <div id="fft-info">
+    <button id="fft-info-desel" onclick="fftDeselectUnit()" title="Снять выбор">×</button>
+    <div id="fft-info-name">Выбери юнита</div>
+    <div id="fft-info-stats"></div>
+    <div id="fft-info-hint">Нажми на союзника чтобы выбрать</div>
+  </div>
+
+  <!-- FORECAST TOOLTIP -->
+  <div id="fft-forecast">
+    <div id="fft-forecast-title">⚔ Атака</div>
+    <div id="fft-forecast-dmg"></div>
+    <div id="fft-forecast-hit"></div>
+    <div id="fft-forecast-btns">
+      <button class="fft-fc-btn" id="fft-fc-confirm" onclick="fftConfirmAttack()">Атака!</button>
+      <button class="fft-fc-btn" id="fft-fc-cancel"  onclick="fftCancelForecast()">Отмена</button>
+    </div>
+  </div>
+
+  <!-- ABILITY BUTTONS -->
+  <div id="fft-ability-row" style="display:none;"></div>
+
+  <!-- ACTION BUTTONS -->
+  <div id="fft-action-row">
+    <button class="fft-action-btn" id="fft-btn-move"   onclick="fftSetMode('move')"   disabled>👣 Ход</button>
+    <button class="fft-action-btn" id="fft-btn-skip"   onclick="fftSkipUnit()"        disabled>⏭ Пропуск</button>
+    <button class="fft-action-btn" id="fft-btn-cancel" onclick="fftCancel()"          style="display:none;">✕ Отмена</button>
+    <button class="fft-action-btn" id="fft-btn-end"    onclick="fftEndTurn()">Конец хода</button>
+  </div>
+
+  <!-- LOG -->
+  <div id="fft-log">Начало боя. Ход игрока.</div>
+
+</div>
+
+<!-- WIN/LOSE OVERLAY -->
+<div id="fft-overlay">
+  <div id="fft-overlay-title">Победа!</div>
+  <div id="fft-overlay-sub"></div>
+  <button id="fft-overlay-restart" onclick="fftRestart()">Играть снова</button>
+</div>
+
+<script>
+// =============================================
+// === FFT TACTICAL MINI-GAME — Phase 3 ===
+// =============================================
+
+// --- CONSTANTS ---
+const HEX_COLS = 15;
+const HEX_ROWS = 15;
+const HEX_SIZE = 22;
+const CAMERA_ZOOM_MIN = 0.6;
+const CAMERA_ZOOM_MAX = 1.8;
+
+// Pointy-top hex geometry
+const HW = Math.sqrt(3) * HEX_SIZE;
+const HH = HEX_SIZE * 2;
+
+const SVG_W = Math.ceil(4 + HW * HEX_COLS + HW * 0.5);
+const SVG_H = Math.ceil(4 + HEX_SIZE + (HEX_ROWS - 1) * (HEX_SIZE * 1.5) + HEX_SIZE);
+
+// --- TERRAIN TYPES ---
+const TERRAIN_TYPES = {
+  grass:  { color: '#1a3a1a', moveCost: 1,        blocksMove: false, blocksAtk: false, evasionBonus: 0,   damagePerTurn: 0,  icon: null    },
+  forest: { color: '#0f2a0f', moveCost: 1,        blocksMove: false, blocksAtk: false, evasionBonus: 15,  damagePerTurn: 0,  icon: '🌳'    },
+  rock:   { color: '#3d3d3d', moveCost: Infinity,  blocksMove: true,  blocksAtk: false, evasionBonus: 0,   damagePerTurn: 0,  icon: '🪨'    },
+  water:  { color: '#0a2040', moveCost: Infinity,  blocksMove: true,  blocksAtk: false, evasionBonus: 0,   damagePerTurn: 0,  icon: '💧'    },
+  fire:   { color: '#3a1200', moveCost: 1,        blocksMove: false, blocksAtk: false, evasionBonus: 0,   damagePerTurn: 5,  icon: '🔥'    },
+  swamp:  { color: '#2a1e0a', moveCost: 2,        blocksMove: false, blocksAtk: false, evasionBonus: 0,   damagePerTurn: 0,  icon: '🟫'    },
+};
+
+// --- SKILL DEFINITIONS ---
+const SKILL_DEFS = {
+  // Knight
+  sword_strike: { id: 'sword_strike', name: 'Удар',    icon: '⚔', type: 'melee',  range: 1, aoe: 0, dmgMod: 0,  cd: 0, isBasic: true },
+  shield_bash:  { id: 'shield_bash',  name: 'Оглушить',icon: '🛡', type: 'melee',  range: 1, aoe: 0, dmgMod: -2, cd: 2, effect: 'stun' },
+  whirlwind:    { id: 'whirlwind',    name: 'Вихрь',   icon: '🌀', type: 'melee',  range: 1, aoe: 1, dmgMod: -3, cd: 3 },
+  guard:        { id: 'guard',        name: 'Заслон',  icon: '🔰', type: 'buff',   range: 0, aoe: 0, dmgMod: 0,  cd: 2, effect: 'barrier', targetSelf: true },
+  // Ranger
+  bow_shot:     { id: 'bow_shot',     name: 'Выстрел', icon: '🏹', type: 'ranged', range: 3, aoe: 0, dmgMod: 0,  cd: 0, isBasic: true },
+  aimed_shot:   { id: 'aimed_shot',   name: 'Прицел',  icon: '🎯', type: 'ranged', range: 4, aoe: 0, dmgMod: 3,  cd: 2, ignoresForest: true },
+  volley:       { id: 'volley',       name: 'Залп',    icon: '💨', type: 'ranged', range: 3, aoe: 1, dmgMod: -2, cd: 3 },
+  net:          { id: 'net',          name: 'Сеть',    icon: '🕸', type: 'ranged', range: 3, aoe: 0, dmgMod: -4, cd: 2, effect: 'immobilize' },
+  // Mage
+  magic_bolt:   { id: 'magic_bolt',   name: 'Импульс', icon: '✨', type: 'magic',  range: 3, aoe: 0, dmgMod: 0,  cd: 0, isBasic: true },
+  fireball:     { id: 'fireball',     name: 'Огонь',   icon: '🔥', type: 'magic',  range: 3, aoe: 1, dmgMod: -2, cd: 3 },
+  frost_lance:  { id: 'frost_lance',  name: 'Лёд',     icon: '❄', type: 'magic',  range: 3, aoe: 0, dmgMod: 2,  cd: 2, effect: 'slow' },
+  heal_ally:    { id: 'heal_ally',    name: 'Лечение', icon: '💚', type: 'heal',   range: 2, aoe: 0, dmgMod: -8, cd: 3, targetAlly: true },
+  // Enemy abilities
+  aimed_shot_e: { id: 'aimed_shot_e', name: 'Прицел',  icon: '🎯', type: 'ranged', range: 4, aoe: 0, dmgMod: 2,  cd: 3, isBasic: false, ignoresForest: true },
+  smash:        { id: 'smash',        name: 'Крушить', icon: '💥', type: 'melee',  range: 1, aoe: 0, dmgMod: 3,  cd: 2, isBasic: false },
+};
+
+// Skill sets per class (basic + specials)
+const CLASS_SKILLS = {
+  knight: { basic: 'sword_strike', specials: ['shield_bash', 'whirlwind', 'guard'] },
+  ranger: { basic: 'bow_shot',     specials: ['aimed_shot', 'volley', 'net'] },
+  mage:   { basic: 'magic_bolt',   specials: ['fireball', 'frost_lance', 'heal_ally'] },
+};
+
+// --- CAMERA STATE ---
+const cam = { zoom: 1.0, panX: 0, panY: 0 };
+
+function fftViewBox() {
+  const vw = SVG_W / cam.zoom;
+  const vh = SVG_H / cam.zoom;
+  const maxX = SVG_W - vw;
+  const maxY = SVG_H - vh;
+  // Разрешаем выход за край на 20% — чтобы можно было доскроллить до края
+  const pad = 0.2;
+  cam.panX = Math.max(-vw * pad, Math.min(cam.panX, maxX + vw * pad));
+  cam.panY = Math.max(-vh * pad, Math.min(cam.panY, maxY + vh * pad));
+  return `${cam.panX} ${cam.panY} ${vw} ${vh}`;
+}
+
+function fftZoom(delta) {
+  cam.zoom = Math.max(CAMERA_ZOOM_MIN, Math.min(CAMERA_ZOOM_MAX, cam.zoom + delta));
+  document.getElementById('fft-zoom-label').textContent = cam.zoom.toFixed(1) + '×';
+  fftRender();
+}
+
+// --- HEX MATH ---
+function hexToPixel(col, row) {
+  const x = 4 + HW * col + (row % 2 === 1 ? HW * 0.5 : 0);
+  const y = 4 + HEX_SIZE + row * (HEX_SIZE * 1.5);
+  return { x, y };
+}
+
+function hexCorners(cx, cy, size) {
+  const pts = [];
+  for (let i = 0; i < 6; i++) {
+    const angle = Math.PI / 180 * (60 * i - 30);
+    pts.push((cx + size * Math.cos(angle)).toFixed(2) + ',' + (cy + size * Math.sin(angle)).toFixed(2));
+  }
+  return pts.join(' ');
+}
+
+function toCube(col, row) {
+  const q = col - (row - (row & 1)) / 2;
+  const r = row;
+  const s = -q - r;
+  return { q, r, s };
+}
+
+function hexDist(c1, r1, c2, r2) {
+  const a = toCube(c1, r1);
+  const b = toCube(c2, r2);
+  return Math.max(Math.abs(a.q - b.q), Math.abs(a.r - b.r), Math.abs(a.s - b.s));
+}
+
+function hexNeighbors(col, row) {
+  const isOdd = row % 2 === 1;
+  const oddDirs  = [[0,-1],[+1,-1],[+1,0],[0,+1],[-1,0],[-1,-1]];
+  const evenDirs = [[0,-1],[+1, 0],[+1,1],[0,+1],[-1,1],[-1, 0]];
+  const d = isOdd ? oddDirs : evenDirs;
+  return d
+    .map(([dc, dr]) => ({ col: col + dc, row: row + dr }))
+    .filter(n => n.col >= 0 && n.col < HEX_COLS && n.row >= 0 && n.row < HEX_ROWS);
+}
+
+// --- TERRAIN GENERATION ---
+function fftGenTerrain() {
+  const terrain = {};
+  // Заполняем всё травой
+  for (let r = 0; r < HEX_ROWS; r++) {
+    for (let c = 0; c < HEX_COLS; c++) {
+      terrain[`${c},${r}`] = 'grass';
+    }
+  }
+
+  // Spawn rows (0-1 и 13-14) всегда grass — не трогаем
+
+  function placeCluster(type, count, minRow, maxRow) {
+    for (let i = 0; i < count; i++) {
+      let col = Math.floor(Math.random() * HEX_COLS);
+      let row = minRow + Math.floor(Math.random() * (maxRow - minRow + 1));
+      const size = 1 + Math.floor(Math.random() * 3);
+      const visited = [{ col, row }];
+      terrain[`${col},${row}`] = type;
+      for (let s = 1; s < size; s++) {
+        const cur = visited[Math.floor(Math.random() * visited.length)];
+        const nbs = hexNeighbors(cur.col, cur.row)
+          .filter(n => n.row >= minRow && n.row <= maxRow && terrain[`${n.col},${n.row}`] === 'grass');
+        if (nbs.length === 0) break;
+        const nb = nbs[Math.floor(Math.random() * nbs.length)];
+        terrain[`${nb.col},${nb.row}`] = type;
+        visited.push(nb);
+      }
+    }
+  }
+
+  // Лес: ~12% = ~27 клеток, кластерами
+  placeCluster('forest', 5, 2, 12);
+  // Камни: ~8% = ~18 клеток
+  placeCluster('rock', 4, 2, 12);
+  // Вода: ~5% = ~11 клеток
+  placeCluster('water', 2, 3, 11);
+  // Огонь: ~3% = ~7 клеток
+  placeCluster('fire', 3, 3, 11);
+  // Болото: ~12% = ~27 клеток, ближе к краям
+  placeCluster('swamp', 4, 2, 5);
+  placeCluster('swamp', 4, 9, 12);
+
+  // Обеспечиваем spawn grass
+  const spawnCells = [
+    [6,13],[7,13],[8,13],[5,13],[9,13],
+    [6,1],[7,1],[8,1],[5,1],[9,1],
+    [6,14],[7,14],[8,14],[6,0],[7,0],[8,0],
+  ];
+  for (const [c, r] of spawnCells) {
+    if (c >= 0 && c < HEX_COLS && r >= 0 && r < HEX_ROWS) {
+      terrain[`${c},${r}`] = 'grass';
+    }
+  }
+
+  return terrain;
+}
+
+// --- REACHABLE (Dijkstra с terrain costs) ---
+function fftReachable(unit) {
+  const result = new Map();
+  const queue = [{ col: unit.col, row: unit.row, cost: 0, path: [] }];
+  const visited = new Map([[`${unit.col},${unit.row}`, 0]]);
+
+  while (queue.length > 0) {
+    queue.sort((a, b) => a.cost - b.cost);
+    const cur = queue.shift();
+
+    if (cur.cost > 0) {
+      result.set(`${cur.col},${cur.row}`, { cost: cur.cost, path: cur.path });
+    }
+
+    if (cur.cost >= unit.moveRange) continue;
+
+    for (const nb of hexNeighbors(cur.col, cur.row)) {
+      const key = `${nb.col},${nb.row}`;
+      const t = TERRAIN_TYPES[state.terrain[key] || 'grass'];
+      if (t.blocksMove) continue;
+      const blocker = state.units.find(u => u.alive && u.col === nb.col && u.row === nb.row);
+      if (blocker) continue;
+      const terrainCost = t.moveCost;
+      const newCost = cur.cost + terrainCost;
+      if (newCost <= unit.moveRange) {
+        const prev = visited.get(key);
+        if (prev === undefined || newCost < prev) {
+          visited.set(key, newCost);
+          queue.push({ col: nb.col, row: nb.row, cost: newCost, path: [...cur.path, { col: nb.col, row: nb.row }] });
+        }
+      }
+    }
+  }
+  return result;
+}
+
+// BFS путь для AI
+function fftFindPath(srcCol, srcRow, dstCol, dstRow, blockedSet) {
+  const queue = [{ col: srcCol, row: srcRow, path: [], cost: 0 }];
+  const visited = new Map([[ `${srcCol},${srcRow}`, 0 ]]);
+  while (queue.length > 0) {
+    queue.sort((a, b) => a.cost - b.cost);
+    const cur = queue.shift();
+    if (cur.col === dstCol && cur.row === dstRow) return cur.path;
+    for (const nb of hexNeighbors(cur.col, cur.row)) {
+      const key = `${nb.col},${nb.row}`;
+      if (blockedSet && blockedSet.has(key)) continue;
+      const t = TERRAIN_TYPES[state.terrain[key] || 'grass'];
+      if (t.blocksMove) continue;
+      const newCost = cur.cost + t.moveCost;
+      const prev = visited.get(key);
+      if (prev === undefined || newCost < prev) {
+        visited.set(key, newCost);
+        queue.push({ col: nb.col, row: nb.row, path: [...cur.path, { col: nb.col, row: nb.row }], cost: newCost });
+      }
+    }
+  }
+  return null;
+}
+
+// --- UNIT DEFINITIONS ---
+const UNIT_DEFS = {
+  knight: { name: 'Рыцарь',  emoji: '⚔', team: 'player', hp: 40, atk: 12, def: 8,  moveRange: 3, atkRange: 1, isRanged: false, class: 'knight' },
+  ranger: { name: 'Лучник',  emoji: '🏹', team: 'player', hp: 30, atk: 10, def: 4,  moveRange: 4, atkRange: 3, isRanged: true,  class: 'ranger' },
+  mage:   { name: 'Маг',     emoji: '🔮', team: 'player', hp: 25, atk: 14, def: 2,  moveRange: 3, atkRange: 3, isRanged: true,  class: 'mage'   },
+  grunt:  { name: 'Громила', emoji: '👹', team: 'enemy',  hp: 30, atk: 10, def: 4,  moveRange: 3, atkRange: 1, isRanged: false, class: null, abilities: ['sword_strike'] },
+  archer: { name: 'Стрелок', emoji: '🏹', team: 'enemy',  hp: 25, atk:  9, def: 3,  moveRange: 4, atkRange: 3, isRanged: true,  class: null, abilities: ['bow_shot', 'aimed_shot_e'] },
+  brute:  { name: 'Брут',    emoji: '👺', team: 'enemy',  hp: 45, atk: 14, def: 5,  moveRange: 2, atkRange: 1, isRanged: false, class: null, abilities: ['sword_strike', 'smash'] },
+};
+
+function makeUnit(id, defKey, col, row) {
+  const d = UNIT_DEFS[defKey];
+  const unit = {
+    id, defKey, name: d.name, emoji: d.emoji,
+    team: d.team, col, row,
+    hp: d.hp, maxHp: d.hp,
+    atk: d.atk, def: d.def,
+    moveRange: d.moveRange,
+    atkRange: d.atkRange,
+    isRanged: d.isRanged,
+    class: d.class,
+    alive: true,
+    moved: false,
+    acted: false,
+    // Статус-эффекты
+    stunned: false,      // пропустит ход
+    immobilized: false,  // не может двигаться
+    slowed: false,       // -50% moveRange следующий ход
+    barrier: false,      // блокирует один удар
+    // Cooldowns abilities: { abilityId: cdLeft }
+    cooldowns: {},
+    // Выбранные умения (player units)
+    abilities: d.abilities ? [...d.abilities] : [],
+  };
+  // Инициализируем cooldowns
+  for (const abId of unit.abilities) {
+    unit.cooldowns[abId] = 0;
+  }
+  return unit;
+}
+
+// --- COMBAT MATH ---
+function fftCalcDamage(attacker, target, skill) {
+  const sk = skill || SKILL_DEFS[attacker.abilities[0]] || null;
+  const dmgMod = sk ? sk.dmgMod : 0;
+  if (sk && sk.type === 'heal') {
+    return Math.max(1, -dmgMod); // heal amount
+  }
+  return Math.max(1, attacker.atk + dmgMod - target.def);
+}
+
+function fftCalcHitChance(attacker, target, skill) {
+  if (!attacker.isRanged) return 100;
+  const sk = skill;
+  // forest evasion: если target стоит на forest и атака не ignoresForest
+  const targetTerrain = state.terrain[`${target.col},${target.row}`] || 'grass';
+  let evasion = TERRAIN_TYPES[targetTerrain].evasionBonus || 0;
+  if (sk && sk.ignoresForest) evasion = 0;
+  return Math.max(35, Math.min(95, 80 - evasion));
+}
+
+// --- GAME STATE ---
+const state = {
+  phase: 'skill-select',  // 'skill-select' | 'player-turn' | 'enemy-turn' | 'won' | 'lost'
+  uiMode: 'idle',         // 'idle' | 'move' | 'ability' | 'forecast'
+  selectedUnit: null,
+  selectedAbility: null,  // SKILL_DEFS entry
+  forecastTarget: null,
+  reachableCache: null,
+  units: [],
+  terrain: {},
+  // Skill selection state
+  skillSelections: {},    // { heroIdx: [specialId, ...] }
+};
+
+// --- SKILL SELECTION SCREEN ---
+const PLAYER_HEROES = ['knight', 'ranger', 'mage'];
+
+function fftShowSkillScreen() {
+  state.skillSelections = { 0: [], 1: [], 2: [] };
+  const screen = document.getElementById('fft-skill-screen');
+  screen.classList.add('show');
+
+  const cols = document.getElementById('fft-skill-cols');
+  cols.innerHTML = '';
+
+  PLAYER_HEROES.forEach((cls, heroIdx) => {
+    const def = UNIT_DEFS[cls];
+    const cs = CLASS_SKILLS[cls];
+
+    const col = document.createElement('div');
+    col.className = 'fft-skill-col';
+
+    // Header
+    col.innerHTML = `<div class="fft-skill-col-header">
+      <span class="fft-skill-col-icon">${def.emoji}</span>
+      <div class="fft-skill-col-name">${def.name}</div>
+      <div class="fft-skill-col-class">Атк ${def.atk} | Ход ${def.moveRange}</div>
+    </div>`;
+
+    // Basic skill card
+    const basicSk = SKILL_DEFS[cs.basic];
+    const basicCard = document.createElement('div');
+    basicCard.className = 'fft-skill-card basic';
+    basicCard.setAttribute('data-hero-idx', heroIdx);
+    basicCard.setAttribute('data-skill-idx', 0);
+    basicCard.innerHTML = `
+      <span class="fft-skill-card-icon">${basicSk.icon}</span>
+      <div class="fft-skill-card-name">${basicSk.name}</div>
+      <div class="fft-skill-card-meta">Д:${basicSk.range} | Базовое</div>
+    `;
+    col.appendChild(basicCard);
+
+    // Special skill cards
+    cs.specials.forEach((skId, skIdx) => {
+      const sk = SKILL_DEFS[skId];
+      const card = document.createElement('div');
+      card.className = 'fft-skill-card';
+      card.setAttribute('data-hero-idx', heroIdx);
+      card.setAttribute('data-skill-idx', skIdx + 1);
+      card.setAttribute('data-skill-id', skId);
+      const metaParts = [];
+      if (sk.range > 0) metaParts.push(`Д:${sk.range}`);
+      if (sk.aoe > 0) metaParts.push(`АоЕ`);
+      if (sk.cd > 0) metaParts.push(`КД:${sk.cd}`);
+      if (sk.effect) metaParts.push(sk.effect === 'stun' ? 'Оглуш' : sk.effect === 'immobilize' ? 'Стоп' : sk.effect === 'slow' ? 'Замедл' : sk.effect === 'barrier' ? 'Барьер' : '');
+
+      card.innerHTML = `
+        <div class="fft-skill-sel-badge">✓</div>
+        <span class="fft-skill-card-icon">${sk.icon}</span>
+        <div class="fft-skill-card-name">${sk.name}</div>
+        <div class="fft-skill-card-meta">${metaParts.join(' | ')}</div>
+      `;
+      card.addEventListener('click', () => fftToggleSkill(heroIdx, skId, card));
+      col.appendChild(card);
+    });
+
+    cols.appendChild(col);
+  });
+
+  fftUpdateSkillStartBtn();
+}
+
+function fftToggleSkill(heroIdx, skId, card) {
+  const sel = state.skillSelections[heroIdx];
+  if (sel.includes(skId)) {
+    // Убираем
+    state.skillSelections[heroIdx] = sel.filter(s => s !== skId);
+    card.classList.remove('selected');
+  } else {
+    if (sel.length >= 2) {
+      // Уже 2 выбрано — убираем первый
+      const removedId = sel.shift();
+      // Убираем visual у removed
+      const cols = document.getElementById('fft-skill-cols');
+      const removedCard = cols.querySelector(`[data-skill-id="${removedId}"]`);
+      if (removedCard) removedCard.classList.remove('selected');
+    }
+    sel.push(skId);
+    card.classList.add('selected');
+  }
+  fftUpdateSkillStartBtn();
+}
+
+function fftUpdateSkillStartBtn() {
+  const btn = document.getElementById('fft-start-battle');
+  const hint = document.getElementById('fft-skill-hint');
+  const allSelected = [0, 1, 2].every(i => state.skillSelections[i].length === 2);
+  btn.disabled = !allSelected;
+  if (allSelected) {
+    hint.textContent = 'Все умения выбраны!';
+  } else {
+    const missing = [0, 1, 2].filter(i => state.skillSelections[i].length < 2);
+    const names = missing.map(i => UNIT_DEFS[PLAYER_HEROES[i]].name);
+    hint.textContent = `Выбери 2 умения: ${names.join(', ')}`;
+  }
+}
+
+function fftStartBattle() {
+  document.getElementById('fft-skill-screen').classList.remove('show');
+  // Применяем выбранные умения к юнитам
+  PLAYER_HEROES.forEach((cls, heroIdx) => {
+    const unit = state.units.find(u => u.defKey === cls);
+    if (!unit) return;
+    const cs = CLASS_SKILLS[cls];
+    const selected = state.skillSelections[heroIdx];
+    unit.abilities = [cs.basic, ...selected];
+    unit.cooldowns = {};
+    for (const abId of unit.abilities) {
+      unit.cooldowns[abId] = 0;
+    }
+  });
+
+  state.phase = 'player-turn';
+  fftLog('Бой начался! Ход игрока.', 'system');
+  fftUpdateUI();
+  fftRender();
+}
+
+function fftInit() {
+  state.terrain = fftGenTerrain();
+  state.units = [
+    makeUnit('knight', 'knight', 6, 13),
+    makeUnit('ranger',  'ranger', 7, 13),
+    makeUnit('mage',   'mage',   8, 13),
+    makeUnit('grunt',  'grunt',  6,  1),
+    makeUnit('archer', 'archer', 7,  1),
+    makeUnit('brute',  'brute',  8,  1),
+  ];
+  state.phase = 'skill-select';
+  state.selectedUnit = null;
+  state.selectedAbility = null;
+  state.uiMode = 'idle';
+  state.forecastTarget = null;
+  state.reachableCache = null;
+
+  document.getElementById('fft-overlay').classList.remove('show');
+  document.getElementById('fft-enemy-banner').classList.remove('show');
+
+  const log = document.getElementById('fft-log');
+  log.innerHTML = '';
+  fftLog('Выбери умения перед боем.', 'system');
+  fftUpdateUI();
+  fftRender();
+  fftShowSkillScreen();
+}
+
+function fftRestart() {
+  fftInit();
+}
+
+// --- TERRAIN ---
+function getTerrain(col, row) {
+  return state.terrain[`${col},${row}`] || 'grass';
+}
+
+// --- RENDERING ---
+function fftRender() {
+  const svg = document.getElementById('fft-svg');
+  svg.setAttribute('viewBox', fftViewBox());
+  svg.setAttribute('width',  '100%');  /* CSS управляет размером, viewBox — zoom/pan */
+  svg.setAttribute('height', '100%');
+
+  while (svg.firstChild) svg.removeChild(svg.lastChild);
+
+  const reachable = (state.uiMode === 'move' && state.selectedUnit) ? state.reachableCache : null;
+
+  const abilityRange = (state.uiMode === 'ability' && state.selectedUnit && state.selectedAbility)
+    ? state.selectedAbility.range
+    : 0;
+
+  const abilityAoe = (state.uiMode === 'ability' && state.selectedAbility)
+    ? (state.selectedAbility.aoe || 0)
+    : 0;
+
+  // Fix 3b: atkRange overlay — показывать при выборе ranged-юнита в idle-режиме
+  // Скрыть если move или ability overlay уже активен
+  const showAtkRange = state.selectedUnit
+    && state.selectedUnit.atkRange > 1
+    && state.uiMode === 'idle'
+    && reachable === null;
+
+  for (let r = 0; r < HEX_ROWS; r++) {
+    for (let c = 0; c < HEX_COLS; c++) {
+      const { x, y } = hexToPixel(c, r);
+      const terrainKey = getTerrain(c, r);
+      const tDef = TERRAIN_TYPES[terrainKey];
+      let fill = tDef.color;
+      let stroke = 'rgba(255,255,255,0.12)';
+      let strokeW = '0.8';
+
+      const key = `${c},${r}`;
+
+      // Выбранный юнит
+      if (state.selectedUnit && state.selectedUnit.col === c && state.selectedUnit.row === r) {
+        stroke = '#f39c12';
+        strokeW = '2.5';
+      }
+
+      // Move highlight
+      if (reachable && reachable.has(key)) {
+        fill = 'rgba(52,152,219,0.35)';
+        stroke = 'rgba(52,152,219,0.8)';
+        strokeW = '1.5';
+      }
+
+      // Ability range highlight
+      if (abilityRange > 0 && state.selectedUnit) {
+        const d = hexDist(state.selectedUnit.col, state.selectedUnit.row, c, r);
+        const sk = state.selectedAbility;
+        if (sk.targetSelf && c === state.selectedUnit.col && r === state.selectedUnit.row) {
+          fill = 'rgba(52,219,152,0.4)';
+          stroke = '#2ecc71';
+          strokeW = '2';
+        } else if (!sk.targetSelf && sk.targetAlly) {
+          const ally = state.units.find(u => u.alive && u.col === c && u.row === r && u.team === state.selectedUnit.team);
+          if (d > 0 && d <= abilityRange && ally) {
+            fill = 'rgba(46,204,113,0.4)';
+            stroke = '#2ecc71';
+            strokeW = '2';
+          }
+        } else {
+          const enemy = state.units.find(u => u.alive && u.col === c && u.row === r && u.team !== state.selectedUnit.team);
+          if (d > 0 && d <= abilityRange && enemy) {
+            fill = 'rgba(231,76,60,0.4)';
+            stroke = '#e74c3c';
+            strokeW = '2';
+          }
+        }
+      }
+
+      // Forecast target highlight
+      if (state.forecastTarget && state.forecastTarget.col === c && state.forecastTarget.row === r) {
+        fill = 'rgba(231,76,60,0.65)';
+        stroke = '#ff4444';
+        strokeW = '3';
+      }
+
+      // Fix 3b: atkRange overlay (faded red) для ranged юнита в idle
+      if (showAtkRange) {
+        const d = hexDist(state.selectedUnit.col, state.selectedUnit.row, c, r);
+        if (d > 0 && d <= state.selectedUnit.atkRange) {
+          // Не перебивать move/ability overlays — но они сейчас не активны (showAtkRange проверяет idle)
+          fill = fill === tDef.color
+            ? 'rgba(231,76,60,0.13)'
+            : fill; // если уже highlight selected-hex — не трогать
+          stroke = (c === state.selectedUnit.col && r === state.selectedUnit.row) ? stroke : 'rgba(231,76,60,0.45)';
+          strokeW = (c === state.selectedUnit.col && r === state.selectedUnit.row) ? strokeW : '1.2';
+        }
+      }
+
+      const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+      poly.setAttribute('points', hexCorners(x, y, HEX_SIZE - 1));
+      poly.setAttribute('fill',   fill);
+      poly.setAttribute('stroke', stroke);
+      poly.setAttribute('stroke-width', strokeW);
+      poly.style.cursor = 'pointer';
+      poly.addEventListener('click', () => fftClickHex(c, r));
+      svg.appendChild(poly);
+
+      // Terrain icons (не рисуем если там юнит)
+      if (tDef.icon) {
+        const hasUnit = state.units.some(u => u.alive && u.col === c && u.row === r);
+        if (!hasUnit) {
+          const tIcon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          tIcon.setAttribute('x', x);
+          tIcon.setAttribute('y', y + 5);
+          tIcon.setAttribute('text-anchor', 'middle');
+          tIcon.setAttribute('dominant-baseline', 'middle');
+          tIcon.setAttribute('font-size', Math.round(HEX_SIZE * 0.7));
+          tIcon.style.pointerEvents = 'none';
+          tIcon.textContent = tDef.icon;
+          svg.appendChild(tIcon);
+        }
+      }
+    }
+  }
+
+  // Рисуем юнитов
+  for (const u of state.units) {
+    if (!u.alive) continue;
+    const { x, y } = hexToPixel(u.col, u.row);
+    const isSelected = state.selectedUnit && state.selectedUnit.id === u.id;
+    const radius = HEX_SIZE * 0.55;
+
+    // Fix 3a: ring-подсветка hex под юнитом по team-цвету
+    const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    ring.setAttribute('cx', x);
+    ring.setAttribute('cy', y);
+    ring.setAttribute('r', HEX_SIZE * 0.78); // чуть больше unit token
+    ring.setAttribute('fill', 'none');
+    ring.setAttribute('stroke', u.team === 'player' ? 'rgba(52,152,219,0.55)' : 'rgba(231,76,60,0.55)');
+    ring.setAttribute('stroke-width', isSelected ? '2.5' : '1.5');
+    ring.style.pointerEvents = 'none';
+    svg.appendChild(ring);
+
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', x);
+    circle.setAttribute('cy', y);
+    circle.setAttribute('r',  radius);
+    circle.setAttribute('fill', u.team === 'player' ? 'rgba(52,152,219,0.7)' : 'rgba(231,76,60,0.7)');
+    circle.setAttribute('stroke', isSelected ? '#f39c12' : (u.team === 'player' ? '#3498db' : '#e74c3c'));
+    circle.setAttribute('stroke-width', isSelected ? '2.5' : '1.5');
+    circle.style.cursor = 'pointer';
+    circle.addEventListener('click', () => fftClickHex(u.col, u.row));
+    svg.appendChild(circle);
+
+    // Barrier indicator
+    if (u.barrier) {
+      const bCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      bCircle.setAttribute('cx', x); bCircle.setAttribute('cy', y);
+      bCircle.setAttribute('r', radius + 3);
+      bCircle.setAttribute('fill', 'none');
+      bCircle.setAttribute('stroke', '#f0c040');
+      bCircle.setAttribute('stroke-width', '2');
+      bCircle.setAttribute('stroke-dasharray', '4 2');
+      bCircle.style.pointerEvents = 'none';
+      svg.appendChild(bCircle);
+    }
+
+    const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    txt.setAttribute('x', x);
+    txt.setAttribute('y', y + 5);
+    txt.setAttribute('text-anchor', 'middle');
+    txt.setAttribute('dominant-baseline', 'middle');
+    txt.setAttribute('font-size', Math.round(HEX_SIZE * 0.75));
+    txt.style.pointerEvents = 'none';
+    txt.textContent = u.emoji;
+    svg.appendChild(txt);
+
+    // Stun/immobilize indicator
+    if (u.stunned || u.immobilized) {
+      const sIcon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      sIcon.setAttribute('x', x + radius * 0.6);
+      sIcon.setAttribute('y', y - radius * 0.6);
+      sIcon.setAttribute('font-size', '10');
+      sIcon.style.pointerEvents = 'none';
+      sIcon.textContent = u.stunned ? '💫' : '🕸';
+      svg.appendChild(sIcon);
+    }
+
+    // HP bar
+    const barW = HEX_SIZE * 1.1;
+    const barH = 4;
+    const barX = x - barW / 2;
+    const barY = y + radius + 2;
+    const hpPct = u.hp / u.maxHp;
+
+    const barBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    barBg.setAttribute('x', barX); barBg.setAttribute('y', barY);
+    barBg.setAttribute('width', barW); barBg.setAttribute('height', barH);
+    barBg.setAttribute('rx', 2); barBg.setAttribute('fill', 'rgba(0,0,0,0.5)');
+    svg.appendChild(barBg);
+
+    const barFg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    barFg.setAttribute('x', barX); barFg.setAttribute('y', barY);
+    barFg.setAttribute('width', barW * hpPct); barFg.setAttribute('height', barH);
+    barFg.setAttribute('rx', 2);
+    barFg.setAttribute('fill', hpPct > 0.5 ? '#2ecc71' : hpPct > 0.25 ? '#f39c12' : '#e74c3c');
+    svg.appendChild(barFg);
+
+    // Затемнение для отыгравших
+    if (u.moved && u.acted) {
+      const dim = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      dim.setAttribute('cx', x); dim.setAttribute('cy', y);
+      dim.setAttribute('r', radius);
+      dim.setAttribute('fill', 'rgba(0,0,0,0.4)');
+      dim.style.pointerEvents = 'none';
+      svg.appendChild(dim);
+    }
+  }
+}
+
+// --- FLOATING DAMAGE ---
+function fftShowFloatingDamage(col, row, dmg, isHeal) {
+  const svgWrap = document.getElementById('fft-svg-wrap');
+  const { x: svgX, y: svgY } = hexToPixel(col, row);
+  const vw = SVG_W / cam.zoom;
+  const svgEl = document.getElementById('fft-svg');
+  const svgRect = svgEl.getBoundingClientRect();
+  const scaleX = svgRect.width / vw;
+  const vh = SVG_H / cam.zoom;
+  const scaleY = svgRect.height / vh;
+  const screenX = (svgX - cam.panX) * scaleX;
+  const screenY = (svgY - cam.panY) * scaleY - 24;
+
+  const el = document.createElement('div');
+  el.className = 'fft-float-dmg' + (isHeal ? ' fft-float-heal' : '');
+  el.textContent = isHeal ? `+${dmg}` : `-${dmg}`;
+  el.style.left = Math.round(screenX) + 'px';
+  el.style.top  = Math.round(screenY) + 'px';
+  svgWrap.appendChild(el);
+  setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 1200);
+}
+
+// --- UNIT MOVE ANIMATION ---
+function fftAnimateMove(unit, path, done) {
+  if (!path || path.length === 0) { done(); return; }
+  let step = 0;
+  function next() {
+    if (step >= path.length) { done(); return; }
+    const { col, row } = path[step++];
+    unit.col = col;
+    unit.row = row;
+    fftRender();
+    setTimeout(next, 100);
+  }
+  next();
+}
+
+// --- DEAL DAMAGE / HEAL ---
+function fftDealDamage(target, dmg, attacker, skill) {
+  const sk = skill || null;
+  // Проверяем barrier
+  if (target.barrier && dmg > 0) {
+    target.barrier = false;
+    fftLog(`${target.name}: барьер поглотил удар!`, target.team === 'player' ? 'player' : 'enemy');
+    fftShowFloatingDamage(target.col, target.row, 0, false);
+    return;
+  }
+  const isHeal = sk && sk.type === 'heal';
+  if (isHeal) {
+    const healed = Math.min(target.maxHp - target.hp, dmg);
+    target.hp = Math.min(target.maxHp, target.hp + dmg);
+    fftShowFloatingDamage(target.col, target.row, healed, true);
+  } else {
+    target.hp = Math.max(0, target.hp - dmg);
+    fftShowFloatingDamage(target.col, target.row, dmg, false);
+    if (target.hp <= 0) {
+      target.alive = false;
+      const cls = attacker.team === 'player' ? 'player' : 'enemy';
+      fftLog(`${target.name} повержен!`, cls);
+    }
+  }
+  // Apply effects
+  if (sk && sk.effect && target.alive) {
+    if (sk.effect === 'stun')       { target.stunned = true;      fftLog(`${target.name} оглушён!`, 'system'); }
+    if (sk.effect === 'immobilize') { target.immobilized = true;  fftLog(`${target.name} обездвижен!`, 'system'); }
+    if (sk.effect === 'slow')       { target.slowed = true;       fftLog(`${target.name} замедлен!`, 'system'); }
+    if (sk.effect === 'barrier')    { attacker.barrier = true;    fftLog(`${attacker.name} получает барьер!`, 'system'); }
+  }
+}
+
+// --- APPLY AOE ---
+function fftApplyAoe(centerCol, centerRow, attacker, skill) {
+  // Все юниты (включая союзников для friendly fire исключения? нет — AoE бьёт только врагов)
+  const targets = state.units.filter(u => {
+    if (!u.alive) return false;
+    if (u.id === attacker.id) return false;
+    if (u.team === attacker.team) return false;
+    const d = hexDist(centerCol, centerRow, u.col, u.row);
+    return d <= skill.aoe;
+  });
+  for (const t of targets) {
+    const dmg = fftCalcDamage(attacker, t, skill);
+    fftDealDamage(t, dmg, attacker, skill);
+    fftLog(`${attacker.name} [${skill.name}] → ${t.name}: −${dmg} HP.`, attacker.team === 'player' ? 'player' : 'enemy');
+  }
+}
+
+// --- FORECAST ---
+function fftShowForecast(attacker, target, skill) {
+  state.forecastTarget = target;
+  state.uiMode = 'forecast';
+
+  const sk = skill || SKILL_DEFS[attacker.abilities[0]];
+  const isHeal = sk && sk.type === 'heal';
+  const isBarrier = sk && sk.effect === 'barrier';
+
+  let dmgText = '';
+  let hitText = '';
+  let title = '';
+
+  if (isBarrier) {
+    title = `🔰 ${attacker.name}: Заслон`;
+    dmgText = '+1 барьер (следующий удар поглощён)';
+    hitText = 'Успех: 100%';
+  } else if (isHeal) {
+    const healAmt = Math.min(target.maxHp - target.hp, -sk.dmgMod);
+    title = `💚 ${attacker.name} → ${target.name}: Лечение`;
+    dmgText = `Восстановит: ${healAmt} HP (${target.hp} → ${Math.min(target.maxHp, target.hp + healAmt)})`;
+    hitText = 'Успех: 100%';
+  } else if (sk && sk.aoe > 0) {
+    title = `${sk.icon} ${attacker.name}: ${sk.name} (АоЕ ${sk.aoe})`;
+    const dmg = fftCalcDamage(attacker, target, sk);
+    dmgText = `Урон: ~${dmg} HP (по всем в радиусе ${sk.aoe})`;
+    hitText = attacker.isRanged ? `Попадание: ${fftCalcHitChance(attacker, target, sk)}%` : 'Попадание: 100%';
+  } else {
+    const dmg = fftCalcDamage(attacker, target, sk);
+    const hit = fftCalcHitChance(attacker, target, sk);
+    title = `${sk ? sk.icon : '⚔'} ${attacker.name} [${sk ? sk.name : ''}] → ${target.name}`;
+    dmgText = `Урон: ${dmg} HP (${target.hp} → ${Math.max(0, target.hp - dmg)})`;
+    hitText = `Попадание: ${hit}%`;
+    if (target.barrier) dmgText += ' [барьер!]';
+  }
+
+  document.getElementById('fft-forecast-title').textContent = title;
+  document.getElementById('fft-forecast-dmg').textContent   = dmgText;
+  document.getElementById('fft-forecast-hit').textContent   = hitText;
+  document.getElementById('fft-forecast').style.display = 'block';
+
+  fftRender();
+}
+
+function fftCancelForecast() {
+  state.forecastTarget = null;
+  state.uiMode = 'ability';
+  document.getElementById('fft-forecast').style.display = 'none';
+  fftRender();
+}
+
+function fftConfirmAttack() {
+  const attacker = state.selectedUnit;
+  const target   = state.forecastTarget;
+  const skill    = state.selectedAbility;
+  if (!attacker) return;
+
+  document.getElementById('fft-forecast').style.display = 'none';
+  state.forecastTarget = null;
+  state.uiMode = 'idle';
+
+  const sk = skill || SKILL_DEFS[attacker.abilities[0]];
+  const isBarrier = sk && sk.effect === 'barrier';
+  const isHeal = sk && sk.type === 'heal';
+
+  if (isBarrier) {
+    attacker.barrier = true;
+    attacker.acted = true;
+    fftLog(`${attacker.name} использует Заслон — барьер активен!`, 'player');
+  } else if (isHeal && target) {
+    const healAmt = -sk.dmgMod;
+    fftDealDamage(target, healAmt, attacker, sk);
+    const cls = attacker.team === 'player' ? 'player' : 'enemy';
+    fftLog(`${attacker.name} лечит ${target.name}: +${healAmt} HP.`, cls);
+    attacker.acted = true;
+  } else if (sk && sk.aoe > 0 && target) {
+    fftApplyAoe(target.col, target.row, attacker, sk);
+    attacker.acted = true;
+  } else if (target) {
+    const hit  = fftCalcHitChance(attacker, target, sk);
+    const dmg  = fftCalcDamage(attacker, target, sk);
+    const roll = Math.random() * 100;
+    if (roll < hit) {
+      fftDealDamage(target, dmg, attacker, sk);
+      const cls = attacker.team === 'player' ? 'player' : 'enemy';
+      fftLog(`${attacker.name} [${sk ? sk.name : 'Атака'}] → ${target.name}: −${dmg} HP (${target.hp}/${target.maxHp}).`, cls);
+    } else {
+      fftLog(`${attacker.name} промахнулся по ${target.name}!`, attacker.team === 'player' ? 'player' : 'enemy');
+    }
+    attacker.acted = true;
+  }
+
+  // Устанавливаем cooldown
+  if (sk && sk.cd > 0 && attacker.cooldowns) {
+    attacker.cooldowns[sk.id] = sk.cd;
+  }
+
+  state.selectedAbility = null;
+  fftCheckWinLose();
+  fftSetMode('idle');
+  fftUpdateUI();
+  fftRender();
+}
+
+// --- CLICK HANDLER ---
+function fftClickHex(c, r) {
+  if (state.phase === 'won' || state.phase === 'lost') return;
+  if (state.phase === 'enemy-turn') return;
+  if (state.phase === 'skill-select') return;
+
+  if (state.uiMode === 'forecast') return;
+
+  const unit = state.units.find(u => u.alive && u.col === c && u.row === r);
+
+  // --- MOVE MODE ---
+  if (state.uiMode === 'move' && state.selectedUnit) {
+    if (unit) {
+      if (unit.id === state.selectedUnit.id) { fftCancel(); return; }
+      if (unit.team === 'player') { fftSelectUnit(unit); return; }
+      fftLog('Клетка занята.', 'system'); return;
+    }
+    const key = `${c},${r}`;
+    if (state.reachableCache && state.reachableCache.has(key)) {
+      const { path } = state.reachableCache.get(key);
+      const movingUnit = state.selectedUnit;
+      fftAnimateMove(movingUnit, path, () => {
+        movingUnit.moved = true;
+        fftLog(`${movingUnit.name} переместился.`, 'player');
+        fftSetMode('idle');
+        fftUpdateUI();
+        fftRender();
+      });
+    } else {
+      fftLog('Недостижимая клетка.', 'system');
+    }
+    return;
+  }
+
+  // --- ABILITY MODE ---
+  if (state.uiMode === 'ability' && state.selectedUnit && state.selectedAbility) {
+    const sk = state.selectedAbility;
+    if (!unit && !sk.targetSelf) { fftCancel(); return; }
+
+    // Self-target (barrier/guard)
+    if (sk.targetSelf) {
+      if (c === state.selectedUnit.col && r === state.selectedUnit.row) {
+        fftShowForecast(state.selectedUnit, null, sk);
+      } else {
+        fftLog('Умение применяется к себе — нажми на своего героя.', 'system');
+      }
+      return;
+    }
+
+    // Ally heal
+    if (sk.targetAlly) {
+      if (!unit || unit.team !== state.selectedUnit.team) {
+        fftLog('Выбери союзника для лечения.', 'system'); return;
+      }
+      const d = hexDist(state.selectedUnit.col, state.selectedUnit.row, unit.col, unit.row);
+      if (d > sk.range) {
+        fftLog(`Цель слишком далеко (дальность: ${sk.range}).`, 'system'); return;
+      }
+      fftShowForecast(state.selectedUnit, unit, sk);
+      return;
+    }
+
+    // AoE — клик по врагу = центр AoE
+    if (sk.aoe > 0) {
+      if (!unit || unit.team === state.selectedUnit.team) {
+        fftCancel(); return;
+      }
+      const d = hexDist(state.selectedUnit.col, state.selectedUnit.row, unit.col, unit.row);
+      if (d > sk.range) {
+        fftLog(`Цель вне дальности (${sk.range}).`, 'system'); return;
+      }
+      fftShowForecast(state.selectedUnit, unit, sk);
+      return;
+    }
+
+    // Standard attack
+    if (!unit) { fftCancel(); return; }
+    if (unit.id === state.selectedUnit.id) { fftCancel(); return; }
+    if (unit.team === state.selectedUnit.team) {
+      fftLog('Нельзя атаковать союзника.', 'system'); return;
+    }
+    const d = hexDist(state.selectedUnit.col, state.selectedUnit.row, unit.col, unit.row);
+    if (d > sk.range) {
+      fftLog(`Цель вне дальности (${sk.range}).`, 'system'); return;
+    }
+    fftShowForecast(state.selectedUnit, unit, sk);
+    return;
+  }
+
+  // --- IDLE MODE ---
+  if (state.uiMode === 'idle') {
+    if (!unit) { fftDeselectUnit(); return; }
+    if (unit.team !== 'player') {
+      fftLog(`${unit.name}: HP ${unit.hp}/${unit.maxHp}, Атк ${unit.atk}, Защ ${unit.def}.`, 'system');
+      return;
+    }
+    if (unit.moved && unit.acted) {
+      fftLog(`${unit.name} уже отыграл.`, 'system'); return;
+    }
+    if (state.selectedUnit && state.selectedUnit.id === unit.id) {
+      fftDeselectUnit(); return;
+    }
+    fftSelectUnit(unit);
+  }
+}
+
+// --- STATE MACHINE ---
+function fftSelectUnit(u) {
+  state.selectedUnit = u;
+  state.selectedAbility = null;
+  state.uiMode = 'idle';
+  state.reachableCache = null;
+  fftUpdateUI();
+  fftRender();
+  const effects = [];
+  if (u.stunned) effects.push('оглушён');
+  if (u.immobilized) effects.push('обездвижен');
+  if (u.slowed) effects.push('замедлен');
+  if (u.barrier) effects.push('барьер');
+  const effStr = effects.length ? ` [${effects.join(', ')}]` : '';
+  fftLog(`Выбран: ${u.name} (HP ${u.hp}/${u.maxHp})${effStr}.`, 'player');
+}
+
+function fftDeselectUnit() {
+  state.selectedUnit = null;
+  state.selectedAbility = null;
+  state.uiMode = 'idle';
+  state.reachableCache = null;
+  document.getElementById('fft-forecast').style.display = 'none';
+  document.getElementById('fft-ability-row').style.display = 'none';
+  fftUpdateUI();
+  fftRender();
+}
+
+function fftSetMode(mode) {
+  if (mode === 'idle') {
+    state.uiMode = 'idle';
+    state.selectedAbility = null;
+    state.reachableCache = null;
+    document.getElementById('fft-btn-cancel').style.display = 'none';
+    fftUpdateUI();
+    fftRender();
+    return;
+  }
+  if (!state.selectedUnit) return;
+  if (mode === 'move') {
+    if (state.selectedUnit.moved) { fftLog('Юнит уже двигался.', 'system'); return; }
+    if (state.selectedUnit.stunned) { fftLog('Юнит оглушён!', 'system'); return; }
+    if (state.selectedUnit.immobilized) { fftLog('Юнит обездвижен!', 'system'); return; }
+    state.uiMode = 'move';
+    state.reachableCache = fftReachable(state.selectedUnit);
+  } else if (mode === 'ability') {
+    // Только через fftSelectAbility
+  }
+  document.getElementById('fft-btn-cancel').style.display = 'inline-flex';
+  fftUpdateUI();
+  fftRender();
+}
+
+function fftSelectAbility(skillId) {
+  if (!state.selectedUnit) return;
+  const sk = SKILL_DEFS[skillId];
+  if (!sk) return;
+  if (state.selectedUnit.acted) { fftLog('Юнит уже атаковал.', 'system'); return; }
+  const cd = state.selectedUnit.cooldowns[skillId] || 0;
+  if (cd > 0) { fftLog(`${sk.name} на перезарядке (${cd} ход).`, 'system'); return; }
+
+  // Если нажали на уже активную способность — отмена
+  if (state.uiMode === 'ability' && state.selectedAbility && state.selectedAbility.id === skillId) {
+    fftSetMode('idle');
+    return;
+  }
+
+  state.selectedAbility = sk;
+  state.uiMode = 'ability';
+  state.reachableCache = null;
+
+  // Self-buff: если targetSelf — сразу открываем forecast
+  if (sk.targetSelf) {
+    fftShowForecast(state.selectedUnit, null, sk);
+  }
+
+  document.getElementById('fft-btn-cancel').style.display = 'inline-flex';
+  fftUpdateUI();
+  fftRender();
+}
+
+function fftCancel() {
+  state.uiMode = 'idle';
+  state.selectedAbility = null;
+  state.reachableCache = null;
+  state.forecastTarget = null;
+  document.getElementById('fft-btn-cancel').style.display = 'none';
+  document.getElementById('fft-forecast').style.display = 'none';
+  fftUpdateUI();
+  fftRender();
+}
+
+function fftSkipUnit() {
+  if (!state.selectedUnit) return;
+  state.selectedUnit.moved = true;
+  state.selectedUnit.acted = true;
+  fftLog(`${state.selectedUnit.name} пропускает ход.`, 'system');
+  fftDeselectUnit();
+}
+
+function fftEndTurn() {
+  if (state.phase === 'won' || state.phase === 'lost') return;
+  if (state.phase === 'skill-select') return;
+
+  if (state.phase === 'player-turn') {
+    // Применяем fire damage к игрокам в начале смены хода (они закончили, теперь враги)
+    state.units.filter(u => u.alive && u.team === 'player').forEach(u => {
+      applyStartOfTurnEffects(u);
+    });
+    state.units.filter(u => u.alive && u.team === 'enemy').forEach(u => { u.moved = false; u.acted = false; });
+    state.phase = 'enemy-turn';
+    state.selectedUnit = null;
+    state.selectedAbility = null;
+    state.uiMode = 'idle';
+    state.reachableCache = null;
+    document.getElementById('fft-forecast').style.display = 'none';
+    document.getElementById('fft-enemy-banner').classList.add('show');
+    fftLog('Ход врага!', 'enemy');
+    fftUpdateUI();
+    fftRender();
+    setTimeout(() => fftEnemyTurnStep(), 500);
+  } else if (state.phase === 'enemy-turn') {
+    document.getElementById('fft-enemy-banner').classList.remove('show');
+    // Начало хода игрока — cooldowns уменьшаются
+    state.units.filter(u => u.alive && u.team === 'player').forEach(u => {
+      decrementCooldowns(u);
+      applyStartOfTurnEffects(u);
+      // Снимаем временные эффекты
+      u.stunned = false;
+      u.immobilized = false;
+      u.slowed = false;
+    });
+    state.units.filter(u => u.alive && u.team === 'player').forEach(u => { u.moved = false; u.acted = false; });
+    state.phase = 'player-turn';
+    fftLog('Ход игрока!', 'player');
+    fftUpdateUI();
+    fftRender();
+  }
+}
+
+function decrementCooldowns(unit) {
+  for (const abId of Object.keys(unit.cooldowns)) {
+    if (unit.cooldowns[abId] > 0) unit.cooldowns[abId]--;
+  }
+}
+
+function applyStartOfTurnEffects(unit) {
+  if (!unit.alive) return;
+  const t = state.terrain[`${unit.col},${unit.row}`] || 'grass';
+  const tDef = TERRAIN_TYPES[t];
+  if (tDef.damagePerTurn > 0 && unit.alive) {
+    unit.hp = Math.max(0, unit.hp - tDef.damagePerTurn);
+    fftShowFloatingDamage(unit.col, unit.row, tDef.damagePerTurn, false);
+    fftLog(`${unit.name} горит: −${tDef.damagePerTurn} HP!`, 'system');
+    if (unit.hp <= 0) {
+      unit.alive = false;
+      fftLog(`${unit.name} погиб в огне!`, unit.team === 'player' ? 'lose' : 'system');
+    }
+  }
+}
+
+// --- ENEMY AI ---
+function fftAIPickTarget(enemy) {
+  const players = state.units.filter(u => u.alive && u.team === 'player');
+  if (players.length === 0) return null;
+  players.sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp));
+  return players[0];
+}
+
+function fftAIPickAbility(enemy) {
+  // Выбирает лучшую доступную способность (не на CD)
+  const available = enemy.abilities.filter(abId => {
+    const cd = enemy.cooldowns[abId] || 0;
+    return cd === 0;
+  });
+  // Приоритет: специальные > базовые (если нет CD)
+  const specials = available.filter(abId => !SKILL_DEFS[abId].isBasic);
+  if (specials.length > 0) return SKILL_DEFS[specials[0]];
+  return SKILL_DEFS[available[0]] || null;
+}
+
+function fftEnemyTurnStep() {
+  if (state.phase !== 'enemy-turn') return;
+
+  const enemies = state.units.filter(u => u.alive && u.team === 'enemy' && !u.acted);
+  if (enemies.length === 0) {
+    // Конец хода врага — cooldowns врагов уменьшаются
+    state.units.filter(u => u.alive && u.team === 'enemy').forEach(u => {
+      decrementCooldowns(u);
+      applyStartOfTurnEffects(u);
+      u.stunned = false;
+      u.immobilized = false;
+      u.slowed = false;
+    });
+    fftCheckWinLose();
+    if (state.phase === 'enemy-turn') fftEndTurn();
+    return;
+  }
+
+  const enemy = enemies[0];
+
+  if (enemy.stunned) {
+    fftLog(`${enemy.name} оглушён — пропускает ход.`, 'enemy');
+    enemy.acted = true;
+    enemy.moved = true;
+    fftCheckWinLose();
+    fftRender();
+    setTimeout(() => fftEnemyTurnStep(), 400);
+    return;
+  }
+
+  const target = fftAIPickTarget(enemy);
+  if (!target) { fftCheckWinLose(); return; }
+
+  const ability = fftAIPickAbility(enemy);
+  const effectiveRange = ability ? ability.range : enemy.atkRange;
+  const dist = hexDist(enemy.col, enemy.row, target.col, target.row);
+
+  // Определяем желаемое расстояние: ranged — держаться на дальности
+  const desiredDist = enemy.isRanged ? effectiveRange : 1;
+
+  // Если в зоне атаки — атакуем
+  if (dist <= effectiveRange && !enemy.acted) {
+    fftAIDoAttack(enemy, target, ability, () => {
+      fftCheckWinLose();
+      fftRender();
+      setTimeout(() => fftEnemyTurnStep(), 500);
+    });
+    return;
+  }
+
+  // Иначе двигаемся
+  if (!enemy.moved && !enemy.immobilized) {
+    fftAIMove(enemy, target, desiredDist, () => {
+      const newDist = hexDist(enemy.col, enemy.row, target.col, target.row);
+      if (newDist <= effectiveRange && !enemy.acted) {
+        fftAIDoAttack(enemy, target, ability, () => {
+          fftCheckWinLose();
+          fftRender();
+          setTimeout(() => fftEnemyTurnStep(), 500);
+        });
+      } else {
+        enemy.acted = true;
+        fftCheckWinLose();
+        fftRender();
+        setTimeout(() => fftEnemyTurnStep(), 500);
+      }
+    });
+    return;
+  }
+
+  enemy.acted = true;
+  fftCheckWinLose();
+  fftRender();
+  setTimeout(() => fftEnemyTurnStep(), 400);
+}
+
+function fftAIDoAttack(enemy, target, ability, done) {
+  const sk = ability || SKILL_DEFS[enemy.abilities[0]] || null;
+  const hit  = sk && !enemy.isRanged ? 100 : fftCalcHitChance(enemy, target, sk);
+  const roll = Math.random() * 100;
+
+  if (sk && sk.aoe > 0) {
+    fftApplyAoe(target.col, target.row, enemy, sk);
+  } else if (roll < hit) {
+    const dmg = fftCalcDamage(enemy, target, sk);
+    fftDealDamage(target, dmg, enemy, sk);
+    fftLog(`${enemy.name} [${sk ? sk.name : 'Атака'}] → ${target.name}: −${dmg} HP.`, 'enemy');
+  } else {
+    fftLog(`${enemy.name} промахнулся по ${target.name}!`, 'enemy');
+  }
+
+  // Cooldown
+  if (sk && sk.cd > 0) {
+    enemy.cooldowns[sk.id] = sk.cd;
+  }
+
+  enemy.acted = true;
+  enemy.moved = true;
+  fftRender();
+  done();
+}
+
+function fftAIMove(enemy, target, desiredDist, done) {
+  if (enemy.immobilized) {
+    enemy.moved = true;
+    fftLog(`${enemy.name} обездвижен.`, 'enemy');
+    done();
+    return;
+  }
+
+  const moveRange = enemy.slowed ? Math.max(1, Math.floor(enemy.moveRange / 2)) : enemy.moveRange;
+
+  const blocked = new Set(
+    state.units
+      .filter(u => u.alive && u.id !== enemy.id && u.id !== target.id)
+      .map(u => `${u.col},${u.row}`)
+  );
+
+  const fullPath = fftFindPath(enemy.col, enemy.row, target.col, target.row, blocked);
+  if (!fullPath || fullPath.length === 0) {
+    enemy.moved = true;
+    fftLog(`${enemy.name} не может двигаться.`, 'enemy');
+    done();
+    return;
+  }
+
+  // Для ranged — остановиться на desiredDist, не вплотную
+  let maxSteps;
+  if (desiredDist > 1) {
+    // Двигаться пока dist > desiredDist
+    maxSteps = Math.max(0, fullPath.length - desiredDist);
+  } else {
+    maxSteps = Math.min(moveRange, fullPath.length - 1);
+  }
+  maxSteps = Math.min(maxSteps, moveRange);
+
+  if (maxSteps <= 0) {
+    enemy.moved = true;
+    done();
+    return;
+  }
+
+  let path = fullPath.slice(0, maxSteps);
+  // Обрезаем если занято
+  while (path.length > 0) {
+    const last = path[path.length - 1];
+    const blocker = state.units.find(u => u.alive && u.id !== enemy.id && u.col === last.col && u.row === last.row);
+    if (!blocker) break;
+    path = path.slice(0, -1);
+  }
+
+  if (path.length === 0) {
+    enemy.moved = true;
+    done();
+    return;
+  }
+
+  fftLog(`${enemy.name} движется.`, 'enemy');
+  fftAnimateMove(enemy, path, () => {
+    enemy.moved = true;
+    done();
+  });
+}
+
+// --- WIN/LOSE CHECK ---
+function fftCheckWinLose() {
+  const playersAlive = state.units.filter(u => u.alive && u.team === 'player').length;
+  const enemiesAlive = state.units.filter(u => u.alive && u.team === 'enemy').length;
+  if (enemiesAlive === 0) {
+    state.phase = 'won';
+    document.getElementById('fft-enemy-banner').classList.remove('show');
+    fftLog('ПОБЕДА! Все враги повержены!', 'win');
+    fftUpdateUI(); fftRender();
+    fftShowOverlay('win', 'Все враги повержены!');
+    return;
+  }
+  if (playersAlive === 0) {
+    state.phase = 'lost';
+    document.getElementById('fft-enemy-banner').classList.remove('show');
+    fftLog('ПОРАЖЕНИЕ. Все герои пали...', 'lose');
+    fftUpdateUI(); fftRender();
+    fftShowOverlay('lose', 'Все герои пали...');
+    return;
+  }
+}
+
+function fftShowOverlay(type, sub) {
+  const overlay = document.getElementById('fft-overlay');
+  const title   = document.getElementById('fft-overlay-title');
+  const subEl   = document.getElementById('fft-overlay-sub');
+  title.textContent = type === 'win' ? '🎉 Победа!' : '💀 Поражение';
+  title.className   = type;
+  subEl.textContent = sub;
+  overlay.classList.add('show');
+}
+
+// --- UI UPDATE ---
+function fftUpdateUI() {
+  const lbl = document.getElementById('fft-phase-label');
+  if (state.phase === 'player-turn')  { lbl.textContent = 'Ход игрока'; lbl.className = 'player-turn'; }
+  else if (state.phase === 'enemy-turn') { lbl.textContent = 'Ход врага'; lbl.className = 'enemy-turn'; }
+  else if (state.phase === 'won')  { lbl.textContent = '🎉 Победа!'; lbl.className = 'won'; }
+  else if (state.phase === 'lost') { lbl.textContent = '💀 Поражение'; lbl.className = 'lost'; }
+  else { lbl.textContent = 'Выбор умений'; lbl.className = 'player-turn'; }
+
+  // Queue icons
+  const queueEl = document.getElementById('fft-queue-icons');
+  queueEl.innerHTML = '';
+  for (const u of state.units.filter(u => u.alive)) {
+    const el = document.createElement('div');
+    el.className = `fft-queue-unit ${u.team}`;
+    if (state.selectedUnit && state.selectedUnit.id === u.id) el.classList.add('current');
+    if (u.acted) el.classList.add('done');
+    el.textContent = u.emoji;
+    el.title = u.name;
+    queueEl.appendChild(el);
+  }
+
+  // Info panel
+  const nameEl  = document.getElementById('fft-info-name');
+  const statsEl = document.getElementById('fft-info-stats');
+  const hintEl  = document.getElementById('fft-info-hint');
+  const deselBtn = document.getElementById('fft-info-desel');
+  const u = state.selectedUnit;
+
+  if (u) {
+    nameEl.textContent  = `${u.emoji} ${u.name}`;
+    const effects = [];
+    if (u.stunned) effects.push('💫оглушён');
+    if (u.immobilized) effects.push('🕸обездвижен');
+    if (u.slowed) effects.push('🐢замедлен');
+    if (u.barrier) effects.push('🔰барьер');
+    const effStr = effects.length ? `  ${effects.join(' ')}` : '';
+    statsEl.textContent = `HP: ${u.hp}/${u.maxHp}  Атк:${u.atk}  Защ:${u.def}  Ход:${u.moveRange}${effStr}`;
+    const parts = [];
+    if (u.moved)  parts.push('двигался');
+    if (u.acted)  parts.push('действовал');
+    hintEl.textContent = parts.length ? `Уже: ${parts.join(', ')}` : 'Выбери действие';
+    deselBtn.classList.add('show');
+  } else {
+    nameEl.textContent  = 'Выбери юнита';
+    statsEl.textContent = '';
+    hintEl.textContent  = state.phase === 'player-turn'
+      ? 'Нажми на синего союзника'
+      : state.phase === 'enemy-turn' ? 'Враги ходят...' : '';
+    deselBtn.classList.remove('show');
+  }
+
+  // Action buttons
+  const isPlayer = state.phase === 'player-turn';
+  const hasUnit  = !!u;
+  const inGame   = state.phase !== 'won' && state.phase !== 'lost' && state.phase !== 'skill-select';
+
+  const btnMove   = document.getElementById('fft-btn-move');
+  const btnSkip   = document.getElementById('fft-btn-skip');
+  const btnEnd    = document.getElementById('fft-btn-end');
+  const btnCancel = document.getElementById('fft-btn-cancel');
+
+  const canMove = inGame && isPlayer && hasUnit && !u?.moved && !u?.stunned && !u?.immobilized;
+  btnMove.disabled   = !canMove;
+  btnSkip.disabled   = !(inGame && isPlayer && hasUnit);
+  btnEnd.disabled    = !inGame;
+  btnEnd.textContent = state.phase === 'enemy-turn' ? 'Завершить ход врага' : 'Конец хода';
+
+  btnMove.classList.toggle('active', state.uiMode === 'move');
+  btnCancel.style.display = (state.uiMode !== 'idle' && hasUnit) ? 'inline-flex' : 'none';
+
+  // Ability row
+  const abRow = document.getElementById('fft-ability-row');
+  if (u && u.team === 'player' && u.abilities && u.abilities.length > 0 && inGame && isPlayer) {
+    abRow.style.display = 'flex';
+    abRow.innerHTML = '';
+    for (const abId of u.abilities) {
+      const sk = SKILL_DEFS[abId];
+      if (!sk) continue;
+      const cd = u.cooldowns[abId] || 0;
+      const disabled = u.acted || cd > 0;
+      const isActive = state.uiMode === 'ability' && state.selectedAbility && state.selectedAbility.id === abId;
+
+      const btn = document.createElement('button');
+      btn.className = 'fft-ab-btn' + (isActive ? ' active' : '');
+      btn.disabled = disabled;
+      const metaRange = sk.range > 0 ? `Д:${sk.range}` : 'Self';
+      const metaDmg   = sk.type === 'heal' ? `+${-sk.dmgMod}HP` : sk.type === 'buff' ? '' : (sk.dmgMod >= 0 ? `+${sk.dmgMod}` : `${sk.dmgMod}`);
+      btn.innerHTML = `
+        <span class="fft-ab-icon">${sk.icon}</span>
+        <span class="fft-ab-name">${sk.name}</span>
+        <span class="fft-ab-meta">${metaRange}${metaDmg ? ' ' + metaDmg : ''}</span>
+      `;
+      if (cd > 0) {
+        const badge = document.createElement('div');
+        badge.className = 'fft-cd-badge';
+        badge.textContent = cd;
+        btn.appendChild(badge);
+      }
+      btn.addEventListener('click', () => fftSelectAbility(abId));
+      abRow.appendChild(btn);
+    }
+  } else {
+    abRow.style.display = 'none';
+    abRow.innerHTML = '';
+  }
+}
+
+// --- LOG ---
+function fftLog(msg, cls) {
+  const log = document.getElementById('fft-log');
+  const line = document.createElement('div');
+  line.className = `log-${cls || 'system'}`;
+  line.textContent = msg;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+  while (log.children.length > 80) log.removeChild(log.firstChild);
+}
+
+// --- PAN / DRAG ---
+let _drag = null;
+const svgWrap = document.getElementById('fft-svg-wrap');
+
+svgWrap.addEventListener('mousedown', e => {
+  _drag = { x: e.clientX, y: e.clientY, px: cam.panX, py: cam.panY, moved: false };
+  svgWrap.classList.add('dragging');
+});
+document.addEventListener('mousemove', e => {
+  if (!_drag) return;
+  const dx = e.clientX - _drag.x;
+  const dy = e.clientY - _drag.y;
+  if (Math.abs(dx) > 5 || Math.abs(dy) > 5) _drag.moved = true;
+  if (_drag.moved) {
+    cam.panX = _drag.px - dx / cam.zoom;
+    cam.panY = _drag.py - dy / cam.zoom;
+    fftRender();
+  }
+});
+document.addEventListener('mouseup', () => {
+  if (_drag) svgWrap.classList.remove('dragging');
+  _drag = null;
+});
+
+let _touch = null;
+let _pinch = null; // Fix 2: pinch-to-zoom state
+
+svgWrap.addEventListener('touchstart', e => {
+  if (e.touches.length === 1) {
+    const t = e.touches[0];
+    _touch = { x: t.clientX, y: t.clientY, px: cam.panX, py: cam.panY, moved: false };
+    _pinch = null;
+  } else if (e.touches.length === 2) {
+    // Fix 2: начало pinch-жеста
+    _touch = null; // отменяем pan при 2 пальцах
+    const t0 = e.touches[0], t1 = e.touches[1];
+    const dist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+    _pinch = {
+      startDist: dist,
+      savedZoom: cam.zoom,
+      savedPanX: cam.panX,
+      savedPanY: cam.panY,
+      midX: (t0.clientX + t1.clientX) / 2,
+      midY: (t0.clientY + t1.clientY) / 2,
+    };
+    e.preventDefault();
+  }
+}, { passive: false }); // Fix 1: non-passive чтобы preventDefault работал
+svgWrap.addEventListener('touchmove', e => {
+  if (e.touches.length === 2 && _pinch) {
+    // Fix 2: pinch zoom
+    e.preventDefault();
+    const t0 = e.touches[0], t1 = e.touches[1];
+    const dist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+    const scale = dist / _pinch.startDist;
+    const newZoom = Math.max(CAMERA_ZOOM_MIN, Math.min(CAMERA_ZOOM_MAX, _pinch.savedZoom * scale));
+
+    // Zoom вокруг midpoint pincha: вычисляем SVG-координату midpoint
+    const rect = svgWrap.getBoundingClientRect();
+    const vw0 = SVG_W / _pinch.savedZoom;
+    const vh0 = SVG_H / _pinch.savedZoom;
+    const svgMidX = _pinch.savedPanX + (_pinch.midX - rect.left) / rect.width * vw0;
+    const svgMidY = _pinch.savedPanY + (_pinch.midY - rect.top) / rect.height * vh0;
+
+    // При новом zoom пересчитываем pan чтобы svgMid остался под пальцами
+    const vwNew = SVG_W / newZoom;
+    const vhNew = SVG_H / newZoom;
+    cam.zoom = newZoom;
+    cam.panX = svgMidX - (_pinch.midX - rect.left) / rect.width * vwNew;
+    cam.panY = svgMidY - (_pinch.midY - rect.top) / rect.height * vhNew;
+    document.getElementById('fft-zoom-label').textContent = cam.zoom.toFixed(1) + '×';
+    fftRender();
+    return;
+  }
+  if (!_touch || e.touches.length !== 1) return;
+  // Fix 1: pan
+  const t = e.touches[0];
+  const dx = t.clientX - _touch.x;
+  const dy = t.clientY - _touch.y;
+  if (Math.abs(dx) > 2 || Math.abs(dy) > 2) _touch.moved = true; // Fix 1: threshold 5→2
+  if (_touch.moved) {
+    cam.panX = _touch.px - dx / cam.zoom;
+    cam.panY = _touch.py - dy / cam.zoom;
+    fftRender();
+    e.preventDefault();
+  }
+}, { passive: false });
+svgWrap.addEventListener('touchend', e => {
+  if (_pinch && e.touches.length < 2) {
+    // Fix 2: commit zoom, переходим в single-touch pan если 1 палец остался
+    _pinch = null;
+    if (e.touches.length === 1) {
+      const t = e.touches[0];
+      _touch = { x: t.clientX, y: t.clientY, px: cam.panX, py: cam.panY, moved: false };
+    }
+  }
+  if (e.touches.length === 0) {
+    _touch = null;
+    _pinch = null;
+  }
+});
+
+// --- START ---
+fftInit();
+</script>
+</body>
+</html>

@@ -1,0 +1,3614 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>FFT 3D Тактика</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100dvh;
+    overflow: hidden;
+    background: #1a1a1a;
+    font-family: system-ui, sans-serif;
+  }
+  canvas {
+    display: block;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100% !important;
+    height: 100dvh !important;
+    z-index: 0;
+  }
+
+  /* ── SKILL SELECTION SCREEN ── */
+  #fft-skill-screen {
+    display: none; position: fixed; inset: 0; z-index: 200;
+    background: rgba(10,10,20,0.97); overflow-y: auto;
+    padding: 12px 8px 20px; box-sizing: border-box;
+  }
+  #fft-skill-screen.show { display: block; }
+  #fft-skill-title { text-align: center; font-size: 1.1rem; font-weight: 900; color: #f39c12; margin-bottom: 4px; }
+  #fft-skill-subtitle { text-align: center; font-size: 0.75rem; color: rgba(255,255,255,0.5); margin-bottom: 12px; }
+  #fft-skill-cols { display: flex; gap: 8px; justify-content: center; }
+  .fft-skill-col {
+    flex: 1; max-width: 130px; background: rgba(255,255,255,0.04);
+    border-radius: 10px; padding: 8px 6px; border: 1px solid rgba(255,255,255,0.1);
+  }
+  .fft-skill-col-header {
+    text-align: center; padding: 4px 0 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 8px;
+  }
+  .fft-skill-col-icon { font-size: 1.5rem; display: block; }
+  .fft-skill-col-name { font-size: 0.7rem; font-weight: 700; color: rgba(255,255,255,0.8); }
+  .fft-skill-col-class { font-size: 0.62rem; color: rgba(255,255,255,0.4); }
+  .fft-skill-card {
+    background: rgba(255,255,255,0.06); border-radius: 8px;
+    border: 1.5px solid rgba(255,255,255,0.1);
+    padding: 6px 5px; margin-bottom: 5px; cursor: pointer;
+    transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+    position: relative;
+  }
+  .fft-skill-card:active { transform: scale(0.96); }
+  .fft-skill-card.selected { border-color: #f39c12; background: rgba(243,156,18,0.15); }
+  .fft-skill-card.basic { border-color: rgba(46,204,113,0.4); background: rgba(46,204,113,0.06); cursor: default; }
+  .fft-skill-card.basic::after { content: '✓'; position: absolute; top: 4px; right: 6px; color: #2ecc71; font-size: 0.75rem; font-weight: 900; }
+  .fft-skill-card-icon { font-size: 1.1rem; text-align: center; display: block; }
+  .fft-skill-card-name { font-size: 0.66rem; font-weight: 700; text-align: center; color: #fff; margin: 2px 0; }
+  .fft-skill-card-meta { font-size: 0.58rem; color: rgba(255,255,255,0.5); text-align: center; line-height: 1.5; }
+  .fft-skill-sel-badge {
+    position: absolute; top: 4px; left: 6px;
+    width: 14px; height: 14px; border-radius: 7px;
+    background: #f39c12; display: none;
+    align-items: center; justify-content: center;
+    font-size: 0.6rem; font-weight: 900; color: #000;
+  }
+  .fft-skill-card.selected .fft-skill-sel-badge { display: flex; }
+  #fft-skill-start-wrap { text-align: center; margin-top: 16px; }
+  #fft-start-battle {
+    padding: 12px 40px; background: #e74c3c; color: #fff;
+    border: none; border-radius: 12px; font-size: 1rem; font-weight: 900;
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+    transition: opacity 0.2s;
+  }
+  #fft-start-battle:disabled { opacity: 0.35; cursor: default; }
+  #fft-skill-hint { font-size: 0.72rem; color: rgba(255,255,255,0.4); margin-top: 6px; }
+
+  /* ── TOP TURN BAR ── */
+  #fft-turn-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 60px;
+    z-index: 10;
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 10px;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    pointer-events: none;
+    overflow-x: hidden;
+  }
+  #fft-phase-label {
+    font-size: 0.78rem; font-weight: 700; white-space: nowrap;
+    padding: 3px 8px; border-radius: 6px; min-width: 88px; text-align: center;
+    flex-shrink: 0;
+  }
+  #fft-phase-label.player-turn { background: rgba(46,204,113,0.25); color: #2ecc71; }
+  #fft-phase-label.enemy-turn  { background: rgba(231,76,60,0.25);  color: #e74c3c; }
+  #fft-phase-label.won  { background: rgba(46,204,113,0.4); color: #2ecc71; }
+  #fft-phase-label.lost { background: rgba(231,76,60,0.4);  color: #e74c3c; }
+  #fft-queue-icons {
+    display: flex; gap: 4px; align-items: center;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    flex: 1; min-width: 0;
+  }
+  #fft-queue-icons::-webkit-scrollbar { height: 2px; }
+  .fft-queue-unit {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; border-radius: 16px; font-size: 1rem;
+    border: 2px solid transparent; flex-shrink: 0;
+    transition: opacity 0.2s;
+  }
+  .fft-queue-unit.player { border-color: rgba(46,204,113,0.5); background: rgba(46,204,113,0.12); }
+  .fft-queue-unit.enemy  { border-color: rgba(231,76,60,0.5);  background: rgba(231,76,60,0.12); }
+  .fft-queue-unit.current { border-color: #f39c12; box-shadow: 0 0 8px rgba(243,156,18,0.6); }
+  .fft-queue-unit.done { opacity: 0.3; }
+
+  /* ── BOTTOM HUD ── */
+  #fft-bottom-hud {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 10;
+    display: flex; flex-direction: column;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(4px);
+    padding: 6px 10px 8px;
+    gap: 5px;
+    pointer-events: none;
+  }
+
+  /* Info panel */
+  #fft-info {
+    display: flex; align-items: center; gap: 8px;
+    min-height: 38px;
+    pointer-events: all;
+  }
+  #fft-info-left { flex: 1; min-width: 0; }
+  #fft-info-name { font-weight: 700; font-size: 0.88rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #fft-info-hp {
+    display: flex; align-items: center; gap: 5px; margin-top: 2px;
+  }
+  #fft-hp-bar-wrap {
+    flex: 1; height: 6px; border-radius: 3px;
+    background: rgba(255,255,255,0.15); overflow: hidden;
+  }
+  #fft-hp-bar-fg {
+    height: 100%; border-radius: 3px;
+    background: #2ecc71; transition: width 0.2s, background 0.2s;
+    width: 100%;
+  }
+  #fft-hp-text { font-size: 0.68rem; color: rgba(255,255,255,0.6); white-space: nowrap; }
+  #fft-info-badges { display: flex; gap: 3px; flex-wrap: wrap; margin-top: 2px; }
+  .fft-badge {
+    font-size: 0.6rem; padding: 1px 5px; border-radius: 8px;
+    background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.7);
+  }
+  .fft-badge.moved  { background: rgba(52,152,219,0.25); color: #74b9ff; }
+  .fft-badge.acted  { background: rgba(231,76,60,0.25);  color: #ff7675; }
+  .fft-badge.stunned { background: rgba(255,200,0,0.25); color: #fdcb6e; }
+  .fft-badge.barrier { background: rgba(240,192,64,0.25); color: #f0c040; }
+  #fft-info-desel {
+    width: 28px; height: 28px; border-radius: 14px;
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.7); font-size: 1rem; cursor: pointer;
+    display: none; align-items: center; justify-content: center;
+    -webkit-tap-highlight-color: transparent; flex-shrink: 0;
+  }
+  #fft-info-desel.show { display: flex; }
+
+  /* Ability buttons */
+  #fft-ability-row {
+    display: none;
+    flex-direction: row; gap: 5px;
+    overflow-x: auto; flex-shrink: 0;
+    pointer-events: all;
+  }
+  #fft-ability-row::-webkit-scrollbar { height: 2px; }
+  .fft-ab-btn {
+    position: relative;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 5px 7px; border-radius: 9px;
+    border: 1.5px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.08); color: #fff;
+    font-size: 0.68rem; cursor: pointer; min-width: 58px; max-width: 80px;
+    text-align: center; gap: 1px; line-height: 1.2; flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent; transition: all 0.15s;
+    min-height: 60px;
+  }
+  .fft-ab-btn:disabled { opacity: 0.35; cursor: default; }
+  .fft-ab-btn:active:not(:disabled) { transform: scale(0.93); }
+  .fft-ab-btn.active { border-color: #f39c12; background: rgba(243,156,18,0.2); }
+  .fft-ab-icon { font-size: 1.1rem; line-height: 1; }
+  .fft-ab-name { font-size: 0.6rem; color: rgba(255,255,255,0.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+  .fft-ab-meta { font-size: 0.56rem; color: rgba(255,255,255,0.45); }
+  .fft-cd-badge {
+    position: absolute; top: -4px; right: -4px;
+    font-size: 10px; background: #e74c3c; border-radius: 8px;
+    padding: 0 4px; color: #fff; line-height: 1.5; pointer-events: none;
+  }
+
+  /* Forecast bar */
+  #fft-forecast-bar {
+    display: none;
+    background: rgba(20,10,10,0.9); border: 1.5px solid rgba(231,76,60,0.5);
+    border-radius: 8px; padding: 6px 10px; font-size: 0.78rem;
+    pointer-events: all;
+  }
+  #fft-forecast-title  { font-weight: 700; color: #ff7675; margin-bottom: 3px; font-size: 0.8rem; }
+  #fft-forecast-dmg    { color: #fdcb6e; margin-bottom: 2px; }
+  #fft-forecast-hit    { color: rgba(255,255,255,0.65); margin-bottom: 2px; }
+  #fft-forecast-armor  { color: #e17055; margin-bottom: 5px; font-size: 0.72rem; }
+  #fft-forecast-btns  { display: flex; gap: 8px; }
+  .fft-fc-btn {
+    padding: 5px 14px; border-radius: 8px; border: none; font-size: 0.78rem; font-weight: 700;
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+  }
+  #fft-fc-confirm { background: #e74c3c; color: #fff; }
+  #fft-fc-cancel  { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
+
+  /* Actions row */
+  #fft-action-row {
+    display: flex; gap: 6px; align-items: center;
+    pointer-events: all;
+  }
+  .fft-action-btn {
+    padding: 7px 10px; border-radius: 10px; border: none;
+    font-size: 0.78rem; font-weight: 700; cursor: pointer;
+    -webkit-tap-highlight-color: transparent; transition: opacity 0.15s;
+    flex-shrink: 0;
+  }
+  .fft-action-btn:disabled { opacity: 0.35; cursor: default; }
+  .fft-action-btn:active:not(:disabled) { transform: scale(0.94); }
+  #fft-btn-skip   { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.75); border: 1.5px solid rgba(255,255,255,0.18); }
+  #fft-btn-cancel { background: rgba(255,165,0,0.15); color: #fdcb6e; border: 1.5px solid rgba(255,165,0,0.3); display: none; }
+  #fft-btn-end    { flex: 1; background: #e74c3c; color: #fff; border: none; }
+
+  /* Log */
+  #fft-log {
+    max-height: 48px; overflow-y: auto; font-size: 0.72rem;
+    padding: 3px 6px; background: rgba(0,0,0,0.25);
+    border-radius: 6px; line-height: 1.5; scroll-behavior: smooth;
+    pointer-events: none;
+  }
+  #fft-log::-webkit-scrollbar { width: 3px; }
+  #fft-log::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+  .log-attack  { color: #ff7675; }
+  .log-heal    { color: #2ecc71; }
+  .log-special { color: #a29bfe; }
+  .log-info    { color: rgba(255,255,255,0.5); }
+  .log-player  { color: #74b9ff; }
+  .log-enemy   { color: #ff7675; }
+  .log-system  { color: rgba(255,255,255,0.5); }
+  .log-win     { color: #2ecc71; font-weight: 700; }
+  .log-lose    { color: #e74c3c; font-weight: 700; }
+
+  /* Reset camera btn */
+  #btn-reset {
+    position: fixed;
+    top: 68px; right: 10px;
+    z-index: 20;
+    background: rgba(30,30,40,0.8);
+    color: #fff; border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px; padding: 5px 12px; font-size: 12px; cursor: pointer;
+    pointer-events: all;
+    backdrop-filter: blur(3px);
+  }
+  #btn-reset:active { background: rgba(60,60,80,0.9); }
+
+  /* Win/Lose overlay */
+  #game-overlay {
+    display: none; position: fixed; inset: 0; z-index: 100;
+    background: rgba(0,0,0,0.78);
+    align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px;
+  }
+  #game-overlay.show { display: flex; }
+  #overlay-title { font-size: 2.2rem; font-weight: 900; color: #fff; text-align: center; }
+  #overlay-title.won  { color: #55efc4; }
+  #overlay-title.lost { color: #ff7675; }
+  #overlay-sub { font-size: 1rem; color: rgba(255,255,255,0.7); text-align: center; padding: 0 24px; }
+  #btn-restart {
+    background: rgba(116,185,255,0.85); color: #000;
+    border: none; border-radius: 10px; padding: 12px 28px; font-size: 16px; font-weight: 700; cursor: pointer;
+  }
+  #btn-restart:active { background: rgba(116,185,255,1); }
+
+  /* Damage float */
+  .dmg-float {
+    position: fixed; pointer-events: none; z-index: 50;
+    font-size: 18px; font-weight: 900;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+    white-space: nowrap;
+  }
+
+  /* Enemy turn banner */
+  #fft-enemy-banner {
+    display: none; position: fixed; top: 60px; left: 0; right: 0; z-index: 15;
+    background: rgba(180,30,30,0.85); color: #fff;
+    text-align: center; font-size: 0.9rem; font-weight: 700;
+    padding: 8px 0; letter-spacing: 0.05em;
+    pointer-events: none;
+  }
+  #fft-enemy-banner.show { display: block; }
+
+  /* Glow pulse animation */
+  @keyframes glowPulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.75; }
+  }
+  .glow-pulse { animation: glowPulse 1.2s ease-in-out infinite; }
+
+  /* ── LANDING SCREEN ── */
+  #fft-landing {
+    display: none; position: fixed; inset: 0; z-index: 300;
+    background: rgba(10,10,20,0.97);
+    align-items: center; justify-content: center; flex-direction: column; gap: 18px;
+  }
+  #fft-landing.show { display: flex; }
+  #fft-landing h1 { font-size: 1.4rem; font-weight: 900; color: #f39c12; text-align: center; padding: 0 20px; }
+  .fft-landing-btn {
+    padding: 14px 36px; border-radius: 14px; border: none;
+    font-size: 1rem; font-weight: 700; cursor: pointer;
+    -webkit-tap-highlight-color: transparent; transition: opacity 0.15s;
+    width: 260px; text-align: center;
+  }
+  #btn-play-solo   { background: #2980b9; color: #fff; }
+  #btn-play-mp-host { background: #27ae60; color: #fff; }
+  .fft-landing-btn:active { opacity: 0.8; }
+
+  /* ── WAITING LOBBY ── */
+  #fft-waiting {
+    display: none; position: fixed; inset: 0; z-index: 300;
+    background: rgba(10,10,20,0.97);
+    align-items: center; justify-content: center; flex-direction: column; gap: 14px;
+    padding: 24px;
+  }
+  #fft-waiting.show { display: flex; }
+  #fft-waiting h2 { font-size: 1.2rem; font-weight: 900; color: #f39c12; text-align: center; }
+  #fft-waiting-hint { font-size: 0.8rem; color: rgba(255,255,255,0.6); text-align: center; }
+  #fft-share-url {
+    width: 100%; max-width: 340px; background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.2); border-radius: 8px;
+    color: rgba(255,255,255,0.9); font-size: 0.72rem; padding: 8px 10px;
+    outline: none;
+  }
+  #fft-copy {
+    padding: 9px 22px; background: #f39c12; color: #000;
+    border: none; border-radius: 8px; font-size: 0.85rem; font-weight: 700;
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+  }
+  #fft-copy:active { opacity: 0.8; }
+
+  /* ── MP STATUS BAR ── */
+  #fft-mp-status {
+    display: none; position: fixed; top: 60px; left: 0; right: 0; z-index: 14;
+    background: rgba(39,174,96,0.22); border-bottom: 1px solid rgba(39,174,96,0.4);
+    text-align: center; font-size: 0.75rem; font-weight: 700;
+    color: #2ecc71; padding: 4px 0;
+    pointer-events: none;
+  }
+  #fft-mp-status.show { display: block; }
+  #fft-mp-status.opponent { background: rgba(243,156,18,0.22); border-color: rgba(243,156,18,0.4); color: #f39c12; }
+
+  /* MP ready status overlay внутри skill screen */
+  #fft-mp-ready-status {
+    display: none; text-align: center;
+    font-size: 0.78rem; color: rgba(255,255,255,0.6); margin-top: 8px;
+  }
+  #fft-mp-ready-status.show { display: block; }
+
+  /* MP timer */
+  #fft-turn-timer {
+    display: none; font-size: 0.72rem; font-weight: 700; color: #fdcb6e;
+    padding: 2px 8px; border-radius: 6px; background: rgba(0,0,0,0.4);
+    flex-shrink: 0;
+  }
+  #fft-turn-timer.show { display: block; }
+  #fft-turn-timer.urgent { color: #e74c3c; }
+</style>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.169.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.169.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+
+<!-- LANDING SCREEN -->
+<div id="fft-landing">
+  <h1>⚔ Twilights — FFT Tactical</h1>
+  <button class="fft-landing-btn" id="btn-play-solo">🤖 Играть в одиночку</button>
+  <button class="fft-landing-btn" id="btn-play-mp-host">👥 Создать игру с другом</button>
+</div>
+
+<!-- WAITING LOBBY (host) -->
+<div id="fft-waiting">
+  <h2>⏳ Ожидание соперника…</h2>
+  <div id="fft-waiting-hint">Поделись ссылкой с другом:</div>
+  <input id="fft-share-url" readonly>
+  <button id="fft-copy">📋 Копировать</button>
+</div>
+
+<!-- MP STATUS BAR -->
+<div id="fft-mp-status"></div>
+
+<!-- SKILL SELECTION SCREEN -->
+<div id="fft-skill-screen">
+  <div id="fft-skill-title">⚔ Выбор умений</div>
+  <div id="fft-skill-subtitle">Выбери 2 умения для каждого героя (базовое уже выбрано)</div>
+  <div id="fft-skill-cols"></div>
+  <div id="fft-skill-start-wrap">
+    <button id="fft-start-battle" disabled onclick="fftStartBattle()">В бой!</button>
+    <div id="fft-skill-hint">Нужно выбрать 2 умения для каждого героя</div>
+    <div id="fft-mp-ready-status"></div>
+  </div>
+</div>
+
+<!-- TOP TURN BAR -->
+<div id="fft-turn-bar">
+  <div id="fft-phase-label" class="player-turn">Выбор умений</div>
+  <div id="fft-queue-icons"></div>
+  <div id="fft-turn-timer"></div>
+</div>
+
+<!-- ENEMY TURN BANNER -->
+<div id="fft-enemy-banner">⚔ Ход врага...</div>
+
+<!-- BOTTOM HUD -->
+<div id="fft-bottom-hud">
+  <!-- Info panel -->
+  <div id="fft-info">
+    <div id="fft-info-left">
+      <div id="fft-info-name">Нажми на союзника</div>
+      <div id="fft-info-hp">
+        <div id="fft-hp-bar-wrap"><div id="fft-hp-bar-fg"></div></div>
+        <span id="fft-hp-text"></span>
+      </div>
+      <div id="fft-info-badges"></div>
+    </div>
+    <button id="fft-info-desel" onclick="fftDeselectUnitUI()">×</button>
+  </div>
+
+  <!-- Forecast -->
+  <div id="fft-forecast-bar">
+    <div id="fft-forecast-title"></div>
+    <div id="fft-forecast-dmg"></div>
+    <div id="fft-forecast-hit"></div>
+    <div id="fft-forecast-armor"></div>
+    <div id="fft-forecast-btns">
+      <button class="fft-fc-btn" id="fft-fc-confirm" onclick="fftConfirmAttack()">Атака!</button>
+      <button class="fft-fc-btn" id="fft-fc-cancel"  onclick="fftCancelForecast()">Отмена</button>
+    </div>
+  </div>
+
+  <!-- Ability buttons -->
+  <div id="fft-ability-row"></div>
+
+  <!-- Actions -->
+  <div id="fft-action-row">
+    <button class="fft-action-btn" id="fft-btn-skip"   onclick="fftSkipUnit()"  disabled>⏭ Пропуск</button>
+    <button class="fft-action-btn" id="fft-btn-cancel" onclick="fftCancel()">✕ Отмена</button>
+    <button class="fft-action-btn" id="fft-btn-end"    onclick="fftEndTurn()">Конец хода</button>
+  </div>
+
+  <!-- Log -->
+  <div id="fft-log"></div>
+</div>
+
+<!-- Reset camera -->
+<button id="btn-reset">Камера</button>
+
+<!-- FoW toggle (debug) -->
+<button id="btn-fow-toggle" style="position:fixed;top:68px;right:90px;z-index:20;background:rgba(30,30,40,0.8);color:#aaa;border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer;pointer-events:all;backdrop-filter:blur(3px);">🕶 FoW</button>
+
+<!-- Win/Lose overlay -->
+<div id="game-overlay">
+  <div id="overlay-title"></div>
+  <div id="overlay-sub"></div>
+  <button id="btn-restart" onclick="location.reload()">Заново</button>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ──────────────────────────────────────────────
+// MP State
+// ──────────────────────────────────────────────
+const mp = {
+  enabled: false,      // true если MP-режим
+  roomId: null,
+  token: null,
+  myTeam: null,        // 'A' (host) или 'B' (guest)
+  lastVersion: -1,
+  sseSource: null,
+  timerInterval: null,
+  iReady: false,
+  opponentReady: false,
+};
+
+// ──────────────────────────────────────────────
+// URL parsing
+// ──────────────────────────────────────────────
+function parseRoomFromURL() {
+  // Поддерживаем оба формата: #room=abc и ?room=abc
+  const hash = location.hash.replace('#', '');
+  const hashParams = new URLSearchParams(hash);
+  if (hashParams.get('room')) return hashParams.get('room');
+  const queryParams = new URLSearchParams(location.search);
+  if (queryParams.get('room')) return queryParams.get('room');
+  return null;
+}
+
+function setRoomInURL(roomId) {
+  history.replaceState(null, '', location.pathname + '#room=' + roomId);
+}
+
+// ──────────────────────────────────────────────
+// MP API helpers
+// ──────────────────────────────────────────────
+const API_BASE = '/api/fft';
+
+async function apiCreateRoom() {
+  const res = await fetch(`${API_BASE}/rooms`, { method: 'POST' });
+  if (!res.ok) throw new Error('Не удалось создать комнату: ' + res.status);
+  return res.json(); // {roomId, hostToken}
+}
+
+async function apiJoinRoom(roomId) {
+  const res = await fetch(`${API_BASE}/rooms/${roomId}/join`, { method: 'POST' });
+  if (!res.ok) throw new Error('Не удалось подключиться к комнате: ' + res.status);
+  return res.json(); // {guestToken, state}
+}
+
+async function apiGetRoom(roomId, token) {
+  const res = await fetch(`${API_BASE}/rooms/${roomId}`, {
+    headers: { 'X-Session-Token': token }
+  });
+  if (!res.ok) throw new Error('Не удалось получить состояние: ' + res.status);
+  return res.json();
+}
+
+async function apiPostAction(roomId, token, action) {
+  const res = await fetch(`${API_BASE}/rooms/${roomId}/action`, {
+    method: 'POST',
+    headers: {
+      'X-Session-Token': token,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ actionId: crypto.randomUUID(), ...action })
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    console.warn('[MP] action error:', data);
+    fftLog('Ошибка действия: ' + (data.error || res.status), 'info');
+    return null;
+  }
+  return data;
+}
+
+// ──────────────────────────────────────────────
+// submitAction — абстракция solo/MP
+// ──────────────────────────────────────────────
+function submitAction(action) {
+  if (mp.enabled) {
+    return apiPostAction(mp.roomId, mp.token, action);
+  }
+  // solo: immediate local apply — возвращаем resolved promise
+  return Promise.resolve(null);
+}
+
+// ──────────────────────────────────────────────
+// SSE listener
+// ──────────────────────────────────────────────
+function startSSE(roomId, token) {
+  if (mp.sseSource) {
+    mp.sseSource.close();
+    mp.sseSource = null;
+  }
+  const es = new EventSource(`${API_BASE}/rooms/${roomId}/events?token=${token}`);
+  es.addEventListener('state', (ev) => {
+    let st;
+    try { st = JSON.parse(ev.data); } catch (e) { return; }
+    if (st.version !== undefined && st.version <= mp.lastVersion) return;
+    if (st.version !== undefined) mp.lastVersion = st.version;
+    applyServerState(st);
+  });
+  es.onerror = () => {
+    console.warn('[MP] SSE error, will auto-reconnect');
+  };
+  mp.sseSource = es;
+  return es;
+}
+
+// ──────────────────────────────────────────────
+// Apply server state → local game state
+// ──────────────────────────────────────────────
+function applyServerState(st) {
+  // Фаза
+  const prevPhase = state.phase;
+
+  // Backend phases: 'lobby' (до join гостя), 'skill-selection', 'battle', 'ended'
+  if (st.phase === 'lobby') {
+    // Ещё ждём гостя — lobby уже показан, ничего не меняем
+    return;
+  }
+
+  if (st.phase === 'skill-selection') {
+    // Оба подключены — показываем skill screen
+    document.getElementById('fft-waiting').classList.remove('show');
+    document.getElementById('fft-landing').classList.remove('show');
+    if (!document.getElementById('fft-skill-screen').classList.contains('show')) {
+      fftShowSkillScreen();
+    }
+    // Обновляем статус ready (API: playerA.ready, playerB.ready)
+    if (st.playerA || st.playerB) {
+      const myPlayer = mp.myTeam === 'A' ? st.playerA : st.playerB;
+      const oppPlayer = mp.myTeam === 'A' ? st.playerB : st.playerA;
+      mp.iReady = !!(myPlayer && myPlayer.ready);
+      mp.opponentReady = !!(oppPlayer && oppPlayer.ready);
+      updateMpReadyStatus();
+    }
+    return;
+  }
+
+  if (st.phase === 'battle') {
+    // Переход к боевой сцене
+    document.getElementById('fft-skill-screen').classList.remove('show');
+    document.getElementById('fft-waiting').classList.remove('show');
+    document.getElementById('fft-landing').classList.remove('show');
+
+    // Применяем server units state
+    if (st.units && Array.isArray(st.units)) {
+      applyServerUnits(st.units);
+    }
+
+    // Определяем чей ход: server currentTeam (A/B) vs mp.myTeam
+    const serverPhase = st.currentTeam === mp.myTeam ? 'player-turn' : 'enemy-turn';
+    if (state.phase !== serverPhase || prevPhase === 'skill-select') {
+      state.phase = serverPhase;
+      if (serverPhase === 'player-turn') {
+        fftLog('Твой ход!', 'player');
+        document.getElementById('fft-enemy-banner').classList.remove('show');
+        // Сбрасываем флаги ходов для своих юнитов
+        state.units.filter(u => u.alive && u.team === 'player').forEach(u => {
+          u.moved = false; u.acted = false;
+          u.stunned = false; u.immobilized = false; u.slowed = false;
+        });
+        recomputeFoW();
+      } else {
+        fftLog('Ход противника…', 'enemy');
+        document.getElementById('fft-enemy-banner').classList.add('show');
+        document.getElementById('fft-enemy-banner').textContent = '⚔ Ход противника…';
+      }
+    }
+
+    // MP status bar
+    updateMpStatusBar(serverPhase);
+
+    // Turn timer (camelCase: turnDeadline)
+    if (st.turnDeadline) {
+      startTurnTimer(st.turnDeadline);
+    }
+
+    updateUnitMeshes();
+    checkWinLose();
+    fftUpdateUI();
+    return;
+  }
+
+  if (st.phase === 'ended') {
+    document.getElementById('fft-skill-screen').classList.remove('show');
+    stopTurnTimer();
+    const iWon = (st.winner === mp.myTeam);
+    showGameOverlay(iWon ? 'won' : 'lost', iWon ? 'Противник повержен!' : 'Ты проиграл...');
+    state.phase = iWon ? 'won' : 'lost';
+    fftUpdateUI();
+  }
+}
+
+// Маппинг server unit id (A1,A2,A3,B1,B2,B3) к local defKey (knight/ranger/mage/grunt/archer/brute)
+// Server: A1=knight(team A), A2=ranger(A), A3=mage(A), B1=knight(B), B2=ranger(B), B3=mage(B)
+// Local: team A → defKey knight/ranger/mage; team B → defKey grunt/archer/brute (как было на старте)
+const SERVER_ID_TO_LOCAL_DEFKEY = {
+  A1: 'knight', A2: 'ranger', A3: 'mage',
+  B1: 'grunt',  B2: 'archer', B3: 'brute',
+};
+
+// Применяем юниты из серверного состояния (обновляем hp, позиции, статусы)
+function applyServerUnits(serverUnits) {
+  for (const su of serverUnits) {
+    // Ищем local юнита: сначала по id, потом по defKey через маппинг
+    let local = state.units.find(u => u.id === su.id);
+    if (!local) {
+      const defKey = SERVER_ID_TO_LOCAL_DEFKEY[su.id];
+      if (defKey) local = state.units.find(u => u.defKey === defKey);
+    }
+    if (!local) continue;
+    local.hp = su.hp;
+    local.maxHp = su.maxHp || local.maxHp;
+    local.alive = su.alive !== false && su.hp > 0;
+    if (su.col !== undefined) local.col = su.col;
+    if (su.row !== undefined) local.row = su.row;
+    local.moved = su.moved || false;
+    local.acted = su.acted || false;
+    // statusEffects — сервер хранит в объекте
+    const fx = su.statusEffects || {};
+    local.stunned = !!fx.stunned;
+    local.immobilized = !!fx.immobilized;
+    local.slowed = !!fx.slowed;
+    local.barrier = !!fx.barrier;
+    if (su.cooldowns) local.cooldowns = { ...su.cooldowns };
+    if (su.abilities && su.abilities.length > 0) local.abilities = [...su.abilities];
+    // Sync mesh position
+    if (local.mesh3d) {
+      if (!local.alive) {
+        scene.remove(local.mesh3d);
+        local.mesh3d.traverse(c => { if (c.geometry) c.geometry.dispose(); });
+        local.mesh3d = null;
+      } else {
+        const { x, z } = hexToWorld(local.col, local.row);
+        const y = tileTopY(local.col, local.row);
+        local.mesh3d.position.set(x, y, z);
+      }
+    }
+  }
+}
+
+// ──────────────────────────────────────────────
+// MP UI helpers
+// ──────────────────────────────────────────────
+function updateMpReadyStatus() {
+  const el = document.getElementById('fft-mp-ready-status');
+  if (!mp.enabled) { el.classList.remove('show'); return; }
+  el.classList.add('show');
+  if (mp.iReady && mp.opponentReady) {
+    el.textContent = 'Оба готовы — бой начинается!';
+  } else if (mp.iReady) {
+    el.textContent = 'Ты готов. Ждём противника…';
+  } else if (mp.opponentReady) {
+    el.textContent = 'Противник готов, выбирай ещё!';
+  } else {
+    el.textContent = '👥 Многопользовательская игра';
+  }
+}
+
+function updateMpStatusBar(phase) {
+  const el = document.getElementById('fft-mp-status');
+  if (!mp.enabled) { el.classList.remove('show'); return; }
+  el.classList.add('show');
+  if (phase === 'player-turn') {
+    el.textContent = '✅ Твой ход';
+    el.className = 'show';
+    el.style.background = 'rgba(39,174,96,0.22)';
+    el.style.color = '#2ecc71';
+    el.style.borderColor = 'rgba(39,174,96,0.4)';
+  } else {
+    el.textContent = '⏳ Ход противника';
+    el.style.background = 'rgba(243,156,18,0.22)';
+    el.style.color = '#f39c12';
+    el.style.borderColor = 'rgba(243,156,18,0.4)';
+  }
+}
+
+// ──────────────────────────────────────────────
+// Turn timer
+// ──────────────────────────────────────────────
+function startTurnTimer(deadlineMs) {
+  stopTurnTimer();
+  const timerEl = document.getElementById('fft-turn-timer');
+  timerEl.classList.add('show');
+  function tick() {
+    const remaining = Math.max(0, deadlineMs - Date.now());
+    const secs = Math.ceil(remaining / 1000);
+    const mm = String(Math.floor(secs / 60)).padStart(2, '0');
+    const ss = String(secs % 60).padStart(2, '0');
+    timerEl.textContent = `⏱ ${mm}:${ss}`;
+    timerEl.classList.toggle('urgent', secs <= 10);
+    if (remaining <= 0) stopTurnTimer();
+  }
+  tick();
+  mp.timerInterval = setInterval(tick, 500);
+}
+
+function stopTurnTimer() {
+  if (mp.timerInterval) { clearInterval(mp.timerInterval); mp.timerInterval = null; }
+  const timerEl = document.getElementById('fft-turn-timer');
+  timerEl.classList.remove('show');
+}
+
+// ──────────────────────────────────────────────
+// Landing screen logic
+// ──────────────────────────────────────────────
+async function initMpMode() {
+  const roomId = parseRoomFromURL();
+
+  if (roomId) {
+    // Пытаемся подключиться (reconnect или join)
+    const storageKey = `fft-token-${roomId}`;
+    let token = localStorage.getItem(storageKey);
+
+    if (token) {
+      // Reconnect: проверяем что токен ещё рабочий
+      try {
+        const st = await apiGetRoom(roomId, token);
+        mp.enabled = true;
+        mp.roomId = roomId;
+        mp.token = token;
+        // Определяем команду: host — команда A, guest — команда B
+        // Сохраняем team в localStorage чтобы знать её при reconnect
+        const storedTeam = localStorage.getItem(`fft-team-${roomId}`);
+        mp.myTeam = storedTeam || 'A'; // если не знаем — считаем host
+        mp.lastVersion = -1;
+        startSSE(roomId, token);
+        applyServerState(st);
+        document.getElementById('fft-landing').classList.remove('show');
+        // Применяем правильную team к player-юнитам
+        setupMpTeams();
+        return;
+      } catch (e) {
+        console.warn('[MP] Reconnect failed, trying join:', e);
+        localStorage.removeItem(storageKey);
+        token = null;
+      }
+    }
+
+    // Новый гость — JOIN
+    try {
+      const data = await apiJoinRoom(roomId);
+      token = data.guestToken || data.token;
+      localStorage.setItem(storageKey, token);
+      localStorage.setItem(`fft-team-${roomId}`, 'B');
+      mp.enabled = true;
+      mp.roomId = roomId;
+      mp.token = token;
+      mp.myTeam = 'B'; // guest всегда B
+      mp.lastVersion = -1;
+      startSSE(roomId, token);
+      document.getElementById('fft-landing').classList.remove('show');
+      // Применяем state если сразу вернули
+      if (data.state) applyServerState(data.state);
+      setupMpTeams();
+    } catch (e) {
+      console.error('[MP] Join failed:', e);
+      showLandingScreen();
+      fftLog('Не удалось подключиться к комнате. ' + e.message, 'info');
+    }
+    return;
+  }
+
+  // Нет room в URL — показываем landing
+  showLandingScreen();
+}
+
+function showLandingScreen() {
+  document.getElementById('fft-landing').classList.add('show');
+}
+
+// Переназначаем team для local units в MP-режиме:
+// Host (myTeam=A): knight/ranger/mage (row 13, нижние) — мои (player), grunt/archer/brute (row 1, верхние) — противник
+// Guest (myTeam=B): grunt/archer/brute (row 1) — мои (player), knight/ranger/mage — противник
+function setupMpTeams() {
+  if (!mp.enabled) return;
+  if (mp.myTeam === 'A') {
+    state.units.forEach(u => {
+      if (u.defKey === 'knight' || u.defKey === 'ranger' || u.defKey === 'mage') {
+        u.team = 'player';
+      } else {
+        u.team = 'enemy';
+      }
+    });
+  } else {
+    // Guest (B): брутальные юниты (верхний ряд) — наши
+    state.units.forEach(u => {
+      if (u.defKey === 'grunt' || u.defKey === 'archer' || u.defKey === 'brute') {
+        u.team = 'player';
+      } else {
+        u.team = 'enemy';
+      }
+    });
+  }
+}
+
+// ──────────────────────────────────────────────
+// Renderer
+// ──────────────────────────────────────────────
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.setClearColor(0x1a1a1a);
+document.body.appendChild(renderer.domElement);
+
+// ──────────────────────────────────────────────
+// Scene
+// ──────────────────────────────────────────────
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a1a1a);
+scene.fog = new THREE.Fog(0x1a1a1a, 50, 90);
+
+// ──────────────────────────────────────────────
+// Grid constants
+// ──────────────────────────────────────────────
+const GRID_COLS = 15;
+const GRID_ROWS = 15;
+const HEX_SIZE  = 1.0;
+const HEX_DEPTH = 0.3;
+// Высота одного уровня elevation (0..3)
+const ELEV_STEP = 0.6;
+
+const HEX_W = HEX_SIZE * Math.sqrt(3);
+const HEX_H = HEX_SIZE * 2;
+
+// ──────────────────────────────────────────────
+// Camera
+// ──────────────────────────────────────────────
+const REAL_CENTER_X = (GRID_COLS - 1) * HEX_W * 0.5;
+const REAL_CENTER_Z = (GRID_ROWS - 1) * HEX_H * 0.75 * 0.5;
+
+const aspect = window.innerWidth / window.innerHeight;
+const frustumSize = 32; // Увеличен для горных высот
+
+const camera = new THREE.OrthographicCamera(
+  frustumSize * aspect / -2,
+  frustumSize * aspect / 2,
+  frustumSize / 2,
+  frustumSize / -2,
+  0.1,
+  300
+);
+
+const DEFAULT_CAM    = new THREE.Vector3(REAL_CENTER_X + 25, 35, REAL_CENTER_Z + 25);
+const DEFAULT_TARGET = new THREE.Vector3(REAL_CENTER_X, 0, REAL_CENTER_Z);
+
+camera.position.copy(DEFAULT_CAM);
+camera.lookAt(DEFAULT_TARGET);
+camera.zoom = 0.85;
+
+// ──────────────────────────────────────────────
+// Lights
+// ──────────────────────────────────────────────
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+scene.add(ambientLight);
+
+const dirLight = new THREE.DirectionalLight(0xfffbe8, 0.8);
+dirLight.position.set(REAL_CENTER_X + 10, 25, REAL_CENTER_Z - 10);
+dirLight.castShadow = true;
+dirLight.shadow.mapSize.width  = 2048;
+dirLight.shadow.mapSize.height = 2048;
+dirLight.shadow.camera.near = 1;
+dirLight.shadow.camera.far  = 100;
+dirLight.shadow.camera.left   = -25;
+dirLight.shadow.camera.right  =  25;
+dirLight.shadow.camera.top    =  25;
+dirLight.shadow.camera.bottom = -25;
+dirLight.shadow.bias = -0.001;
+scene.add(dirLight);
+
+// ──────────────────────────────────────────────
+// OrbitControls
+// ──────────────────────────────────────────────
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.copy(DEFAULT_TARGET);
+controls.enableRotate = true;
+controls.enablePan    = true;
+controls.enableZoom   = true;
+controls.mouseButtons = {
+  LEFT:   THREE.MOUSE.PAN,
+  MIDDLE: THREE.MOUSE.DOLLY,
+  RIGHT:  THREE.MOUSE.ROTATE
+};
+controls.touches = {
+  ONE: THREE.TOUCH.PAN,
+  TWO: THREE.TOUCH.DOLLY_ROTATE
+};
+controls.minZoom = 0.5;
+controls.maxZoom = 2.5;
+controls.minPolarAngle = Math.PI / 8;
+controls.maxPolarAngle = Math.PI / 2.8;
+controls.update();
+
+// ──────────────────────────────────────────────
+// Hex utility functions
+// ──────────────────────────────────────────────
+function hexToWorld(col, row) {
+  const x = col * HEX_W + (row % 2 === 1 ? HEX_W * 0.5 : 0);
+  const z = row * HEX_H * 0.75;
+  return { x, z };
+}
+
+// Возвращает Y верхней грани тайла (основание для юнита)
+function tileElevY(col, row) {
+  const cell = getCell(col, row);
+  const h = cell.height;
+  if (h < 0) return 0; // deep_water — тайл на уровне 0
+  const depth = HEX_DEPTH + h * ELEV_STEP;
+  return h * ELEV_STEP + depth;
+}
+
+// Alias для обратной совместимости — y позиции тайла (низ)
+function tileBaseY(col, row) {
+  const cell = getCell(col, row);
+  const h = cell.height;
+  if (h < 0) return 0;
+  return h * ELEV_STEP;
+}
+
+function toCube(col, row) {
+  const q = col - (row - (row & 1)) / 2;
+  const r = row;
+  const s = -q - r;
+  return { q, r, s };
+}
+
+function hexDist(c1, r1, c2, r2) {
+  const a = toCube(c1, r1);
+  const b = toCube(c2, r2);
+  return Math.max(Math.abs(a.q - b.q), Math.abs(a.r - b.r), Math.abs(a.s - b.s));
+}
+
+// ──────────────────────────────────────────────
+// LoS: cube-coord lerp Bresenham для hex-сетки
+// Возвращает true если линия взора НЕ заблокирована
+// ──────────────────────────────────────────────
+function fftHasLoS(fromCol, fromRow, toCol, toRow) {
+  // Melee: adjacent всегда виден
+  const n = hexDist(fromCol, fromRow, toCol, toRow);
+  if (n <= 1) return true;
+
+  const a = toCube(fromCol, fromRow);
+  const b = toCube(toCol, toRow);
+
+  for (let i = 1; i < n; i++) {
+    const t = i / n;
+    const fq = a.q + (b.q - a.q) * t;
+    const fr = a.r + (b.r - a.r) * t;
+    const fs = a.s + (b.s - a.s) * t;
+
+    // Cube rounding с коррекцией
+    let rq = Math.round(fq), rr = Math.round(fr), rs = Math.round(fs);
+    const dq = Math.abs(rq - fq), dr2 = Math.abs(rr - fr), ds = Math.abs(rs - fs);
+    if (dq > dr2 && dq > ds) rq = -rr - rs;
+    else if (dr2 > ds)        rr = -rq - rs;
+    else                      rs = -rq - rr;
+
+    // Cube → offset (odd-r)
+    const mc = rq + (rr - (rr & 1)) / 2;
+    const mr = rr;
+
+    // Пропускаем start/end hex'ы
+    if (mc === fromCol && mr === fromRow) continue;
+    if (mc === toCol   && mr === toRow)   continue;
+
+    // Bounds check
+    if (mc < 0 || mr < 0 || mr >= GRID_ROWS || mc >= GRID_COLS) continue;
+
+    const cell = getCell(mc, mr);
+    // Blocking terrain:
+    // - rock блокирует
+    // - mountain (grass/etc с elevation >= 3) блокирует
+    // - deep_water НЕ блокирует
+    // - forest НЕ блокирует (даёт штраф к попаданию)
+    if (cell.type === 'rock') return false;
+    if (cell.type !== 'deep_water' && cell.type !== 'water' &&
+        cell.type !== 'forest' && cell.height >= 3) return false;
+  }
+  return true;
+}
+
+// Проверяет, есть ли forest hex вдоль линии LoS (включая позицию цели)
+function fftLoSHasForest(fromCol, fromRow, toCol, toRow) {
+  const n = hexDist(fromCol, fromRow, toCol, toRow);
+  const a = toCube(fromCol, fromRow);
+  const b = toCube(toCol, toRow);
+  // Проверяем промежуточные + конечную точку
+  for (let i = 1; i <= n; i++) {
+    const t = i / n;
+    const fq = a.q + (b.q - a.q) * t;
+    const fr = a.r + (b.r - a.r) * t;
+    const fs = a.s + (b.s - a.s) * t;
+    let rq = Math.round(fq), rr = Math.round(fr), rs = Math.round(fs);
+    const dq = Math.abs(rq - fq), dr2 = Math.abs(rr - fr), ds = Math.abs(rs - fs);
+    if (dq > dr2 && dq > ds) rq = -rr - rs;
+    else if (dr2 > ds)        rr = -rq - rs;
+    else                      rs = -rq - rr;
+    const mc = rq + (rr - (rr & 1)) / 2;
+    const mr = rr;
+    if (mc < 0 || mr < 0 || mr >= GRID_ROWS || mc >= GRID_COLS) continue;
+    if (mc === fromCol && mr === fromRow) continue;
+    const cell = getCell(mc, mr);
+    if (cell.type === 'forest') return true;
+  }
+  return false;
+}
+
+function hexNeighbors(col, row) {
+  const isOdd = row % 2 === 1;
+  const oddDirs  = [[0,-1],[+1,-1],[+1,0],[0,+1],[-1,0],[-1,-1]];
+  const evenDirs = [[0,-1],[+1, 0],[+1,1],[0,+1],[-1,1],[-1, 0]];
+  const dirs = isOdd ? oddDirs : evenDirs;
+  return dirs
+    .map(([dc, dr]) => ({ col: col + dc, row: row + dr }))
+    .filter(n => n.col >= 0 && n.col < GRID_COLS && n.row >= 0 && n.row < GRID_ROWS);
+}
+
+function fftFindPath(srcCol, srcRow, dstCol, dstRow, blockedSet) {
+  const queue = [{ col: srcCol, row: srcRow, path: [], cost: 0 }];
+  const visited = new Map([[`${srcCol},${srcRow}`, 0]]);
+  while (queue.length > 0) {
+    queue.sort((a, b) => a.cost - b.cost);
+    const cur = queue.shift();
+    if (cur.col === dstCol && cur.row === dstRow) return cur.path;
+    const curH = getCell(cur.col, cur.row).height;
+    for (const nb of hexNeighbors(cur.col, cur.row)) {
+      const key = `${nb.col},${nb.row}`;
+      if (blockedSet && blockedSet.has(key)) continue;
+      const nbCell = getCell(nb.col, nb.row);
+      const tProps = TERRAIN_PROPS[nbCell.type];
+      if (tProps.blocksMove) continue;
+      // Δh check — нельзя прыгать более чем на 1 уровень
+      if (Math.abs(nbCell.height - curH) > 1) continue;
+      const newCost = cur.cost + tProps.moveCost;
+      const prev = visited.get(key);
+      if (prev === undefined || newCost < prev) {
+        visited.set(key, newCost);
+        queue.push({ col: nb.col, row: nb.row, path: [...cur.path, { col: nb.col, row: nb.row }], cost: newCost });
+      }
+    }
+  }
+  return null;
+}
+
+// ──────────────────────────────────────────────
+// Terrain data
+// ──────────────────────────────────────────────
+const TERRAIN_PROPS = {
+  grass:         { moveCost: 1,        blocksMove: false, damagePerTurn: 0 },
+  forest:        { moveCost: 1,        blocksMove: false, damagePerTurn: 0, evasionBonus: 15 },
+  rock:          { moveCost: Infinity, blocksMove: true,  damagePerTurn: 0 },
+  deep_water:    { moveCost: Infinity, blocksMove: true,  damagePerTurn: 0 },
+  shallow_water: { moveCost: 2,        blocksMove: false, damagePerTurn: 0 },
+  fire:          { moveCost: 1,        blocksMove: false, damagePerTurn: 5 },
+  swamp:         { moveCost: 2,        blocksMove: false, damagePerTurn: 0 },
+  // Обратная совместимость: old 'water' → deep_water
+  water:         { moveCost: Infinity, blocksMove: true,  damagePerTurn: 0 },
+};
+
+// ──────────────────────────────────────────────
+// Elevation noise helper
+// ──────────────────────────────────────────────
+function elevNoise(col, row) {
+  // Sinusoidal landscape: плавные холмы
+  const raw = (Math.sin(col * 0.45 + 0.3) + Math.cos(row * 0.38 + 0.7) +
+               Math.sin((col + row) * 0.25) * 0.6 + 2.6) / 5.2; // 0..1
+  return Math.floor(raw * 4); // 0..3
+}
+
+// ──────────────────────────────────────────────
+// Terrain grid: { type, height }
+// ──────────────────────────────────────────────
+const terrainGrid = [];
+for (let r = 0; r < GRID_ROWS; r++) {
+  terrainGrid.push([]);
+  for (let c = 0; c < GRID_COLS; c++) {
+    const h = elevNoise(c, r);
+    terrainGrid[r].push({ type: 'grass', height: Math.min(h, 3) });
+  }
+}
+
+// Патчи terrain (type + height переопределение)
+const patches = [
+  // deep_water (бывший water) — высота -1
+  {r:2,c:2,t:'deep_water',h:-1},{r:2,c:3,t:'deep_water',h:-1},{r:3,c:2,t:'deep_water',h:-1},
+  {r:3,c:3,t:'deep_water',h:-1},{r:4,c:2,t:'deep_water',h:-1},
+  {r:11,c:4,t:'deep_water',h:-1},{r:11,c:5,t:'deep_water',h:-1},{r:12,c:4,t:'deep_water',h:-1},
+  // shallow_water — высота 0
+  {r:2,c:4,t:'shallow_water',h:0},{r:3,c:4,t:'shallow_water',h:0},{r:4,c:3,t:'shallow_water',h:0},
+  {r:12,c:5,t:'shallow_water',h:0},{r:11,c:6,t:'shallow_water',h:0},
+  // forest — высота 0-1
+  {r:1,c:10,t:'forest',h:1},{r:1,c:11,t:'forest',h:0},{r:2,c:10,t:'forest',h:1},{r:2,c:11,t:'forest',h:1},
+  {r:3,c:11,t:'forest',h:0},{r:4,c:10,t:'forest',h:1},{r:5,c:11,t:'forest',h:0},
+  {r:8,c:1,t:'forest',h:0},{r:8,c:2,t:'forest',h:1},{r:9,c:1,t:'forest',h:0},
+  {r:6,c:1,t:'forest',h:1},{r:7,c:2,t:'forest',h:0},
+  // rock — высота 2-3
+  {r:5,c:3,t:'rock',h:2},{r:5,c:4,t:'rock',h:3},{r:6,c:3,t:'rock',h:3},{r:6,c:4,t:'rock',h:2},
+  {r:0,c:5,t:'rock',h:3},{r:0,c:6,t:'rock',h:2},{r:1,c:5,t:'rock',h:3},
+  // swamp — высота 0
+  {r:9,c:10,t:'swamp',h:0},{r:9,c:11,t:'swamp',h:0},{r:10,c:10,t:'swamp',h:0},
+  {r:10,c:11,t:'swamp',h:0},{r:10,c:12,t:'swamp',h:0},
+  {r:0,c:13,t:'swamp',h:0},{r:1,c:13,t:'swamp',h:0},{r:0,c:14,t:'swamp',h:0},
+  // fire — высота 0
+  {r:7,c:7,t:'fire',h:0},{r:7,c:8,t:'fire',h:0},
+];
+for (const p of patches) {
+  if (terrainGrid[p.r] && terrainGrid[p.r][p.c] !== undefined) {
+    terrainGrid[p.r][p.c] = { type: p.t, height: p.h };
+  }
+}
+
+function getCell(col, row) {
+  return (terrainGrid[row] && terrainGrid[row][col]) ? terrainGrid[row][col] : { type: 'grass', height: 0 };
+}
+
+function getTerrain(col, row) {
+  return getCell(col, row).type;
+}
+
+function getHeight(col, row) {
+  return getCell(col, row).height;
+}
+
+// ──────────────────────────────────────────────
+// Hex Shape helper
+// ──────────────────────────────────────────────
+function createHexShape(r) {
+  const shape = new THREE.Shape();
+  for (let i = 0; i < 6; i++) {
+    const angle = (Math.PI / 3) * i - Math.PI / 6;
+    const x = r * Math.cos(angle);
+    const y = r * Math.sin(angle);
+    if (i === 0) shape.moveTo(x, y);
+    else          shape.lineTo(x, y);
+  }
+  shape.closePath();
+  return shape;
+}
+
+// ──────────────────────────────────────────────
+// Tile materials
+// ──────────────────────────────────────────────
+const matGrass    = new THREE.MeshLambertMaterial({ color: 0x6ab04c });
+const matForest   = new THREE.MeshLambertMaterial({ color: 0x4a7c2f });
+const matRock     = new THREE.MeshLambertMaterial({ color: 0x888880 });
+const matWater    = new THREE.MeshLambertMaterial({ color: 0x2980b9 });
+const matFire     = new THREE.MeshLambertMaterial({ color: 0x6ab04c });
+const matSwamp    = new THREE.MeshLambertMaterial({ color: 0x7f6031 });
+const matRockObj  = new THREE.MeshLambertMaterial({ color: 0x777770 });
+const matTree     = new THREE.MeshLambertMaterial({ color: 0x2d6a2d });
+const matTreeTrunk= new THREE.MeshLambertMaterial({ color: 0x5c3d1e });
+
+function makeFireTexture() {
+  const c = document.createElement('canvas');
+  c.width = 64; c.height = 64;
+  const ctx = c.getContext('2d');
+  const grd = ctx.createRadialGradient(32, 48, 2, 32, 32, 32);
+  grd.addColorStop(0,   'rgba(255,230,50,0.95)');
+  grd.addColorStop(0.3, 'rgba(255,120,10,0.85)');
+  grd.addColorStop(0.7, 'rgba(200,30,0,0.5)');
+  grd.addColorStop(1,   'rgba(0,0,0,0)');
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, 64, 64);
+  return new THREE.CanvasTexture(c);
+}
+const fireTex = makeFireTexture();
+const matFirePlane = new THREE.MeshBasicMaterial({
+  map: fireTex, transparent: true, depthWrite: false, side: THREE.DoubleSide
+});
+
+// ──────────────────────────────────────────────
+// Build grid
+// ──────────────────────────────────────────────
+const hexShape = createHexShape(HEX_SIZE * 0.97);
+
+const tileMeshes = [];
+for (let r = 0; r < GRID_ROWS; r++) {
+  tileMeshes.push([]);
+  for (let c = 0; c < GRID_COLS; c++) tileMeshes[r].push(null);
+}
+
+const tileOrigColors = [];
+for (let r = 0; r < GRID_ROWS; r++) {
+  tileOrigColors.push([]);
+  for (let c = 0; c < GRID_COLS; c++) tileOrigColors[r].push(null);
+}
+
+const glowMeshes = [];
+
+// Материалы для shallow_water и deep_water
+const matShallowWater = new THREE.MeshLambertMaterial({ color: 0x5dade2, transparent: true, opacity: 0.75 });
+const matDeepWater    = new THREE.MeshLambertMaterial({ color: 0x1a5276 });
+
+for (let row = 0; row < GRID_ROWS; row++) {
+  for (let col = 0; col < GRID_COLS; col++) {
+    const cell = getCell(col, row);
+    const t = cell.type;
+    const h = cell.height; // -1, 0, 1, 2, 3
+    const { x, z } = hexToWorld(col, row);
+
+    // Все тайлы начинаются от y=0, глубина экструзии = высота тайла.
+    // Тайл с elevation h имеет depth = HEX_DEPTH + h*ELEV_STEP
+    // Верхняя грань (topY) = tileDepth (position.y=0, экструзия вверх)
+    let tileDepth = HEX_DEPTH + Math.max(0, h) * ELEV_STEP;
+    let tileMat   = matGrass;
+
+    if (t === 'forest')        { tileMat = matForest; }
+    if (t === 'rock')          { tileMat = matRock; }
+    if (t === 'deep_water' || t === 'water') { tileMat = matDeepWater;   tileDepth = 0.15; }
+    if (t === 'shallow_water') { tileMat = matShallowWater;              tileDepth = 0.15; }
+    if (t === 'fire')          { tileMat = matFire;   tileDepth = HEX_DEPTH; }
+    if (t === 'swamp')         { tileMat = matSwamp;  tileDepth = 0.25; }
+
+    const extSettings = { depth: tileDepth, bevelEnabled: false };
+    const tileGeo = new THREE.ExtrudeGeometry(hexShape, extSettings);
+    const tileMaterial = tileMat.clone();
+    const tile = new THREE.Mesh(tileGeo, tileMaterial);
+    tile.rotation.x = -Math.PI / 2;
+    tile.position.set(x, 0, z);
+    tile.receiveShadow = true;
+    tile.castShadow = false;
+    tile.userData.col = col;
+    tile.userData.row = row;
+    tile.userData.isTile = true;
+    scene.add(tile);
+    tileMeshes[row][col] = tile;
+    tileOrigColors[row][col] = tileMaterial.color.clone();
+
+    // Верхняя грань тайла = tileDepth (экструзия вверх от y=0)
+    const topY = tileDepth;
+
+    // Decorations
+    if (t === 'forest') {
+      const trunkH = 0.5 + (col * 7 + row * 13) % 10 * 0.03;
+      const coneH  = 1.2 + (col * 11 + row * 5) % 10 * 0.04;
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, trunkH, 6), matTreeTrunk);
+      trunk.position.set(x, topY + trunkH / 2, z);
+      trunk.castShadow = true;
+      scene.add(trunk);
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(0.6, coneH, 7), matTree);
+      cone.position.set(x, topY + trunkH + coneH / 2 * 0.9, z);
+      cone.castShadow = true;
+      scene.add(cone);
+    }
+    if (t === 'rock') {
+      const bw = 0.5 + (col * 3 + row * 7) % 10 * 0.03;
+      const bh = 0.35 + (col * 5 + row * 11) % 10 * 0.025;
+      const bd = 0.45 + (col * 9 + row * 3) % 10 * 0.02;
+      const rock = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), matRockObj);
+      const off = ((col + row) % 3 - 1) * 0.1;
+      rock.position.set(x + off, topY + bh / 2, z + off);
+      rock.rotation.y = (col + row) * 0.7;
+      rock.castShadow = true;
+      scene.add(rock);
+    }
+    if (t === 'fire') {
+      const fireGeo = new THREE.PlaneGeometry(0.8, 1.2);
+      const fireMesh = new THREE.Mesh(fireGeo, matFirePlane);
+      fireMesh.position.set(x, topY + 0.6, z);
+      fireMesh.rotation.x = -Math.PI / 6;
+      scene.add(fireMesh);
+      const pl = new THREE.PointLight(0xff6600, 1.5, 4);
+      pl.position.set(x, topY + 0.8, z);
+      scene.add(pl);
+    }
+  }
+}
+
+// ──────────────────────────────────────────────
+// SKILL DEFINITIONS (из 2D /fft/)
+// ──────────────────────────────────────────────
+const SKILL_DEFS = {
+  // Knight
+  sword_strike: { id: 'sword_strike', name: 'Удар',    icon: '⚔', type: 'melee',  range: 1, aoe: 0, dmgMod: 0,  cd: 0, isBasic: true },
+  shield_bash:  { id: 'shield_bash',  name: 'Оглушить',icon: '🛡', type: 'melee',  range: 1, aoe: 0, dmgMod: -2, cd: 2, effect: 'stun' },
+  whirlwind:    { id: 'whirlwind',    name: 'Вихрь',   icon: '🌀', type: 'melee',  range: 1, aoe: 1, dmgMod: -3, cd: 3 },
+  guard:        { id: 'guard',        name: 'Заслон',  icon: '🔰', type: 'buff',   range: 0, aoe: 0, dmgMod: 0,  cd: 2, effect: 'barrier', targetSelf: true },
+  // Ranger
+  bow_shot:     { id: 'bow_shot',     name: 'Выстрел', icon: '🏹', type: 'ranged', range: 3, aoe: 0, dmgMod: 0,  cd: 0, isBasic: true },
+  aimed_shot:   { id: 'aimed_shot',   name: 'Прицел',  icon: '🎯', type: 'ranged', range: 4, aoe: 0, dmgMod: 3,  cd: 2, ignoresForest: true },
+  volley:       { id: 'volley',       name: 'Залп',    icon: '💨', type: 'ranged', range: 3, aoe: 1, dmgMod: -2, cd: 3 },
+  net:          { id: 'net',          name: 'Сеть',    icon: '🕸', type: 'ranged', range: 3, aoe: 0, dmgMod: -4, cd: 2, effect: 'immobilize' },
+  // Mage
+  magic_bolt:   { id: 'magic_bolt',   name: 'Импульс', icon: '✨', type: 'magic',  range: 3, aoe: 0, dmgMod: 0,  cd: 0, isBasic: true },
+  fireball:     { id: 'fireball',     name: 'Огонь',   icon: '🔥', type: 'magic',  range: 3, aoe: 1, dmgMod: -2, cd: 3 },
+  frost_lance:  { id: 'frost_lance',  name: 'Лёд',     icon: '❄', type: 'magic',  range: 3, aoe: 0, dmgMod: 2,  cd: 2, effect: 'slow' },
+  heal_ally:    { id: 'heal_ally',    name: 'Лечение', icon: '💚', type: 'heal',   range: 2, aoe: 0, dmgMod: -8, cd: 3, targetAlly: true },
+  // Universal / new skills
+  jump:         { id: 'jump',         name: 'Прыжок',  icon: '⤴️', type: 'move',   range: 3, aoe: 0, dmgMod: 0,  cd: 2, targetSelf: false, damage: 0, isJump: true },
+  push:         { id: 'push',         name: 'Толчок',  icon: '💨', type: 'melee',  range: 1, aoe: 0, dmgMod: -4, cd: 2, effect: 'push:1' },
+  // Enemy abilities
+  aimed_shot_e: { id: 'aimed_shot_e', name: 'Прицел',  icon: '🎯', type: 'ranged', range: 4, aoe: 0, dmgMod: 2,  cd: 3, ignoresForest: true },
+  smash:        { id: 'smash',        name: 'Крушить', icon: '💥', type: 'melee',  range: 1, aoe: 0, dmgMod: 3,  cd: 2 },
+};
+
+const CLASS_SKILLS = {
+  knight: { basic: 'sword_strike', specials: ['shield_bash', 'whirlwind', 'guard', 'jump', 'push'] },
+  ranger: { basic: 'bow_shot',     specials: ['aimed_shot', 'volley', 'net', 'jump'] },
+  mage:   { basic: 'magic_bolt',   specials: ['fireball', 'frost_lance', 'heal_ally', 'jump'] },
+  // MP guest team skills
+  grunt:  { basic: 'sword_strike', specials: ['shield_bash', 'whirlwind', 'push', 'jump'] },
+  archer: { basic: 'bow_shot',     specials: ['aimed_shot_e', 'volley', 'net', 'jump'] },
+  brute:  { basic: 'sword_strike', specials: ['smash', 'whirlwind', 'guard', 'jump'] },
+};
+
+// ──────────────────────────────────────────────
+// Game State
+// ──────────────────────────────────────────────
+const UNIT_DEFS = {
+  knight: { name: 'Рыцарь',  emoji: '⚔', team: 'player', hp: 40, atk: 12, def: 8,  moveRange: 3, atkRange: 1, isRanged: false, class: 'knight', evasion: 5,  armor: 30, visionRange: 5 },
+  ranger: { name: 'Лучник',  emoji: '🏹', team: 'player', hp: 30, atk: 10, def: 4,  moveRange: 4, atkRange: 3, isRanged: true,  class: 'ranger', evasion: 15, armor: 10, visionRange: 7 },
+  mage:   { name: 'Маг',     emoji: '🔮', team: 'player', hp: 25, atk: 14, def: 2,  moveRange: 3, atkRange: 3, isRanged: true,  class: 'mage',   evasion: 10, armor: 0,  visionRange: 6 },
+  grunt:  { name: 'Громила', emoji: '👹', team: 'enemy',  hp: 30, atk: 10, def: 4,  moveRange: 3, atkRange: 1, isRanged: false, class: null, abilities: ['sword_strike'], evasion: 5,  armor: 15, visionRange: 5 },
+  archer: { name: 'Стрелок', emoji: '🏹', team: 'enemy',  hp: 25, atk:  9, def: 3,  moveRange: 4, atkRange: 3, isRanged: true,  class: null, abilities: ['bow_shot', 'aimed_shot_e'], evasion: 12, armor: 5,  visionRange: 7 },
+  brute:  { name: 'Брут',    emoji: '👺', team: 'enemy',  hp: 45, atk: 14, def: 5,  moveRange: 2, atkRange: 1, isRanged: false, class: null, abilities: ['sword_strike', 'smash'], evasion: 3,  armor: 25, visionRange: 4 },
+};
+
+function makeUnit(id, defKey, col, row) {
+  const d = UNIT_DEFS[defKey];
+  const unit = {
+    id, defKey, name: d.name, emoji: d.emoji,
+    team: d.team, col, row,
+    hp: d.hp, maxHp: d.hp,
+    atk: d.atk, def: d.def, evasion: d.evasion || 0, armor: d.armor || 0,
+    moveRange: d.moveRange,
+    atkRange: d.atkRange,
+    isRanged: d.isRanged,
+    class: d.class,
+    visionRange: d.visionRange || 5,
+    alive: true,
+    moved: false,
+    acted: false,
+    stunned: false,
+    immobilized: false,
+    slowed: false,
+    barrier: false,
+    cooldowns: {},
+    abilities: d.abilities ? [...d.abilities] : [],
+    mesh3d: null,
+  };
+  for (const abId of unit.abilities) {
+    unit.cooldowns[abId] = 0;
+  }
+  return unit;
+}
+
+const state = {
+  phase: 'skill-select',  // 'skill-select'|'player-turn'|'enemy-turn'|'won'|'lost'
+  uiMode: 'idle',         // 'idle'|'move'|'ability'|'forecast'
+  selectedUnit: null,
+  selectedAbility: null,
+  forecastTarget: null,
+  aoePreviewTarget: null, // первый тап AoE — ждём подтверждения
+  reachableCache: null,
+  units: [],
+  skillSelections: { 0: [], 1: [], 2: [] },
+  // FoW: 'hidden'|'explored'|'visible' для каждого гекса
+  fow: [],
+  fowEnabled: true,
+};
+
+// Начальная расстановка юнитов
+state.units = [
+  makeUnit('knight', 'knight', 6, 13),
+  makeUnit('ranger',  'ranger', 7, 13),
+  makeUnit('mage',   'mage',   8, 13),
+  makeUnit('grunt',  'grunt',  6,  1),
+  makeUnit('archer', 'archer', 7,  1),
+  makeUnit('brute',  'brute',  8,  1),
+];
+
+// ──────────────────────────────────────────────
+// Combat functions
+// ──────────────────────────────────────────────
+function fftCalcDamage(attacker, target, skill) {
+  const sk = skill || SKILL_DEFS[attacker.abilities[0]] || null;
+  const dmgMod = sk ? sk.dmgMod : 0;
+  if (sk && sk.type === 'heal') return Math.max(1, -dmgMod);
+  return Math.max(1, attacker.atk + dmgMod - target.def);
+}
+
+function fftCalcHitChance(attacker, target, skill) {
+  const sk = skill;
+  // Базовый шанс: дальний 80%, ближний 90%
+  const base = attacker.isRanged ? 80 : 90;
+  // Уклонение цели (стат + бонус от леса)
+  const targetTerrain = getTerrain(target.col, target.row);
+  const tProps = TERRAIN_PROPS[targetTerrain] || {};
+  let evasion = (target.evasion || 0) + (tProps.evasionBonus || 0);
+  if (sk && sk.ignoresForest) evasion = target.evasion || 0;
+  // Бонус высоты: +5 если атакующий выше цели, -5 если ниже
+  const atkH = getCell(attacker.col, attacker.row).height;
+  const tgtH = getCell(target.col, target.row).height;
+  const elevBonus = atkH > tgtH ? 5 : (atkH < tgtH ? -5 : 0);
+  // Штраф леса: -15% если LoS идёт через forest (только ranged/magic, не ignoresForest)
+  const isRangedMagic = attacker.isRanged || (sk && (sk.type === 'ranged' || sk.type === 'magic'));
+  const forestPenalty = (isRangedMagic && !(sk && sk.ignoresForest) &&
+    fftLoSHasForest(attacker.col, attacker.row, target.col, target.row)) ? 15 : 0;
+  return Math.max(30, Math.min(95, base - evasion + elevBonus - forestPenalty));
+}
+
+// Возвращает строку-пометку леса для forecast (или '')
+function fftForestPenaltyLabel(attacker, target, skill) {
+  const sk = skill;
+  const isRangedMagic = attacker.isRanged || (sk && (sk.type === 'ranged' || sk.type === 'magic'));
+  if (isRangedMagic && !(sk && sk.ignoresForest) &&
+      fftLoSHasForest(attacker.col, attacker.row, target.col, target.row)) {
+    return ' (лес -15%)';
+  }
+  return '';
+}
+
+function fftDealDamage(target, dmg, attacker, skill) {
+  const sk = skill || null;
+  if (target.barrier && dmg > 0) {
+    target.barrier = false;
+    fftLog(`${target.name}: барьер поглотил удар!`, 'info');
+    spawnDamageFloat(unitWorldPos(target), 'BARRIER', '#f0c040');
+    return;
+  }
+  const isHeal = sk && sk.type === 'heal';
+  if (isHeal) {
+    const healed = Math.min(target.maxHp - target.hp, dmg);
+    target.hp = Math.min(target.maxHp, target.hp + dmg);
+    spawnDamageFloat(unitWorldPos(target), `+${healed}`, '#2ecc71');
+  } else {
+    // Armor block: шанс % заблокировать дополнительные 3 урона
+    let finalDmg = dmg;
+    let armorBlocked = 0;
+    if ((target.armor || 0) > 0 && Math.random() * 100 < target.armor) {
+      armorBlocked = 3;
+      finalDmg = Math.max(1, dmg - armorBlocked);
+    }
+    target.hp = Math.max(0, target.hp - finalDmg);
+    spawnDamageFloat(unitWorldPos(target), `-${finalDmg}`, '#ff4444');
+    if (armorBlocked > 0) {
+      fftLog(`${target.name}: броня блокирует −${armorBlocked}!`, 'info');
+    }
+    if (target.hp <= 0) {
+      target.alive = false;
+      if (target.mesh3d) {
+        scene.remove(target.mesh3d);
+        target.mesh3d.traverse(c => { if (c.geometry) c.geometry.dispose(); });
+        target.mesh3d = null;
+      }
+      if (selectedRing && state.selectedUnit && state.selectedUnit.id === target.id) {
+        clearSelectedRing();
+      }
+      fftLog(`${target.name} повержен!`, attacker && attacker.team === 'player' ? 'attack' : 'info');
+    }
+  }
+  // Apply effects
+  if (sk && sk.effect && target.alive) {
+    if (sk.effect === 'stun')       { target.stunned = true;      fftLog(`${target.name} оглушён!`, 'special'); }
+    if (sk.effect === 'immobilize') { target.immobilized = true;  fftLog(`${target.name} обездвижен!`, 'special'); }
+    if (sk.effect === 'slow')       { target.slowed = true;       fftLog(`${target.name} замедлен!`, 'special'); }
+    if (sk.effect === 'barrier' && attacker) { attacker.barrier = true; fftLog(`${attacker.name} получает барьер!`, 'special'); }
+  }
+}
+
+function fftApplyAoe(centerCol, centerRow, attacker, skill) {
+  const targets = state.units.filter(u => {
+    if (!u.alive) return false;
+    if (u.id === attacker.id) return false;
+    if (u.team === attacker.team) return false;
+    return hexDist(centerCol, centerRow, u.col, u.row) <= skill.aoe;
+  });
+  for (const t of targets) {
+    const dmg = fftCalcDamage(attacker, t, skill);
+    fftDealDamage(t, dmg, attacker, skill);
+    fftLog(`${attacker.name} [${skill.name}] → ${t.name}: −${dmg} HP.`, attacker.team === 'player' ? 'attack' : 'info');
+  }
+}
+
+function decrementCooldowns(unit) {
+  for (const abId of Object.keys(unit.cooldowns)) {
+    if (unit.cooldowns[abId] > 0) unit.cooldowns[abId]--;
+  }
+}
+
+function applyStartOfTurnEffects(unit) {
+  if (!unit.alive) return;
+  const tProps = TERRAIN_PROPS[getTerrain(unit.col, unit.row)] || {};
+  if (tProps.damagePerTurn > 0) {
+    unit.hp = Math.max(0, unit.hp - tProps.damagePerTurn);
+    spawnDamageFloat(unitWorldPos(unit), `-${tProps.damagePerTurn}`, '#ff8800');
+    fftLog(`${unit.name} горит: −${tProps.damagePerTurn} HP!`, 'info');
+    if (unit.hp <= 0) {
+      unit.alive = false;
+      if (unit.mesh3d) { scene.remove(unit.mesh3d); unit.mesh3d = null; }
+      fftLog(`${unit.name} погиб в огне!`, 'attack');
+    }
+  }
+}
+
+// ──────────────────────────────────────────────
+// Win/Lose
+// ──────────────────────────────────────────────
+function checkWinLose() {
+  const playersAlive = state.units.filter(u => u.alive && u.team === 'player').length;
+  const enemiesAlive = state.units.filter(u => u.alive && u.team === 'enemy').length;
+  if (enemiesAlive === 0) {
+    state.phase = 'won';
+    deselectUnit();
+    showGameOverlay('won', 'Все враги повержены!');
+    fftLog('ПОБЕДА!', 'info');
+    fftUpdateUI();
+    return true;
+  }
+  if (playersAlive === 0) {
+    state.phase = 'lost';
+    deselectUnit();
+    showGameOverlay('lost', 'Все герои пали...');
+    fftLog('ПОРАЖЕНИЕ...', 'attack');
+    fftUpdateUI();
+    return true;
+  }
+  return false;
+}
+
+function showGameOverlay(type, sub) {
+  const overlay = document.getElementById('game-overlay');
+  const title   = document.getElementById('overlay-title');
+  const subEl   = document.getElementById('overlay-sub');
+  title.textContent = type === 'won' ? '🎉 Победа!' : '💀 Поражение';
+  title.className   = type;
+  subEl.textContent = sub;
+  overlay.classList.add('show');
+}
+
+// ──────────────────────────────────────────────
+// Damage float
+// ──────────────────────────────────────────────
+function unitWorldPos(unit) {
+  const { x, z } = hexToWorld(unit.col, unit.row);
+  const baseY = tileTopY(unit.col, unit.row);
+  return new THREE.Vector3(x, baseY + 1.5, z);
+}
+
+function worldToScreen(worldVec3) {
+  const vec = worldVec3.clone();
+  vec.project(camera);
+  const x = (vec.x * 0.5 + 0.5) * window.innerWidth;
+  const y = (-vec.y * 0.5 + 0.5) * window.innerHeight;
+  return { x, y };
+}
+
+function spawnDamageFloat(worldPos, text, color) {
+  const screen = worldToScreen(worldPos);
+  const div = document.createElement('div');
+  div.className = 'dmg-float';
+  div.textContent = text;
+  div.style.color = color;
+  div.style.left = `${screen.x - 20}px`;
+  div.style.top  = `${screen.y}px`;
+  document.body.appendChild(div);
+  const startY = screen.y;
+  const startTime = performance.now();
+  const DURATION = 900;
+  function tick(now) {
+    const t = Math.min(1, (now - startTime) / DURATION);
+    div.style.top     = `${startY - t * 65}px`;
+    div.style.opacity = 1 - t;
+    if (t < 1) requestAnimationFrame(tick);
+    else div.remove();
+  }
+  requestAnimationFrame(tick);
+}
+
+// ──────────────────────────────────────────────
+// Unit mesh builder
+// ──────────────────────────────────────────────
+function makeEmojiTexture(emoji) {
+  const c = document.createElement('canvas');
+  c.width = 64; c.height = 64;
+  const ctx = c.getContext('2d');
+  ctx.font = '44px serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(emoji, 32, 32);
+  return new THREE.CanvasTexture(c);
+}
+
+const matPlayer = new THREE.MeshLambertMaterial({ color: 0x2980b9 });
+const matEnemy  = new THREE.MeshLambertMaterial({ color: 0xc0392b });
+
+function buildUnitMesh(unit) {
+  const { x, z } = hexToWorld(unit.col, unit.row);
+  const mat = unit.team === 'player' ? matPlayer.clone() : matEnemy.clone();
+  const group = new THREE.Group();
+
+  let bodyH = 0.9;
+  let body;
+  if (unit.defKey === 'knight') {
+    body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 0.9, 8), mat);
+    bodyH = 0.9;
+  } else if (unit.defKey === 'ranger' || unit.defKey === 'archer') {
+    body = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 1.0, 8), mat);
+    bodyH = 1.0;
+  } else if (unit.defKey === 'mage') {
+    body = new THREE.Mesh(new THREE.ConeGeometry(0.32, 1.1, 7), mat);
+    bodyH = 1.1;
+  } else if (unit.defKey === 'brute') {
+    body = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.4, 0.95, 8), mat);
+    bodyH = 0.95;
+  } else {
+    body = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.32, 0.85, 7), mat);
+    bodyH = 0.85;
+  }
+
+  body.position.y = bodyH / 2;
+  body.castShadow = true;
+  group.add(body);
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), mat);
+  head.position.y = bodyH + 0.22;
+  head.castShadow = true;
+  group.add(head);
+
+  const faceTex = makeEmojiTexture(unit.emoji);
+  const face = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.44, 0.44),
+    new THREE.MeshBasicMaterial({ map: faceTex, transparent: true, depthWrite: false })
+  );
+  face.position.y = bodyH + 0.22;
+  face.userData.isFace = true;
+  group.add(face);
+
+  const hpBarBg = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.8, 0.1),
+    new THREE.MeshBasicMaterial({ color: 0x222222, depthTest: false })
+  );
+  hpBarBg.position.y = bodyH + 0.58;
+  hpBarBg.userData.isHpBg = true;
+  hpBarBg.renderOrder = 1;
+  group.add(hpBarBg);
+
+  const hpBarFg = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.8, 0.1),
+    new THREE.MeshBasicMaterial({ color: 0x2ecc71, depthTest: false })
+  );
+  hpBarFg.position.y = bodyH + 0.58;
+  hpBarFg.userData.isHpFg = true;
+  hpBarFg.renderOrder = 2;
+  group.add(hpBarFg);
+
+  const unitY = tileTopY(unit.col, unit.row);
+  group.position.set(x, unitY, z);
+  group.userData.unitId = unit.id;
+  group.userData.isUnit = true;
+  scene.add(group);
+  unit.mesh3d = group;
+  return group;
+}
+
+for (const unit of state.units) {
+  buildUnitMesh(unit);
+}
+
+// ──────────────────────────────────────────────
+// Fog of War
+// ──────────────────────────────────────────────
+
+// Инициализация fow-сетки: все гексы 'hidden'
+function initFoW() {
+  state.fow = [];
+  for (let r = 0; r < GRID_ROWS; r++) {
+    state.fow.push([]);
+    for (let c = 0; c < GRID_COLS; c++) {
+      state.fow[r].push('hidden');
+    }
+  }
+}
+
+// Материалы для FoW-оверлеев
+const matFowHidden   = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 1.0,  depthTest: false, side: THREE.DoubleSide });
+const matFowExplored = new THREE.MeshBasicMaterial({ color: 0x555555, transparent: true, opacity: 0.55, depthTest: false, side: THREE.DoubleSide });
+
+// Хранилище FoW-мешей (один per hex, обновляются при recomputeFoW)
+const fowMeshes = [];
+for (let r = 0; r < GRID_ROWS; r++) {
+  fowMeshes.push([]);
+  for (let c = 0; c < GRID_COLS; c++) {
+    fowMeshes[r].push(null);
+  }
+}
+
+// Создаёт/обновляет FoW-меш для одного гекса
+function updateFowMesh(col, row) {
+  const fowState = state.fow[row][col];
+  const existing = fowMeshes[row][col];
+
+  // visible — убираем оверлей
+  if (fowState === 'visible' || !state.fowEnabled) {
+    if (existing) {
+      scene.remove(existing);
+      existing.geometry.dispose();
+      fowMeshes[row][col] = null;
+    }
+    return;
+  }
+
+  const mat = fowState === 'hidden' ? matFowHidden.clone() : matFowExplored.clone();
+  const { x, z } = hexToWorld(col, row);
+  // Высота FoW-плоскости — над верхней гранью тайла
+  const topY = tileTopY(col, row) + 4.0;
+
+  // Используем тот же hexShape что и для тайлов
+  const fowShape = createHexShape(HEX_SIZE * 0.97);
+  const geo = new THREE.ExtrudeGeometry(fowShape, { depth: 0.01, bevelEnabled: false });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.position.set(x, topY, z);
+  mesh.renderOrder = 10;
+  mesh.userData.isFow = true;
+
+  if (existing) {
+    scene.remove(existing);
+    existing.geometry.dispose();
+  }
+  scene.add(mesh);
+  fowMeshes[row][col] = mesh;
+}
+
+// Основная функция пересчёта FoW (только для player-юнитов)
+function recomputeFoW() {
+  if (!state.fowEnabled) {
+    // Убрать все FoW-меши
+    for (let r = 0; r < GRID_ROWS; r++) {
+      for (let c = 0; c < GRID_COLS; c++) {
+        if (fowMeshes[r][c]) {
+          scene.remove(fowMeshes[r][c]);
+          fowMeshes[r][c].geometry.dispose();
+          fowMeshes[r][c] = null;
+        }
+      }
+    }
+    // Показываем всех врагов
+    for (const u of state.units) {
+      if (u.mesh3d) u.mesh3d.visible = true;
+    }
+    return;
+  }
+
+  const players = state.units.filter(u => u.alive && u.team === 'player');
+
+  // Собираем множество видимых гексов от player-юнитов
+  const nowVisible = new Set();
+  for (const pu of players) {
+    const vr = pu.visionRange;
+    for (let r = 0; r < GRID_ROWS; r++) {
+      for (let c = 0; c < GRID_COLS; c++) {
+        const d = hexDist(pu.col, pu.row, c, r);
+        if (d > vr) continue;
+        // Сам гекс юнита всегда visible
+        if (d === 0) { nowVisible.add(`${c},${r}`); continue; }
+        // Проверяем LoS
+        if (fftHasLoS(pu.col, pu.row, c, r)) {
+          nowVisible.add(`${c},${r}`);
+        }
+      }
+    }
+  }
+
+  // Обновляем state.fow
+  for (let r = 0; r < GRID_ROWS; r++) {
+    for (let c = 0; c < GRID_COLS; c++) {
+      const key = `${c},${r}`;
+      const cur = state.fow[r][c];
+      if (nowVisible.has(key)) {
+        state.fow[r][c] = 'visible';
+      } else if (cur === 'visible') {
+        // Был виден — теперь explored
+        state.fow[r][c] = 'explored';
+      }
+      // 'hidden' и 'explored' без изменений если не видны сейчас
+    }
+  }
+
+  // Обновляем FoW-меши
+  for (let r = 0; r < GRID_ROWS; r++) {
+    for (let c = 0; c < GRID_COLS; c++) {
+      updateFowMesh(c, r);
+    }
+  }
+
+  // Видимость вражеских юнитов: показываем только в 'visible' гексах
+  for (const u of state.units) {
+    if (!u.mesh3d) continue;
+    if (u.team === 'player') {
+      u.mesh3d.visible = true; // свои всегда видны
+      continue;
+    }
+    // Враги: visible только если их hex = 'visible'
+    const fowCell = state.fow[u.row] ? state.fow[u.row][u.col] : 'hidden';
+    u.mesh3d.visible = (fowCell === 'visible');
+  }
+}
+
+// ──────────────────────────────────────────────
+// Reachable (Dijkstra)
+// ──────────────────────────────────────────────
+function fftReachable(unit) {
+  const result = new Map();
+  const moveRange = unit.slowed ? Math.max(1, Math.floor(unit.moveRange / 2)) : unit.moveRange;
+  const queue = [{ col: unit.col, row: unit.row, cost: 0, path: [] }];
+  const visited = new Map([[`${unit.col},${unit.row}`, 0]]);
+
+  while (queue.length > 0) {
+    queue.sort((a, b) => a.cost - b.cost);
+    const cur = queue.shift();
+    if (cur.cost > 0) result.set(`${cur.col},${cur.row}`, { cost: cur.cost, path: cur.path });
+    if (cur.cost >= moveRange) continue;
+    const curH = getCell(cur.col, cur.row).height;
+    for (const nb of hexNeighbors(cur.col, cur.row)) {
+      const key = `${nb.col},${nb.row}`;
+      const nbCell = getCell(nb.col, nb.row);
+      const tProps = TERRAIN_PROPS[nbCell.type];
+      if (tProps.blocksMove) continue;
+      // Δh check — нельзя пройти если разница высот > 1
+      if (Math.abs(nbCell.height - curH) > 1) continue;
+      const blocker = state.units.find(u => u.alive && u.col === nb.col && u.row === nb.row);
+      if (blocker) continue;
+      const newCost = cur.cost + tProps.moveCost;
+      if (newCost <= moveRange) {
+        const prev = visited.get(key);
+        if (prev === undefined || newCost < prev) {
+          visited.set(key, newCost);
+          queue.push({ col: nb.col, row: nb.row, cost: newCost, path: [...cur.path, { col: nb.col, row: nb.row }] });
+        }
+      }
+    }
+  }
+  return result;
+}
+
+// ──────────────────────────────────────────────
+// Glow highlight with pulse
+// ──────────────────────────────────────────────
+const glowMatBlue = new THREE.MeshBasicMaterial({
+  color: 0x4a9cff, transparent: true, opacity: 0.4, depthTest: false, side: THREE.DoubleSide,
+});
+const glowMatRed = new THREE.MeshBasicMaterial({
+  color: 0xff4444, transparent: true, opacity: 0.45, depthTest: false, side: THREE.DoubleSide,
+});
+const glowMatGreen = new THREE.MeshBasicMaterial({
+  color: 0x2ecc71, transparent: true, opacity: 0.4, depthTest: false, side: THREE.DoubleSide,
+});
+const glowMatOrange = new THREE.MeshBasicMaterial({
+  color: 0xff8c00, transparent: true, opacity: 0.5, depthTest: false, side: THREE.DoubleSide,
+});
+// Серый — hex в дальности, но LoS заблокирован
+const glowMatGray = new THREE.MeshBasicMaterial({
+  color: 0x888888, transparent: true, opacity: 0.25, depthTest: false, side: THREE.DoubleSide,
+});
+
+// Pulse animation state для glowMeshes
+let glowPulseT = 0;
+
+function clearGlowHighlights() {
+  for (const m of glowMeshes) {
+    scene.remove(m);
+    m.geometry.dispose();
+  }
+  glowMeshes.length = 0;
+}
+
+function tileTopY(col, row) {
+  const cell = getCell(col, row);
+  const t = cell.type;
+  const h = cell.height;
+  // Совпадает с логикой построения тайла (tileDepth = topY)
+  if (t === 'deep_water' || t === 'water') return 0.15;
+  if (t === 'shallow_water') return 0.15;
+  if (t === 'fire')  return HEX_DEPTH;
+  if (t === 'swamp') return 0.25;
+  // grass, forest, rock: HEX_DEPTH + max(0,h)*ELEV_STEP
+  return HEX_DEPTH + Math.max(0, h) * ELEV_STEP;
+}
+
+function addGlowHex(col, row, mat) {
+  const { x, z } = hexToWorld(col, row);
+  const glowShape = createHexShape(HEX_SIZE * 0.93);
+  const geo = new THREE.ExtrudeGeometry(glowShape, { depth: 0.02, bevelEnabled: false });
+  const m = new THREE.Mesh(geo, mat.clone());
+  m.rotation.x = -Math.PI / 2;
+  m.position.set(x, tileTopY(col, row) + 0.01, z);
+  m.renderOrder = 1;
+  m.userData.isGlow = true;
+  scene.add(m);
+  glowMeshes.push(m);
+  return m;
+}
+
+function showReachableHighlight(reachable) {
+  clearGlowHighlights();
+  for (const [key] of reachable) {
+    const [col, row] = key.split(',').map(Number);
+    addGlowHex(col, row, glowMatBlue);
+  }
+}
+
+function showAttackRange(attacker) {
+  const enemies = state.units.filter(u => u.alive && u.team !== attacker.team);
+  for (const enemy of enemies) {
+    const d = hexDist(attacker.col, attacker.row, enemy.col, enemy.row);
+    if (d <= attacker.atkRange) {
+      addGlowHex(enemy.col, enemy.row, glowMatRed);
+    }
+  }
+}
+
+function showAbilityRange(attacker, skill) {
+  clearGlowHighlights();
+  if (skill.targetSelf) {
+    // range 0 self-buff: без подсветки тайлов, только self-ring
+    return;
+  }
+
+  // Прыжок: подсвечиваем ПУСТЫЕ hex'ы в radius≤3, не rock/deep_water
+  if (skill.isJump) {
+    for (let r = 0; r < GRID_ROWS; r++) {
+      for (let c = 0; c < GRID_COLS; c++) {
+        const d = hexDist(attacker.col, attacker.row, c, r);
+        if (d <= 0 || d > skill.range) continue;
+        const cell = getCell(c, r);
+        if (cell.type === 'rock' || cell.type === 'deep_water' || cell.type === 'water') continue;
+        const occupied = state.units.find(u => u.alive && u.col === c && u.row === r);
+        if (occupied) continue;
+        addGlowHex(c, r, glowMatBlue);
+      }
+    }
+    return;
+  }
+
+  // Толчок: подсвечиваем adjacent врагов
+  if (skill.effect && skill.effect.startsWith('push:')) {
+    for (const nb of hexNeighbors(attacker.col, attacker.row)) {
+      const u = state.units.find(u2 => u2.alive && u2.col === nb.col && u2.row === nb.row && u2.team !== attacker.team);
+      if (u) addGlowHex(nb.col, nb.row, glowMatRed);
+    }
+    return;
+  }
+
+  const mat = (skill.targetAlly || skill.type === 'heal') ? glowMatGreen : glowMatRed;
+  // Нужна ли проверка LoS для этого skill'а
+  const needsLoS = skill.type === 'ranged' || skill.type === 'magic';
+  if (skill.aoe > 0) {
+    // AoE skill: подсвечиваем ВСЕ hex'ы в range; без LoS — серым
+    for (let r = 0; r < GRID_ROWS; r++) {
+      for (let c = 0; c < GRID_COLS; c++) {
+        const d = hexDist(attacker.col, attacker.row, c, r);
+        if (d > 0 && d <= skill.range) {
+          const hasLoS = !needsLoS || fftHasLoS(attacker.col, attacker.row, c, r);
+          addGlowHex(c, r, hasLoS ? mat : glowMatGray);
+        }
+      }
+    }
+  } else {
+    // Одиночный skill: подсвечиваем только занятые допустимые цели
+    for (const u of state.units) {
+      if (!u.alive) continue;
+      if (u.id === attacker.id) continue;
+      const d = hexDist(attacker.col, attacker.row, u.col, u.row);
+      if (d > skill.range) continue;
+      const hasLoS = !needsLoS || fftHasLoS(attacker.col, attacker.row, u.col, u.row);
+      if (skill.targetAlly && u.team === attacker.team) {
+        addGlowHex(u.col, u.row, hasLoS ? glowMatGreen : glowMatGray);
+      } else if (!skill.targetAlly && u.team !== attacker.team) {
+        addGlowHex(u.col, u.row, hasLoS ? glowMatRed : glowMatGray);
+      }
+    }
+  }
+}
+
+// Показывает оранжевый AoE preview вокруг выбранного центра
+function showAoEPreview(centerCol, centerRow, skill) {
+  // Убираем старый preview, но оставляем range glow
+  // Перерисовываем: сначала range (красный/зелёный), потом preview (оранжевый поверх)
+  clearGlowHighlights();
+  const rangeMat = (skill.targetAlly || skill.type === 'heal') ? glowMatGreen : glowMatRed;
+  // Range tiles (без центра preview — он будет оранжевым/красным)
+  for (let r = 0; r < GRID_ROWS; r++) {
+    for (let c = 0; c < GRID_COLS; c++) {
+      const d = hexDist(state.selectedUnit.col, state.selectedUnit.row, c, r);
+      if (d > 0 && d <= skill.range) {
+        addGlowHex(c, r, rangeMat);
+      }
+    }
+  }
+  // AoE preview — оранжевые гексы в радиусе aoe вокруг центра
+  for (let r = 0; r < GRID_ROWS; r++) {
+    for (let c = 0; c < GRID_COLS; c++) {
+      const d = hexDist(centerCol, centerRow, c, r);
+      if (d <= skill.aoe) {
+        // Центральный hex — красным (основная цель), остальные — оранжевым
+        const previewMat = (d === 0) ? glowMatRed : glowMatOrange;
+        addGlowHex(c, r, previewMat);
+      }
+    }
+  }
+}
+
+function showCombinedHighlight(unit, reachable) {
+  clearGlowHighlights();
+  if (!unit.acted) showAttackRange(unit);
+  if (!unit.moved) {
+    for (const [key] of reachable) {
+      const [col, row] = key.split(',').map(Number);
+      addGlowHex(col, row, glowMatBlue);
+    }
+  }
+}
+
+// ──────────────────────────────────────────────
+// Selected ring
+// ──────────────────────────────────────────────
+let selectedRing = null;
+const ringMat = new THREE.MeshBasicMaterial({ color: 0xf39c12, transparent: true, opacity: 0.85, depthTest: false });
+
+function showSelectedRing(unit) {
+  clearSelectedRing();
+  const { x, z } = hexToWorld(unit.col, unit.row);
+  const topY = tileTopY(unit.col, unit.row);
+  const ringShape = createHexShape(HEX_SIZE * 0.97);
+  const ringGeo = new THREE.ExtrudeGeometry(ringShape, { depth: 0.04, bevelEnabled: false });
+  selectedRing = new THREE.Mesh(ringGeo, ringMat.clone());
+  selectedRing.rotation.x = -Math.PI / 2;
+  selectedRing.position.set(x, topY + 0.01, z);
+  selectedRing.renderOrder = 2;
+  scene.add(selectedRing);
+}
+
+function clearSelectedRing() {
+  if (selectedRing) {
+    scene.remove(selectedRing);
+    selectedRing.geometry.dispose();
+    selectedRing = null;
+  }
+}
+
+// ──────────────────────────────────────────────
+// Unit animation
+// ──────────────────────────────────────────────
+let activeAnimation = null;
+
+function moveUnitAnimation(unit, path, onDone) {
+  if (!path || path.length === 0) { onDone(); return; }
+  let stepIdx = 0;
+  const MS_PER_HEX = 120;
+
+  function animStep() {
+    if (stepIdx >= path.length) { onDone(); return; }
+    const target = path[stepIdx];
+    const { x: tx, z: tz } = hexToWorld(target.col, target.row);
+    const ty = tileTopY(target.col, target.row);
+    const startPos = { x: unit.mesh3d.position.x, y: unit.mesh3d.position.y, z: unit.mesh3d.position.z };
+    const startTime = performance.now();
+
+    activeAnimation = {
+      update(now) {
+        const t = Math.min(1, (now - startTime) / MS_PER_HEX);
+        const ease = 1 - Math.pow(1 - t, 3);
+        unit.mesh3d.position.x = startPos.x + (tx - startPos.x) * ease;
+        unit.mesh3d.position.z = startPos.z + (tz - startPos.z) * ease;
+        // Плавная интерполяция y по elevation
+        unit.mesh3d.position.y = startPos.y + (ty - startPos.y) * ease;
+        if (t >= 1) {
+          unit.col = target.col;
+          unit.row = target.row;
+          stepIdx++;
+          activeAnimation = null;
+          animStep();
+        }
+      }
+    };
+  }
+  animStep();
+}
+
+// ──────────────────────────────────────────────
+// Fall damage
+// ──────────────────────────────────────────────
+function calcFallDamage(fromH, toH) {
+  const delta = fromH - toH;
+  return Math.max(0, (delta - 1) * 5);
+}
+
+function applyFallDamage(unit, fromH, toH) {
+  const dmg = calcFallDamage(fromH, toH);
+  if (dmg <= 0) return;
+  const wp = unitWorldPos(unit);
+  spawnDamageFloat(wp, `-${dmg} падение`, '#ff8800');
+  fftLog(`${unit.name} получает урон от падения: −${dmg} HP.`, 'info');
+  unit.hp = Math.max(0, unit.hp - dmg);
+  if (unit.hp <= 0) {
+    unit.alive = false;
+    if (unit.mesh3d) {
+      scene.remove(unit.mesh3d);
+      unit.mesh3d.traverse(c => { if (c.geometry) c.geometry.dispose(); });
+      unit.mesh3d = null;
+    }
+    fftLog(`${unit.name} погиб от падения!`, 'attack');
+  }
+}
+
+function applyDeepWaterDamage(unit) {
+  // При приземлении в deep_water — утонул
+  const wp = unitWorldPos(unit);
+  spawnDamageFloat(wp, '-20 утонул', '#1a5276');
+  fftLog(`${unit.name} тонет в воде! −20 HP.`, 'info');
+  unit.hp = Math.max(0, unit.hp - 20);
+  if (unit.hp <= 0) {
+    unit.alive = false;
+    if (unit.mesh3d) {
+      scene.remove(unit.mesh3d);
+      unit.mesh3d.traverse(c => { if (c.geometry) c.geometry.dispose(); });
+      unit.mesh3d = null;
+    }
+    fftLog(`${unit.name} утонул!`, 'attack');
+  }
+}
+
+// ──────────────────────────────────────────────
+// Jump animation (параболическая дуга)
+// ──────────────────────────────────────────────
+function jumpUnitAnimation(unit, destCol, destRow, fromH, onDone) {
+  if (!unit.mesh3d) { onDone(); return; }
+  const { x: tx, z: tz } = hexToWorld(destCol, destRow);
+  const ty = tileTopY(destCol, destRow);
+  const startPos = { x: unit.mesh3d.position.x, y: unit.mesh3d.position.y, z: unit.mesh3d.position.z };
+  const startTime = performance.now();
+  const DURATION = 400;
+  const ARC_HEIGHT = 2.0; // юниты вверх в пике прыжка
+
+  activeAnimation = {
+    update(now) {
+      const t = Math.min(1, (now - startTime) / DURATION);
+      const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      unit.mesh3d.position.x = startPos.x + (tx - startPos.x) * ease;
+      unit.mesh3d.position.z = startPos.z + (tz - startPos.z) * ease;
+      // параболическая Y: sin(t*π) создаёт дугу
+      const arcY = Math.sin(t * Math.PI) * ARC_HEIGHT;
+      unit.mesh3d.position.y = startPos.y + (ty - startPos.y) * ease + arcY;
+      if (t >= 1) {
+        unit.mesh3d.position.set(tx, ty, tz);
+        unit.col = destCol;
+        unit.row = destRow;
+        activeAnimation = null;
+        onDone();
+      }
+    }
+  };
+}
+
+// ──────────────────────────────────────────────
+// Push: вычислить hex назначения отброски
+// ──────────────────────────────────────────────
+function calcPushDestination(attacker, target) {
+  // Направление: от attacker к target
+  const ac = toCube(attacker.col, attacker.row);
+  const tc = toCube(target.col, target.row);
+  const dq = tc.q - ac.q;
+  const dr = tc.r - ac.r;
+  const ds = tc.s - ac.s;
+  // Шаг нормализации — ищем сосед target в направлении dc/dr
+  const isOdd = target.row % 2 === 1;
+  const oddDirs  = [[0,-1],[+1,-1],[+1,0],[0,+1],[-1,0],[-1,-1]];
+  const evenDirs = [[0,-1],[+1, 0],[+1,1],[0,+1],[-1,1],[-1, 0]];
+  const dirs = isOdd ? oddDirs : evenDirs;
+
+  // Находим neighbor target в наиболее подходящем направлении
+  let bestNeighbor = null;
+  let bestDot = -Infinity;
+  for (const [dc, dr2] of dirs) {
+    const nc = target.col + dc;
+    const nr = target.row + dr2;
+    if (nc < 0 || nc >= GRID_COLS || nr < 0 || nr >= GRID_ROWS) continue;
+    const nc_cube = toCube(nc, nr);
+    const ndq = nc_cube.q - tc.q;
+    const ndr = nc_cube.r - tc.r;
+    // dot product с направлением отброски (dq,dr)
+    const dot = ndq * dq + ndr * dr;
+    if (dot > bestDot) { bestDot = dot; bestNeighbor = { col: nc, row: nr }; }
+  }
+  return bestNeighbor;
+}
+
+// Push animation: лёгкая дуга 300ms
+function pushUnitAnimation(unit, destCol, destRow, onDone) {
+  if (!unit.mesh3d) { onDone(); return; }
+  const { x: tx, z: tz } = hexToWorld(destCol, destRow);
+  const ty = tileTopY(destCol, destRow);
+  const startPos = { x: unit.mesh3d.position.x, y: unit.mesh3d.position.y, z: unit.mesh3d.position.z };
+  const startTime = performance.now();
+  const DURATION = 300;
+  const ARC_HEIGHT = 0.8;
+
+  activeAnimation = {
+    update(now) {
+      const t = Math.min(1, (now - startTime) / DURATION);
+      const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      unit.mesh3d.position.x = startPos.x + (tx - startPos.x) * ease;
+      unit.mesh3d.position.z = startPos.z + (tz - startPos.z) * ease;
+      const arcY = Math.sin(t * Math.PI) * ARC_HEIGHT;
+      unit.mesh3d.position.y = startPos.y + (ty - startPos.y) * ease + arcY;
+      if (t >= 1) {
+        unit.mesh3d.position.set(tx, ty, tz);
+        unit.col = destCol;
+        unit.row = destRow;
+        activeAnimation = null;
+        onDone();
+      }
+    }
+  };
+}
+
+// ──────────────────────────────────────────────
+// UI: skill selection screen
+// ──────────────────────────────────────────────
+const PLAYER_HEROES = ['knight', 'ranger', 'mage'];
+// В MP guest играет за enemy team
+const GUEST_HEROES = ['grunt', 'archer', 'brute'];
+
+function fftShowSkillScreen() {
+  state.skillSelections = { 0: [], 1: [], 2: [] };
+  const screen = document.getElementById('fft-skill-screen');
+  screen.classList.add('show');
+  const cols = document.getElementById('fft-skill-cols');
+  cols.innerHTML = '';
+
+  // В MP mode guest видит свои юниты (grunt/archer/brute)
+  const myHeroes = mp.enabled && mp.myTeam === 'B' ? GUEST_HEROES : PLAYER_HEROES;
+
+  // MP badge в заголовке
+  if (mp.enabled) {
+    const titleEl = document.getElementById('fft-skill-title');
+    const teamLabel = mp.myTeam === 'A' ? 'Команда A (Герои)' : 'Команда B (Враги)';
+    titleEl.textContent = `⚔ Выбор умений — ${teamLabel}`;
+    updateMpReadyStatus();
+  }
+
+  myHeroes.forEach((cls, heroIdx) => {
+    const def = UNIT_DEFS[cls];
+    const cs = CLASS_SKILLS[cls];
+    const col = document.createElement('div');
+    col.className = 'fft-skill-col';
+    col.innerHTML = `<div class="fft-skill-col-header">
+      <span class="fft-skill-col-icon">${def.emoji}</span>
+      <div class="fft-skill-col-name">${def.name}</div>
+      <div class="fft-skill-col-class">Атк ${def.atk} | Ход ${def.moveRange}</div>
+    </div>`;
+
+    const basicSk = SKILL_DEFS[cs.basic];
+    const basicCard = document.createElement('div');
+    basicCard.className = 'fft-skill-card basic';
+    basicCard.setAttribute('data-hero-idx', heroIdx);
+    basicCard.setAttribute('data-skill-idx', 0);
+    basicCard.innerHTML = `
+      <span class="fft-skill-card-icon">${basicSk.icon}</span>
+      <div class="fft-skill-card-name">${basicSk.name}</div>
+      <div class="fft-skill-card-meta">Д:${basicSk.range} | Базовое</div>
+    `;
+    col.appendChild(basicCard);
+
+    cs.specials.forEach((skId, skIdx) => {
+      const sk = SKILL_DEFS[skId];
+      const card = document.createElement('div');
+      card.className = 'fft-skill-card';
+      card.setAttribute('data-hero-idx', heroIdx);
+      card.setAttribute('data-skill-idx', skIdx + 1);
+      card.setAttribute('data-skill-id', skId);
+      const metaParts = [];
+      if (sk.range > 0) metaParts.push(`Д:${sk.range}`);
+      if (sk.aoe > 0) metaParts.push('АоЕ');
+      if (sk.cd > 0) metaParts.push(`КД:${sk.cd}`);
+      if (sk.effect) metaParts.push(
+        sk.effect === 'stun' ? 'Оглуш' :
+        sk.effect === 'immobilize' ? 'Стоп' :
+        sk.effect === 'slow' ? 'Замедл' :
+        sk.effect === 'barrier' ? 'Барьер' : ''
+      );
+      card.innerHTML = `
+        <div class="fft-skill-sel-badge">✓</div>
+        <span class="fft-skill-card-icon">${sk.icon}</span>
+        <div class="fft-skill-card-name">${sk.name}</div>
+        <div class="fft-skill-card-meta">${metaParts.join(' | ')}</div>
+      `;
+      card.addEventListener('click', () => fftToggleSkill(heroIdx, skId, card));
+      col.appendChild(card);
+    });
+    cols.appendChild(col);
+  });
+  fftUpdateSkillStartBtn();
+}
+
+function fftToggleSkill(heroIdx, skId, card) {
+  const sel = state.skillSelections[heroIdx];
+  if (sel.includes(skId)) {
+    state.skillSelections[heroIdx] = sel.filter(s => s !== skId);
+    card.classList.remove('selected');
+  } else {
+    if (sel.length >= 2) {
+      const removedId = sel.shift();
+      const cols = document.getElementById('fft-skill-cols');
+      const removedCard = cols.querySelector(`[data-skill-id="${removedId}"]`);
+      if (removedCard) removedCard.classList.remove('selected');
+    }
+    sel.push(skId);
+    card.classList.add('selected');
+  }
+  fftUpdateSkillStartBtn();
+}
+
+function fftUpdateSkillStartBtn() {
+  const btn = document.getElementById('fft-start-battle');
+  const hint = document.getElementById('fft-skill-hint');
+  const allSelected = [0, 1, 2].every(i => state.skillSelections[i].length === 2);
+  btn.disabled = !allSelected;
+  if (allSelected) {
+    hint.textContent = 'Все умения выбраны!';
+  } else {
+    const missing = [0, 1, 2].filter(i => state.skillSelections[i].length < 2);
+    const names = missing.map(i => UNIT_DEFS[PLAYER_HEROES[i]].name);
+    hint.textContent = `Выбери 2 умения: ${names.join(', ')}`;
+  }
+}
+
+// Глобально доступна для onclick из HTML
+window.fftStartBattle = async function() {
+  // Определяем какие герои наши в зависимости от режима
+  const myHeroes = mp.enabled && mp.myTeam === 'B'
+    ? ['grunt', 'archer', 'brute']
+    : PLAYER_HEROES;
+
+  // Применяем выбранные скилы к своим юнитам
+  myHeroes.forEach((cls, heroIdx) => {
+    const unit = state.units.find(u => u.defKey === cls);
+    if (!unit) return;
+    const cs = CLASS_SKILLS[cls];
+    const selected = state.skillSelections[heroIdx] || [];
+    unit.abilities = [cs.basic, ...selected];
+    unit.cooldowns = {};
+    for (const abId of unit.abilities) unit.cooldowns[abId] = 0;
+  });
+
+  if (mp.enabled) {
+    // MP: отправляем skills на сервер, затем ready
+    const btn = document.getElementById('fft-start-battle');
+    btn.disabled = true;
+    btn.textContent = '⏳ Отправка…';
+
+    // Формируем skills payload: {unitId: [skillId, ...]}
+    const skillsPayload = {};
+    myHeroes.forEach((cls, heroIdx) => {
+      const unit = state.units.find(u => u.defKey === cls);
+      if (!unit) return;
+      skillsPayload[unit.id] = unit.abilities;
+    });
+
+    await apiPostAction(mp.roomId, mp.token, {
+      type: 'set-skills',
+      skills: skillsPayload
+    });
+    await apiPostAction(mp.roomId, mp.token, { type: 'ready' });
+
+    mp.iReady = true;
+    updateMpReadyStatus();
+    btn.textContent = '✅ Готов! Ждём…';
+    // Дальше ждём SSE — сервер перейдёт в battle phase
+    return;
+  }
+
+  // Solo mode
+  document.getElementById('fft-skill-screen').classList.remove('show');
+  state.phase = 'player-turn';
+  // Инициализация FoW: все гексы hidden, затем раскрываем initial vision
+  initFoW();
+  recomputeFoW();
+  fftLog('Бой начался! Ход игрока.', 'info');
+  fftUpdateUI();
+};
+
+// ──────────────────────────────────────────────
+// Forecast
+// ──────────────────────────────────────────────
+function fftShowForecast(attacker, target, skill) {
+  state.forecastTarget = target;
+  state.uiMode = 'forecast';
+  const sk = skill || SKILL_DEFS[attacker.abilities[0]];
+  const isHeal = sk && sk.type === 'heal';
+  const isBarrier = sk && sk.effect === 'barrier';
+
+  let title = '', dmgText = '', hitText = '', armorText = '';
+  if (isBarrier) {
+    title = `🔰 ${attacker.name}: Заслон`;
+    dmgText = '+1 барьер (следующий удар поглощён)';
+    hitText = 'Успех: 100%';
+  } else if (isHeal && target) {
+    const healAmt = Math.min(target.maxHp - target.hp, -sk.dmgMod);
+    title = `💚 ${attacker.name} → ${target.name}: Лечение`;
+    dmgText = `Восстановит: ${healAmt} HP`;
+    hitText = 'Успех: 100%';
+  } else if (sk && sk.aoe > 0 && target) {
+    const dmg = fftCalcDamage(attacker, target, sk);
+    title = `${sk.icon} ${attacker.name}: ${sk.name} (АоЕ ${sk.aoe})`;
+    dmgText = `Урон: ~${dmg} HP (базовый, по всем в радиусе ${sk.aoe})`;
+    hitText = `Попадание: ${fftCalcHitChance(attacker, target, sk)}%${fftForestPenaltyLabel(attacker, target, sk)}`;
+    armorText = target ? `Броня цели: ${target.armor || 0}% (шанс блок -3)` : '';
+  } else if (target) {
+    const dmg = fftCalcDamage(attacker, target, sk);
+    const hit = fftCalcHitChance(attacker, target, sk);
+    title = `${sk ? sk.icon : '⚔'} ${attacker.name} [${sk ? sk.name : ''}] → ${target.name}`;
+    dmgText = `Урон: ${dmg} (базовый)`;
+    if (target.barrier) dmgText += ' [барьер!]';
+    hitText = `Попадание: ${hit}%${fftForestPenaltyLabel(attacker, target, sk)}`;
+    armorText = `Броня цели: ${target.armor || 0}% (шанс блок -3)`;
+  }
+
+  document.getElementById('fft-forecast-title').textContent = title;
+  document.getElementById('fft-forecast-dmg').textContent   = dmgText;
+  document.getElementById('fft-forecast-hit').textContent   = hitText;
+  document.getElementById('fft-forecast-armor').textContent = armorText;
+  document.getElementById('fft-forecast-bar').style.display = 'block';
+}
+
+window.fftCancelForecast = function() {
+  state.forecastTarget = null;
+  state.aoePreviewTarget = null;
+  state.uiMode = 'ability';
+  document.getElementById('fft-forecast-bar').style.display = 'none';
+  // Восстанавливаем подсветку range
+  if (state.selectedUnit && state.selectedAbility) {
+    showAbilityRange(state.selectedUnit, state.selectedAbility);
+  }
+  fftUpdateUI();
+};
+
+window.fftConfirmAttack = function() {
+  const attacker = state.selectedUnit;
+  const target   = state.forecastTarget;
+  const skill    = state.selectedAbility;
+  if (!attacker) return;
+
+  document.getElementById('fft-forecast-bar').style.display = 'none';
+  state.forecastTarget = null;
+  state.aoePreviewTarget = null;
+  state.uiMode = 'idle';
+
+  const sk = skill || SKILL_DEFS[attacker.abilities[0]];
+  const isBarrier = sk && sk.effect === 'barrier';
+  const isHeal = sk && sk.type === 'heal';
+
+  // MP: отправляем действие на сервер, не применяем локально (server authoritative)
+  if (mp.enabled) {
+    let actionType = 'attack';
+    if (isBarrier) actionType = 'attack'; // guard/barrier — тоже как attack
+    if (sk && sk.isJump) actionType = 'jump';
+    if (sk && sk.effect && sk.effect.startsWith('push:')) actionType = 'push';
+    const action = {
+      type: actionType,
+      unitId: attacker.id,
+      skillId: sk ? sk.id : null,
+      targetUnitId: target ? target.id : null,
+      targetCol: target ? target.col : null,
+      targetRow: target ? target.row : null,
+    };
+    submitAction(action);
+    attacker.acted = true;
+    state.selectedAbility = null;
+    clearGlowHighlights();
+    if (attacker.alive) showSelectedRing(attacker);
+    fftUpdateUI();
+    return;
+  }
+
+  // Solo mode — сохраняем оригинальную логику ниже
+
+  if (isBarrier) {
+    attacker.barrier = true;
+    attacker.acted = true;
+    fftLog(`${attacker.name} использует Заслон — барьер активен!`, 'special');
+    if (sk && sk.cd > 0 && attacker.cooldowns) attacker.cooldowns[sk.id] = sk.cd;
+    state.selectedAbility = null;
+    updateUnitMeshes();
+    checkWinLose();
+    clearGlowHighlights();
+    if (attacker.alive && state.selectedUnit && state.selectedUnit.id === attacker.id) showSelectedRing(attacker);
+    fftUpdateUI();
+    return;
+  }
+
+  if (isHeal && target) {
+    const healAmt = -sk.dmgMod;
+    fftDealDamage(target, healAmt, attacker, sk);
+    fftLog(`${attacker.name} лечит ${target.name}: +${healAmt} HP.`, 'heal');
+    attacker.acted = true;
+    if (sk && sk.cd > 0 && attacker.cooldowns) attacker.cooldowns[sk.id] = sk.cd;
+    state.selectedAbility = null;
+    updateUnitMeshes();
+    checkWinLose();
+    clearGlowHighlights();
+    if (attacker.alive && state.selectedUnit && state.selectedUnit.id === attacker.id) showSelectedRing(attacker);
+    fftUpdateUI();
+    return;
+  }
+
+  // Толчок (push:1)
+  if (sk && sk.effect && sk.effect.startsWith('push:') && target) {
+    const dmg = fftCalcDamage(attacker, target, sk);
+    const fromH = getCell(target.col, target.row).height;
+    fftDealDamage(target, dmg, attacker, sk);
+    fftLog(`${attacker.name} [${sk.name}] → ${target.name}: −${dmg} HP.`, attacker.team === 'player' ? 'attack' : 'info');
+    attacker.acted = true;
+    if (sk.cd > 0 && attacker.cooldowns) attacker.cooldowns[sk.id] = sk.cd;
+    state.selectedAbility = null;
+    // Поворот к цели
+    if (attacker.mesh3d && target) {
+      const { x: tx, z: tz } = hexToWorld(target.col, target.row);
+      attacker.mesh3d.lookAt(new THREE.Vector3(tx, attacker.mesh3d.position.y, tz));
+    }
+    // Push logic
+    if (target.alive) {
+      const dest = calcPushDestination(attacker, target);
+      if (dest) {
+        const destCell = getCell(dest.col, dest.row);
+        const destOccupied = state.units.find(u => u.alive && u.col === dest.col && u.row === dest.row);
+        const isBlocking = destCell.type === 'rock' || destOccupied;
+        if (!isBlocking) {
+          // Анимируем отброску
+          pushUnitAnimation(target, dest.col, dest.row, () => {
+            const toH = getCell(target.col, target.row).height;
+            if (toH < fromH) applyFallDamage(target, fromH, toH);
+            if (destCell.type === 'deep_water' || destCell.type === 'water') applyDeepWaterDamage(target);
+            updateUnitMeshes();
+            checkWinLose();
+            clearGlowHighlights();
+            if (attacker.alive && state.selectedUnit && state.selectedUnit.id === attacker.id) showSelectedRing(attacker);
+            fftUpdateUI();
+          });
+          return;
+        } else {
+          fftLog(`${target.name} не может быть отброшен — путь заблокирован.`, 'info');
+        }
+      }
+    }
+    updateUnitMeshes();
+    checkWinLose();
+    clearGlowHighlights();
+    if (attacker.alive && state.selectedUnit && state.selectedUnit.id === attacker.id) showSelectedRing(attacker);
+    fftUpdateUI();
+    return;
+  }
+
+  if (sk && sk.aoe > 0 && target) {
+    fftApplyAoe(target.col, target.row, attacker, sk);
+    attacker.acted = true;
+  } else if (target) {
+    const hit  = fftCalcHitChance(attacker, target, sk);
+    const dmg  = fftCalcDamage(attacker, target, sk);
+    const roll = Math.random() * 100;
+    if (roll < hit) {
+      fftDealDamage(target, dmg, attacker, sk);
+      fftLog(`${attacker.name} [${sk ? sk.name : 'Атака'}] → ${target.name}: −${dmg} HP.`, attacker.team === 'player' ? 'attack' : 'info');
+    } else {
+      fftLog(`${attacker.name} → ${target.name}: МИМО (уклонение ${target.evasion || 0}).`, 'info');
+    }
+    attacker.acted = true;
+  }
+
+  if (sk && sk.cd > 0 && attacker.cooldowns) {
+    attacker.cooldowns[sk.id] = sk.cd;
+  }
+  state.selectedAbility = null;
+
+  // После атаки — поворачиваем юнита к цели
+  if (target && attacker.mesh3d) {
+    const { x: tx, z: tz } = hexToWorld(target.col, target.row);
+    attacker.mesh3d.lookAt(new THREE.Vector3(tx, attacker.mesh3d.position.y, tz));
+  }
+
+  updateUnitMeshes();
+  checkWinLose();
+  clearGlowHighlights();
+  if (attacker.alive && state.selectedUnit && state.selectedUnit.id === attacker.id) {
+    showSelectedRing(attacker);
+  }
+  fftUpdateUI();
+};
+
+// ──────────────────────────────────────────────
+// Game logic — select/deselect
+// ──────────────────────────────────────────────
+function selectUnit(unit) {
+  state.selectedUnit = unit;
+  state.uiMode = 'idle';
+  state.reachableCache = null;
+  state.selectedAbility = null;
+  state.forecastTarget = null;
+  clearGlowHighlights();
+  showSelectedRing(unit);
+
+  if (!unit.moved && !unit.stunned && !unit.immobilized) {
+    state.reachableCache = fftReachable(unit);
+    showCombinedHighlight(unit, state.reachableCache);
+    state.uiMode = 'move';
+  } else if (!unit.acted) {
+    showAttackRange(unit);
+    state.uiMode = 'attack';
+  }
+  fftUpdateUI();
+}
+
+function deselectUnit() {
+  state.selectedUnit = null;
+  state.uiMode = 'idle';
+  state.reachableCache = null;
+  state.selectedAbility = null;
+  state.forecastTarget = null;
+  clearGlowHighlights();
+  clearSelectedRing();
+  document.getElementById('fft-forecast-bar').style.display = 'none';
+  fftUpdateUI();
+}
+
+window.fftDeselectUnitUI = function() { deselectUnit(); };
+
+// ──────────────────────────────────────────────
+// Ability selection
+// ──────────────────────────────────────────────
+function fftSelectAbility(skillId) {
+  if (!state.selectedUnit) return;
+  const sk = SKILL_DEFS[skillId];
+  if (!sk) return;
+  if (state.selectedUnit.acted) { fftLog('Юнит уже атаковал.', 'info'); return; }
+  const cd = state.selectedUnit.cooldowns[skillId] || 0;
+  if (cd > 0) { fftLog(`${sk.name} на перезарядке (${cd} ход).`, 'info'); return; }
+
+  const isCurrentSkill = (state.uiMode === 'ability' || state.uiMode === 'jump') &&
+    state.selectedAbility && state.selectedAbility.id === skillId;
+
+  if (isCurrentSkill) {
+    // Повторный клик — отмена
+    state.uiMode = 'idle';
+    state.selectedAbility = null;
+    state.forecastTarget = null;
+    state.aoePreviewTarget = null;
+    document.getElementById('fft-forecast-bar').style.display = 'none';
+    clearGlowHighlights();
+    fftUpdateUI();
+    return;
+  }
+
+  state.selectedAbility = sk;
+  // Прыжок получает специальный режим 'jump'
+  state.uiMode = sk.isJump ? 'jump' : 'ability';
+  state.reachableCache = null;
+  state.forecastTarget = null;
+  document.getElementById('fft-forecast-bar').style.display = 'none';
+
+  showAbilityRange(state.selectedUnit, sk);
+
+  // Self-buff сразу показываем forecast
+  if (sk.targetSelf) {
+    fftShowForecast(state.selectedUnit, null, sk);
+  }
+  fftUpdateUI();
+}
+
+window.fftSkipUnit = function() {
+  if (!state.selectedUnit) return;
+  const unit = state.selectedUnit;
+  if (mp.enabled) {
+    submitAction({ type: 'skip-unit', unitId: unit.id });
+    unit.moved = true;
+    unit.acted = true;
+    fftLog(`${unit.name} пропускает ход.`, 'info');
+    deselectUnit();
+    return;
+  }
+  unit.moved = true;
+  unit.acted = true;
+  fftLog(`${unit.name} пропускает ход.`, 'info');
+  deselectUnit();
+};
+
+window.fftCancel = function() {
+  if (state.uiMode === 'idle') return;
+  state.uiMode = 'idle';
+  state.selectedAbility = null;
+  state.forecastTarget = null;
+  state.aoePreviewTarget = null;
+  document.getElementById('fft-forecast-bar').style.display = 'none';
+  clearGlowHighlights();
+  if (state.selectedUnit && !state.selectedUnit.moved && !state.selectedUnit.stunned && !state.selectedUnit.immobilized) {
+    state.reachableCache = fftReachable(state.selectedUnit);
+    showCombinedHighlight(state.selectedUnit, state.reachableCache);
+    state.uiMode = 'move';
+  }
+  fftUpdateUI();
+};
+
+window.fftEndTurn = function() {
+  if (state.phase === 'won' || state.phase === 'lost' || state.phase === 'skill-select') return;
+  if (state.phase === 'player-turn') {
+    if (mp.enabled) {
+      // MP: отправляем end-turn на сервер, UI блокируем до SSE ответа
+      deselectUnit();
+      submitAction({ type: 'end-turn' }).then(() => {
+        state.phase = 'enemy-turn';
+        document.getElementById('fft-enemy-banner').classList.add('show');
+        document.getElementById('fft-enemy-banner').textContent = '⚔ Ход противника…';
+        fftLog('Конец хода. Ждём противника…', 'info');
+        stopTurnTimer();
+        updateMpStatusBar('enemy-turn');
+        fftUpdateUI();
+      });
+      return;
+    }
+    // Solo mode
+    state.units.filter(u => u.alive && u.team === 'player').forEach(u => applyStartOfTurnEffects(u));
+    state.units.filter(u => u.alive && u.team === 'enemy').forEach(u => { u.moved = false; u.acted = false; });
+    state.phase = 'enemy-turn';
+    state.selectedUnit = null;
+    state.selectedAbility = null;
+    state.uiMode = 'idle';
+    state.reachableCache = null;
+    clearGlowHighlights();
+    clearSelectedRing();
+    document.getElementById('fft-forecast-bar').style.display = 'none';
+    document.getElementById('fft-enemy-banner').classList.add('show');
+    fftLog('Ход врага!', 'attack');
+    fftUpdateUI();
+    setTimeout(() => fftEnemyTurnStep(), 500);
+  }
+};
+
+// ──────────────────────────────────────────────
+// Enemy AI
+// ──────────────────────────────────────────────
+function fftAIPickTarget(enemy) {
+  const players = state.units.filter(u => u.alive && u.team === 'player');
+  if (players.length === 0) return null;
+  players.sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp));
+  return players[0];
+}
+
+function fftAIPickAbility(enemy) {
+  const available = enemy.abilities.filter(abId => (enemy.cooldowns[abId] || 0) === 0);
+  const specials = available.filter(abId => !SKILL_DEFS[abId].isBasic);
+  if (specials.length > 0) return SKILL_DEFS[specials[0]];
+  return SKILL_DEFS[available[0]] || null;
+}
+
+function fftEnemyTurnStep() {
+  if (state.phase !== 'enemy-turn') return;
+
+  const enemies = state.units.filter(u => u.alive && u.team === 'enemy' && !u.acted);
+  if (enemies.length === 0) {
+    // Конец хода врага
+    state.units.filter(u => u.alive && u.team === 'enemy').forEach(u => {
+      decrementCooldowns(u);
+      applyStartOfTurnEffects(u);
+      u.stunned = false;
+      u.immobilized = false;
+      u.slowed = false;
+    });
+    if (checkWinLose()) return;
+
+    // Начало хода игрока
+    document.getElementById('fft-enemy-banner').classList.remove('show');
+    state.units.filter(u => u.alive && u.team === 'player').forEach(u => {
+      decrementCooldowns(u);
+      applyStartOfTurnEffects(u);
+      u.stunned = false;
+      u.immobilized = false;
+      u.slowed = false;
+      u.moved = false;
+      u.acted = false;
+    });
+    state.phase = 'player-turn';
+    // Пересчитываем FoW в начале хода игрока
+    recomputeFoW();
+    fftLog('Ход игрока!', 'info');
+    fftUpdateUI();
+    return;
+  }
+
+  const enemy = enemies[0];
+
+  if (enemy.stunned) {
+    fftLog(`${enemy.name} оглушён — пропускает ход.`, 'info');
+    enemy.acted = true;
+    enemy.moved = true;
+    updateUnitMeshes();
+    setTimeout(() => fftEnemyTurnStep(), 400);
+    return;
+  }
+
+  const target = fftAIPickTarget(enemy);
+  if (!target) { checkWinLose(); return; }
+
+  const ability = fftAIPickAbility(enemy);
+  const effectiveRange = ability ? ability.range : enemy.atkRange;
+  const dist = hexDist(enemy.col, enemy.row, target.col, target.row);
+  const desiredDist = enemy.isRanged ? effectiveRange : 1;
+
+  // Проверка LoS для ranged/magic. Melee (atkRange=1) — LoS всегда true.
+  const needsLoS = ability
+    ? (ability.type === 'ranged' || ability.type === 'magic')
+    : enemy.atkRange > 1;
+  const hasLoS = !needsLoS || fftHasLoS(enemy.col, enemy.row, target.col, target.row);
+
+  if (dist <= effectiveRange && !enemy.acted) {
+    if (!hasLoS) {
+      // LoS заблокирован — пропустить атаку
+      fftLog(`${enemy.name}: нет линии взора до цели, атака пропущена.`, 'info');
+      enemy.acted = true;
+      updateUnitMeshes();
+      if (!checkWinLose()) setTimeout(() => fftEnemyTurnStep(), 400);
+      return;
+    }
+    fftAIDoAttack(enemy, target, ability, () => {
+      updateUnitMeshes();
+      if (!checkWinLose()) setTimeout(() => fftEnemyTurnStep(), 500);
+    });
+    return;
+  }
+
+  if (!enemy.moved && !enemy.immobilized) {
+    fftAIMove(enemy, target, desiredDist, () => {
+      const newDist = hexDist(enemy.col, enemy.row, target.col, target.row);
+      const newHasLoS = !needsLoS || fftHasLoS(enemy.col, enemy.row, target.col, target.row);
+      if (newDist <= effectiveRange && !enemy.acted && newHasLoS) {
+        fftAIDoAttack(enemy, target, ability, () => {
+          updateUnitMeshes();
+          if (!checkWinLose()) setTimeout(() => fftEnemyTurnStep(), 500);
+        });
+      } else {
+        if (!newHasLoS && newDist <= effectiveRange) {
+          fftLog(`${enemy.name}: нет линии взора после хода, атака пропущена.`, 'info');
+        }
+        enemy.acted = true;
+        updateUnitMeshes();
+        if (!checkWinLose()) setTimeout(() => fftEnemyTurnStep(), 500);
+      }
+    });
+    return;
+  }
+
+  enemy.acted = true;
+  updateUnitMeshes();
+  if (!checkWinLose()) setTimeout(() => fftEnemyTurnStep(), 400);
+}
+
+function fftAIDoAttack(enemy, target, ability, done) {
+  const sk = ability || SKILL_DEFS[enemy.abilities[0]] || null;
+  const hit  = fftCalcHitChance(enemy, target, sk);
+  const roll = Math.random() * 100;
+
+  if (sk && sk.aoe > 0) {
+    fftApplyAoe(target.col, target.row, enemy, sk);
+  } else if (roll < hit) {
+    const dmg = fftCalcDamage(enemy, target, sk);
+    fftDealDamage(target, dmg, enemy, sk);
+    fftLog(`${enemy.name} [${sk ? sk.name : 'Атака'}] → ${target.name}: −${dmg} HP.`, 'attack');
+  } else {
+    fftLog(`${enemy.name} → ${target.name}: МИМО (уклонение ${target.evasion || 0}).`, 'info');
+  }
+
+  if (sk && sk.cd > 0) enemy.cooldowns[sk.id] = sk.cd;
+  enemy.acted = true;
+  enemy.moved = true;
+
+  // Поворачиваем к цели
+  if (enemy.mesh3d && target.alive) {
+    const { x: tx, z: tz } = hexToWorld(target.col, target.row);
+    enemy.mesh3d.lookAt(new THREE.Vector3(tx, enemy.mesh3d.position.y, tz));
+  }
+  done();
+}
+
+function fftAIMove(enemy, target, desiredDist, done) {
+  if (enemy.immobilized) {
+    enemy.moved = true;
+    fftLog(`${enemy.name} обездвижен.`, 'info');
+    done();
+    return;
+  }
+  const moveRange = enemy.slowed ? Math.max(1, Math.floor(enemy.moveRange / 2)) : enemy.moveRange;
+  const blocked = new Set(
+    state.units.filter(u => u.alive && u.id !== enemy.id && u.id !== target.id).map(u => `${u.col},${u.row}`)
+  );
+  const fullPath = fftFindPath(enemy.col, enemy.row, target.col, target.row, blocked);
+  if (!fullPath || fullPath.length === 0) { enemy.moved = true; done(); return; }
+
+  let maxSteps = desiredDist > 1 ? Math.max(0, fullPath.length - desiredDist) : Math.min(moveRange, fullPath.length - 1);
+  maxSteps = Math.min(maxSteps, moveRange);
+  if (maxSteps <= 0) { enemy.moved = true; done(); return; }
+
+  let path = fullPath.slice(0, maxSteps);
+  while (path.length > 0) {
+    const last = path[path.length - 1];
+    const blocker = state.units.find(u => u.alive && u.id !== enemy.id && u.col === last.col && u.row === last.row);
+    if (!blocker) break;
+    path = path.slice(0, -1);
+  }
+  if (path.length === 0) { enemy.moved = true; done(); return; }
+
+  moveUnitAnimation(enemy, path, () => {
+    enemy.moved = true;
+    done();
+  });
+}
+
+// ──────────────────────────────────────────────
+// Raycasting tap
+// ──────────────────────────────────────────────
+const raycaster = new THREE.Raycaster();
+const pointer   = new THREE.Vector2();
+let pointerDownPos = null;
+let pointerDragged = false;
+
+renderer.domElement.addEventListener('pointerdown', (e) => {
+  pointerDownPos = { x: e.clientX, y: e.clientY };
+  pointerDragged = false;
+});
+renderer.domElement.addEventListener('pointermove', (e) => {
+  if (pointerDownPos) {
+    const dx = e.clientX - pointerDownPos.x;
+    const dy = e.clientY - pointerDownPos.y;
+    if (Math.sqrt(dx * dx + dy * dy) > 6) pointerDragged = true;
+  }
+});
+renderer.domElement.addEventListener('pointerup', (e) => {
+  if (pointerDragged || !pointerDownPos) { pointerDownPos = null; return; }
+  pointerDownPos = null;
+  if (activeAnimation) return;
+  if (state.phase !== 'player-turn') return;
+  if (state.uiMode === 'forecast') return;
+  // В MP режиме: если это ход противника (по SSE) — блокируем ввод
+  if (mp.enabled && state.phase !== 'player-turn') return;
+
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointer.x = ((e.clientX - rect.left) / rect.width)  *  2 - 1;
+  pointer.y = ((e.clientY - rect.top)  / rect.height) * -2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+
+  // Попытка 1: unit meshes
+  const unitObjects = [];
+  for (const u of state.units) {
+    if (u.alive && u.mesh3d) u.mesh3d.traverse(child => { if (child.isMesh) unitObjects.push(child); });
+  }
+  const unitHits = raycaster.intersectObjects(unitObjects, false);
+  if (unitHits.length > 0) {
+    const hitMesh = unitHits[0].object;
+    let hitUnit = null;
+    for (const u of state.units) {
+      if (!u.alive || !u.mesh3d) continue;
+      let found = false;
+      u.mesh3d.traverse(child => { if (child === hitMesh) found = true; });
+      if (found) { hitUnit = u; break; }
+    }
+    if (hitUnit) { handleUnitTap(hitUnit); return; }
+  }
+
+  // Попытка 2: tile meshes
+  const tileObjects = [];
+  for (let r = 0; r < GRID_ROWS; r++) {
+    for (let c = 0; c < GRID_COLS; c++) {
+      if (tileMeshes[r][c]) tileObjects.push(tileMeshes[r][c]);
+    }
+  }
+  const tileHits = raycaster.intersectObjects(tileObjects, false);
+  if (tileHits.length > 0) {
+    const hitTile = tileHits[0].object;
+    handleTileTap(hitTile.userData.col, hitTile.userData.row);
+    return;
+  }
+
+  // Попытка 3: glow overlays
+  if (state.uiMode === 'move' && glowMeshes.length > 0) {
+    const glowHits = raycaster.intersectObjects(glowMeshes, false);
+    if (glowHits.length > 0) {
+      const hitPos = glowHits[0].object.position;
+      let bestKey = null, bestDist = Infinity;
+      if (state.reachableCache) {
+        for (const [key] of state.reachableCache) {
+          const [c, rr] = key.split(',').map(Number);
+          const { x, z } = hexToWorld(c, rr);
+          const d = Math.hypot(hitPos.x - x, hitPos.z - z);
+          if (d < bestDist) { bestDist = d; bestKey = key; }
+        }
+      }
+      if (bestKey) {
+        const [c, rr] = bestKey.split(',').map(Number);
+        handleTileTap(c, rr);
+      }
+    }
+  }
+});
+
+function handleUnitTap(unit) {
+  const sel = state.selectedUnit;
+
+  // В режиме jump — клик по юниту = занятый hex, нельзя прыгнуть
+  if (state.uiMode === 'jump') {
+    if (unit.id !== sel.id) fftLog('Hex занят, нельзя прыгнуть.', 'info');
+    return;
+  }
+
+  // В режиме ability — клик по валидной цели
+  if (state.uiMode === 'ability' && sel && state.selectedAbility) {
+    const sk = state.selectedAbility;
+    if (sk.targetSelf && unit.id === sel.id) {
+      fftShowForecast(sel, null, sk);
+      return;
+    }
+    if (sk.targetAlly && unit.team === sel.team && unit.id !== sel.id) {
+      const d = hexDist(sel.col, sel.row, unit.col, unit.row);
+      if (d <= sk.range) { fftShowForecast(sel, unit, sk); return; }
+      fftLog(`Цель слишком далеко (дальность: ${sk.range}).`, 'info'); return;
+    }
+    if (!sk.targetSelf && !sk.targetAlly && unit.team !== sel.team) {
+      const d = hexDist(sel.col, sel.row, unit.col, unit.row);
+      if (d > sk.range) { fftLog(`Цель вне дальности (${sk.range}).`, 'info'); return; }
+      // LoS check для ranged/magic
+      const needsLoS = sk.type === 'ranged' || sk.type === 'magic';
+      if (needsLoS && !fftHasLoS(sel.col, sel.row, unit.col, unit.row)) {
+        fftLog(`Нет линии взора до ${unit.name} (заблокировано).`, 'info');
+        return;
+      }
+      if (sk.aoe > 0) {
+        // AoE: первый тап — preview, второй тап на ту же цель — confirm
+        const prev = state.aoePreviewTarget;
+        if (prev && prev.col === unit.col && prev.row === unit.row) {
+          state.aoePreviewTarget = null;
+          fftShowForecast(sel, unit, sk);
+        } else {
+          state.aoePreviewTarget = unit;
+          showAoEPreview(unit.col, unit.row, sk);
+        }
+        return;
+      }
+      fftShowForecast(sel, unit, sk);
+      return;
+    }
+    return;
+  }
+
+  // Враг в режиме move/attack/idle
+  if (unit.team === 'enemy' && sel && sel.team === 'player') {
+    if (!sel.acted) {
+      const d = hexDist(sel.col, sel.row, unit.col, unit.row);
+      if (d <= sel.atkRange) {
+        // Используем базовую атаку через forecast
+        state.selectedAbility = SKILL_DEFS[sel.abilities[0]];
+        fftShowForecast(sel, unit, state.selectedAbility);
+        return;
+      }
+    }
+    return;
+  }
+
+  if (unit.team !== 'player') return;
+
+  if (sel && sel.id === unit.id) {
+    deselectUnit();
+    return;
+  }
+  if (unit.moved && unit.acted) { fftLog(`${unit.name} уже отыграл.`, 'info'); return; }
+  selectUnit(unit);
+}
+
+function handleTileTap(col, row) {
+  // Прыжок: клик на пустой hex в радиусе
+  if (state.uiMode === 'jump' && state.selectedUnit && state.selectedAbility) {
+    const sk = state.selectedAbility;
+    const unit = state.selectedUnit;
+    const d = hexDist(unit.col, unit.row, col, row);
+    if (d <= 0 || d > sk.range) { fftLog('Цель вне дальности прыжка.', 'info'); return; }
+    const destCell = getCell(col, row);
+    if (destCell.type === 'rock' || destCell.type === 'deep_water' || destCell.type === 'water') {
+      fftLog('Сюда прыгнуть нельзя.', 'info'); return;
+    }
+    const occupied = state.units.find(u => u.alive && u.col === col && u.row === row);
+    if (occupied) { fftLog('Hex занят.', 'info'); return; }
+
+    const fromH = getCell(unit.col, unit.row).height;
+    clearGlowHighlights();
+    clearSelectedRing();
+    state.uiMode = 'idle';
+    state.selectedAbility = null;
+    jumpUnitAnimation(unit, col, row, fromH, () => {
+      const toH = getCell(unit.col, unit.row).height;
+      // Применяем fall damage (прыжок вниз на Δh>1)
+      if (toH < fromH) applyFallDamage(unit, fromH, toH);
+      // Deep water landing
+      if (destCell.type === 'deep_water' || destCell.type === 'water') applyDeepWaterDamage(unit);
+      if (sk.cd > 0) unit.cooldowns[sk.id] = sk.cd;
+      unit.moved = true;
+      unit.acted = true;
+      fftLog(`${unit.name} прыгнул на [${col},${row}].`, 'special');
+      // Пересчитываем FoW после прыжка player-юнита
+      if (unit.team === 'player') recomputeFoW();
+      updateUnitMeshes();
+      checkWinLose();
+      if (unit.alive) showSelectedRing(unit);
+      fftUpdateUI();
+    });
+    return;
+  }
+
+  if (state.uiMode === 'ability' && state.selectedUnit && state.selectedAbility) {
+    const sk = state.selectedAbility;
+    const unit = state.units.find(u => u.alive && u.col === col && u.row === row);
+    if (sk.targetSelf) {
+      if (col === state.selectedUnit.col && row === state.selectedUnit.row) {
+        fftShowForecast(state.selectedUnit, null, sk);
+      } else {
+        fftLog('Умение применяется к себе — нажми на своего героя.', 'info');
+      }
+      return;
+    }
+    if (sk.targetAlly && unit && unit.team === state.selectedUnit.team && unit.id !== state.selectedUnit.id) {
+      const d = hexDist(state.selectedUnit.col, state.selectedUnit.row, unit.col, unit.row);
+      if (d <= sk.range) { fftShowForecast(state.selectedUnit, unit, sk); return; }
+    }
+    if (!sk.targetSelf && !sk.targetAlly) {
+      if (sk.aoe > 0) {
+        // AoE: можно тапнуть как по юниту, так и по пустому гексу
+        const d = hexDist(state.selectedUnit.col, state.selectedUnit.row, col, row);
+        if (d > 0 && d <= sk.range) {
+          const prev = state.aoePreviewTarget;
+          if (prev && prev.col === col && prev.row === row) {
+            // Второй тап — confirm (используем юнита на гексе или null как центр)
+            state.aoePreviewTarget = null;
+            // Ищем реального врага на тайле или в AoE-зоне для forecast
+            const centerUnit = state.units.find(u => u.alive && u.col === col && u.row === row && u.team !== state.selectedUnit.team)
+              || state.units.find(u => u.alive && u.team !== state.selectedUnit.team && hexDist(col, row, u.col, u.row) <= sk.aoe)
+              || { col, row, name: 'область', hp: 0, maxHp: 1, barrier: false, team: 'enemy', def: 0 };
+            fftShowForecast(state.selectedUnit, centerUnit, sk);
+          } else {
+            // Первый тап — preview
+            state.aoePreviewTarget = { col, row };
+            showAoEPreview(col, row, sk);
+          }
+          return;
+        }
+      } else if (unit && unit.team !== state.selectedUnit.team) {
+        const d = hexDist(state.selectedUnit.col, state.selectedUnit.row, unit.col, unit.row);
+        if (d <= sk.range) { fftShowForecast(state.selectedUnit, unit, sk); return; }
+      }
+    }
+    // Клик в пустоту в режиме ability — ничего не делаем
+    return;
+  }
+
+  if (state.uiMode === 'move' && state.selectedUnit) {
+    const key = `${col},${row}`;
+    if (state.reachableCache && state.reachableCache.has(key)) {
+      const { path } = state.reachableCache.get(key);
+      const movingUnit = state.selectedUnit;
+      clearGlowHighlights();
+      clearSelectedRing();
+      state.forecastTarget = null;
+
+      if (mp.enabled) {
+        // MP: отправляем move на сервер, анимируем локально оптимистично
+        submitAction({ type: 'move', unitId: movingUnit.id, col, row });
+        moveUnitAnimation(movingUnit, path, () => {
+          movingUnit.moved = true;
+          state.reachableCache = null;
+          state.uiMode = 'idle';
+          fftLog(`${movingUnit.name} переместился.`, 'info');
+          if (movingUnit.team === 'player') recomputeFoW();
+          showSelectedRing(movingUnit);
+          if (!movingUnit.acted) {
+            showAttackRange(movingUnit);
+            state.uiMode = 'attack';
+          }
+          fftUpdateUI();
+        });
+        return;
+      }
+
+      moveUnitAnimation(movingUnit, path, () => {
+        movingUnit.moved = true;
+        state.reachableCache = null;
+        state.uiMode = 'idle';
+        fftLog(`${movingUnit.name} переместился.`, 'info');
+        // Пересчитываем FoW после перемещения player-юнита
+        if (movingUnit.team === 'player') recomputeFoW();
+        showSelectedRing(movingUnit);
+        if (!movingUnit.acted) {
+          showAttackRange(movingUnit);
+          state.uiMode = 'attack';
+        }
+        fftUpdateUI();
+      });
+    }
+    return;
+  }
+
+  // idle — клик на пустой тайл = deselect
+  const unitOnTile = state.units.find(u => u.alive && u.col === col && u.row === row);
+  if (!unitOnTile) deselectUnit();
+}
+
+// ──────────────────────────────────────────────
+// UI update
+// ──────────────────────────────────────────────
+function fftUpdateUI() {
+  // Phase label
+  const lbl = document.getElementById('fft-phase-label');
+  if (state.phase === 'player-turn')  { lbl.textContent = 'Ход игрока'; lbl.className = 'player-turn'; }
+  else if (state.phase === 'enemy-turn') { lbl.textContent = 'Ход врага'; lbl.className = 'enemy-turn'; }
+  else if (state.phase === 'won')  { lbl.textContent = '🎉 Победа!'; lbl.className = 'won'; }
+  else if (state.phase === 'lost') { lbl.textContent = '💀 Поражение'; lbl.className = 'lost'; }
+  else { lbl.textContent = 'Выбор умений'; lbl.className = 'player-turn'; }
+
+  // Queue icons
+  const queueEl = document.getElementById('fft-queue-icons');
+  queueEl.innerHTML = '';
+  for (const u of state.units.filter(u => u.alive)) {
+    const el = document.createElement('div');
+    el.className = `fft-queue-unit ${u.team}`;
+    if (state.selectedUnit && state.selectedUnit.id === u.id) el.classList.add('current');
+    if (u.acted) el.classList.add('done');
+    el.textContent = u.emoji;
+    el.title = u.name;
+    queueEl.appendChild(el);
+  }
+
+  const u = state.selectedUnit;
+  const nameEl  = document.getElementById('fft-info-name');
+  const hpBar   = document.getElementById('fft-hp-bar-fg');
+  const hpText  = document.getElementById('fft-hp-text');
+  const badges  = document.getElementById('fft-info-badges');
+  const desel   = document.getElementById('fft-info-desel');
+
+  if (u) {
+    const unitH = getHeight(u.col, u.row);
+    const heightLabel = unitH < 0 ? ' [дно]' : unitH > 0 ? ` [ур.${unitH}]` : '';
+    nameEl.textContent = `${u.emoji} ${u.name}${heightLabel}`;
+    const hpPct = u.hp / u.maxHp;
+    hpBar.style.width = `${hpPct * 100}%`;
+    hpBar.style.background = hpPct > 0.5 ? '#2ecc71' : hpPct > 0.25 ? '#f39c12' : '#e74c3c';
+    hpText.textContent = `${u.hp}/${u.maxHp}`;
+    badges.innerHTML = '';
+    const addBadge = (text, cls) => {
+      const b = document.createElement('span');
+      b.className = `fft-badge ${cls}`;
+      b.textContent = text;
+      badges.appendChild(b);
+    };
+    if (u.moved)      addBadge('ходил', 'moved');
+    if (u.acted)      addBadge('действовал', 'acted');
+    if (u.stunned)    addBadge('💫 оглушён', 'stunned');
+    if (u.immobilized) addBadge('🕸 стоп', 'stunned');
+    if (u.barrier)    addBadge('🔰 барьер', 'barrier');
+    desel.classList.add('show');
+  } else {
+    nameEl.textContent = state.phase === 'player-turn' ? 'Выбери союзника' : state.phase === 'enemy-turn' ? 'Враги ходят...' : '';
+    hpBar.style.width = '0%';
+    hpText.textContent = '';
+    badges.innerHTML = '';
+    desel.classList.remove('show');
+  }
+
+  // Action buttons
+  const isPlayer = state.phase === 'player-turn';
+  const hasUnit  = !!u;
+  const inGame   = state.phase !== 'won' && state.phase !== 'lost' && state.phase !== 'skill-select';
+  const btnSkip  = document.getElementById('fft-btn-skip');
+  const btnEnd   = document.getElementById('fft-btn-end');
+  const btnCancel = document.getElementById('fft-btn-cancel');
+  btnSkip.disabled = !(inGame && isPlayer && hasUnit);
+  btnEnd.disabled  = !inGame;
+  btnEnd.textContent = state.phase === 'enemy-turn' ? 'Ход врага...' : 'Конец хода';
+  btnCancel.style.display = (state.uiMode !== 'idle' && state.uiMode !== 'attack' && hasUnit && inGame && isPlayer) ? 'inline-flex' : 'none';
+
+  // Ability row
+  const abRow = document.getElementById('fft-ability-row');
+  if (u && u.team === 'player' && u.abilities && u.abilities.length > 0 && inGame && isPlayer) {
+    abRow.style.display = 'flex';
+    abRow.innerHTML = '';
+    for (const abId of u.abilities) {
+      const sk = SKILL_DEFS[abId];
+      if (!sk) continue;
+      const cd = u.cooldowns[abId] || 0;
+      const disabled = u.acted || cd > 0;
+      const isActive = (state.uiMode === 'ability' || state.uiMode === 'jump') && state.selectedAbility && state.selectedAbility.id === abId;
+      const btn = document.createElement('button');
+      btn.className = 'fft-ab-btn' + (isActive ? ' active' : '');
+      btn.disabled = disabled;
+      let metaRange, metaDmg;
+      if (sk.isJump) {
+        metaRange = `Пр:${sk.range}`;
+        metaDmg = '';
+      } else if (sk.effect && sk.effect.startsWith('push:')) {
+        metaRange = `Д:${sk.range}`;
+        metaDmg = `${sk.dmgMod}+толчок`;
+      } else if (sk.type === 'heal') {
+        metaRange = `Д:${sk.range}`;
+        metaDmg = `+${-sk.dmgMod}HP`;
+      } else if (sk.type === 'buff') {
+        metaRange = 'Self';
+        metaDmg = '';
+      } else {
+        metaRange = sk.range > 0 ? `Д:${sk.range}` : 'Self';
+        metaDmg = sk.dmgMod >= 0 ? `+${sk.dmgMod}` : `${sk.dmgMod}`;
+      }
+      btn.innerHTML = `
+        <span class="fft-ab-icon">${sk.icon}</span>
+        <span class="fft-ab-name">${sk.name}</span>
+        <span class="fft-ab-meta">${metaRange}${metaDmg ? ' ' + metaDmg : ''}</span>
+      `;
+      if (cd > 0) {
+        const badge = document.createElement('div');
+        badge.className = 'fft-cd-badge';
+        badge.textContent = cd;
+        btn.appendChild(badge);
+      }
+      btn.addEventListener('click', () => fftSelectAbility(abId));
+      abRow.appendChild(btn);
+    }
+  } else {
+    abRow.style.display = 'none';
+    abRow.innerHTML = '';
+  }
+}
+
+function updateUnitMeshes() {
+  for (const u of state.units) {
+    if (!u.mesh3d || !u.alive) continue;
+    const hpPct = u.hp / u.maxHp;
+    u.mesh3d.traverse(child => {
+      if (child.userData.isHpFg) {
+        child.scale.x = hpPct;
+        child.position.x = (hpPct - 1) * 0.4;
+        const mat = child.material;
+        if (hpPct > 0.5) mat.color.setHex(0x2ecc71);
+        else if (hpPct > 0.25) mat.color.setHex(0xf39c12);
+        else mat.color.setHex(0xe74c3c);
+      }
+    });
+  }
+}
+
+// ──────────────────────────────────────────────
+// Log
+// ──────────────────────────────────────────────
+function fftLog(msg, cls) {
+  const log = document.getElementById('fft-log');
+  const line = document.createElement('div');
+  line.className = `log-${cls || 'info'}`;
+  line.textContent = msg;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+  while (log.children.length > 60) log.removeChild(log.firstChild);
+}
+
+// ──────────────────────────────────────────────
+// Reset camera
+// ──────────────────────────────────────────────
+document.getElementById('btn-reset').addEventListener('click', () => {
+  camera.position.copy(DEFAULT_CAM);
+  controls.target.copy(DEFAULT_TARGET);
+  camera.zoom = 0.85;
+  camera.updateProjectionMatrix();
+  controls.update();
+});
+
+document.getElementById('btn-fow-toggle').addEventListener('click', () => {
+  state.fowEnabled = !state.fowEnabled;
+  const btn = document.getElementById('btn-fow-toggle');
+  btn.style.color = state.fowEnabled ? '#aaa' : '#f39c12';
+  recomputeFoW();
+});
+
+// ──────────────────────────────────────────────
+// Render loop
+// ──────────────────────────────────────────────
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+
+  if (activeAnimation) {
+    activeAnimation.update(performance.now());
+  }
+
+  // Glow pulse animation
+  glowPulseT += 0.02;
+  const pulseOpacity = 0.4 + 0.35 * Math.sin(glowPulseT * Math.PI);
+  for (const m of glowMeshes) {
+    if (m.material) m.material.opacity = pulseOpacity;
+  }
+
+  // Face & HP bars смотрят на камеру
+  const camDir = new THREE.Vector3();
+  camera.getWorldDirection(camDir);
+  scene.traverse(obj => {
+    if (obj.userData.isFace || obj.userData.isHpBg || obj.userData.isHpFg) {
+      obj.lookAt(obj.getWorldPosition(new THREE.Vector3()).sub(camDir));
+    }
+  });
+
+  updateUnitMeshes();
+  renderer.render(scene, camera);
+}
+animate();
+
+// ──────────────────────────────────────────────
+// Resize
+// ──────────────────────────────────────────────
+window.addEventListener('resize', () => {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const asp = w / h;
+  camera.left   = frustumSize * asp / -2;
+  camera.right  = frustumSize * asp / 2;
+  camera.top    = frustumSize / 2;
+  camera.bottom = frustumSize / -2;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+});
+
+// ──────────────────────────────────────────────
+// Landing screen button handlers
+// ──────────────────────────────────────────────
+document.getElementById('btn-play-solo').addEventListener('click', () => {
+  document.getElementById('fft-landing').classList.remove('show');
+  fftShowSkillScreen();
+  fftUpdateUI();
+  fftLog('Выбери умения перед боем.', 'info');
+});
+
+document.getElementById('btn-play-mp-host').addEventListener('click', async () => {
+  const landingBtn = document.getElementById('btn-play-mp-host');
+  landingBtn.disabled = true;
+  landingBtn.textContent = '⏳ Создание…';
+  try {
+    const data = await apiCreateRoom();
+    const roomId = data.roomId || data.room_id;
+    const hostToken = data.hostToken || data.token;
+    const storageKey = `fft-token-${roomId}`;
+    localStorage.setItem(storageKey, hostToken);
+    localStorage.setItem(`fft-team-${roomId}`, 'A');
+    mp.enabled = true;
+    mp.roomId = roomId;
+    mp.token = hostToken;
+    mp.myTeam = 'A';
+    mp.lastVersion = -1;
+    setRoomInURL(roomId);
+
+    document.getElementById('fft-landing').classList.remove('show');
+    const shareURL = location.href;
+    document.getElementById('fft-share-url').value = shareURL;
+    document.getElementById('fft-waiting').classList.add('show');
+
+    startSSE(roomId, hostToken);
+    setupMpTeams();
+  } catch (e) {
+    console.error('[MP] Create room failed:', e);
+    fftLog('Ошибка создания комнаты: ' + e.message, 'info');
+    landingBtn.disabled = false;
+    landingBtn.textContent = '👥 Создать игру с другом';
+  }
+});
+
+document.getElementById('fft-copy').addEventListener('click', () => {
+  const url = document.getElementById('fft-share-url').value;
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.getElementById('fft-copy');
+    const orig = btn.textContent;
+    btn.textContent = '✅ Скопировано!';
+    setTimeout(() => { btn.textContent = orig; }, 1500);
+  });
+});
+
+// ──────────────────────────────────────────────
+// Init
+// ──────────────────────────────────────────────
+// Проверяем URL: если есть #room= — MP join flow, иначе landing
+const _initRoomId = parseRoomFromURL();
+if (_initRoomId) {
+  // Показываем пустой экран пока идёт join
+  fftUpdateUI();
+  fftLog('Подключение к игре…', 'info');
+  initMpMode();
+} else {
+  showLandingScreen();
+  fftUpdateUI();
+}
+
+// Экспорт для тестов
+window.__fft3d_state = state;
+window.__fft3d_mp = mp;
+window.__fft3d_fns = {
+  selectUnit, deselectUnit, fftReachable,
+  handleUnitTap, handleTileTap,
+  moveUnitAnimation, checkWinLose,
+  spawnDamageFloat, fftUpdateUI,
+  fftStartBattle: window.fftStartBattle,
+  fftSelectAbility,
+  showAbilityRange,
+  showAoEPreview,
+  // H2 additions
+  calcFallDamage, applyFallDamage, applyDeepWaterDamage,
+  jumpUnitAnimation, pushUnitAnimation, calcPushDestination,
+  // A2: LoS
+  fftHasLoS, fftLoSHasForest,
+  // A3: FoW
+  initFoW, recomputeFoW,
+  // MP3
+  parseRoomFromURL, apiCreateRoom, apiJoinRoom, startSSE,
+  applyServerState, applyServerUnits,
+};
+
+</script>
+</body>
+</html>
