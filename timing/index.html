@@ -609,6 +609,17 @@ function timingStop() {
   let outcome = zones2.length ? zones2[zones2.length-1] : {label:'промах', level:0};
   for (const z of zones2) { if (pos >= z.min && pos <= z.max) { outcome = z; break; } }
   const level = outcome.level ?? 0;
+  // Wrapper: если открыта в iframe от fft-3d — сообщи результат
+  if (window.parent !== window && __minigameParentReady) {
+    const score = Math.max(0, Math.min(1, (outcome.level ?? 0) / 4));
+    window.parent.postMessage({
+      kind: 'minigame-result',
+      game: 'timing',
+      nonce: __minigameNonce,
+      score: score,
+      meta: { position: pos, outcome: outcome.label, level: outcome.level ?? 0, autoStopped: timingTimeLeft <= 0 }
+    }, window.location.origin);
+  }
   document.getElementById('timing-live-label').textContent = '';
   document.getElementById('timing-result-label').textContent = outcome.label;
   document.getElementById('timing-result-label').style.color = ZONE_COLORS[Math.min(outcome.level ?? 0, ZONE_COLORS.length-1)];
@@ -618,6 +629,19 @@ function timingStop() {
   setTimeout(() => sendResultToBot({game:'timing', position:pos, outcome:outcome.label, level, timeSpent:Math.round((Date.now()-timStartTime)/1000),
     process:{position:pos, slowUsed:timingSlowCount, autoStopped, speed:window._timingSpeed}}), 600);
 }
+
+// Мини-игра wrapper: получаем nonce и context от parent (fft-3d)
+let __minigameNonce = null;
+let __minigameParentReady = false;
+window.addEventListener('message', (e) => {
+  if (e.origin !== window.location.origin) return;  // BLOCKER fix: origin check
+  if (!e.data || typeof e.data !== 'object') return;
+  if (e.data.kind === 'minigame-start') {
+    __minigameNonce = e.data.nonce || null;
+    __minigameParentReady = true;
+    // parent context (unit id, trigger type) можно логировать при желании
+  }
+});
 
 // ---- AUTO-START (per-page entry; replaces monolith game dispatch) ----
 initTiming();

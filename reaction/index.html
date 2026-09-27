@@ -454,6 +454,16 @@
   #ark-result .ark-result-title { font-size: 1.4rem; font-weight: 700; margin-bottom: 6px; }
   #ark-result .ark-result-sub { font-size: 1rem; color: var(--tg-theme-hint-color, #aaa); }
   </style>
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();for(var j=0;j<document.scripts.length;j++){if(document.scripts[j].src===r){return;}}
+    k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document,"script","https://mc.yandex.ru/metrika/tag.js","ym");
+    ym(110848337, "init", {clickmap:true, trackLinks:true, accurateTrackBounce:true});
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/110848337" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
 </head>
 <body>
   <h1>⚔️ Twilights</h1>
@@ -481,6 +491,18 @@ let rxTarget='',rxSymbols=[],rxInterval=1200,rxHits=0,rxMisses=0,rxFalse=0;
 let rxTimerInterval=null,rxSymInterval=null,rxTotalTicks=0,rxTicksLeft=0;
 let rxCurrent=null,rxTapWindow=false,rxDone=false;
 let rxTimes=[],rxTargetShownAt=0;
+
+// Minigame wrapper: handshake с parent (fft-3d)
+let __minigameNonce = null;
+let __minigameParentReady = false;
+window.addEventListener('message', (e) => {
+  if (e.origin !== window.location.origin) return;
+  if (!e.data || typeof e.data !== 'object') return;
+  if (e.data.kind === 'minigame-start') {
+    __minigameNonce = e.data.nonce || null;
+    __minigameParentReady = true;
+  }
+});
 
 function initReaction(){
   document.getElementById('reaction-game').style.display='';
@@ -553,6 +575,17 @@ function rxFinish(){
   const wrongStr=rxFalse>0?' · '+rxFalse+' ложных':'';
   document.getElementById('reaction-game').innerHTML='<div style="text-align:center;padding:20px"><div style="font-size:1.4rem;font-weight:700;margin-bottom:8px">'+outcome+'</div><div style="font-size:1rem;color:var(--tg-theme-hint-color,#aaa)">'+rxHits+' из '+rxTotal+wrongStr+'</div></div>';
   const avgRt=rxTimes.length?Math.round(rxTimes.reduce(function(a,b){return a+b;},0)/rxTimes.length):null;
+  // Wrapper: сообщить результат parent если в iframe
+  if (window.parent !== window && __minigameParentReady) {
+    const score = Math.max(0, Math.min(1, level / 4));
+    window.parent.postMessage({
+      kind: 'minigame-result',
+      game: 'reaction',
+      nonce: __minigameNonce,
+      score: score,
+      meta: { hits: rxHits, misses: rxMisses, falseAlarms: rxFalse, total: rxTotal, level }
+    }, window.location.origin);
+  }
   setTimeout(function(){sendResultToBot({game:'reaction',hits:rxHits,misses:rxMisses,falseAlarms:rxFalse,total:rxTotal,outcome,level,timeSpent,
     process:{avgReactionMs:avgRt,reactionTimesMs:rxTimes,targetRatio:gameData.targetRatio||0.35,tickMs:rxInterval}});},600);
 }
